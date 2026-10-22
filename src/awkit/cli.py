@@ -65,13 +65,21 @@ def _parser():
                        help="claude writes .claude/agents/*.md, codex writes .codex/agents/*.toml")
     roles.add_argument("--model", action="append", metavar="TIER=MODEL[:EFFORT]",
                        help="model for a tier (efficient, standard, judge, top); EFFORT is Codex only; repeatable")
-    skills = kit_commands.add_parser("skills", help="write the workflow and each situation guide as a skill for Claude "
-                                     "Code or Codex; awkit's earlier skills are regenerated, other files are kept")
-    skills.add_argument("dir", nargs="?", type=Path, default=Path("."), help="project folder (default: .)")
-    skills.add_argument("--provider", choices=("claude", "codex"), required=True,
-                        help="claude writes .claude/skills/awkit-*/SKILL.md, codex writes .agents/skills/awkit-*/SKILL.md")
-    skills.add_argument("--kit", type=Path, help="point the skills at this kit folder inside the project instead of "
-                        "holding the guides (default: DIR/agent-work-kit when it exists)")
+    skills = kit_commands.add_parser("skills", help="write the workflow and each situation guide as a skill in your user "
+                                     "folder for Claude Code and Codex; awkit's earlier skills are regenerated, other "
+                                     "files are kept")
+    skills.add_argument("dir", nargs="?", type=Path, default=Path("."), help="project folder, with --project (default: .)")
+    skills.add_argument("--provider", choices=("claude", "codex"),
+                        help="only this agent (default: both): claude writes ~/.claude/skills/awkit-*/SKILL.md, codex "
+                             "~/.agents/skills/awkit-*/SKILL.md")
+    skills.add_argument("--without", action="append", default=[], metavar="NAMES",
+                        help="leave out these skills, comma-separated, such as delegation,review-session")
+    skills.add_argument("--project", action="store_true",
+                        help="write into DIR/.claude/skills and DIR/.agents/skills instead of the user folder")
+    skills.add_argument("--kit", type=Path, help="with --project: point the skills at this kit folder inside the "
+                        "project instead of holding the guides (default: DIR/agent-work-kit when it exists)")
+    kit_commands.add_parser("guide", help="print a kit guide; without a name, list them").add_argument("name", nargs="?")
+
     checks = groups.add_parser("check", help="checks for hooks and CI: commit identity, writing patterns, done reports",
                                epilog=REFERENCE)
     check_commands = checks.add_subparsers(dest="action", required=True, metavar="ACTION")
@@ -231,6 +239,43 @@ def _print_skills(result, indent=""):
         print(f"{indent}left out {name}: {reason}")
 
 
+def _guide(name):
+    from .kit_install import guide, guide_files
+    if not name:
+        print("\n".join(sorted(guide_files())))
+        return 0
+    sys.stdout.write(guide(name))
+    return 0
+
+
+def _skills(args):
+    """`kit skills`: the user folders by default, the project's with --project (or --kit)."""
+    from .connect import Changes, project_top
+    from .kit_install import install_user_skills, skill_names
+    providers = (args.provider,) if args.provider else ("claude", "codex")
+    if not (args.project or args.kit):
+        results, record = install_user_skills(providers, args.without)
+        written = []
+        for result in results.values():
+            _print_skills(result)
+            for path in result["removed"]:
+                print(f"removed: {path}")
+            written += result["created"] + result["updated"]
+        if record:
+            print(f"recorded: {record} (what `awkit kit remove --user` takes out)")
+        return 0 if written or not any(r["kept"] for r in results.values()) else 2
+    keep, _ = skill_names(args.without)
+    changes = Changes(project_top(args.dir))
+    written, kept = [], []
+    for provider in providers:
+        result = install_skills(args.dir, provider, args.kit, changes, keep)
+        _print_skills(result)
+        written += result["created"] + result["updated"]
+        kept += result["kept"]
+    changes.save()
+    return 0 if written or not kept else 2
+
+
 def _session_line(words):
     return (f"words added to every session: {words['claude']} for Claude Code, {words['codex']} for Codex "
             "(the Agent Work Kit section and the skill descriptions)")
@@ -381,14 +426,10 @@ def main(argv=None):
             return _run_check(args)
         if args.group == "hook" or (args.group == "kit" and args.action == "hooks"):
             return hook_cli.run(args, parser)
+        if args.group == "kit" and args.action == "guide":
+            return _guide(args.name)
         if args.group == "kit" and args.action == "skills":
-            from .connect import Changes, project_top
-            changes = Changes(project_top(args.dir))
-            result = install_skills(args.dir, args.provider, args.kit, changes)
-            changes.save()
-            _print_skills(result)
-            written = result["created"] + result["updated"]
-            return 0 if written or not result["kept"] else 2
+            return _skills(args)
         if args.group == "kit" and args.action == "remove":
             from .connect import remove
             keep = True if args.keep_records else False if args.delete_records else None

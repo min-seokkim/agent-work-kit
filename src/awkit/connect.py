@@ -70,8 +70,10 @@ class Changes:
     """Writes files and records each one in .awkit/installed.json: what it held before, what awkit wrote,
     and a backup of the original so `kit remove` can restore it exactly."""
 
-    def __init__(self, top):
+    def __init__(self, top, exclude=True):
         self.top = Path(top).resolve()
+        # A record in a project keeps .awkit/ out of Git; one in the home folder leaves Git alone.
+        self.exclude = exclude
         self.path = self.top / RECORD
         try:
             self.data = json.loads(self.path.read_text(encoding="utf-8"))
@@ -127,7 +129,7 @@ class Changes:
         from .kit_install import kit_source
         self.data.update(kit_source())
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        if (self.top / ".git").exists():
+        if self.exclude and (self.top / ".git").exists():
             exclude = _exclude_file(self.top)
             before = exclude.read_text(encoding="utf-8") if exclude and exclude.is_file() else ""
             from .review import exclude_locally

@@ -13,9 +13,11 @@ from pathlib import Path
 from .environment import GENERATED
 
 SKIP = {"__pycache__", "__init__.py"}
-# The failure catalogue entries (kit/failures.md) this command guards against: guidance kept in context
-# every session before anything shows it is needed, and a second copy of what a method bundle does (F12).
-PREVENTS = {"awkit kit skills": ("F12",)}
+# The failure catalogue entries (kit/failures.md) these commands guard against: guidance kept in context
+# every session before anything shows it is needed, and a second copy of what a method bundle does (F12);
+# a way of working that reaches only the project where someone copied it, not the person's next session
+# elsewhere or an agent without skills (F29).
+PREVENTS = {"awkit kit skills": ("F12", "F29"), "awkit kit guide": ("F29",)}
 
 
 def kit_root():
@@ -265,7 +267,7 @@ def _rewrite_links(text, skill, base=""):
         if path in ("LICENSE.md", "THIRD_PARTY_NOTICES.md"):
             return f"{label} (at the end of this skill)" if skill == "awkit-writing" else label
         if path == "templates/project.md":
-            return f"{label} (the Agent Work Kit section of AGENTS.md or CLAUDE.md)"
+            return f"{label} (the `[kit]` table of `checks.toml`; `awkit kit guide profile` prints the long form)"
         if path.startswith("templates/") and Path(path).name in TEMPLATES:
             return f"{label} (below)" if skill == "awkit-records" else f"{label} (in the `awkit-records` skill)"
         if path.startswith("templates/roles/"):
@@ -275,9 +277,54 @@ def _rewrite_links(text, skill, base=""):
             return f"{label} (below)" if path in APPENDED.get(skill, ()) else label
         if owner:
             return f"{label} (the `{owner}` skill)"
+        name = guide_name(path)
+        if name:
+            return f"{label} (`awkit kit guide {name}`)"
         shown = f"`{path}`" if label == path else f"{label} (`{path}`"
         return shown + " in the Agent Work Kit package" + ("" if label == path else ")")
     return LINK.sub(replace, text)
+
+
+# `awkit kit guide NAME` prints a kit file for agents without skills and for people. The names are the
+# guides' file names without `.md`, plus the templates, which have no guide of their own.
+GUIDE_ALIASES = {"profile": "templates/project.md", "profiles": "examples/project-profiles.md",
+                 **{Path(name).stem: f"templates/{name}" for name in TEMPLATES}}
+
+
+def guide_files():
+    """{name: kit-relative path} for every guide `kit guide` prints."""
+    found = {}
+    for item in sorted(kit_root().iterdir(), key=lambda entry: entry.name):
+        if item.name.endswith(".md"):
+            found[item.name[:-3].lower().replace("_", "-")] = item.name
+    return {**found, **GUIDE_ALIASES}
+
+
+def guide_name(path):
+    """The `kit guide` name of a kit-relative path, or None."""
+    return next((name for name, file in guide_files().items() if file == path), None)
+
+
+def guide(name):
+    """A kit guide's text, with links between kit files turned into `awkit kit guide` names, since a
+    reader of the printed text has no folder to follow them in."""
+    files = guide_files()
+    key = name.lower().removesuffix(".md")
+    if key not in files:
+        raise ValueError(f"No guide named {name}. Guides: " + ", ".join(sorted(files)))
+    path = files[key]
+    base = posixpath.dirname(path)
+
+    def replace(match):
+        label, target = match.groups()
+        if re.match(r"[a-z]+:", target) or target.startswith("#"):
+            return match.group(0)
+        target = posixpath.normpath(posixpath.join(base, target.split("#", 1)[0]))
+        if target == "templates/project.md" and path != target:
+            return f"{label} (the `[kit]` table of `checks.toml`; `awkit kit guide profile` prints the long form)"
+        linked = guide_name(target)
+        return f"{label} (`awkit kit guide {linked}`)" if linked else label
+    return LINK.sub(replace, _guide(path))
 
 
 def _demote(text):
@@ -301,7 +348,7 @@ def _source_label():
     record = kit_source()
     label = f"awkit {record['awkit']}"
     if record.get("commit"):
-        label += f", kit commit {record['commit'][:7]}"
+        label += f" (kit commit {record['commit'][:7]})"
     return label
 
 
@@ -315,11 +362,13 @@ def skill_text(name, guide, description, extra="", kit_path=None):
                 f"workflow in `{kit_path}/workflow.md` still applies.")
         if extra:
             body += " " + extra.format(kit=kit_path)
-        return head + f"{GENERATED} by `awkit kit skills`; it regenerates this file and `awkit kit remove` deletes it -->\n\n" \
+        # Only the version: the guide it points at carries the content, so the file changes only with awkit.
+        return head + f"{GENERATED} by awkit {kit_source()['awkit']}. Update with `awkit kit skills --project --kit {kit_path}`. -->\n\n" \
             + body + "\n"
     sources = [guide, *APPENDED.get(name, ())]
-    parts = [f"{GENERATED} by `awkit kit skills` from {', '.join(sources)} ({_source_label()}). "
-             "`awkit kit skills` regenerates this file and `awkit kit remove` deletes it. -->\n",
+    # One line: which awkit made the file and how to update it. A skill in the user folder outlives any
+    # project, so the version is what tells a reader whether it is current.
+    parts = [f"{GENERATED} by {_source_label()} from {', '.join(sources)}. Update with `awkit kit skills`. -->\n",
              _rewrite_links(_guide(guide), name)]
     for appended in APPENDED.get(name, ()):
         parts.append(_demote(_rewrite_links(_guide(appended), name)))
@@ -335,7 +384,7 @@ def skill_text(name, guide, description, extra="", kit_path=None):
     return head + "\n".join(part.rstrip("\n") + "\n" for part in parts)
 
 
-def planned_skills(project: Path, provider: str, kit: Path | None = None, found_bundles=None):
+def planned_skills(project: Path, provider: str, kit: Path | None = None, found_bundles=None, names=None):
     """([(skill name, path, text)], [(skill name, reason)]) that `install_skills` would write."""
     from .environment import bundles
     if provider not in SKILL_FOLDERS:
@@ -358,6 +407,9 @@ def planned_skills(project: Path, provider: str, kit: Path | None = None, found_
     chosen = SITUATIONS if kit_path is not None else (WORKFLOW, *SITUATIONS)
     planned, omitted = [], []
     for name, guide, description, extra in chosen:
+        if names is not None and name not in names:
+            omitted.append((name, "left out with --without"))
+            continue
         if found_bundles and name in COVERED_BY_BUNDLES:
             bundle = found_bundles[0]
             omitted.append((name, f"{bundle['name']} ({bundle['evidence']}) {COVERED_BY_BUNDLES[name]}"))
@@ -367,11 +419,67 @@ def planned_skills(project: Path, provider: str, kit: Path | None = None, found_
     return planned, omitted
 
 
-def install_skills(project: Path, provider: str, kit: Path | None = None, changes=None):
-    """Write one skill per guide. Files awkit wrote earlier are regenerated; any other file with the same
-    name is kept. Returns {created, updated, unchanged, kept, omitted}."""
+def install_skills(project: Path, provider: str, kit: Path | None = None, changes=None, names=None):
+    """Write one skill per guide into the project, or only the skills in `names`. Files awkit wrote earlier
+    are regenerated; any other file with the same name is kept. Returns {created, updated, unchanged, kept,
+    omitted}."""
+    planned, omitted = planned_skills(project, provider, kit, names=names)
+    return _write_skills(planned, omitted, changes)
+
+
+def user_skill_folders(home=None):
+    """Where Claude Code and Codex read skills for every project of this user: `~/.claude/skills` and
+    `~/.agents/skills` (Codex also reads the older `$CODEX_HOME/skills`; awkit writes the current place)."""
+    home = Path.home() if home is None else Path(home)
+    return {provider: home / folder for provider, folder in SKILL_FOLDERS.items()}
+
+
+def skill_names(without=()):
+    """The skill names `without` leaves, from names given with or without the `awkit-` prefix."""
+    names = [name for name, *_ in (WORKFLOW, *SITUATIONS)]
+    chosen = set()
+    for value in without:
+        for part in str(value).split(","):
+            part = part.strip()
+            if not part:
+                continue
+            name = part if part.startswith("awkit-") else f"awkit-{part}"
+            if name not in names:
+                raise ValueError(f"No skill named {part}. Skills: " + ", ".join(n.removeprefix("awkit-") for n in names))
+            chosen.add(name)
+    return [name for name in names if name not in chosen], sorted(chosen)
+
+
+def install_user_skills(providers=("claude", "codex"), without=(), home=None):
+    """Write the self-contained skills into the user's skill folders, which every session of the agent reads
+    in any project; the guides are the person's way of working, not a project's. Skills left out with
+    `without` that awkit wrote earlier are deleted. Everything written is recorded in `~/.awkit/installed.json`,
+    which `kit remove --user` reads. Returns ({provider: result}, record path or None)."""
+    from .connect import Changes
     from .environment import is_awkit_skill
-    planned, omitted = planned_skills(project, provider, kit)
+    home = Path.home() if home is None else Path(home)
+    keep, left_out = skill_names(without)
+    changes = Changes(home, exclude=False)
+    results = {}
+    for provider in providers:
+        folder = user_skill_folders(home)[provider]
+        planned = [(name, folder / name / "SKILL.md", skill_text(name, guide, description, extra))
+                   for name, guide, description, extra in (WORKFLOW, *SITUATIONS) if name in keep]
+        result = _write_skills(planned, [(name, "left out with --without") for name in left_out], changes)
+        result["removed"] = []
+        for name in left_out:
+            path = folder / name / "SKILL.md"
+            if path.is_file() and is_awkit_skill(path.read_text(encoding="utf-8", errors="replace")):
+                path.unlink()
+                if not any(path.parent.iterdir()):
+                    path.parent.rmdir()
+                result["removed"].append(path)
+        results[provider] = result
+    return results, changes.save()
+
+
+def _write_skills(planned, omitted, changes):
+    from .environment import is_awkit_skill
     result = {"created": [], "updated": [], "unchanged": [], "kept": [], "omitted": omitted}
     for _, path, text in planned:
         if path.exists():

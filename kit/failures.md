@@ -355,7 +355,7 @@ Generated from the guards' own declarations: each guide section ends with a "Pre
 | F26 Checks interfere through shared resources | checking.md Shared resources and processes | none | none |
 | F27 A one-off request becomes a standing automation | work-types.md Automation | none | none |
 | F28 The wrong level of autonomy | workflow.md Define the task; work-types.md Learning | none | none |
-| F29 Context is lost between sessions | workflow.md Continue across sessions; connect.md; protocol.md A task record; protocol.md Resume after interruption | `awkit kit scan`, `awkit kit init`, `awkit hook` | none |
+| F29 Context is lost between sessions | workflow.md Continue across sessions; connect.md; protocol.md A task record; protocol.md Resume after interruption | `awkit kit scan`, `awkit kit init`, `awkit kit skills`, `awkit kit guide`, `awkit hook` | none |
 | F30 Facts, attribution or certainty change while writing | work-types.md Writing; writing.md Before writing; writing.md Write plainly; writing.md Preserve facts and judgments | none | none |
 | F31 The form of a correction is fixed, not its reason | writing.md Corrections; korean-writing.md Revise sentences | none | none |
 | F32 One instance is fixed and the same problem stays elsewhere | writing.md Corrections | `awkit check writing` | `writing-check (verify)` |

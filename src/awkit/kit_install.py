@@ -39,7 +39,7 @@ def _copy(node, destination: Path, copied: list[str], prefix="", suffixes=(".md"
             copied.append(relative)
 
 
-EXAMPLES = ("documents", "data")
+EXAMPLES = ("documents", "data", "analysis")
 
 
 def example_root(kind):

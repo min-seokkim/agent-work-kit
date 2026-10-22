@@ -27,7 +27,7 @@ Do not use style scores, comma counts or sentence lengths as acceptance criteria
 
 Distinguish plans, approved decisions, implementation, check results and actual operation. Completing implementation does not establish verification or operational use. Leave unverified figures and states marked as unverified.
 
-When editing style, preserve facts, proper names, numbers, dates, IDs, code identifiers, commands and quotations. Do not claim that unread material lacks evidence. Do not add certainty, restrictions, risks or priorities absent from the source. Do not turn possibility into certainty or permission into an obligation while shortening a sentence.
+When revising text the user has already accepted, keep its adopted wording, structure and design unless the task changes them, and compare the revision with the accepted version before delivering it. When editing style, preserve facts, proper names, numbers, dates, IDs, code identifiers, commands and quotations. Do not claim that unread material lacks evidence. Do not add certainty, restrictions, risks or priorities absent from the source. Do not turn possibility into certainty or permission into an obligation while shortening a sentence.
 
 For numbers, pricing assumptions and external capabilities, retain the source and verification date. A style-only edit must not imply fresh fact-checking. Check incoming links when changing heading anchors.
 

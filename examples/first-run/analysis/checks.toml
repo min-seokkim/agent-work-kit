@@ -1,0 +1,14 @@
+schema = 1
+timeout_seconds = 60
+
+# Keep the input, the assumptions and the report together with their hashes.
+artifacts = ["input/readings.csv", "assumptions.toml", "output/report.json"]
+required_artifacts = ["output/report.json"]
+
+[[setup]]
+name = "analyze"
+argv = ["{python}", "analyze.py", "input/readings.csv", "assumptions.toml", "output/report.json"]
+
+[[checks]]
+name = "check-report"
+argv = ["{python}", "check_report.py", "input/readings.csv", "assumptions.toml", "output/report.json"]

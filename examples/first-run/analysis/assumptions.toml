@@ -1,0 +1,9 @@
+# Assumptions used to turn raw sensor counts into physical units.
+# Each value names where it came from so the report can show it next to the computed results.
+
+[scale]
+counts_per_g = 2048          # from the sensor datasheet, +-16 g range
+gravity_m_s2 = 9.81
+
+[sampling]
+sample_rate_hz = 10          # from the logger's configuration page

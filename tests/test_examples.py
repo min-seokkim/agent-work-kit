@@ -1,3 +1,4 @@
+import json
 import os
 import subprocess
 import sys
@@ -6,7 +7,7 @@ import unittest
 from pathlib import Path
 
 from awkit.kit_install import EXAMPLES, install_example
-from awkit.review import check, git, snapshot, verify
+from awkit.review import accept, check, compare, git, snapshot, verify
 
 
 def run(*args, cwd):
@@ -79,6 +80,34 @@ class ExampleTests(unittest.TestCase):
         summary = (Path(passed["run_dir"]) / "artifacts" / "output" / "summary.csv").read_text(encoding="utf-8")
         self.assertIn("notebook,6,15000", summary)
         self.assertFalse((folder / "output").exists())  # produced in the worktree, not the working folder
+
+    def test_analysis_example_fails_then_passes_and_compares_with_the_accepted_run(self):
+        folder, _ = install_example("analysis", self.root / "analysis example")
+        head = self.commit_all(folder)
+        failed = check(folder, head, folder / "checks.toml", self.root / "runs")
+        self.assertEqual(failed["status"], "failed")
+        self.assertIn("sample_rate_hz", (Path(failed["run_dir"]) / "01.log").read_text(encoding="utf-8"))
+        assumptions = folder / "assumptions.toml"
+        assumptions.write_text(assumptions.read_text(encoding="utf-8").replace("sample_rate_hz = 10 ", "sample_rate_hz = 20 "),
+                               encoding="utf-8")
+        revision = snapshot(folder, ["assumptions.toml"])
+        passed = check(folder, revision, folder / "checks.toml", self.root / "runs")
+        self.assertEqual(passed["status"], "passed", passed)
+        report = json.loads((Path(passed["run_dir"]) / "artifacts/output/report.json").read_text(encoding="utf-8"))
+        self.assertEqual(set(report), {"observed", "assumptions", "computed", "interpretation", "interpretation_status"})
+        self.assertEqual(report["computed"]["peak_g"], 0.75)
+        self.assertIsNone(report["interpretation"])
+        accept(folder, passed["run_dir"])
+        self.assertTrue(compare(folder, run_dir=passed["run_dir"])["unchanged"])
+        assumptions.write_text(assumptions.read_text(encoding="utf-8").replace("counts_per_g = 2048", "counts_per_g = 1024"),
+                               encoding="utf-8")
+        again = check(folder, snapshot(folder, ["assumptions.toml"]), folder / "checks.toml", self.root / "runs")
+        self.assertEqual(again["status"], "passed", again)
+        diffed = compare(folder, run_dir=again["run_dir"], diff=True)
+        statuses = {f["path"]: f["status"] for f in diffed["files"]}
+        self.assertEqual(statuses, {"assumptions.toml": "changed", "input/readings.csv": "same",
+                                    "output/report.json": "changed"})
+        self.assertIn('"peak_g": 1.5', next(f["diff"] for f in diffed["files"] if f["path"] == "output/report.json"))
 
     def test_cli_example(self):
         created = run("kit", "example", "documents", str(self.root / "d"), cwd=self.root)

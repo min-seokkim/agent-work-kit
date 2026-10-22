@@ -28,12 +28,14 @@ awkit --version
 ```powershell
 awkit kit example documents C:\work\docs-example
 awkit kit example data C:\work\data-example
+awkit kit example analysis C:\work\analysis-example
 ```
 
 | 예제 | 들어 있는 것 | 찾을 결함 |
 |---|---|---|
 | `documents` | 한국어 문서 세 개, 링크와 제목을 검사하는 스크립트, 검사 설정, 작성한 적용표 | 없는 파일을 가리키는 링크 |
 | `data` | 주문 CSV, 품목별 요약을 만드는 스크립트, 요약을 입력과 대조하는 스크립트, 검사 설정, 작성한 적용표 | 필수 열 이름이 다름 |
+| `analysis` | 센서 원시값, 환산 계수와 표본 주기를 적은 가정 파일, 관측값·가정·계산값·해석을 나눠 보고서를 만드는 스크립트, 보고서를 다시 계산해 대조하는 스크립트 | 가정한 표본 주기가 데이터와 다름 |
 
 지정한 폴더가 이미 있으면 아무것도 바꾸지 않고 종료 코드 `2`로 멈춥니다. 예제의 검사 설정은 검사한 문서나 입력과 출력을 `artifacts`로 보존하므로, 실행 기록 폴더에서 [결과물 보존과 대조](tools.md#검사한-결과물-보존하기)까지 이어서 볼 수 있습니다.
 

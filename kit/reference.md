@@ -4,6 +4,10 @@ Look things up here when you run `awkit`; you do not need to read it before ever
 
 Requirements: Python 3.11+, Git for `kit init`, `kit example` and `review`, Playwright for `ui`. The project under work can be in any language.
 
+## doctor
+
+`awkit doctor [DIR] [--json]` checks Python (3.11 or later), Git (2.25 or later), Git `user.name` and `user.email` (commits fail without them), whether `awkit` is on PATH, and in DIR whether there is a repository with a commit, a kit folder and skills. Each item is `ok`, `missing` or `warning`, with the command that fixes it. Exit 0 when nothing required is missing, 1 otherwise.
+
 ## Git tracking
 
 - `review` commands check files that Git tracks. They never create a repository or a commit. In a folder that is not a repository, or a repository with no commit, they exit 2 and say so; commit the files first.

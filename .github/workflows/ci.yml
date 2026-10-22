@@ -48,6 +48,38 @@ jobs:
       - name: Run tests
         run: python -m unittest discover -s tests -v
 
+  install:
+    name: Installer on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: |
+          git config --global user.name "CI"
+          git config --global user.email ci@example.com
+      - name: Run install.sh from this checkout
+        if: runner.os != 'Windows'
+        env:
+          AWKIT_SOURCE: ${{ github.workspace }}
+        run: |
+          sh install.sh
+          "$HOME/.local/bin/awkit" doctor
+      - name: Run install.ps1 from this checkout
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          AWKIT_SOURCE: ${{ github.workspace }}
+        run: |
+          ./install.ps1
+          & "$env:USERPROFILE\.local\bin\awkit.exe" doctor
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
   package:
     name: Build and smoke-test the wheel
     runs-on: windows-latest

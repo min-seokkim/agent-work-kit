@@ -90,6 +90,12 @@ def _parser():
     finished.add_argument("--hook", action="store_true", help="run as a Claude Code hook: read the hook input from stdin, "
                           "mark on SessionStart, exit 2 with the reason on Stop, and let a second stop in a turn pass")
 
+    doctor = groups.add_parser("doctor", help="check Python, Git, the Git identity and the project folder, and say how "
+                               "to fix each missing item; exit 0 ready, 1 something required is missing",
+                               epilog=REFERENCE)
+    doctor.add_argument("dir", nargs="?", type=Path, default=Path("."), help="project folder to look at (default: .)")
+    doctor.add_argument("--json", action="store_true", help="print the findings as JSON")
+
     usage = groups.add_parser("usage", help="total models, tokens, user messages and minutes from session logs",
                               epilog=REFERENCE)
     usage.add_argument("paths", nargs="+", type=Path, help="Claude Code or Codex .jsonl files, or folders searched recursively")
@@ -254,6 +260,12 @@ def main(argv=None):
     parser = _parser()
     args = parser.parse_args(argv)
     try:
+        if args.group == "doctor":
+            from .doctor import diagnose
+            from .doctor import render as render_doctor
+            findings = diagnose(args.dir)
+            print(json.dumps(findings, ensure_ascii=False, indent=2) if args.json else render_doctor(findings))
+            return 1 if any(f["status"] == "missing" for f in findings) else 0
         if args.group == "check":
             return _run_check(args)
         if args.group == "kit" and args.action == "hooks":

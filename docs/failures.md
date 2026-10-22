@@ -51,7 +51,7 @@ The text states what the change was meant to do; the code does something else, a
 Install instructions, links or files that were never created.
 - Evidence: observed here. The README told users to download the 0.2.0 wheel from Releases; no tag or release had ever existed. The README's development command failed as written because of a relative `PYTHONPATH` (fixed in `6eb632c`).
 - Countermeasure: run every documented command; check that referenced releases and files exist.
-- Check: relative links and the example READMEs' commands are tested. Status: enforced for links and examples; the install commands in the READMEs are covered by next work 4.
+- Check: relative links and the example READMEs' commands are tested, and CI runs `install.sh` and `install.ps1` from the checkout and then `awkit doctor`. Status: enforced for links, examples and the installers; the winget and Homebrew branches run only where Git or Python is missing, which CI runners never are.
 
 #### F6. Numbers reported beyond what was measured.
 

@@ -38,11 +38,21 @@ Each task then follows the same steps:
 
 ## Get started
 
-You need Python 3.11 or later and Git. awkit has no release yet, so install it from the development branch with [pipx](https://pipx.pypa.io):
+awkit needs Python 3.11 or later and Git, and has no release yet. The installer adds Git and Python when they are missing (winget on Windows, Homebrew on macOS; on Linux it names the package to install), installs awkit from the development branch with [pipx](https://pipx.pypa.io), and runs `awkit doctor`, which says how to fix anything still missing.
+
+On Windows, in PowerShell:
+
+```powershell
+irm https://raw.githubusercontent.com/min-seokkim/agent-work-kit/dev/install.ps1 | iex
+```
+
+On macOS or Linux:
 
 ```sh
-pipx install "git+https://github.com/min-seokkim/agent-work-kit@dev"
+curl -fsSL https://raw.githubusercontent.com/min-seokkim/agent-work-kit/dev/install.sh | sh
 ```
+
+With Python and Git already in place, `pipx install "git+https://github.com/min-seokkim/agent-work-kit@dev"` does the same.
 
 In your project folder, run:
 

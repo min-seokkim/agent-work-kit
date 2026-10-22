@@ -70,8 +70,37 @@ def _count(value):
 
 def _thread(provider, path, label, counted):
     return {"provider": provider, "file": str(path), "thread": label, "models": Counter(),
-            "effort": None, "calls": 0, "counted": counted,
+            "effort": None, "calls": 0, "counted": counted, "user_messages": 0,
+            "started_at": None, "ended_at": None, "minutes": None,
             **{field: 0 for field in FIELDS}, "missing": Counter(), "invalid": Counter()}
+
+
+def _touch(thread, record):
+    """Extend the thread's time span with the record's timestamp, when it has one."""
+    stamp = record.get("timestamp")
+    if not isinstance(stamp, str):
+        return
+    try:
+        moment = datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+    except ValueError:
+        return
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=UTC)
+    thread["_times"] = thread.get("_times") or [moment, moment]
+    thread["_times"][0] = min(thread["_times"][0], moment)
+    thread["_times"][1] = max(thread["_times"][1], moment)
+
+
+def _person_wrote(message):
+    """True for a Claude Code user record typed by a person, not a tool result sent back."""
+    if not isinstance(message, dict) or message.get("role") != "user":
+        return False
+    content = message.get("content")
+    if isinstance(content, str):
+        return bool(content.strip())
+    if isinstance(content, list):
+        return any(isinstance(block, dict) and block.get("type") == "text" for block in content)
+    return False
 
 
 def _add(thread, field, raw, present):
@@ -90,6 +119,10 @@ def _finish(thread):
     for field in FIELDS:
         if thread["missing"][field] or thread["invalid"][field]:
             thread[field] = None
+    times = thread.pop("_times", None)
+    if times:
+        thread["started_at"], thread["ended_at"] = times[0].isoformat(), times[1].isoformat()
+        thread["minutes"] = round((times[1] - times[0]).total_seconds() / 60, 1)
     thread["models"] = dict(thread["models"])
     thread["missing"] = dict(thread["missing"])
     thread["invalid"] = dict(thread["invalid"])
@@ -100,6 +133,11 @@ def _claude(path, problems):
     threads, seen = {}, set()
     for record in _records(path, problems):
         message = record.get("message")
+        if record.get("type") == "user" and not record.get("isSidechain") and _person_wrote(message):
+            thread = threads.setdefault("main", _thread("claude", path, "main", "responses"))
+            thread["user_messages"] += 1
+            _touch(thread, record)
+            continue
         if record.get("type") != "assistant" or not isinstance(message, dict):
             continue
         usage, model = message.get("usage"), message.get("model")
@@ -115,6 +153,7 @@ def _claude(path, problems):
         else:
             label = "main"
         thread = threads.setdefault(label, _thread("claude", path, label, "responses"))
+        _touch(thread, record)
         thread["models"][model] += 1
         thread["calls"] += 1
         usage = usage if isinstance(usage, dict) else {}
@@ -131,6 +170,9 @@ def _codex(path, problems):
     for record in _records(path, problems):
         kind, payload = record.get("type"), record.get("payload")
         payload = payload if isinstance(payload, dict) else {}
+        _touch(thread, record)
+        if payload.get("type") == "user_message":
+            thread["user_messages"] += 1
         if kind == "turn_context":
             if payload.get("model"):
                 thread["models"][payload["model"]] += 1
@@ -197,6 +239,7 @@ def collect(paths, since=None):
     incomplete = [thread for thread in threads if any(thread[field] is None for field in FIELDS)]
     summary = {field: sum(thread[field] for thread in threads if thread[field] is not None)
                for field in FIELDS}
+    summary["user_messages"] = sum(thread["user_messages"] for thread in threads)
     summary["complete"] = not incomplete and not unknown and not problems
     summary["incomplete_threads"] = len(incomplete)
     return {"format": FORMAT, "threads": threads, "models": totals, "total": summary,
@@ -209,20 +252,23 @@ def _cell(value, width):
 
 def render(result):
     lines = []
-    header = (f"{'provider':<8} {'thread':<24} {'model':<28} {'calls':>5} {'fresh in':>11} "
-              f"{'cache write':>11} {'cache read':>12} {'output':>9}")
+    header = (f"{'provider':<8} {'thread':<24} {'model':<28} {'calls':>5} {'user':>5} {'min':>7} "
+              f"{'fresh in':>11} {'cache write':>11} {'cache read':>12} {'output':>9}")
     lines.append(header)
     for row in result["threads"]:
         models = ", ".join(f"{name}×{count}" for name, count in row["models"].items()) or "unknown"
         if row["effort"]:
             models += f" ({row['effort']})"
         thread = row["thread"] if row["thread"] != "thread" else Path(row["file"]).stem[-24:]
+        minutes = f"{row['minutes']:>7.1f}" if row["minutes"] is not None else f"{'':>7}"
         lines.append(f"{row['provider']:<8} {thread[:24]:<24} {models[:28]:<28} {row['calls']:>5} "
+                     f"{row['user_messages']:>5} {minutes} "
                      f"{_cell(row['fresh_input'], 11)} {_cell(row['cache_write'], 11)} "
                      f"{_cell(row['cache_read'], 12)} {_cell(row['output'], 9)}")
     total = result["total"]
     label = "total" if total["complete"] else "known"
-    lines.append(f"{label:<8} {'':<24} {'':<28} {'':>5} {total['fresh_input']:>11,} {total['cache_write']:>11,} "
+    lines.append(f"{label:<8} {'':<24} {'':<28} {'':>5} {total['user_messages']:>5} {'':>7} "
+                 f"{total['fresh_input']:>11,} {total['cache_write']:>11,} "
                  f"{total['cache_read']:>12,} {total['output']:>9,}")
     if total["incomplete_threads"]:
         lines.append(f"{total['incomplete_threads']} thread(s) have unmeasured fields, shown as ?; "

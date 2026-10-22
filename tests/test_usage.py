@@ -74,6 +74,38 @@ class UsageTests(unittest.TestCase):
         self.assertEqual((first["fresh_input"], first["cache_read"], first["output"]), (300, 900, 40))
         self.assertEqual((second["models"], second["effort"], second["fresh_input"]), ({"gpt-sol": 1}, "high", 50))
 
+    def test_user_messages_and_wall_time_are_counted_per_thread(self):
+        session = self.root / "claude" / "session.jsonl"
+        write_jsonl(session, [
+            {"type": "user", "timestamp": "2026-10-22T09:00:00.000Z",
+             "message": {"role": "user", "content": "please fix the link"}},
+            {**claude_turn("m1"), "timestamp": "2026-10-22T09:00:05.000Z"},
+            {"type": "user", "timestamp": "2026-10-22T09:00:06.000Z",  # a tool result, not a person
+             "message": {"role": "user", "content": [{"type": "tool_result", "content": "ok"}]}},
+            {**claude_turn("m2"), "timestamp": "2026-10-22T09:01:00.000Z"},
+            {"type": "user", "timestamp": "2026-10-22T09:02:30.000Z",
+             "message": {"role": "user", "content": [{"type": "text", "text": "no, the other one"}]}},
+            {"type": "user", "isSidechain": True, "agentId": "a1",
+             "message": {"role": "user", "content": "handoff prompt to a subagent"}},
+            {**claude_turn("s1", isSidechain=True, agentId="a1"), "timestamp": "2026-10-22T09:03:00.000Z"},
+        ])
+        result = collect([session])
+        threads = {row["thread"]: row for row in result["threads"]}
+        self.assertEqual(threads["main"]["user_messages"], 2)
+        self.assertEqual(threads["main"]["minutes"], 2.5)
+        self.assertEqual(threads["main"]["started_at"], "2026-10-22T09:00:00+00:00")
+        self.assertEqual(threads["subagent a1"]["user_messages"], 0)
+        self.assertEqual(threads["subagent a1"]["minutes"], 0.0)
+        self.assertEqual(result["total"]["user_messages"], 2)
+        rollout = self.root / "codex" / "rollout.jsonl"
+        write_jsonl(rollout, [
+            {"type": "event_msg", "timestamp": "2026-10-22T10:00:00Z", "payload": {"type": "user_message", "message": "go"}},
+            {"type": "turn_context", "timestamp": "2026-10-22T10:00:01Z", "payload": {"model": "gpt-luna"}},
+            {"type": "event_msg", "timestamp": "2026-10-22T10:12:00Z", "payload": {"type": "user_message", "message": "again"}},
+        ])
+        (thread,) = collect([rollout])["threads"]
+        self.assertEqual((thread["user_messages"], thread["minutes"]), (2, 12.0))
+
     def test_missing_and_invalid_token_fields_are_not_reported_as_zero(self):
         session = self.root / "claude" / "session.jsonl"
         write_jsonl(session, [

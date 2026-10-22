@@ -68,10 +68,7 @@ jobs:
           $example = "$env:RUNNER_TEMP\data-example"
           & $awkit kit example data $example
           if ($LASTEXITCODE -ne 0) { exit 1 }
-          git -C $example init
-          git -C $example -c user.name=ci -c user.email=ci@localhost add -A
-          git -C $example -c user.name=ci -c user.email=ci@localhost commit -m start
-          & $awkit review --repo $example check (git -C $example rev-parse HEAD) --config "$example\checks.toml"
+          & $awkit review --repo $example check HEAD --config "$example\checks.toml"
           if ($LASTEXITCODE -ne 1) { Write-Error "the unfixed example must fail"; exit 1 }
           (Get-Content "$example\input\orders.csv") -replace '^date,item,qty,', 'date,item,quantity,' | Set-Content "$example\input\orders.csv"
           $snap = & $awkit review --repo $example snapshot input/orders.csv

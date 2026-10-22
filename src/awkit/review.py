@@ -24,6 +24,37 @@ def git(repo, *args, env=None):
     return result.stdout.strip()
 
 
+IDENTITY = ("-c", "user.name=Agent Work Kit", "-c", "user.email=awkit@localhost")
+
+
+def ensure_repo(folder, paths=None):
+    """Return the Git top level for `folder`, creating a repository with a first commit when needed.
+
+    `awkit` assumes the files it checks are tracked by Git. A folder that is not inside a
+    repository gets `git init` and a commit of its contents (or of `paths` when given); a
+    repository with no commit yet gets the same first commit. Returns (toplevel, created)
+    where created says whether a commit was made here.
+    """
+    folder = Path(folder).resolve()
+    if not folder.is_dir():
+        raise ValueError(f"The folder does not exist: {folder}")
+    probe = subprocess.run(["git", "-C", str(folder), "rev-parse", "--show-toplevel"],
+                           capture_output=True, text=True, encoding="utf-8", errors="replace")
+    if probe.returncode:
+        git(folder, "init", "-q")
+        top = folder
+    else:
+        top = Path(probe.stdout.strip())
+    head = subprocess.run(["git", "-C", str(top), "rev-parse", "--verify", "-q", "HEAD^{commit}"],
+                          capture_output=True, text=True, encoding="utf-8", errors="replace")
+    if head.returncode == 0:
+        return top, False
+    git(top, "add", "-A", "--", *(paths or ["."]))
+    git(top, *IDENTITY, "commit", "-q", "--allow-empty", "-m", "Start tracking with Agent Work Kit")
+    print(f"initialized a Git repository and committed its files: {top}", file=sys.stderr)
+    return top, True
+
+
 def relative_file(value):
     path = PurePosixPath(value)
     if (not value or path.is_absolute() or any(p.lower() in ("", ".", "..", ".git") for p in value.split("/"))
@@ -39,7 +70,7 @@ def relative_directory(value):
 
 
 def snapshot(repo, paths):
-    repo = Path(git(repo, "rev-parse", "--show-toplevel"))
+    repo, _ = ensure_repo(repo)
     parent = git(repo, "rev-parse", "--verify", "HEAD^{commit}")
     if not paths:
         raise ValueError("Name the changed files to include.")
@@ -153,7 +184,7 @@ def verify(run_dir):
 
 
 def accepted_root(repo):
-    return Path(git(repo, "rev-parse", "--show-toplevel")) / ".awkit" / "accepted"
+    return ensure_repo(repo)[0] / ".awkit" / "accepted"
 
 
 def accept(repo, run_dir, label="accepted"):
@@ -215,7 +246,7 @@ def compare(repo, label="accepted", run_dir=None, diff=False):
             raise ValueError(f"The run folder has no retained artifacts: {run_dir}")
         origin = str(Path(run_dir).resolve())
     else:
-        source = Path(git(repo, "rev-parse", "--show-toplevel"))
+        source = ensure_repo(repo)[0]
         origin = "working-tree"
     report = {"label": label, "accepted_at": record.get("accepted_at"), "accepted_snapshot": record.get("snapshot"),
               "compared": origin, "files": []}
@@ -238,9 +269,9 @@ def compare(repo, label="accepted", run_dir=None, diff=False):
 
 
 def check(repo, revision, config, runs_root=None, keep=False):
-    if not re.fullmatch(r"(?:[a-f0-9]{40}|[a-f0-9]{64})", revision):
-        raise ValueError("Give the full ID of the Git commit to check.")
-    repo = Path(git(repo, "rev-parse", "--show-toplevel"))
+    if revision != "HEAD" and not re.fullmatch(r"(?:[a-f0-9]{40}|[a-f0-9]{64})", revision):
+        raise ValueError("Give the full ID of the Git commit to check, or HEAD.")
+    repo, _ = ensure_repo(repo)
     commit = git(repo, "rev-parse", "--verify", revision + "^{commit}")
     raw = Path(config).read_bytes()
     settings = tomllib.loads(raw.decode("utf-8"))

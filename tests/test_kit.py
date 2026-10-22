@@ -70,6 +70,18 @@ class KitTests(unittest.TestCase):
         self.assertEqual((target / "templates" / "project.md").read_text(encoding="utf-8"), "작성한 적용표")
         second, _ = install(self.project, "agent-work-kit-new")
         self.assertTrue((second / "README.md").exists())
+        # The project became a Git repository with the kit committed; no staging folder is left behind.
+        self.assertEqual([p.name for p in self.project.iterdir() if p.name.startswith(".")], [".git"])
+        log = subprocess.run(["git", "-C", str(self.project), "log", "--oneline"], capture_output=True,
+                             text=True, encoding="utf-8")
+        self.assertEqual(log.stdout.count("\n"), 1)
+        tracked = subprocess.run(["git", "-C", str(self.project), "ls-files"], capture_output=True,
+                                 text=True, encoding="utf-8").stdout
+        self.assertIn("agent-work-kit/README.md", tracked)
+        self.assertNotIn("agent-work-kit-new/README.md", tracked)  # a repo with a commit is left as it is
+
+    def test_init_without_git_leaves_the_folder_untracked(self):
+        install(self.project, track=False)
         self.assertEqual([p.name for p in self.project.iterdir() if p.name.startswith(".")], [])
 
     def test_init_preserves_project_and_third_party_license_notices(self):

@@ -59,8 +59,10 @@ def example_root(kind):
     raise ValueError(f"The installed example files were not found: {kind}")
 
 
-def install_example(kind, target: Path):
-    """Create `target` with the example's files. The folder must not exist yet."""
+def install_example(kind, target: Path, track=True):
+    """Create `target` with the example's files and, unless `track` is false, start tracking
+    it with Git (a new repository with a first commit, or a commit inside an existing one).
+    The folder must not exist yet."""
     source = example_root(kind)
     target = Path(target).absolute()
     if target.exists():
@@ -76,6 +78,9 @@ def install_example(kind, target: Path):
     finally:
         if staging.exists():
             shutil.rmtree(staging)
+    if track:
+        from .review import ensure_repo
+        ensure_repo(target, [str(target)])
     return target, copied
 
 
@@ -191,8 +196,9 @@ def install_roles(project: Path, provider: str, specs=None):
     return written, skipped, warnings
 
 
-def install(parent: Path, name="agent-work-kit"):
-    """Create parent/name with the kit. Never overwrites: existing records stay untouched."""
+def install(parent: Path, name="agent-work-kit", track=True):
+    """Create parent/name with the kit. Never overwrites: existing records stay untouched.
+    With `track`, a project that is not yet a Git repository becomes one, with the kit committed."""
     if not name or Path(name).name != name or name in (".", ".."):
         raise ValueError("The folder name cannot contain path separators.")
     parent = Path(parent).resolve()
@@ -211,4 +217,7 @@ def install(parent: Path, name="agent-work-kit"):
     finally:
         if staging.exists():
             shutil.rmtree(staging)
+    if track:
+        from .review import ensure_repo
+        ensure_repo(parent, [str(target)])
     return target, copied

@@ -4,25 +4,17 @@
 
 Python 3.11 이상, Git, `awkit`이 필요합니다. 아래 명령은 이 폴더에서 실행합니다.
 
-## 1. Git 저장소로 만들기
+## 1. 시작 상태 확인하기
 
-검사는 Git commit을 대상으로 실행하므로 먼저 현재 상태를 commit합니다.
-
-```sh
-git init
-git add -A
-git commit -m "Start the documents example"
-```
+`awkit kit example`이 이 폴더를 Git 저장소로 만들고 첫 commit까지 해 두었습니다. 검사는 commit을 대상으로 실행되므로 이 commit이 출발점입니다. `git log --oneline`으로 확인할 수 있습니다. 이미 있는 저장소 안에 만들었다면 그 저장소에 commit되어 있습니다.
 
 ## 2. 실패를 확인하기
 
 현재 commit을 별도 worktree에 꺼내 검사합니다. 실행 기록은 `.awkit/reviews/` 아래에 남습니다.
 
 ```sh
-awkit review check "$(git rev-parse HEAD)" --config checks.toml --runs-root .awkit/reviews
+awkit review check HEAD --config checks.toml --runs-root .awkit/reviews
 ```
-
-PowerShell에서는 `awkit review check (git rev-parse HEAD) --config checks.toml --runs-root .awkit/reviews`로 실행합니다.
 
 결과 JSON의 `status`는 `failed`입니다. `run_dir`에 적힌 폴더의 `01.log`를 열면 어느 문서의 어느 링크가 깨졌는지 나옵니다.
 

@@ -22,15 +22,12 @@ class ExampleTests(unittest.TestCase):
         self.root = Path(self.temp.name)
 
     def commit_all(self, folder):
-        git(folder, "init")
-        git(folder, "config", "user.name", "Fixture")
-        git(folder, "config", "user.email", "fixture@localhost")
+        """The example was committed when it was created; return that commit."""
         git(folder, "config", "core.autocrlf", "false")
-        git(folder, "add", "-A")
-        git(folder, "commit", "-m", "Start")
+        self.assertEqual(git(folder, "status", "--porcelain"), "")
         return git(folder, "rev-parse", "HEAD")
 
-    def test_examples_are_created_once_with_every_file(self):
+    def test_examples_are_created_once_with_every_file_and_tracked(self):
         for kind in EXAMPLES:
             with self.subTest(kind=kind):
                 target, copied = install_example(kind, self.root / kind)
@@ -39,9 +36,26 @@ class ExampleTests(unittest.TestCase):
                 self.assertIn("checks.toml", copied)
                 self.assertIn("project.md", copied)
                 self.assertTrue(any(name.endswith(".py") for name in copied))
+                self.assertTrue((target / ".git").is_dir())
+                self.assertEqual(git(target, "log", "--format=%s"), "Start tracking with Agent Work Kit")
                 with self.assertRaises(ValueError):
                     install_example(kind, self.root / kind)
         self.assertEqual([p.name for p in self.root.iterdir() if p.name.startswith(".")], [])
+        bare, _ = install_example("data", self.root / "untracked", track=False)
+        self.assertFalse((bare / ".git").exists())
+        revision = snapshot(bare, ["input/orders.csv"])  # review commands create the repository on demand
+        self.assertTrue((bare / ".git").is_dir())
+        self.assertEqual(len(revision), 40)
+
+    def test_example_inside_an_existing_repository_is_committed_there(self):
+        outer = self.root / "outer"
+        outer.mkdir()
+        git(outer, "init")
+        (outer / "notes.txt").write_text("mine", encoding="utf-8")
+        target, _ = install_example("documents", outer / "docs-example")
+        self.assertFalse((target / ".git").exists())
+        self.assertIn("docs-example/README.md", git(outer, "ls-files"))
+        self.assertNotIn("notes.txt", git(outer, "ls-files"))  # only the example was committed
         with self.assertRaises(ValueError):
             install_example("video", self.root / "x")
         with self.assertRaises(ValueError):

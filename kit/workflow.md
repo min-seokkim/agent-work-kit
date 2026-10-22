@@ -32,7 +32,7 @@ Prevents: F1, F2, F3, F17, F24.
 
 ## Report
 
-Before reporting work as done, run `awkit check done`: files changed in the session need a passing check of their current state, or the report says they are unchecked and why. Report the changed behavior, the run folder of each check, what was not verified and the remaining limitations. State the scope of every number. Where the facts do not settle a question, give the candidate explanations, the assumptions each needs and a provisional judgment with the observation that would change it.
+Before reporting work as done, run `awkit check done`: session changes need a passing check of their current state; otherwise report them as unchecked and explain why. Distinguish the checked task snapshot from the repository state. Report changed behavior, automated checks with run folders and scope, agent or human review methods, and omitted required checks with reasons. Missing evidence stays unverified; a passing command does not establish document quality. State what each number covers. When facts do not settle a question, give candidate explanations, their assumptions and a provisional judgment, with the observation that would change it.
 
 Text people read follows the [Writing Guide](writing.md); run `awkit check writing` on changed Markdown.
 

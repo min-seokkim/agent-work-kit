@@ -61,6 +61,6 @@ Prevents: F18, F21.
 - The patterns above were searched for in everything changed; `awkit check writing` finds the mechanical ones.
 - Endings, terms and actors are consistent.
 
-Report what the final text is and what was checked; following these steps does not show that it reads well. The main agent reads the final text before delivery.
+Report what the final text is and what was checked; following these steps does not show that it reads well. Separate mechanical pattern checks from reading and rendered inspection, naming the reviewer and method. If preservation, a required review pass or rendering was omitted, report that gap rather than counting it as covered by passing commands. Use the existing task record and evidence, without adding a checklist of unsupported assertions. The main agent reads the final text before delivery.
 
 Prevents: F1, F33.

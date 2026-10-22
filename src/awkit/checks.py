@@ -206,6 +206,8 @@ def render_writing(report):
     lines = [f"{f['path']}:{f['line']}: {f['level']} [{f['pattern']}] {f['advice']}"
              + (f": {f['text']}" if f["text"] else "") for f in report["findings"]]
     lines.append(f"{report['files']} files, {report['errors']} errors, {report['warnings']} warnings")
+    lines.append("Scope: mechanical patterns in complete files; existing and new findings are not distinguished. "
+                 "This command does not check content accuracy or rendered layout.")
     return "\n".join(lines)
 
 
@@ -297,15 +299,17 @@ def render_done(report):
     if report["status"] == "kept":
         return "kept the starting point recorded earlier in this session"
     if report["status"] == "unchanged":
-        return f"nothing changed since {report['since']}"
+        return f"nothing changed since {report['since']}; this does not establish verification"
     if report["status"] == "checked":
-        return f"the current state passed its checks: {report['run_dir']}"
+        return (f"A passing run matches the current repository state: {report['run_dir']}\n"
+                "Scope: the run's configured commands. This match does not establish coverage or document review.")
     if report["status"] == "nested-repository":
         return "\n".join(nested_warning(entry) for entry in report["nested"])
     shown = ", ".join(report["changed"][:20]) + (" ..." if len(report["changed"]) > 20 else "")
-    return (f"Files changed since {report['since']} have no passing check of their current state: {shown}. "
-            "Snapshot them and run `awkit review check` before reporting the work as done, or say in the report "
-            "that it is unchecked and why.")
+    return (f"No passing run matches the current repository state. Files changed since {report['since']}: {shown}. "
+            "A task-only snapshot may have passed while other repository changes remain outside that snapshot. "
+            "Report the task's checked scope and this unmatched state separately, or snapshot the changes and "
+            "run `awkit review check`.")
 
 
 def git_hook_path(top):

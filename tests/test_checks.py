@@ -8,7 +8,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from awkit.checks import check_text, check_writing, commit_identity, done, install_hooks
+from awkit.checks import check_text, check_writing, commit_identity, done, install_hooks, render_done, render_writing
 from awkit.hooks import HOOK_EVENTS, OLD_DONE_HOOK
 from awkit.review import check, git, snapshot
 from support import child_env
@@ -91,6 +91,19 @@ class CommitIdentityTests(Repository):
 
 
 class WritingTests(unittest.TestCase):
+    def test_clean_additions_do_not_clear_existing_whole_file_findings(self):
+        # The real document trial added clean sentences to a file with old errors.
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "decisions.md"
+            path.write_text("Earlier wording — retained.\nA new decision is recorded.\n", encoding="utf-8")
+            report = check_writing([path])
+            self.assertFalse(report["ok"])
+            self.assertEqual([(f["line"], f["pattern"]) for f in report["findings"]], [(1, "em-dash")])
+            summary = render_writing(report)
+            self.assertIn("complete files", summary)
+            self.assertIn("existing and new findings are not distinguished", summary)
+            self.assertIn("This command does not check content accuracy or rendered layout", summary)
+
     def test_patterns_wrong_on_one_sighting_fail(self):
         # F13: the README rewrite used em dashes. F14: middle dots joining Korean words.
         findings = check_text("Agent Work Kit — a kit for agents.\n\n행사 담당자·강연자가 확인합니다.\n")
@@ -232,6 +245,35 @@ class NestedRepositoryTests(Repository):
 
 
 class DoneTests(Repository):
+    def test_task_check_and_repository_state_have_different_scopes(self):
+        self.commit("proposal.md", "Original proposal.\n")
+        self.commit("other.txt", "Original unrelated work.\n")
+        self.commit("checks.toml", 'schema = 1\n[[checks]]\nname = "whitespace"\n'
+                    'argv = ["git", "diff", "--check", "HEAD~1", "HEAD"]\n')
+        # An unchanged state does not imply that any command has examined the proposal.
+        unchanged = done(self.repo)
+        self.assertEqual(unchanged["status"], "unchanged")
+        self.assertIn("does not establish verification", render_done(unchanged))
+        (self.repo / "other.txt").write_text("Pre-existing unchecked edit.\n", encoding="utf-8", newline="\n")
+        done(self.repo, session="writing", mark=True)
+        (self.repo / "proposal.md").write_text("A factual claim that whitespace cannot verify.\n", encoding="utf-8",
+                                             newline="\n")
+        frozen = snapshot(self.repo, ["proposal.md"])
+        runs = self.root / "runs"
+        result = check(self.repo, frozen, self.repo / "checks.toml", runs)
+        self.assertEqual(result["status"], "passed", (Path(result["run_dir"]) / "01.log").read_text("utf-8"))
+        unmatched = done(self.repo, runs, session="writing")
+        self.assertEqual((unmatched["status"], unmatched["changed"]), ("unchecked", ["proposal.md"]))
+        self.assertIn("task-only snapshot may have passed", render_done(unmatched))
+        self.assertIn("current repository state", render_done(unmatched))
+        # Covering both files establishes only the configured whitespace check, not their content.
+        frozen = snapshot(self.repo, ["proposal.md", "other.txt"])
+        self.assertEqual(check(self.repo, frozen, self.repo / "checks.toml", runs)["status"], "passed")
+        checked = done(self.repo, runs, session="writing")
+        self.assertEqual(checked["status"], "checked")
+        self.assertIn(checked["run_dir"], render_done(checked))
+        self.assertIn("does not establish coverage or document review", render_done(checked))
+
     def test_user_settings_are_checked_with_the_documented_snapshot_recipe(self):
         self.commit("checks.toml", 'schema = 1\n[[checks]]\nname = "ok"\nargv = ["{python}", "-c", "pass"]\n')
         names = (".claude/settings.local.json", ".codex/hooks.json", "CLAUDE.local.md")

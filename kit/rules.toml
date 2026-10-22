@@ -1,8 +1,8 @@
-# Rules for `awkit hook`, which Claude Code and Codex run on every hook event (`awkit kit hooks --claude`
-# or `--codex`). Each rule fires only when a tool call has the shape it describes, so it costs no context
-# until then. Copy this file to the project root as rules.toml; `kit hooks` does that when none exists.
-# The format is in reference.md, section "hook"; `prevents` names the entries in failures.md each rule
-# guards, and every firing cites them so the agent can read why.
+# Rules for `awkit hook`, which Claude Code and Codex run on every hook event (`awkit kit hooks`). Each rule
+# fires only when a tool call has the shape it describes, so it costs no context until then. This file and
+# rules-session.toml are the kit's default rules; `kit hooks` writes both into the project's rules.toml when
+# it has none. The format is in reference.md, section "Rule format"; `prevents` names the entries in
+# failures.md each rule guards, and every firing cites them so the agent can read why.
 schema = 1
 kit = "agent-work-kit"      # the kit folder, used as {kit} in messages
 timeout_seconds = 20        # per rule command; a command that takes longer is allowed and logged

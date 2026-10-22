@@ -9,6 +9,10 @@ it against the rules and writes the decision JSON on stdout. Three kinds of rule
 - verify: after a tool call or when the agent stops, run a command and block once with its output if it fails.
 - inject: add one line of guidance as additionalContext, once per session.
 
+A rule matches on the event, the tool, the shell command, the edited paths, the text written and, for
+inject rules only, the user's message. A verify rule that runs when the agent stops blocks at most once per
+session. A block ends with the failure entries the rule guards, so the agent can read why.
+
 The runner is quiet by default and errs toward missing a rule: a broken input, a broken rule or a command
 that times out allows the call and leaves one line in the log. Every firing is logged in
 .awkit/hooks.ndjson; `awkit hook report` summarizes it per session.
@@ -38,8 +42,8 @@ EVENTS = ("SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "Stop
 CAN_BLOCK = {"UserPromptSubmit", "PreToolUse", "PostToolUse", "Stop", "SubagentStop"}
 CAN_CONTEXT = {"SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse"}
 DEFAULT_EVENTS = {"block": ["PreToolUse"], "verify": ["Stop"], "inject": ["PreToolUse"]}
-FIELDS = {"name", "kind", "events", "tools", "shell", "paths", "text", "command", "message", "decision", "timeout",
-          "prevents"}
+FIELDS = {"name", "kind", "events", "tools", "shell", "paths", "text", "prompt", "command", "message", "decision",
+          "timeout", "prevents"}
 MESSAGE_LIMIT = 200
 OUTPUT_LIMIT = 1000
 TIMEOUT = 20
@@ -47,6 +51,14 @@ TIMEOUT = 20
 # earlier name for Agent.
 ALIASES = {"apply_patch": ("Edit", "Write"), "spawn_agent": ("Agent",), "Task": ("Agent",)}
 PATCH_PATH = re.compile(r"^\*\*\* (?:(?:Add|Update|Delete) File|Move to): (.+?)\s*$", re.M)
+# Pasted material in a user message, which Claude Code marks; its words are not the user's request.
+PASTED = re.compile(r"^<pasted_content[^>]*>$.*?^</pasted_content[^>]*>$", re.M | re.S)
+STOPS = ("Stop", "SubagentStop")
+
+# The failure catalogue entries (kit/failures.md) the runner guards with the kit's rules: work reported as
+# done without a check (F1), commits as the agent (F9), writing patterns (F13, F14), and rules that live in
+# one agent's memory instead of a file every agent's hooks read (F29).
+PREVENTS = {"awkit hook": ("F1", "F9", "F13", "F14", "F29")}
 
 
 # Rules
@@ -56,9 +68,9 @@ class Rule:
     """One rule from rules.toml. Plain classes, not dataclasses: importing dataclasses costs more than
     the rest of a silent hook call."""
 
-    def __init__(self, name, kind, events, timeout=TIMEOUT):
-        self.name, self.kind, self.events, self.timeout = name, kind, events, timeout
-        self.tools = self.paths = self.shell = self.text = self.command = None
+    def __init__(self, name, kind, events, timeout=TIMEOUT, kit="agent-work-kit"):
+        self.name, self.kind, self.events, self.timeout, self.kit = name, kind, events, timeout, kit
+        self.tools = self.paths = self.shell = self.text = self.prompt = self.command = None
         self.message, self.decision, self.prevents = "", "deny", ()
 
     @property
@@ -66,6 +78,11 @@ class Rule:
         """How a firing names its rule: `awkit commit-identity (F9)`. The entries are in the kit's
         failures.md, where the reason for the rule can be read."""
         return f"awkit {self.name}" + (f" ({', '.join(self.prevents)})" if self.prevents else "")
+
+    @property
+    def why(self):
+        """What a block ends with: where the entries it guards are described."""
+        return f"({self.kit}/failures.md: {', '.join(self.prevents)})" if self.prevents else ""
 
 
 def _strings(value, key):
@@ -102,7 +119,7 @@ def _rule(raw, variables, timeout):
     wrong = [event for event in events if event not in allowed]
     if wrong:
         raise ValueError(f"a {kind} rule cannot run on {', '.join(wrong)}")
-    rule = Rule(name=name, kind=kind, events=events, timeout=timeout)
+    rule = Rule(name=name, kind=kind, events=events, timeout=timeout, kit=variables["kit"])
     if "tools" in raw:
         rule.tools = _strings(raw["tools"], "tools")
     if "paths" in raw:
@@ -111,14 +128,21 @@ def _rule(raw, variables, timeout):
         rule.shell = _regex(raw["shell"], "shell")
     if "text" in raw:
         rule.text = _regex(raw["text"], "text")
+    if "prompt" in raw:
+        # The user's words say what the user wants, not what a tool call does: they may add a line of
+        # guidance, never refuse anything.
+        if kind != "inject":
+            raise ValueError("`prompt` is for inject rules only; a block or verify rule matches tool calls")
+        rule.prompt = _regex(raw["prompt"], "prompt")
     if "command" in raw:
         rule.command = [_expand(part, variables) for part in _strings(raw["command"], "command")]
     if "message" in raw:
         if not isinstance(raw["message"], str) or not raw["message"].strip():
             raise ValueError("`message` must be text")
+        # The limit applies to the text the rule's author wrote: {kit} can expand to a long installed path.
+        if len(raw["message"].strip()) > MESSAGE_LIMIT:
+            raise ValueError(f"`message` has {len(raw['message'].strip())} characters; the limit is {MESSAGE_LIMIT}")
         rule.message = _expand(raw["message"].strip(), variables)
-        if len(rule.message) > MESSAGE_LIMIT:
-            raise ValueError(f"`message` has {len(rule.message)} characters; the limit is {MESSAGE_LIMIT}")
     if "decision" in raw:
         if kind != "block" or raw["decision"] not in ("deny", "ask"):
             raise ValueError("`decision` is `deny` or `ask`, for block rules only")
@@ -146,11 +170,13 @@ def _expand(text, variables):
 
 
 def load_rules(path, kit=None):
-    """(rules, problems) from a rules file. A file that cannot be read or parsed raises ValueError; a rule
-    that is wrong is left out and described in `problems`, so the other rules still run. `kit` overrides
-    the file's own `kit` value."""
+    """(rules, problems) from a rules file, or from several read as one, such as the kit's default bundle.
+    A file that cannot be read or parsed raises ValueError; a rule that is wrong is left out and described in
+    `problems`, so the other rules still run. `kit` overrides the file's own `kit` value."""
+    paths = list(path) if isinstance(path, list | tuple) else [path]
+    path = paths[0]
     try:
-        data = tomllib.loads(Path(path).read_text(encoding="utf-8"))
+        data = tomllib.loads("\n".join(Path(each).read_text(encoding="utf-8") for each in paths))
     except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError) as exc:
         raise ValueError(f"{path}: {exc}") from None
     if data.get("schema") != 1:
@@ -188,6 +214,7 @@ class Call:
     def __init__(self, event, session, payload, cwd):
         self.event, self.session, self.payload, self.cwd = event, session, payload, cwd
         self.tool, self.tool_names, self.shell, self.paths, self.text = "", (), "", [], ""
+        self.prompt = ""
 
 
 def _event_name(value):
@@ -214,6 +241,8 @@ def normalize(payload, root):
     cwd = Path(payload.get("cwd") or root)
     session = payload.get("session_id") if isinstance(payload.get("session_id"), str) else ""
     call = Call(event=_event_name(payload.get("hook_event_name")), session=session, payload=payload, cwd=cwd)
+    if isinstance(payload.get("prompt"), str):
+        call.prompt = PASTED.sub("", payload["prompt"])
     tool = payload.get("tool_name")
     if not isinstance(tool, str) or not tool:
         return call
@@ -229,7 +258,8 @@ def normalize(payload, root):
         texts = [line[1:] for line in command.splitlines() if line.startswith("+")]
     else:
         if isinstance(command, str):
-            call.shell = command
+            # The body of a heredoc fed to a program is its input, such as a file being written, not commands.
+            call.shell = _without_heredocs(command) if "<<" in command else command
         for key in ("file_path", "notebook_path"):
             if isinstance(data.get(key), str):
                 paths.append(data[key])
@@ -263,6 +293,8 @@ def matches(rule, call):
     if rule.shell is not None and not (call.shell and rule.shell.search(call.shell)):
         return False
     if rule.paths is not None and not matched_paths(rule.paths, call.paths):
+        return False
+    if rule.prompt is not None and not (call.prompt and rule.prompt.search(call.prompt)):
         return False
     return rule.text is None or bool(call.text and rule.text.search(call.text))
 
@@ -328,6 +360,7 @@ def _firing(rule, event, reason):
     text = f"{rule.label}: {reason}"
     if rule.kind == "inject" or event not in CAN_BLOCK:
         return Firing(rule.name, "context", text)
+    text = f"{text} {rule.why}".rstrip()
     if event == "PreToolUse":
         return Firing(rule.name, rule.decision if rule.kind == "block" else "deny", text)
     return Firing(rule.name, "block", text)
@@ -336,6 +369,10 @@ def _firing(rule, event, reason):
 def evaluate(rule, call, root, state):
     """The rule's firing for this call, or None. Raises on a command that times out or cannot start."""
     if rule.kind == "inject" and rule.name in state["injected"]:
+        return None
+    # A check when the agent stops blocks once per session; after that the agent's report says the rest.
+    stopping = rule.kind == "verify" and call.event in STOPS
+    if stopping and rule.name in state["stopped"]:
         return None
     output, chosen = None, None
     if rule.command:
@@ -364,6 +401,8 @@ def evaluate(rule, call, root, state):
         firing.decision = chosen
     if rule.kind == "inject":
         state["injected"].append(rule.name)
+    if stopping:
+        state["stopped"].append(rule.name)
     return firing
 
 
@@ -425,6 +464,7 @@ def _load_state(root, session):
     reported = state.get("reported")
     return {"injected": injected if isinstance(injected, list) else [],
             "reported": reported if isinstance(reported, dict) else {},
+            "stopped": state.get("stopped") if isinstance(state.get("stopped"), list) else [],
             "logged": state.get("logged") if isinstance(state.get("logged"), list) else []}
 
 
@@ -463,10 +503,11 @@ def log(root, entry):
 # Entry points
 
 
-def run(stdin_text, root=None, skip=(), kit_rules=False):
+def run(stdin_text, root=None, skip=(), kit_rules=False, event=None):
     """Handle one hook event; returns the text to print on stdout (empty when nothing fired). Never raises:
     every failure allows the call and is logged once. Rules named in `skip` do not run. With `kit_rules`,
-    a project without rules.toml gets the kit's rules; without it, such a project gets none."""
+    a project without rules.toml gets the kit's rules; without it, such a project gets none. `event` is the
+    event the handler was registered for, used when the input does not name one."""
     start = Path(root) if root else Path.cwd()
     try:
         payload = json.loads(stdin_text)
@@ -482,6 +523,8 @@ def run(stdin_text, root=None, skip=(), kit_rules=False):
         if not root and isinstance(payload.get("cwd"), str) and Path(payload["cwd"]).is_dir():
             start = Path(payload["cwd"])
         base = find_root(start)
+        if event and not payload.get("hook_event_name"):
+            payload = {**payload, "hook_event_name": event}
         return _run(payload, base, skip, kit_rules)
     except Exception as exc:  # noqa: BLE001 - a hook failure must never block the agent
         try:
@@ -494,11 +537,12 @@ def run(stdin_text, root=None, skip=(), kit_rules=False):
 
 def _run(payload, root, skip=(), kit_rules=False):
     rules_path, kit = root / RULES_FILE, None
+    call = normalize(payload, root)
     if not rules_path.is_file():
         if not kit_rules:
+            _missing_rules(root, call)
             return ""
         rules_path, kit = default_rules(root)
-    call = normalize(payload, root)
     state = _load_state(root, call.session)
     before = json.dumps(state, sort_keys=True)
     errors = []
@@ -541,6 +585,21 @@ def _run(payload, root, skip=(), kit_rules=False):
         _save_state(root, call.session, state)
     output = render(call.event, firings)
     return json.dumps(output, ensure_ascii=False) if output else ""
+
+
+def _missing_rules(root, call):
+    """Leave one line per session in the log of a project that uses awkit (it has .awkit/) but has no
+    rules.toml. Anywhere else the runner writes nothing: it must not create files in a folder whose owner
+    never chose awkit."""
+    if not (root / ".awkit").is_dir():
+        return
+    state = _load_state(root, call.session)
+    if "no rules file" in state["logged"]:
+        return
+    state["logged"].append("no rules file")
+    log(root, {"session": call.session or None, "event": call.event, "tool": call.tool or None, "rule": None,
+               "decision": "error", "reason": f"no {RULES_FILE} in {root}; allowed"})
+    _save_state(root, call.session, state)
 
 
 def report(folder):
@@ -880,13 +939,22 @@ def remove_entries(path, command, changes=None):
     return changed
 
 
-def default_rules(root):
-    """The kit's rules, used when the project has no rules.toml of its own: (path, kit folder for {kit}).
-    Without a kit folder in the project, {kit} is the kit installed with awkit, so a message that names a
-    guide points at a file that exists on this machine."""
+# The kit's default rules: the tool-call rules, then the rules that read the session (the user's request, the
+# final reply, the kit version). The second file holds only [[rules]] tables, so the two read as one.
+BUNDLE = (RULES_FILE, "rules-session.toml")
+
+
+def kit_folder(root):
+    """The kit folder {kit} names in the default rules: one in the project, else the kit installed with
+    awkit, so a message that names a guide points at a file that exists on this machine."""
     from .kit_install import kit_root
     for name in ("agent-work-kit", "kit"):
         if (Path(root) / name / "workflow.md").is_file():
-            return kit_root().joinpath(RULES_FILE), name
-    kit = kit_root()
-    return kit.joinpath(RULES_FILE), str(kit)
+            return name
+    return str(kit_root())
+
+
+def default_rules(root):
+    """The kit's rules, used when the project has no rules.toml of its own: ([paths], kit folder for {kit})."""
+    from .kit_install import kit_root
+    return [kit_root().joinpath(name) for name in BUNDLE], kit_folder(root)

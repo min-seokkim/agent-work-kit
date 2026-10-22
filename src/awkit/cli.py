@@ -7,7 +7,7 @@ import sys
 from datetime import UTC
 from pathlib import Path
 
-from . import __version__
+from . import __version__, hook_cli
 from .channel import KINDS, ROLES, Channel, render
 from .kit_install import EXAMPLES, install, install_example, install_roles, install_skills
 
@@ -72,16 +72,6 @@ def _parser():
                         help="claude writes .claude/skills/awkit-*/SKILL.md, codex writes .agents/skills/awkit-*/SKILL.md")
     skills.add_argument("--kit", type=Path, help="point the skills at this kit folder inside the project instead of "
                         "holding the guides (default: DIR/agent-work-kit when it exists)")
-    hooks = kit_commands.add_parser("hooks", help="add the commit identity check to Git and the hook runner to Claude "
-                                    "Code and Codex, beside the hooks already there")
-    hooks.add_argument("dir", nargs="?", type=Path, default=Path("."), help="folder in the Git repository (default: .)")
-    hooks.add_argument("--git", action="store_true", help="add `awkit check commit` to the repository's commit-msg hook, "
-                       "after an existing hook's own commands")
-    hooks.add_argument("--claude", action="store_true",
-                       help="run `awkit hook` on every hook event from .claude/settings.json")
-    hooks.add_argument("--codex", action="store_true",
-                       help="run `awkit hook` on every hook event from .codex/hooks.json")
-
     checks = groups.add_parser("check", help="checks for hooks and CI: commit identity, writing patterns, done reports",
                                epilog=REFERENCE)
     check_commands = checks.add_subparsers(dest="action", required=True, metavar="ACTION")
@@ -108,18 +98,7 @@ def _parser():
     finished.add_argument("--hook", action="store_true", help="run as a Claude Code hook: read the hook input from stdin, "
                           "mark on SessionStart, exit 2 with the reason on Stop, and let a second stop in a turn pass")
 
-    hook = groups.add_parser("hook", help="run as a Claude Code or Codex hook: apply rules.toml to the event on stdin "
-                             "and print the decision JSON; always exit 0", epilog=REFERENCE)
-    hook.add_argument("--root", type=Path, help="project folder with rules.toml (default: found from the event's cwd)")
-    hook.add_argument("--kit-rules", action="store_true",
-                      help="apply the kit's rules when the project has no rules.toml (`kit hooks` writes this)")
-    hook.add_argument("--skip", action="append", default=[], metavar="RULE",
-                      help="leave out a rule by name; `kit hooks` adds --skip done-check when the project has its own "
-                           "completion gate")
-    hook_commands = hook.add_subparsers(dest="action", metavar="ACTION")
-    hook_report = hook_commands.add_parser("report", help="how often rules fired, blocked and failed, per session")
-    hook_report.add_argument("dir", nargs="?", type=Path, default=Path("."), help="project folder (default: .)")
-    hook_report.add_argument("--json", action="store_true", help="print the summary as JSON")
+    hook_cli.add(groups, kit_commands)
 
     doctor = groups.add_parser("doctor", help="check Python, Git, the Git identity and the project folder, and say how "
                                "to fix each missing item; exit 0 ready, 1 something required is missing",
@@ -400,37 +379,8 @@ def main(argv=None):
             return 1 if any(f["status"] == "missing" for f in findings) else 0
         if args.group == "check":
             return _run_check(args)
-        if args.group == "hook":
-            from . import hooks
-            if args.action == "report":
-                result = hooks.report(args.dir)
-                print(json.dumps(result, ensure_ascii=False, indent=2) if args.json else hooks.render_report(result))
-                return 0
-            try:
-                text = sys.stdin.read()
-            except (OSError, UnicodeDecodeError):
-                text = "\ufffd"
-            output = hooks.run(text, args.root, args.skip, args.kit_rules)
-            if output:
-                print(output)
-            return 0
-        if args.group == "kit" and args.action == "hooks":
-            from .checks import install_hooks
-            from .connect import Changes, project_top
-            if not (args.git or args.claude or args.codex):
-                parser.error("choose --git, --claude, --codex or several")
-            changes = Changes(project_top(args.dir))
-            result = install_hooks(args.dir, None, args.git, args.claude, args.codex, changes)
-            changes.save()
-            for path in result["installed"]:
-                print(f"installed: {path}")
-            for path in result["connected"]:
-                print(f"connected: {path}")
-            for path in result["kept"]:
-                print(f"kept existing hook: {path}")
-            for note in result["notes"]:
-                print(f"note: {note}")
-            return 0
+        if args.group == "hook" or (args.group == "kit" and args.action == "hooks"):
+            return hook_cli.run(args, parser)
         if args.group == "kit" and args.action == "skills":
             from .connect import Changes, project_top
             changes = Changes(project_top(args.dir))

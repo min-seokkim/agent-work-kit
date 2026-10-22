@@ -21,8 +21,12 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 - The web extras moved to the `awkit.extras` package (`awkit.extras.pipeline`, `awkit.extras.publish`, `awkit.extras.ui`); the commands are unchanged.
 - People-facing documentation is now the two READMEs only. The command documentation moved to `kit/reference.md` (English, shipped with the kit), and the development documents under `docs/` were merged into `docs/development.md`.
 
+- `awkit kit hooks` writes `rules.toml` from the kit's default rules when the project has none, puts Claude Code's handlers in `.claude/settings.local.json` instead of `.claude/settings.json`, registers one handler per event (`awkit hook EVENT --kit-hooks || exit 0`), does the Git, Claude Code and Codex parts together unless one is chosen, and records what it writes in `.awkit/kit-hooks.json` instead of `.awkit/installed.json`. `kit hooks --remove` takes it out and asks before deleting a `rules.toml` changed since. `install_hooks` in `awkit.checks` keeps its earlier behavior for code that calls it.
+- A `verify` hook rule on Stop blocks once per session instead of once per distinct output, and every block's reason ends with `(KIT/failures.md: ENTRIES)`.
+
 ### Added
 
+- `awkit hook EVENT`, the `prompt` condition for inject rules, and three default rules in `kit/rules-session.toml`: `writing-request` adds the writing guide's line on the first request for a prompt, instructions or a document; `writing-reply` blocks once a long Korean reply shaped like a document from a session that never read the guide (`awkit hook reply`); `kit-version` says once when `checks.toml` records another kit version (`awkit hook kit-version`). A project with `.awkit/` but no `rules.toml` gets one log line per session.
 - `awkit kit remove`: takes out what `kit init`, `kit skills` and `kit hooks` added, restoring each file byte for byte when it is as awkit left it and removing only awkit's part otherwise; asks before deleting check records in `.awkit/`.
 - `awkit kit scan` reports first the words the kit adds to every Claude Code and Codex session, also as the first line on stderr, and what the project has for its agents: instruction files, skills, plugins and method bundles, hooks, memory and record locations, and completion gates.
 - `awkit hook --kit-rules` and `--skip RULE`.
@@ -48,6 +52,8 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Fixed
 
+- A rule message was measured after `{kit}` was filled in, so with awkit installed by pipx the kit's `korean-writing`, `research` and `delegation` rules exceeded 200 characters and were dropped as broken. The limit now applies to the text as written.
+- A hook rule's `shell` condition matched the body of a heredoc fed to a program, so writing a file that mentions `git push` with `cat <<EOF` got the delivery line.
 - The `commit-identity` hook rule judged a commit made after `cd` into another repository by the session's repository, and read the body of a heredoc fed to a program (a Python script holding a `git commit` string) as commands. It follows `cd` and skips such heredoc bodies.
 - `awkit kit hooks --git` left the commit identity check out without saying so when the repository already had a commit-msg hook, and wrote into husky's generated `.husky/_` folder.
 - `awkit kit scan` reported no kit in a project whose skills point at a kit folder other than `agent-work-kit`, such as this repository's `kit/`.

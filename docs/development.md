@@ -5,6 +5,7 @@ The single record for developing Agent Work Kit: scope, decisions, current state
 ## Rules for working in this repository
 
 - Commit as the repository owner, `min-seokkim <raptor210@snu.ac.kr>` (set in `.git/config`). Do not add `Co-Authored-By` or `Claude-Session` lines to commit messages.
+- Do not write dates in documents. Git history records when something changed; refer to a commit or version instead. License copyright years are the exception.
 - Do not raise the version per commit. Collect changes in the unreleased section of [CHANGELOG.md](../CHANGELOG.md); raise the version only for a release, or once when the first incompatible change goes in after a release.
 - Work on `dev`. CI runs on every push to `dev` and `main`; a push is done only when CI is green on Windows and Linux.
 - Documentation audience: `README.md` and `README.ko.md` are the only documents written for people, and stay short. Everything else, including this file, the kit and the CHANGELOG, is read by agents and written in English. The kit's Korean writing guide keeps its Korean examples.
@@ -81,7 +82,7 @@ Release conditions, all required before the first tag:
 
 Until then users install from `dev`: `pipx install "git+https://github.com/min-seokkim/agent-work-kit@dev"`.
 
-Procedure: confirm CI is green, finalize the CHANGELOG section, push a tag matching the version (`v0.3.0`). `.github/workflows/release.yml` tests, builds the wheel, the kit ZIP and `SHA256SUMS` with `scripts/build_release.py`, creates the GitHub release and uploads the wheel to PyPI through a trusted publisher. One-time setup before the first tag: create a `pypi` environment in the GitHub repository settings (add a required reviewer to approve uploads), and add a pending publisher on PyPI for project `agent-work-kit`, this repository, workflow `release.yml`, environment `pypi`. Without it only the PyPI job fails. A version uploaded to PyPI can never be reused. The name `agent-work-kit` was free on PyPI on 2026-10-22.
+Procedure: confirm CI is green, finalize the CHANGELOG section, push a tag matching the version (`v0.3.0`). `.github/workflows/release.yml` tests, builds the wheel, the kit ZIP and `SHA256SUMS` with `scripts/build_release.py`, creates the GitHub release and uploads the wheel to PyPI through a trusted publisher. One-time setup before the first tag: create a `pypi` environment in the GitHub repository settings (add a required reviewer to approve uploads), and add a pending publisher on PyPI for project `agent-work-kit`, this repository, workflow `release.yml`, environment `pypi`. Without it only the PyPI job fails. A version uploaded to PyPI can never be reused. The name `agent-work-kit` was free on PyPI when last checked; check again before the first tag.
 
 ## Testing and building
 
@@ -97,8 +98,8 @@ Tests use only the standard library, need Git and no network. `tests/support.py`
 
 | Environment | Code | Result |
 |---|---|---|
-| GitHub Actions, Windows and Linux, Python 3.11 to 3.13 | `dev` from 2026-10-22 | Full suite, Ruff, Windows wheel install with the mock release and the data example: green. The first `dev` run found two Linux-only assumptions in tests (Windows path ordering and 8.3 short names), since fixed. |
-| Linux, Python 3.13.16 | 2026-10-22, through the release hold | 105 tests, 104 passed, browser test skipped. 0.3.0 wheel and a `git+https` install from GitHub both report `awkit 0.3.0`; the data example fails as designed. |
+| GitHub Actions, Windows and Linux, Python 3.11 to 3.13 | `dev` from `b5d78ba` | Full suite, Ruff, Windows wheel install with the mock release and the data example: green. The first `dev` run found two Linux-only assumptions in tests (Windows path ordering and 8.3 short names), since fixed. |
+| Linux, Python 3.13.16 | `dev` through `5a2ad25` | 105 tests, 104 passed, browser test skipped. 0.3.0 wheel and a `git+https` install from GitHub both report `awkit 0.3.0`; the data example fails as designed. |
 | Windows, Python 3.14.7, and WSL, Python 3.12.3 | step `cwd` support | 79 tests; Windows skipped two symlink tests and the browser test. |
 | Windows, Python 3.12.14, Playwright 1.64.0 with Edge | snapshot, publish and capture | 320 px and 1440 px captures of local pages; normal pages, overflow and blocked requests told apart. |
 | Real Claude Code logs | `usage` | 376 lines grouped into 156 calls; a later log gave 13 typed messages and 1 command, excluding notices, command output, interruptions and hook feedback. |

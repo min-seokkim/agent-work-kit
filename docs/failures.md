@@ -2,7 +2,7 @@
 
 Agents fail in recognizable situations, in recognizable ways. This catalogue lists those failures. It is a design document: it chooses the kit's situation guards (skills, hooks, `awkit` checks, situation guidance), measures whether they catch anything, and shows what to remove. It is not given to agents. Agents get the baseline workflow and the guards, written as what to do, with a failure as the reason where it helps. See Scope in [development.md](development.md).
 
-Draft of 2026-10-22. Entries from this session cite commits on `dev`. Entries carried over from the existing kit were written from earlier sessions whose records were not kept; they are marked "needs evidence" until a real occurrence is recorded. The repository owner is collecting the patterns they actually corrected when having AI write documents; those will be merged here.
+Entries observed while developing this repository cite commits on `dev`. Entries carried over from the existing kit were written from earlier sessions whose records were not kept; they are marked "needs evidence" until a real occurrence is recorded. The repository owner is collecting the patterns they actually corrected when having AI write documents; those will be merged here.
 
 ## Rules for entries
 
@@ -31,7 +31,7 @@ A check fails, a rerun passes, and the report mentions only the pass.
 #### F3. Support claimed for environments that were not run.
 
 Tests pass on one platform and the work is reported as working everywhere.
-- Evidence: this session. Tests passed on Linux; the first Windows CI run on `dev` failed two tests (path ordering, 8.3 short names), fixed in `a5eec42`.
+- Evidence: observed here. Tests passed on Linux; the first Windows CI run on `dev` failed two tests (path ordering, 8.3 short names), fixed in `a5eec42`.
 - Countermeasure: name the environments a claim covers; run all of them before claiming.
 - Check: CI matrix for this repository. Status: enforced here, prose for user projects; planned: profile field for target environments that the done-check reads.
 
@@ -40,21 +40,21 @@ Tests pass on one platform and the work is reported as working everywhere.
 #### F4. Documents describe behavior the code does not have.
 
 The text states what the change was meant to do; the code does something else, and the test covers only the easy case.
-- Evidence: this session. `f475f9e` documented that an example created inside an existing repository is committed there; the code skipped any repository that already had a commit, and the test used a repository without one. The example's first command then failed. Fixed in `b5d78ba`.
+- Evidence: observed here. `f475f9e` documented that an example created inside an existing repository is committed there; the code skipped any repository that already had a commit, and the test used a repository without one. The example's first command then failed. Fixed in `b5d78ba`.
 - Countermeasure: for each behavior stated in a document, a test that exercises exactly that case.
 - Check: planned: run the commands in example READMEs in CI as written.
 
 #### F5. Documents point at things that do not exist.
 
 Install instructions, links or files that were never created.
-- Evidence: this session. The README told users to download the 0.2.0 wheel from Releases; no tag or release had ever existed. The README's development command failed as written because of a relative `PYTHONPATH` (fixed in `6eb632c`).
+- Evidence: observed here. The README told users to download the 0.2.0 wheel from Releases; no tag or release had ever existed. The README's development command failed as written because of a relative `PYTHONPATH` (fixed in `6eb632c`).
 - Countermeasure: run every documented command; check that referenced releases and files exist.
 - Check: relative links are tested. Status: partial; planned: documented commands run in CI.
 
 #### F6. Numbers reported beyond what was measured.
 
 A count from part of the data is stated as the whole, or a metric counts things it should not.
-- Evidence: this session. The kit's size was given as about 10,800 words from a count that left out `kit/examples/` (about 800 more words). `awkit usage` counted notices and command output as user messages (13 instead of 9 in a real log; fixed in `6eb632c`).
+- Evidence: observed here. The kit's size was given as about 10,800 words from a count that left out `kit/examples/` (about 800 more words). `awkit usage` counted notices and command output as user messages (13 instead of 9 in a real log; fixed in `6eb632c`).
 - Countermeasure: state the scope of every number; check a metric against one real record before using it.
 - Check: prose; for `usage`, a test built from a real log's record kinds.
 
@@ -63,7 +63,7 @@ A count from part of the data is stated as the whole, or a metric counts things 
 #### F7. A convenience changes state nobody asked to change.
 
 A read or check command creates, commits or deletes something.
-- Evidence: this session. `review compare` in a folder without Git created a repository and committed every file, `.env` included (from `f475f9e`, fixed in `b5d78ba`).
+- Evidence: observed here. `review compare` in a folder without Git created a repository and committed every file, `.env` included (from `f475f9e`, fixed in `b5d78ba`).
 - Countermeasure: read commands never write; write commands touch only what was named.
 - Check: tests that read commands leave the folder unchanged. Status: enforced for `awkit`.
 
@@ -79,14 +79,14 @@ A commit or snapshot includes changes the user had staged or made elsewhere.
 #### F9. The agent's own identity replaces the repository's convention.
 
 Commits are authored as the agent, or carry trailers the owner did not ask for.
-- Evidence: this session. Commits on `dev` were authored as "Claude" with `Co-Authored-By` lines while the owner's commits used their own identity; the history had to be rewritten and force-pushed.
+- Evidence: observed here. Commits on `dev` were authored as "Claude" with `Co-Authored-By` lines while the owner's commits used their own identity; the history had to be rewritten and force-pushed.
 - Countermeasure: read the existing history's author and message conventions before the first commit.
 - Check: planned: a pre-commit hook comparing author and trailers with the repository's recent commits.
 
 #### F10. Irreversible publication prepared before it is justified.
 
 Version bumps, release workflows or uploads set up while the interface is still changing.
-- Evidence: this session. A PyPI release was prepared (`cb24596`) before the kit split and real-use measurement; the owner held it (`5a2ad25`).
+- Evidence: observed here. A PyPI release was prepared (`cb24596`) before the kit split and real-use measurement; the owner held it (`5a2ad25`).
 - Countermeasure: written release conditions; no tag until they are met.
 - Check: prose (release conditions in `docs/development.md`).
 
@@ -95,14 +95,14 @@ Version bumps, release workflows or uploads set up while the interface is still 
 #### F11. A guess is presented as a finding.
 
 An inference from file names or conventions is reported as how the project works.
-- Evidence: this session. `kit scan` suggested pytest for any `tests` folder; this repository uses unittest (fixed in `6eb632c`).
+- Evidence: observed here. `kit scan` suggested pytest for any `tests` folder; this repository uses unittest (fixed in `6eb632c`).
 - Countermeasure: mark inferences; run a suggested command once before relying on it.
 - Check: the connect procedure runs the drafted checks once. Status: prose plus tool.
 
 #### F12. Scope grows before anything is measured.
 
 Features and documents are added because they seem useful, before real use shows a need.
-- Evidence: this session. The release runner was widened to every kind of delivery and documentation grew to several thousand words for readers who did not read it (`8cf8e72`, restructured in `8f93b7b`).
+- Evidence: observed here. The release runner was widened to every kind of delivery and documentation grew to several thousand words for readers who did not read it (`8cf8e72`, restructured in `8f93b7b`).
 - Countermeasure: a feature needs a failure entry here and a check; measure on real tasks before widening.
 - Check: prose; the kit word limit test bounds documentation.
 
@@ -111,21 +111,21 @@ Features and documents are added because they seem useful, before real use shows
 #### F13. AI writing patterns in English.
 
 Contrasts against claims nobody made, lead-ins, closing lines that repeat the paragraph, slogans, bold labels, dashes, sales words.
-- Evidence: this session. The first rewrite of the README (owner's feedback, corrected in `8f93b7b`).
+- Evidence: observed here. The first rewrite of the README (owner's feedback, corrected in `8f93b7b`).
 - Countermeasure: the pattern list in `docs/development.md`; the owner's collected patterns when merged.
 - Check: planned: a writing check that flags the listed patterns.
 
 #### F14. Korean that reads like a translation, including from an agent that wrote the rules.
 
 Translationese, mixed sentence endings, noun chains; the agent's own Korean guide not applied to its own output.
-- Evidence: this session. The Korean README and replies before the owner pointed it out.
+- Evidence: observed here. The Korean README and replies before the owner pointed it out.
 - Countermeasure: `kit/korean-writing.md` applied to every Korean text, including the agent's replies.
 - Check: planned: Korean patterns in the same writing check.
 
 #### F15. Writing for the wrong reader.
 
 Long human-oriented documents for a tool whose user is an agent, or agent details in what people read.
-- Evidence: this session. Five human-oriented documents under `docs/` that neither the owner nor agents needed in that form (restructured in `8f93b7b`).
+- Evidence: observed here. Five human-oriented documents under `docs/` that neither the owner nor agents needed in that form (restructured in `8f93b7b`).
 - Countermeasure: decide the reader of each document first; people get the README only.
 - Check: prose.
 

@@ -1,4 +1,8 @@
-"""Build the release files: the wheel, the agent-work-kit ZIP and SHA256SUMS.
+"""Build the release files: the wheel, the skills ZIP and SHA256SUMS.
+
+The skills ZIP is the kit for a person without Python: the self-contained skills `awkit kit skills` writes,
+laid out as they go in the user's home folder (`.claude/skills/awkit-*/SKILL.md` for Claude Code,
+`.agents/skills/awkit-*/SKILL.md` for Codex), so unpacking it there is the whole installation.
 
 Usage: python scripts/build_release.py [OUT_DIR]   (default: dist)
 Needs setuptools>=77 and wheel in the running Python. No network access is required.
@@ -39,11 +43,15 @@ def build_wheel(out: Path) -> Path:
 
 
 def build_kit_zip(out: Path) -> Path:
-    target = out / f"agent-work-kit-{__version__}.zip"
-    kit = ROOT / "kit"
-    with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as archive:
-        for path in sorted([*kit.rglob("*.md"), *kit.rglob("*.toml")]):
-            archive.write(path, Path("agent-work-kit") / path.relative_to(kit))
+    from awkit.kit_install import install_user_skills
+
+    target = out / f"agent-work-kit-skills-{__version__}.zip"
+    with tempfile.TemporaryDirectory() as temporary:
+        home = Path(temporary)
+        install_user_skills(home=home)
+        with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as archive:
+            for path in sorted(home.rglob("SKILL.md")):
+                archive.write(path, path.relative_to(home).as_posix())
     return target
 
 

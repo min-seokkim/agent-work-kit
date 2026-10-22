@@ -2,7 +2,9 @@
 # Install Agent Work Kit (awkit) on macOS or Linux.
 #   curl -fsSL https://raw.githubusercontent.com/min-seokkim/agent-work-kit/dev/install.sh | sh
 # Installs Git, Python and pipx with Homebrew on macOS when they are missing, then awkit with pipx,
-# then runs `awkit doctor`. On Linux it says which package to install instead of using sudo.
+# then writes the kit's skills into the user folders (`awkit kit skills`) and runs `awkit doctor`, which
+# finishes this computer's part; `awkit kit init` in a project does the rest. On Linux it says which
+# package to install instead of using sudo.
 # AWKIT_SOURCE overrides what pipx installs (default: the dev branch on GitHub).
 set -eu
 
@@ -71,6 +73,7 @@ AWKIT="$BIN/awkit"
 [ -x "$AWKIT" ] || AWKIT="awkit"
 say ""
 "$AWKIT" --version
+"$AWKIT" kit skills || say "Writing the skills failed; run awkit kit skills again after fixing the error above."
 "$AWKIT" doctor || true
 say ""
 say "Open a new terminal if the awkit command is not found. Fix anything marked missing above, then run"

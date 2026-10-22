@@ -1,7 +1,9 @@
 # Install Agent Work Kit (awkit) on Windows.
 #   irm https://raw.githubusercontent.com/min-seokkim/agent-work-kit/dev/install.ps1 | iex
-# Installs Git and Python with winget when they are missing, then pipx and awkit, then runs
-# `awkit doctor`. $env:AWKIT_SOURCE overrides what pipx installs (default: the dev branch on GitHub).
+# Installs Git and Python with winget when they are missing, then pipx and awkit, then writes the kit's
+# skills into the user folders (`awkit kit skills`) and runs `awkit doctor`, which finishes this computer's
+# part; `awkit kit init` in a project does the rest. $env:AWKIT_SOURCE overrides what pipx installs
+# (default: the dev branch on GitHub).
 # The script never calls exit, because under `irm | iex` that would close the user's window, and it
 # checks exit codes itself, because Windows PowerShell 5.1 turns native stderr into errors under Stop.
 
@@ -71,6 +73,8 @@ function Install-Awkit {
     if (-not $awkit -or -not (Test-Path $awkit)) { $awkit = 'awkit' }
     Write-Host ''
     & $awkit --version
+    & $awkit kit skills
+    if ($LASTEXITCODE -ne 0) { Write-Host 'Writing the skills failed; run awkit kit skills again after fixing the error above.' }
     & $awkit doctor
     Write-Host ''
     Write-Host 'Open a new terminal if the awkit command is not found. Fix anything marked missing above, then run'

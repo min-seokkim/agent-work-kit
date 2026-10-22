@@ -70,6 +70,7 @@ jobs:
         run: |
           sh install.sh
           awkit doctor
+          test -f "$HOME/.claude/skills/awkit-workflow/SKILL.md" && test -f "$HOME/.agents/skills/awkit-workflow/SKILL.md"
       - name: Run install.ps1 from this checkout
         if: runner.os == 'Windows'
         shell: pwsh
@@ -79,6 +80,7 @@ jobs:
           ./install.ps1
           awkit doctor
           if ($LASTEXITCODE -ne 0) { exit 1 }
+          if (-not (Test-Path "$HOME\.claude\skills\awkit-workflow\SKILL.md")) { Write-Error "no user skills"; exit 1 }
 
   package:
     name: Build and smoke-test the wheel

@@ -12,7 +12,7 @@ from .channel import KINDS, ROLES, Channel, render
 from .kit_install import EXAMPLES, install, install_example, install_roles
 from .pipeline import Pipeline, StepError
 from .publish import Publisher
-from .review import accept, compare, snapshot
+from .review import accept, compare, snapshot, track
 from .review import check as run_checks
 from .review import verify as verify_run
 
@@ -120,6 +120,16 @@ def _read_body(args):
     return sys.stdin.read()
 
 
+def _report_tracking(record):
+    if record["created"]:
+        print(f"initialized a Git repository: {record['repository']}")
+    if record["committed"]:
+        print(f"committed the new folder in {record['repository']}")
+    else:
+        print(f"note: the new folder was not committed ({record['skipped']}); commit it before `awkit review check`",
+              file=sys.stderr)
+
+
 def _print_report(report):
     print(f"target: {report['target']}\nrelease: {report['release']}")
     for check in report["checks"]:
@@ -159,13 +169,17 @@ def main(argv=None):
             print(report["suggested_checks_toml"] if args.checks else json.dumps(report, ensure_ascii=False, indent=2))
             return 0
         if args.group == "kit" and args.action == "example":
-            target, copied = install_example(args.kind, args.dir, track=not args.no_git)
+            target, copied = install_example(args.kind, args.dir)
             print(f"created the {args.kind} example: {target}\ncopied {len(copied)} files")
+            if not args.no_git:
+                _report_tracking(track(target, [target], f"Add the {args.kind} example"))
             print(f"next: read {target / 'README.md'} and run the commands there")
             return 0
         if args.group == "kit":
-            target, copied = install(args.dir, args.name, track=not args.no_git)
+            target, copied = install(args.dir, args.name)
             print(f"created the kit: {target}\ncopied {len(copied)} files")
+            if not args.no_git:
+                _report_tracking(track(args.dir, [target], f"Add {args.name}"))
             print(f"next: have your agent read {target / 'templates' / 'agent-instructions.md'}; "
                   f"`awkit kit scan {args.dir}` reports what the project already has")
             return 0

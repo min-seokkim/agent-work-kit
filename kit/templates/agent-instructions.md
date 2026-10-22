@@ -11,7 +11,7 @@ Then do the following, and record each result rather than assuming it:
 1. Fill the five "Start here" fields of the profile from the scan and from one question to the user: what counts as done for this project, and who or what receives the result. Do not invent a build or deployment step the project does not have.
 2. Write `checks.toml` from the commands the scan found, run `awkit review check HEAD --config checks.toml` once, and keep only the commands that actually run here. List the files a passing run must produce under `artifacts` and `required_artifacts`.
 3. Record the delivery stages the project really uses (build, test, install, submit, accept, verify in use) in the profile's "Deliverables and completion" section. Where a running target is replaced or a result is transferred, connect the project's own commands to `awkit pipeline`; leave out `backup` and `rollback` when the target cannot be restored.
-4. Commit the kit folder, the profile and the check configuration. If the project was not a Git repository, the kit commands have already created one; say so to the user.
+4. Commit the profile and the check configuration. `awkit kit init` has already committed the kit folder, creating the repository if the project had none; say so to the user. The review commands do not create repositories or commits: if `awkit review` reports that the folder is not a Git repository or has no commit, commit the files first.
 
 Ask before touching credentials, remote targets or settings outside the project folder.
 

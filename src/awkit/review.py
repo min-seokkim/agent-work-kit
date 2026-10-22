@@ -27,32 +27,71 @@ def git(repo, *args, env=None):
 IDENTITY = ("-c", "user.name=Agent Work Kit", "-c", "user.email=awkit@localhost")
 
 
-def ensure_repo(folder, paths=None):
-    """Return the Git top level for `folder`, creating a repository with a first commit when needed.
+def _probe(folder, *args):
+    return subprocess.run(["git", "-C", str(folder), *args], capture_output=True, text=True,
+                          encoding="utf-8", errors="replace")
 
-    `awkit` assumes the files it checks are tracked by Git. A folder that is not inside a
-    repository gets `git init` and a commit of its contents (or of `paths` when given); a
-    repository with no commit yet gets the same first commit. Returns (toplevel, created)
-    where created says whether a commit was made here.
+
+def toplevel(folder):
+    """The Git top level that contains `folder`, which must already have a commit.
+
+    The review commands only read and check files that Git tracks; they never create a
+    repository or commit on their own.
     """
     folder = Path(folder).resolve()
     if not folder.is_dir():
         raise ValueError(f"The folder does not exist: {folder}")
-    probe = subprocess.run(["git", "-C", str(folder), "rev-parse", "--show-toplevel"],
-                           capture_output=True, text=True, encoding="utf-8", errors="replace")
+    probe = _probe(folder, "rev-parse", "--show-toplevel")
     if probe.returncode:
+        raise ValueError(f"Not a Git repository: {folder}. awkit checks files that Git tracks: run `git init` "
+                         "and commit them, or start from `awkit kit init` or `awkit kit example`.")
+    top = Path(probe.stdout.strip())
+    if _probe(top, "rev-parse", "--verify", "-q", "HEAD^{commit}").returncode:
+        raise ValueError(f"The repository has no commit yet: {top}. Commit the files before checking them.")
+    return top
+
+
+def located(folder):
+    """The repository top level and the folder's path inside it, "" at the root.
+
+    Review commands take paths, step working directories and artifact patterns relative to the
+    folder they are run in, and resolve them inside the same subfolder of the checked worktree.
+    """
+    top = toplevel(folder)
+    inside = Path(folder).resolve().relative_to(top.resolve())
+    return top, inside.as_posix() if inside.parts else ""
+
+
+def track(folder, paths, message):
+    """Commit `paths` under `folder` with Git, creating the repository when `folder` is not in one.
+
+    Only the named paths are added. A repository that awkit creates gets `core.autocrlf=false`
+    so the bytes it checks out are the bytes that were committed. Nothing is committed when the
+    index already holds staged changes, so a kit commit never bundles the user's own work.
+    Returns a record with the repository, whether it was created, whether a commit was made and,
+    if not, why.
+    """
+    folder = Path(folder).resolve()
+    probe = _probe(folder, "rev-parse", "--show-toplevel")
+    created = bool(probe.returncode)
+    if created:
         git(folder, "init", "-q")
+        git(folder, "config", "core.autocrlf", "false")
         top = folder
     else:
         top = Path(probe.stdout.strip())
-    head = subprocess.run(["git", "-C", str(top), "rev-parse", "--verify", "-q", "HEAD^{commit}"],
-                          capture_output=True, text=True, encoding="utf-8", errors="replace")
-    if head.returncode == 0:
-        return top, False
-    git(top, "add", "-A", "--", *(paths or ["."]))
-    git(top, *IDENTITY, "commit", "-q", "--allow-empty", "-m", "Start tracking with Agent Work Kit")
-    print(f"initialized a Git repository and committed its files: {top}", file=sys.stderr)
-    return top, True
+    record = {"repository": str(top), "created": created, "committed": False, "skipped": None}
+    if _probe(top, "diff", "--cached", "--quiet").returncode:
+        record["skipped"] = "the index already has staged changes"
+        return record
+    relative = [Path(p).resolve().relative_to(top).as_posix() for p in paths]
+    git(top, "-c", "core.autocrlf=false", "add", "-A", "--", *relative)
+    if not _probe(top, "diff", "--cached", "--quiet").returncode:
+        record["skipped"] = "nothing to commit"
+        return record
+    git(top, *IDENTITY, "commit", "-q", "-m", message)
+    record["committed"] = True
+    return record
 
 
 def relative_file(value):
@@ -70,20 +109,24 @@ def relative_directory(value):
 
 
 def snapshot(repo, paths):
-    repo, _ = ensure_repo(repo)
+    repo, subdir = located(repo)
+    base = repo / subdir
     parent = git(repo, "rev-parse", "--verify", "HEAD^{commit}")
     if not paths:
         raise ValueError("Name the changed files to include.")
+    specs = []
     for name in paths:
         rel = relative_file(name)
-        target = repo / rel
+        target = base / rel
         if target.is_dir() or any(p.is_symlink() or getattr(p, "is_junction", lambda: False)()
                                   for p in [target, *target.parents] if p != repo.parent):
             raise ValueError(f"Directories and links cannot be included: {name}")
         if not target.resolve().is_relative_to(repo.resolve()):
             raise ValueError("The file is outside the repository.")
-        if not target.exists() and not git(repo, "ls-files", "--error-unmatch", "--", name):
+        spec = (PurePosixPath(subdir) / rel).as_posix()
+        if not target.exists() and not git(repo, "ls-files", "--error-unmatch", "--", spec):
             raise ValueError(f"File not found: {name}")
+        specs.append(spec)
     with tempfile.TemporaryDirectory(prefix="awkit-index-") as temporary:
         env = os.environ.copy()
         env["GIT_INDEX_FILE"] = str(Path(temporary) / "index")
@@ -91,7 +134,7 @@ def snapshot(repo, paths):
         env.update(GIT_AUTHOR_NAME="Agent Work Kit", GIT_AUTHOR_EMAIL="snapshot@localhost",
                    GIT_COMMITTER_NAME="Agent Work Kit", GIT_COMMITTER_EMAIL="snapshot@localhost")
         git(repo, "read-tree", parent, env=env)
-        git(repo, "add", "-A", "--", *paths, env=env)
+        git(repo, "add", "-A", "--", *specs, env=env)
         tree = git(repo, "write-tree", env=env)
         return git(repo, "commit-tree", tree, "-p", parent, "-m", "Review snapshot", env=env)
 
@@ -184,7 +227,7 @@ def verify(run_dir):
 
 
 def accepted_root(repo):
-    return ensure_repo(repo)[0] / ".awkit" / "accepted"
+    return toplevel(repo) / ".awkit" / "accepted"
 
 
 def accept(repo, run_dir, label="accepted"):
@@ -207,7 +250,7 @@ def accept(repo, run_dir, label="accepted"):
     shutil.copytree(run / "artifacts", staging)
     record = {"schema": 1, "label": label, "accepted_at": stamp(), "run_dir": str(run),
               "snapshot": manifest.get("snapshot"), "config_sha256": manifest.get("config_sha256"),
-              "files": manifest["files"]}
+              "subdir": manifest.get("subdir", ""), "files": manifest["files"]}
     atomic_json(staging / "accepted.json", record)
     previous = root / f".{label}.previous"
     if previous.exists():
@@ -246,7 +289,7 @@ def compare(repo, label="accepted", run_dir=None, diff=False):
             raise ValueError(f"The run folder has no retained artifacts: {run_dir}")
         origin = str(Path(run_dir).resolve())
     else:
-        source = ensure_repo(repo)[0]
+        source = toplevel(repo) / record.get("subdir", "")
         origin = "working-tree"
     report = {"label": label, "accepted_at": record.get("accepted_at"), "accepted_snapshot": record.get("snapshot"),
               "compared": origin, "files": []}
@@ -271,7 +314,7 @@ def compare(repo, label="accepted", run_dir=None, diff=False):
 def check(repo, revision, config, runs_root=None, keep=False):
     if revision != "HEAD" and not re.fullmatch(r"(?:[a-f0-9]{40}|[a-f0-9]{64})", revision):
         raise ValueError("Give the full ID of the Git commit to check, or HEAD.")
-    repo, _ = ensure_repo(repo)
+    repo, subdir = located(repo)
     commit = git(repo, "rev-parse", "--verify", revision + "^{commit}")
     raw = Path(config).read_bytes()
     settings = tomllib.loads(raw.decode("utf-8"))
@@ -302,7 +345,8 @@ def check(repo, revision, config, runs_root=None, keep=False):
     root.mkdir(parents=True, exist_ok=True)
     run = Path(tempfile.mkdtemp(prefix="review-", dir=root))
     worktree = run / "worktree"
-    result = {"snapshot": commit, "config_sha256": hashlib.sha256(raw).hexdigest(),
+    base = worktree / subdir
+    result = {"snapshot": commit, "config_sha256": hashlib.sha256(raw).hexdigest(), "subdir": subdir,
               "run_dir": str(run), "worktree": str(worktree), "status": "running", "steps": []}
     def save():
         atomic_json(run / "result.json", result)
@@ -323,7 +367,7 @@ def check(repo, revision, config, runs_root=None, keep=False):
         git(repo, "worktree", "add", "--detach", str(worktree), commit)
         added = True
         for index, step in enumerate(setup + checks):
-            step_dir = worktree / relative_directory(step.get("cwd", "."))
+            step_dir = base / relative_directory(step.get("cwd", "."))
             entry = {"name": step["name"], "cwd": str(step_dir), "phase": "setup" if index < len(setup) else "check",
                      "log": f"{index + 1:02d}.log", "argv": [expand(s) for s in step["argv"]]}
             result["steps"].append(entry)
@@ -353,13 +397,13 @@ def check(repo, revision, config, runs_root=None, keep=False):
         if any(s["status"] == "timeout" for s in result["steps"]):
             result["status"] = "uncertain"
         if patterns or required:
-            files, missing, skipped = collect_artifacts(worktree, run, patterns, required)
+            files, missing, skipped = collect_artifacts(base, run, patterns, required)
             result["artifacts"] = files
             result["missing_artifacts"] = missing
             if skipped:
                 result["skipped_artifacts"] = skipped
             manifest = {"schema": 1, "snapshot": commit, "config_sha256": result["config_sha256"],
-                        "run_id": run.name, "files": files}
+                        "subdir": subdir, "run_id": run.name, "files": files}
             atomic_json(run / "artifacts" / "manifest.json", manifest)
             if missing and result["status"] == "passed":
                 result["status"] = "failed"

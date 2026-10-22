@@ -8,6 +8,7 @@ import unittest
 from pathlib import Path
 
 from awkit.kit_install import install, install_roles, load_roles
+from awkit.review import track
 
 ROOT = Path(__file__).resolve().parents[1]
 LINK = re.compile(r"\]\(([^)\s]+)\)")
@@ -70,7 +71,10 @@ class KitTests(unittest.TestCase):
         self.assertEqual((target / "templates" / "project.md").read_text(encoding="utf-8"), "작성한 적용표")
         second, _ = install(self.project, "agent-work-kit-new")
         self.assertTrue((second / "README.md").exists())
-        # The project became a Git repository with the kit committed; no staging folder is left behind.
+        # Tracking, as the CLI does it, makes the project a repository with only the kit committed.
+        self.assertEqual([p.name for p in self.project.iterdir() if p.name.startswith(".")], [])
+        record = track(self.project, [target], "Add agent-work-kit")
+        self.assertEqual((record["created"], record["committed"]), (True, True))
         self.assertEqual([p.name for p in self.project.iterdir() if p.name.startswith(".")], [".git"])
         log = subprocess.run(["git", "-C", str(self.project), "log", "--oneline"], capture_output=True,
                              text=True, encoding="utf-8")
@@ -78,10 +82,18 @@ class KitTests(unittest.TestCase):
         tracked = subprocess.run(["git", "-C", str(self.project), "ls-files"], capture_output=True,
                                  text=True, encoding="utf-8").stdout
         self.assertIn("agent-work-kit/README.md", tracked)
-        self.assertNotIn("agent-work-kit-new/README.md", tracked)  # a repo with a commit is left as it is
+        self.assertNotIn("agent-work-kit-new/README.md", tracked)  # only the named folder is committed
+        # A second kit folder inside the repository that now has history is committed the same way.
+        again = track(self.project, [second], "Add agent-work-kit-new")
+        self.assertEqual((again["created"], again["committed"]), (False, True))
+        self.assertEqual(track(self.project, [second], "Nothing")["skipped"], "nothing to commit")
 
-    def test_init_without_git_leaves_the_folder_untracked(self):
-        install(self.project, track=False)
+    def test_init_without_tracking_leaves_the_folder_untracked(self):
+        install(self.project)
+        self.assertEqual([p.name for p in self.project.iterdir() if p.name.startswith(".")], [])
+        plain = subprocess.run([sys.executable, "-m", "awkit", "kit", "init", str(self.project), "--name", "k", "--no-git"],
+                               capture_output=True, text=True, encoding="utf-8", env={**os.environ, "PYTHONUTF8": "1"})
+        self.assertEqual(plain.returncode, 0, plain.stderr)
         self.assertEqual([p.name for p in self.project.iterdir() if p.name.startswith(".")], [])
 
     def test_init_preserves_project_and_third_party_license_notices(self):

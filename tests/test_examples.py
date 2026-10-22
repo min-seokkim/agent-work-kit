@@ -7,7 +7,7 @@ import unittest
 from pathlib import Path
 
 from awkit.kit_install import EXAMPLES, install_example
-from awkit.review import accept, check, compare, git, snapshot, verify
+from awkit.review import accept, check, compare, git, snapshot, track, verify
 
 
 def run(*args, cwd):
@@ -22,8 +22,10 @@ class ExampleTests(unittest.TestCase):
         self.root = Path(self.temp.name)
 
     def commit_all(self, folder):
-        """The example was committed when it was created; return that commit."""
-        git(folder, "config", "core.autocrlf", "false")
+        """Track the example the way the CLI does after creating it; return the first commit."""
+        record = track(folder, [folder], "Start the example")
+        self.assertEqual((record["created"], record["committed"]), (True, True))
+        self.assertEqual(git(folder, "config", "core.autocrlf"), "false")
         self.assertEqual(git(folder, "status", "--porcelain"), "")
         return git(folder, "rev-parse", "HEAD")
 
@@ -36,26 +38,66 @@ class ExampleTests(unittest.TestCase):
                 self.assertIn("checks.toml", copied)
                 self.assertIn("project.md", copied)
                 self.assertTrue(any(name.endswith(".py") for name in copied))
-                self.assertTrue((target / ".git").is_dir())
-                self.assertEqual(git(target, "log", "--format=%s"), "Start tracking with Agent Work Kit")
+                self.assertFalse((target / ".git").exists())  # copying and tracking are separate steps
+                record = track(target, [target], f"Add the {kind} example")
+                self.assertEqual((record["created"], record["committed"], record["skipped"]), (True, True, None))
+                self.assertEqual(git(target, "log", "--format=%s"), f"Add the {kind} example")
                 with self.assertRaises(ValueError):
                     install_example(kind, self.root / kind)
         self.assertEqual([p.name for p in self.root.iterdir() if p.name.startswith(".")], [])
-        bare, _ = install_example("data", self.root / "untracked", track=False)
+        # Review commands never create a repository or commit; an untracked folder is refused.
+        bare, _ = install_example("data", self.root / "untracked")
+        for call in (lambda: snapshot(bare, ["input/orders.csv"]),
+                     lambda: check(bare, "HEAD", bare / "checks.toml", self.root / "runs"),
+                     lambda: compare(bare)):
+            with self.assertRaisesRegex(ValueError, "Not a Git repository"):
+                call()
         self.assertFalse((bare / ".git").exists())
-        revision = snapshot(bare, ["input/orders.csv"])  # review commands create the repository on demand
-        self.assertTrue((bare / ".git").is_dir())
-        self.assertEqual(len(revision), 40)
+        git(bare, "init")
+        with self.assertRaisesRegex(ValueError, "no commit yet"):
+            snapshot(bare, ["input/orders.csv"])
 
     def test_example_inside_an_existing_repository_is_committed_there(self):
-        outer = self.root / "outer"
-        outer.mkdir()
-        git(outer, "init")
-        (outer / "notes.txt").write_text("mine", encoding="utf-8")
+        for with_history in (False, True):
+            with self.subTest(with_history=with_history):
+                outer = self.root / f"outer-{with_history}"
+                outer.mkdir()
+                git(outer, "init")
+                git(outer, "config", "core.autocrlf", "false")
+                (outer / "notes.txt").write_text("mine", encoding="utf-8")
+                if with_history:
+                    git(outer, "add", "notes.txt")
+                    git(outer, "-c", "user.name=f", "-c", "user.email=f@localhost", "commit", "-m", "mine")
+                target, _ = install_example("data", outer / "data-example")
+                record = track(target, [target], "Add the data example")
+                self.assertEqual((record["created"], record["committed"]), (False, True))
+                self.assertFalse((target / ".git").exists())
+                self.assertIn("data-example/README.md", git(outer, "ls-files"))
+                self.assertEqual("notes.txt" in git(outer, "ls-files"), with_history)  # never swept in
+                self.assertEqual(git(outer, "status", "--porcelain", "--", "data-example"), "")
+                # The README's first command works from inside the example folder.
+                failed = check(target, "HEAD", target / "checks.toml", self.root / "runs")
+                self.assertEqual((failed["status"], failed["subdir"]), ("failed", "data-example"))
+                self.assertIn("missing column", (Path(failed["run_dir"]) / "01.log").read_text(encoding="utf-8"))
+                # Paths in the snapshot, the artifacts and the comparison stay relative to the example folder.
+                orders = target / "input" / "orders.csv"
+                orders.write_text(orders.read_text(encoding="utf-8").replace("qty", "quantity"), encoding="utf-8")
+                passed = check(target, snapshot(target, ["input/orders.csv"]), target / "checks.toml", self.root / "runs")
+                self.assertEqual(passed["status"], "passed", passed)
+                self.assertEqual(sorted(passed["artifacts"]), ["input/orders.csv", "output/summary.csv"])
+                accept(target, passed["run_dir"])
+                statuses = {f["path"]: f["status"] for f in compare(target)["files"]}
+                self.assertEqual(statuses, {"input/orders.csv": "same", "output/summary.csv": "missing"})
+                self.assertEqual(git(outer, "status", "--porcelain", "--", "data-example"), "M data-example/input/orders.csv")
+        # Staged work of the user's own is never bundled into the kit's commit.
+        outer = self.root / "outer-True"
+        (outer / "draft.txt").write_text("staged", encoding="utf-8")
+        git(outer, "add", "draft.txt")
         target, _ = install_example("documents", outer / "docs-example")
-        self.assertFalse((target / ".git").exists())
-        self.assertIn("docs-example/README.md", git(outer, "ls-files"))
-        self.assertNotIn("notes.txt", git(outer, "ls-files"))  # only the example was committed
+        record = track(target, [target], "Add the documents example")
+        self.assertEqual((record["committed"], record["skipped"]), (False, "the index already has staged changes"))
+        self.assertNotIn("docs-example", git(outer, "ls-files"))
+        self.assertEqual(git(outer, "diff", "--cached", "--name-only"), "draft.txt")
         with self.assertRaises(ValueError):
             install_example("video", self.root / "x")
         with self.assertRaises(ValueError):
@@ -127,6 +169,11 @@ class ExampleTests(unittest.TestCase):
         created = run("kit", "example", "documents", str(self.root / "d"), cwd=self.root)
         self.assertEqual(created.returncode, 0, created.stderr)
         self.assertIn("README.md", created.stdout)
+        self.assertIn("initialized a Git repository", created.stdout)
+        self.assertEqual(git(self.root / "d", "log", "--format=%s"), "Add the documents example")
+        plain = run("kit", "example", "data", str(self.root / "p"), "--no-git", cwd=self.root)
+        self.assertEqual(plain.returncode, 0, plain.stderr)
+        self.assertFalse((self.root / "p" / ".git").exists())
         again = run("kit", "example", "documents", str(self.root / "d"), cwd=self.root)
         self.assertEqual(again.returncode, 2)
         self.assertIn("already exists", again.stderr)

@@ -8,6 +8,7 @@ import unittest
 from pathlib import Path
 
 from awkit.kit_install import install
+from awkit.review import track
 from awkit.scan import scan
 
 
@@ -47,7 +48,8 @@ class ScanTests(unittest.TestCase):
         self.assertEqual([c["name"] for c in suggested["checks"]], list(names))
 
     def test_reports_the_kit_and_repository_once_installed(self):
-        install(self.root)
+        target, _ = install(self.root)
+        track(self.root, [target], "Add agent-work-kit")
         report = scan(self.root)
         self.assertEqual(report["git"]["uncommitted_files"], 0)
         self.assertEqual(len(report["git"]["head"]), 40)

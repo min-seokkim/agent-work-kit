@@ -28,14 +28,14 @@ Each project defines its completion criteria and connects its build, test and de
 
 The `awkit` CLI needs Python 3.11 or later on Windows or Linux. The project you build with it can be in any language.
 
-From 0.3.0, the first public release, the package is on PyPI. [pipx](https://pipx.pypa.io) installs the `awkit` command in its own environment:
+There is no release yet. Commands, file locations and result formats may still change, and the first release waits until they settle ([release conditions](docs/roadmap.md#릴리스-조건)). Until then, install from the `dev` branch with [pipx](https://pipx.pypa.io), which puts the `awkit` command in its own environment. Git is required, as it is for the review commands:
 
 ```sh
-pipx install agent-work-kit
+pipx install "git+https://github.com/min-seokkim/agent-work-kit@dev"
 awkit --version
 ```
 
-Each release on the [Releases](../../releases) page also carries the wheel, for `pip install agent_work_kit-<version>-py3-none-any.whl` inside a virtual environment, and `agent-work-kit-<version>.zip`, the Markdown kit alone, which needs no Python. Screen capture needs Playwright: install `agent-work-kit[ui]` and run `python -m playwright install chromium`. Before the first release, run the CLI from a clone as described in [docs/cli.md](docs/cli.md).
+Run `pipx install --force` with the same address to update. Screen capture needs Playwright: install `"agent-work-kit[ui] @ git+https://github.com/min-seokkim/agent-work-kit@dev"` and run `python -m playwright install chromium`. Once released, the package will be on PyPI as `agent-work-kit`, and each release will carry the wheel and `agent-work-kit-<version>.zip`, the Markdown kit alone, which needs no Python.
 
 ## Quick start
 

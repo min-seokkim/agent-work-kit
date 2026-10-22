@@ -8,14 +8,14 @@
 
 Windows나 Linux에서 Python 3.11 이상이 필요합니다. `review`는 Git, `ui`는 Playwright와 브라우저를 추가로 쓰고, 나머지 명령은 표준 라이브러리만으로 동작합니다. 개발하는 애플리케이션의 언어는 상관없습니다.
 
-0.3.0부터 PyPI에 올립니다. pipx로 설치하면 `awkit` 명령을 가상환경 활성화 없이 바로 부를 수 있습니다.
+아직 릴리스하지 않았으므로 `dev` 브랜치에서 바로 설치합니다. 릴리스 시점은 [개발 계획](roadmap.md#릴리스-조건)의 조건을 따릅니다. pipx로 설치하면 `awkit` 명령을 가상환경 활성화 없이 바로 부를 수 있습니다.
 
 ```powershell
-pipx install agent-work-kit
+pipx install "git+https://github.com/min-seokkim/agent-work-kit@dev"
 awkit --version
 ```
 
-`awkit 0.3.0`이 나오면 됩니다. 가상환경에 넣으려면 `python -m venv .venv` 뒤 `.venv\Scripts\pip install agent-work-kit`(Linux는 `.venv/bin/pip`)을 실행하고 가상환경을 활성화합니다. 릴리스 페이지의 wheel 파일을 `pip install`로 설치해도 같습니다. 이 문서의 예제는 `awkit`을 바로 부를 수 있다고 봅니다.
+`awkit 0.3.0`이 나오면 됩니다. 0.3.0은 다음 릴리스에 붙일 번호이고, 그 전까지 `dev`의 변경은 번호를 바꾸지 않고 들어갑니다. 새 변경을 받으려면 같은 주소로 `pipx install --force`를 실행하세요. 가상환경에 넣으려면 `python -m venv .venv` 뒤 `.venv\Scripts\pip install "git+https://github.com/min-seokkim/agent-work-kit@dev"`(Linux는 `.venv/bin/pip`)을 실행하고 가상환경을 활성화합니다. 이 문서의 예제는 `awkit`을 바로 부를 수 있다고 봅니다.
 
 설치하지 않고 저장소에서 바로 실행할 수도 있습니다. `PYTHONPATH`에 저장소의 `src` 폴더를 넣고 `python -m awkit`으로 부르면 됩니다.
 
@@ -352,7 +352,7 @@ python -m pip install "setuptools>=77" wheel
 python scripts/build_release.py
 ```
 
-패키지 버전과 같은 태그(예: `v0.3.0`)를 올리면 GitHub Actions가 검사를 다시 돌린 뒤 같은 파일로 GitHub 릴리스를 만들고, wheel을 PyPI에 올립니다. 버전 번호는 커밋마다 올리지 않습니다. 변경은 [변경 기록](../CHANGELOG.md)의 출시 전 절에 모아 두고, 릴리스할 때나 호환되지 않는 변경이 처음 들어갈 때만 `pyproject.toml`과 `src/awkit/__init__.py`의 번호를 함께 올립니다.
+[릴리스 조건](roadmap.md#릴리스-조건)을 채운 뒤 패키지 버전과 같은 태그(예: `v0.3.0`)를 올리면 GitHub Actions가 검사를 다시 돌린 뒤 같은 파일로 GitHub 릴리스를 만들고, wheel을 PyPI에 올립니다. 버전 번호는 커밋마다 올리지 않습니다. 변경은 [변경 기록](../CHANGELOG.md)의 출시 전 절에 모아 두고, 릴리스할 때나 호환되지 않는 변경이 처음 들어갈 때만 `pyproject.toml`과 `src/awkit/__init__.py`의 번호를 함께 올립니다.
 
 PyPI 업로드는 비밀번호나 토큰 없이 trusted publisher로 합니다. 첫 태그를 올리기 전에 한 번만 설정합니다.
 

@@ -28,14 +28,14 @@ Agent Work Kit은 코딩 에이전트와 함께 일할 때 쓰는 작업 지침,
 
 Windows나 Linux에서 Python 3.11 이상이 필요합니다. 개발하는 프로젝트의 언어는 상관없습니다.
 
-첫 공개 릴리스인 0.3.0부터 PyPI에 올립니다. [pipx](https://pipx.pypa.io)를 쓰면 `awkit` 명령이 별도 환경에 설치됩니다.
+아직 릴리스하지 않았습니다. 명령, 파일 위치, 결과 형식이 바뀔 수 있어서, 이것들이 자리를 잡은 뒤 첫 릴리스를 냅니다([릴리스 조건](docs/roadmap.md#릴리스-조건)). 그때까지는 [pipx](https://pipx.pypa.io)로 `dev` 브랜치에서 설치하세요. `awkit` 명령이 별도 환경에 설치됩니다. 검토 명령과 마찬가지로 Git이 필요합니다.
 
 ```powershell
-pipx install agent-work-kit
+pipx install "git+https://github.com/min-seokkim/agent-work-kit@dev"
 awkit --version
 ```
 
-[릴리스](../../releases) 페이지에도 릴리스마다 wheel과 `agent-work-kit-<버전>.zip`을 올립니다. wheel은 가상환경에서 `pip install agent_work_kit-<버전>-py3-none-any.whl`로 설치하고, ZIP은 Markdown 키트만 들어 있어 Python 없이 프로젝트에 풀어 씁니다. 화면 캡처까지 쓰려면 `agent-work-kit[ui]`로 설치하고 `python -m playwright install chromium`을 실행하세요. 첫 릴리스 전에는 [CLI 사용법](docs/cli.md)대로 저장소에서 바로 실행합니다.
+새 변경을 받으려면 같은 주소로 `pipx install --force`를 실행합니다. 화면 캡처까지 쓰려면 `"agent-work-kit[ui] @ git+https://github.com/min-seokkim/agent-work-kit@dev"`로 설치하고 `python -m playwright install chromium`을 실행하세요. 릴리스한 뒤에는 PyPI에 `agent-work-kit`으로 올리고, 릴리스마다 wheel과 Markdown 키트만 담은 `agent-work-kit-<버전>.zip`을 붙입니다. ZIP은 Python 없이 프로젝트에 풀어 씁니다.
 
 ## 빠르게 써 보기
 

@@ -148,7 +148,7 @@ awkit publish --output .awkit/site --project sample restore $version
 화면 캡처에만 Playwright와 브라우저가 추가로 필요합니다.
 
 ```powershell
-python -m pip install "agent-work-kit[ui]"
+python -m pip install "agent-work-kit[ui] @ git+https://github.com/min-seokkim/agent-work-kit@dev"
 python -m playwright install chromium
 ```
 

@@ -13,7 +13,8 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-from .review import _probe, git, nested_repositories, nested_warning, toplevel
+from .identity import author_problem
+from .review import _probe, exclude_locally, git, nested_repositories, nested_warning, toplevel
 
 HISTORY = 50
 
@@ -56,35 +57,29 @@ def commit_identity(folder, message=None, rev=None, history=HISTORY):
     """
     top, has_commit = _repository(folder)
     if rev is not None:
-        author = git(top, "log", "-1", "--format=%an <%ae>", rev)
-        email = git(top, "log", "-1", "--format=%ae", rev).lower()
+        name = git(top, "log", "-1", "--format=%an", rev)
+        email = git(top, "log", "-1", "--format=%ae", rev)
         message = git(top, "log", "-1", "--format=%B", rev)
         parents = git(top, "log", "-1", "--format=%P", rev).split()
         base = parents[0] if parents else None
     else:
         ident = git(top, "var", "GIT_AUTHOR_IDENT")
         match = re.match(r"(.*?) <([^>]*)>", ident)
-        author = f"{match.group(1)} <{match.group(2)}>" if match else ident
-        email = (match.group(2) if match else "").lower()
+        name, email = (match.group(1), match.group(2)) if match else (ident, "")
         base = "HEAD" if has_commit else None
-    report = {"author": author, "trailers": trailer_keys(top, message or ""), "compared_commits": 0,
+    report = {"author": f"{name} <{email}>", "trailers": trailer_keys(top, message or ""), "compared_commits": 0,
               "problems": []}
+    problem = author_problem(top, name, email, base, history)
+    if problem:
+        report["problems"].append(problem)
     if base is None:
-        report["ok"] = True
+        report["ok"] = not report["problems"]
         return report
     hashes = git(top, "log", f"-n{history}", "--format=%H", base).split()
     report["compared_commits"] = len(hashes)
-    emails = set(git(top, "log", f"-n{history}", "--format=%ae", base).lower().split())
-    emails.update(_config_values(top, "awkit.allowauthor"))
     known = {key.lower() for key in _config_values(top, "awkit.allowtrailer")}
     for commit in hashes:
         known.update(key.lower() for key in trailer_keys(top, git(top, "log", "-1", "--format=%B", commit)))
-    if email not in emails:
-        recent = ", ".join(sorted(emails)) or "none"
-        report["problems"].append(
-            f"The author {author} has not committed here before (recent authors: {recent}). If an agent set "
-            "this identity, commit as the person the repository belongs to; to allow a new contributor, run "
-            "`git config --add awkit.allowAuthor EMAIL`.")
     for key in report["trailers"]:
         if key.lower() not in known:
             report["problems"].append(
@@ -206,15 +201,15 @@ def render_writing(report):
 
 
 def current_tree(top, exclude=()):
-    """The tree of HEAD plus every change in the working tree, untracked files included and `.awkit`
-    and the `exclude` paths left out, written without touching the real index."""
+    """The tree of HEAD plus every change in the working tree, untracked files included, without the
+    LOCAL_ONLY files and the `exclude` paths, written without touching the real index."""
     with tempfile.TemporaryDirectory(prefix="awkit-index-") as temporary:
         env = os.environ.copy()
         env["GIT_INDEX_FILE"] = str(Path(temporary) / "index")
         git(top, "read-tree", "HEAD", env=env)
-        # Naming .awkit in a pathspec fails when it is ignored, the usual case; drop it after adding.
+        # Naming an ignored path in a pathspec is an error for git add, so local-only files are dropped after.
         git(top, "add", "-A", "--", ".", *(f":(exclude){path}" for path in exclude), env=env)
-        git(top, "rm", "-r", "-q", "--cached", "--ignore-unmatch", "--", ".awkit", env=env)
+        git(top, "rm", "-r", "-q", "--cached", "--ignore-unmatch", "--", *LOCAL_ONLY, env=env)
         return git(top, "write-tree", env=env)
 
 
@@ -309,23 +304,39 @@ def git_hook_path(top):
     return (hooks if hooks.is_absolute() else top / hooks) / "commit-msg"
 
 
-def install_hooks(folder, python, use_git=True, use_claude=False):
+GIT_HOOK = """#!/bin/sh
+# Installed by `awkit kit hooks --git`: compare the commit's author and trailers with this repository's history.
+# awkit is found by name, so the hook keeps working when awkit is reinstalled or its environment moves.
+if command -v awkit >/dev/null 2>&1; then
+    exec awkit check commit --message "$1"
+fi
+for python in python3 python; do
+    if "$python" -c "import awkit" >/dev/null 2>&1; then
+        exec "$python" -m awkit check commit --message "$1"
+    fi
+done
+echo "awkit was not found; the commit identity check did not run." >&2
+"""
+CLAUDE_DONE_HOOK = "if command -v awkit >/dev/null 2>&1; then awkit check done --hook; fi"
+# Files a tool keeps on one machine; they are never part of the work being checked.
+LOCAL_ONLY = (".awkit", ".claude/settings.local.json", "CLAUDE.local.md")
+
+
+def install_hooks(folder, python=None, use_git=True, use_claude=False):
     """Install the commit identity hook for Git and the done check for Claude Code.
 
-    The Git hook goes to the repository's hooks folder and an existing hook is kept. The Claude Code
-    hooks go to .claude/settings.local.json, which stays on this machine, because both hooks name
-    this machine's Python interpreter. Returns (written, kept)."""
+    Both call awkit by name. The Git hook goes to the repository's hooks folder; the Claude Code hooks
+    go to .claude/settings.local.json, which is excluded from Git locally so it never counts as work.
+    Existing hooks are kept. `python` is accepted for compatibility and not used. Returns (written, kept)."""
     top, _ = _repository(folder)
     written, kept = [], []
-    command = f'"{Path(python).as_posix()}" -m awkit'
     if use_git:
         hook = git_hook_path(top)
         if hook.exists():
             kept.append(str(hook))
         else:
             hook.parent.mkdir(parents=True, exist_ok=True)
-            hook.write_text(f'#!/bin/sh\nexec {command} check commit --message "$1"\n', encoding="utf-8",
-                            newline="\n")
+            hook.write_text(GIT_HOOK, encoding="utf-8", newline="\n")
             hook.chmod(0o755)
             written.append(str(hook))
     if use_claude:
@@ -337,8 +348,9 @@ def install_hooks(folder, python, use_git=True, use_claude=False):
             entries = hooks.setdefault(event, [])
             if any("awkit check done" in h.get("command", "") for e in entries for h in e.get("hooks", [])):
                 continue
-            entries.append({"hooks": [{"type": "command", "command": f"{command} check done --hook"}]})
+            entries.append({"hooks": [{"type": "command", "command": CLAUDE_DONE_HOOK}]})
             changed = True
+        exclude_locally(top, ".claude/settings.local.json")
         if changed:
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8")

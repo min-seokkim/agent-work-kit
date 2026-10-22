@@ -89,7 +89,9 @@ def located(folder):
 def track(folder, paths, message):
     """Commit `paths` under `folder` with Git, creating the repository when `folder` is not in one.
 
-    Only the named paths are added. A repository that awkit creates gets `core.autocrlf=false`
+    Only the named paths are added. In a repository with no commits by anyone but awkit, the commit is made
+    under awkit's own identity; in one with history, under the configured identity when it fits the history (see
+    `identity.author_problem`), and otherwise not at all. A repository that awkit creates gets `core.autocrlf=false`
     so the bytes it checks out are the bytes that were committed. Nothing is committed when the
     index already holds staged changes, so a kit commit never bundles the user's own work.
     Returns a record with the repository, whether it was created, whether a commit was made and,
@@ -108,12 +110,25 @@ def track(folder, paths, message):
     if _probe(top, "diff", "--cached", "--quiet").returncode:
         record["skipped"] = "the index already has staged changes"
         return record
+    from .identity import author_problem, configured, history_authors
+    has_commit = not _probe(top, "rev-parse", "--verify", "-q", "HEAD^{commit}").returncode
+    identity = IDENTITY
+    # Commits only awkit has made are not anyone's history; awkit keeps committing under its own name.
+    if has_commit and history_authors(top)[0]:
+        # In a repository with history the kit is committed as the person it belongs to, never as an
+        # agent and never under awkit's own name; when that is not possible the user commits it.
+        author = configured(top)
+        problem = author_problem(top, *author) if author else "no Git identity is configured"
+        if problem:
+            record["skipped"] = problem
+            return record
+        identity = ()
     relative = [Path(p).resolve().relative_to(top).as_posix() for p in paths]
     git(top, "-c", "core.autocrlf=false", "add", "-A", "--", *relative)
     if not _probe(top, "diff", "--cached", "--quiet").returncode:
         record["skipped"] = "nothing to commit"
         return record
-    git(top, *IDENTITY, "commit", "-q", "-m", message)
+    git(top, *identity, "commit", "-q", "-m", message)
     record["committed"] = True
     return record
 
@@ -248,6 +263,21 @@ def verify(run_dir):
     report["verified"] = (not report["interrupted"] and not report["unexpected"]
                           and all(item["status"] == "ok" for item in report["artifacts"]))
     return report
+
+
+def exclude_locally(top, pattern):
+    """Keep `pattern` out of Git through .git/info/exclude unless something ignores it already.
+
+    The exclude file stays on this machine, so the user's .gitignore and history are untouched. A
+    pattern ending in "/" is a folder."""
+    probe = pattern + "x" if pattern.endswith("/") else pattern
+    if not _probe(top, "check-ignore", "-q", "--no-index", probe).returncode:
+        return
+    exclude = Path(git(top, "rev-parse", "--git-path", "info/exclude"))
+    exclude = exclude if exclude.is_absolute() else Path(top) / exclude
+    exclude.parent.mkdir(parents=True, exist_ok=True)
+    text = exclude.read_text(encoding="utf-8") if exclude.is_file() else ""
+    exclude.write_text(text + ("" if not text or text.endswith("\n") else "\n") + pattern + "\n", encoding="utf-8")
 
 
 def accepted_root(repo):
@@ -386,7 +416,11 @@ def check(repo, revision, config, runs_root=None, keep=False):
     if not isinstance(custom_env, dict) or any(not isinstance(v, str) for v in custom_env.values()):
         raise ValueError("env values must be strings.")
     patterns, required = artifact_patterns(settings)
-    root = Path(runs_root or Path(tempfile.gettempdir()) / "agent-work-kit-reviews").resolve()
+    if runs_root is None:
+        # Run records belong to the project they checked; .awkit is excluded from Git locally.
+        exclude_locally(repo, ".awkit/")
+        runs_root = repo / ".awkit" / "reviews"
+    root = Path(runs_root).resolve()
     root.mkdir(parents=True, exist_ok=True)
     run = Path(tempfile.mkdtemp(prefix="review-", dir=root))
     worktree = run / "worktree"

@@ -85,6 +85,7 @@ class CommitIdentityTests(Repository):
                                  capture_output=True, text=True, encoding="utf-8", env=env)
         self.assertEqual(allowed.returncode, 0, allowed.stderr)
         self.assertEqual(install_hooks(self.repo, sys.executable, use_git=True), ([], written))  # kept
+        self.assertNotIn(sys.executable, Path(written[0]).read_text(encoding="utf-8"))
 
 
 class WritingTests(unittest.TestCase):
@@ -133,6 +134,59 @@ class WritingTests(unittest.TestCase):
         report = check_writing([*paths, ROOT / "docs", ROOT / "kit", ROOT / "examples"])
         errors = [f"{f['path']}:{f['line']} {f['pattern']}" for f in report["findings"] if f["level"] == "error"]
         self.assertEqual(errors, [])
+
+
+class KitCommitIdentityTests(Repository):
+    """The planning session's install: Git's identity was "Claude", doctor passed it and the kit's commit
+    did not belong to the owner."""
+
+    def test_kit_commit_follows_the_owner_or_is_skipped(self):
+        from awkit.doctor import diagnose
+        from awkit.kit_install import install
+        from awkit.review import track
+        self.commit("app.py", "print(1)\n", "Owner's work")
+        git(self.repo, "config", "user.name", "Claude")
+        git(self.repo, "config", "user.email", "noreply@anthropic.com")
+        warning = [f for f in diagnose(self.repo) if f["item"] == "commit identity"]
+        self.assertEqual(len(warning), 1)
+        self.assertIn("looks like a coding agent's identity", warning[0]["detail"])
+        target, _ = install(self.repo)
+        skipped = track(self.repo, [target], "Add agent-work-kit")
+        self.assertFalse(skipped["committed"])
+        self.assertIn("coding agent's identity", skipped["skipped"])
+        self.assertEqual(git(self.repo, "log", "--format=%an"), "owner")  # nothing committed as the agent
+        git(self.repo, "config", "user.name", "owner")
+        git(self.repo, "config", "user.email", "owner@example.com")
+        self.assertEqual([f for f in diagnose(self.repo) if f["item"] == "commit identity"], [])
+        self.assertTrue(track(self.repo, [target], "Add agent-work-kit")["committed"])
+        self.assertEqual(git(self.repo, "log", "-1", "--format=%an"), "owner")
+
+    def test_awkit_commits_are_not_history(self):
+        from awkit.kit_install import install
+        from awkit.review import track
+        fresh = self.root / "fresh"
+        fresh.mkdir()
+        target, _ = install(fresh)
+        self.assertTrue(track(fresh, [target], "Add agent-work-kit")["committed"])
+        self.assertEqual(git(fresh, "log", "--format=%an"), "Agent Work Kit")
+        git(fresh, "config", "user.name", "owner")
+        git(fresh, "config", "user.email", "owner@example.com")
+        self.assertTrue(commit_identity(fresh, message="Start the project")["ok"])
+
+
+class RunRecordTests(Repository):
+    def test_run_records_stay_in_the_project_and_out_of_git(self):
+        # The default used to be the system temp folder, outside the project the runs belong to.
+        self.commit("check.py", "print('ok')\n", "First")
+        (self.repo / "checks.toml").write_text('schema = 1\n[[checks]]\nname = "ok"\nargv = ["{python}", "check.py"]\n',
+                                               encoding="utf-8")
+        git(self.repo, "add", "checks.toml")
+        git(self.repo, "commit", "-q", "-m", "Add the check")
+        result = check(self.repo, "HEAD", self.repo / "checks.toml")
+        self.assertEqual(result["status"], "passed")
+        self.assertTrue(Path(result["run_dir"]).resolve().is_relative_to((self.repo / ".awkit" / "reviews").resolve()))
+        self.assertEqual(git(self.repo, "status", "--porcelain"), "")
+        self.assertEqual(done(self.repo)["status"], "unchanged")
 
 
 class NestedRepositoryTests(Repository):
@@ -227,6 +281,14 @@ class DoneTests(Repository):
         written, _ = install_hooks(self.repo, sys.executable, use_git=False, use_claude=True)
         settings = json.loads((self.repo / ".claude" / "settings.local.json").read_text(encoding="utf-8"))
         self.assertEqual(sorted(settings["hooks"]), ["SessionStart", "Stop"])
+        # The hooks call awkit by name, not this machine's interpreter, so a moved environment cannot break them.
+        commands = [h["command"] for e in settings["hooks"]["Stop"] for h in e["hooks"]]
+        self.assertEqual(commands, ["if command -v awkit >/dev/null 2>&1; then awkit check done --hook; fi"])
+        self.assertNotIn(sys.executable, (self.repo / ".claude" / "settings.local.json").read_text(encoding="utf-8"))
+        # The settings file the kit wrote is local: it never counts as unchecked work.
+        (self.repo / "value.txt").write_text("1\n", encoding="utf-8")
+        self.assertTrue(done(self.repo, self.root / "runs")["ok"])
+        self.assertIn(".claude/settings.local.json", (self.repo / ".git" / "info" / "exclude").read_text(encoding="utf-8"))
         self.assertEqual(install_hooks(self.repo, sys.executable, use_git=False, use_claude=True)[0], [])
         self.assertEqual(len(written), 1)
 

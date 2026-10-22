@@ -37,6 +37,12 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Fixed
 
+- `awkit doctor` passed a coding agent's Git identity such as `Claude <noreply@anthropic.com>` as fine. It now checks the configured identity against the repository's history, and `kit init` and `kit example` commit into a repository with history only as an identity that fits it, skipping the commit with the reason otherwise.
+- The hooks from `awkit kit hooks` named the Python interpreter awkit was installed with and broke when that environment moved; they call `awkit` by name.
+- `awkit check done` counted `.claude/settings.local.json`, which `kit hooks --claude` writes, as unchecked work and blocked every turn. Files local to the machine are left out, and the file is excluded from Git locally.
+- `awkit review check` kept run folders in the system temp folder by default, outside the project; the default is now `.awkit/reviews` in the repository, excluded from Git locally.
+- `awkit usage` did not count messages typed while a turn was running, which Claude Code records only as queued-command attachments.
+
 - `awkit review` no longer creates a repository in an untracked folder and commits every file in it, `.env` included; such folders are refused.
 - An example created inside a repository that already had commits was not committed, so the first command in its README could not find its script.
 - Adding the kit to a repository with staged changes no longer bundles those changes into the kit's commit.

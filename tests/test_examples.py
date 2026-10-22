@@ -93,8 +93,10 @@ class ExampleTests(unittest.TestCase):
                 git(outer, "config", "core.autocrlf", "false")
                 (outer / "notes.txt").write_text("mine", encoding="utf-8")
                 if with_history:
+                    git(outer, "config", "user.name", "f")  # the owner, as their own clone has it
+                    git(outer, "config", "user.email", "f@localhost")
                     git(outer, "add", "notes.txt")
-                    git(outer, "-c", "user.name=f", "-c", "user.email=f@localhost", "commit", "-m", "mine")
+                    git(outer, "commit", "-m", "mine")
                 target, _ = install_example("data", outer / "data-example")
                 record = track(target, [target], "Add the data example")
                 self.assertEqual((record["created"], record["committed"]), (False, True))
@@ -202,7 +204,9 @@ class ExampleTests(unittest.TestCase):
                 git(outer, "init", "-q")
                 (outer / "notes.txt").write_text("mine", encoding="utf-8")
                 git(outer, "add", "notes.txt")
-                git(outer, "-c", "user.name=f", "-c", "user.email=f@localhost", "commit", "-q", "-m", "mine")
+                git(outer, "config", "user.name", "f")
+                git(outer, "config", "user.email", "f@localhost")
+                git(outer, "commit", "-q", "-m", "mine")
                 created = run("kit", "example", kind, str(outer / "example"), cwd=outer)
                 self.assertEqual(created.returncode, 0, created.stderr)
                 folder = outer / "example"

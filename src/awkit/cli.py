@@ -83,8 +83,7 @@ def _parser():
     finished = check_commands.add_parser("done", help="check that the files changed in this session have a passing "
                                          "`review check` of their current state; exit 0 yes, 1 no")
     finished.add_argument("--repo", type=Path, default=Path("."), help="folder in the Git repository (default: .)")
-    finished.add_argument("--runs-root", type=Path, help="run folder root used with `review check`, besides "
-                          ".awkit/reviews and the system temp default")
+    finished.add_argument("--runs-root", type=Path, help="run folder root used with `review check`, besides .awkit/reviews and the system temp folder older versions used")
     finished.add_argument("--session", help="session ID the starting point is recorded under (default: one shared point)")
     finished.add_argument("--mark", action="store_true", help="record the current state as the session's starting point")
     finished.add_argument("--hook", action="store_true", help="run as a Claude Code hook: read the hook input from stdin, "
@@ -151,7 +150,7 @@ def _parser():
                                           "exit 0 passed, 1 failed or uncertain, 2 cannot run")
     isolated.add_argument("snapshot", help="full commit ID from `review snapshot`, or HEAD")
     isolated.add_argument("--config", type=Path, required=True, help="checks TOML (schema = 1) with setup, checks and artifacts")
-    isolated.add_argument("--runs-root", type=Path, help="where run folders are kept (default: a folder in the system temp directory)")
+    isolated.add_argument("--runs-root", type=Path, help="where run folders are kept (default: .awkit/reviews in the repository, excluded from Git locally)")
     isolated.add_argument("--keep", action="store_true", help="keep the worktree after a normal finish")
     confirm = review_commands.add_parser("verify", help="rehash a run's retained artifacts against its manifest; exit 0 when all match")
     confirm.add_argument("run_dir", type=Path, help="run folder printed by `review check`")
@@ -275,7 +274,7 @@ def main(argv=None):
             from .checks import install_hooks
             if not (args.git or args.claude):
                 parser.error("choose --git, --claude or both")
-            written, kept = install_hooks(args.dir, sys.executable, args.git, args.claude)
+            written, kept = install_hooks(args.dir, None, args.git, args.claude)
             for path in written:
                 print(f"installed: {path}")
             for path in kept:

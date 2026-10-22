@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 from . import __version__
+from .identity import author_problem, configured
 from .kit_install import SITUATIONS, SKILL_FOLDERS, read_version
 from .review import nested_repositories
 
@@ -77,6 +78,11 @@ def diagnose(folder="."):
             has_commit = bool(_git(top, "rev-parse", "--verify", "-q", "HEAD"))
             add("project repository", "ok" if has_commit else "warning", str(top),
                 "" if has_commit else "commit the files before awkit review check")
+            author = configured(top)
+            problem = author_problem(top, *author, "HEAD" if has_commit else None) if author else None
+            if problem:
+                add("commit identity", "warning", problem.split(". Commit as")[0],
+                    "git config user.name and user.email as the person the repository belongs to")
             for entry in nested_repositories(top):
                 what = "a clone of awkit" if entry["awkit"] else "a separate Git repository"
                 add("nested repository", "warning", f"{entry['path']} is {what}; awkit cannot check changes in it",

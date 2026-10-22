@@ -55,12 +55,13 @@ def _parser():
                        help="claude writes .claude/agents/*.md, codex writes .codex/agents/*.toml")
     roles.add_argument("--model", action="append", metavar="TIER=MODEL[:EFFORT]",
                        help="model for a tier (efficient, standard, judge, top); EFFORT is Codex only; repeatable")
-    skills = kit_commands.add_parser("skills", help="write one skill per situation guide for Claude Code or Codex; "
-                                     "existing skill files are kept")
+    skills = kit_commands.add_parser("skills", help="write the workflow and each situation guide as a skill for Claude "
+                                     "Code or Codex; awkit's earlier skills are regenerated, other files are kept")
     skills.add_argument("dir", nargs="?", type=Path, default=Path("."), help="project folder (default: .)")
     skills.add_argument("--provider", choices=("claude", "codex"), required=True,
                         help="claude writes .claude/skills/awkit-*/SKILL.md, codex writes .agents/skills/awkit-*/SKILL.md")
-    skills.add_argument("--kit", type=Path, help="the kit folder inside the project (default: DIR/agent-work-kit)")
+    skills.add_argument("--kit", type=Path, help="point the skills at this kit folder inside the project instead of "
+                        "holding the guides (default: DIR/agent-work-kit when it exists)")
     hooks = kit_commands.add_parser("hooks", help="install the commit identity hook for Git and the hook runner for "
                                     "Claude Code and Codex; existing hooks are kept")
     hooks.add_argument("dir", nargs="?", type=Path, default=Path("."), help="folder in the Git repository (default: .)")
@@ -227,6 +228,14 @@ def _report_tracking(record):
               file=sys.stderr)
 
 
+def _print_skills(result, indent=""):
+    for key, label in (("created", "created"), ("updated", "regenerated"), ("kept", "kept existing file")):
+        for path in result[key]:
+            print(f"{indent}{label}: {path}")
+    for name, reason in result["omitted"]:
+        print(f"{indent}left out {name}: {reason}")
+
+
 def _print_report(report):
     print(f"target: {report['target']}\nrelease: {report['release']}")
     for check in report["checks"]:
@@ -320,12 +329,10 @@ def main(argv=None):
                 print(f"kept existing hook: {path}")
             return 0
         if args.group == "kit" and args.action == "skills":
-            written, skipped = install_skills(args.dir, args.provider, args.kit)
-            for path in written:
-                print(f"created: {path}")
-            for path in skipped:
-                print(f"kept existing file: {path}")
-            return 0 if written or not skipped else 2
+            result = install_skills(args.dir, args.provider, args.kit)
+            _print_skills(result)
+            written = result["created"] + result["updated"]
+            return 0 if written or not result["kept"] else 2
         if args.group == "kit" and args.action == "roles":
             written, skipped, warnings = install_roles(args.dir, args.provider, args.model)
             for path in written:

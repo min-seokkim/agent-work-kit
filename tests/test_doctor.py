@@ -55,7 +55,7 @@ class DoctorTests(unittest.TestCase):
             self.assertIn("awkit 0.0.1", older["detail"])
             version.unlink()
             self.assertIn("records no version", {f["item"]: f for f in diagnose(project)}["kit folder"]["detail"])
-            self.assertTrue(findings["claude skills"]["detail"].startswith(f"{len(SITUATIONS)} of {len(SITUATIONS)}"))
+            self.assertTrue(findings["claude skills"]["detail"].startswith(f"{len(SITUATIONS)} awkit skills"))
             self.assertIn("project repository", render(list(findings.values())))
 
 

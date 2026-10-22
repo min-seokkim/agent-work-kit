@@ -9,7 +9,7 @@ import unittest
 from pathlib import Path
 
 from awkit import __version__
-from awkit.kit_install import SITUATIONS, install, install_roles, install_skills, load_roles, read_version
+from awkit.kit_install import SITUATIONS, WORKFLOW, install, install_roles, install_skills, load_roles, read_version
 from awkit.review import track
 from support import child_env
 
@@ -30,6 +30,20 @@ SITUATION_FILE_WORD_LIMIT = 3_500
 REFERENCES = ("reference.md", "failures.md")
 REFERENCE_WORD_LIMIT = 9_000
 LICENSES = ("LICENSE.md", "THIRD_PARTY_NOTICES.md")
+
+
+def skill_front_matter(text):
+    """The front matter of a SKILL.md as both agents read it: YAML keys, values plain or double-quoted."""
+    if not text.startswith("---\n"):
+        raise AssertionError("no front matter")
+    head = text[4:].split("\n---\n", 1)[0]
+    meta = {}
+    for line in head.splitlines():
+        key, sep, value = line.partition(": ")
+        if not sep or not re.match(r"^[a-z][a-z0-9_-]*$", key):
+            raise AssertionError(f"not a YAML mapping line: {line}")
+        meta[key] = json.loads(value) if value.startswith('"') else value
+    return meta
 
 
 def managed_documents(folder: Path, include=None):
@@ -193,31 +207,77 @@ class RoleTests(unittest.TestCase):
             with self.subTest(spec=spec), self.assertRaises(ValueError):
                 install_roles(self.project, "codex", [spec])
 
-    def test_skills_point_to_every_situation_guide(self):
+    def test_skills_point_to_a_copied_kit_folder(self):
         target, _ = install(self.project)
         readme = (target / "README.md").read_text(encoding="utf-8")
         for provider, folder in (("claude", ".claude/skills"), ("codex", ".agents/skills")):
-            written, skipped = install_skills(self.project, provider)
-            self.assertEqual((len(written), skipped), (len(SITUATIONS), []))
+            result = install_skills(self.project, provider)
+            self.assertEqual((len(result["created"]), result["kept"]), (len(SITUATIONS), []))
             for name, guide, description, _ in SITUATIONS:
                 text = (self.project / folder / name / "SKILL.md").read_text(encoding="utf-8")
                 self.assertTrue(text.startswith(f"---\nname: {name}\ndescription: \""), text)
                 quoted = text.split("\n")[2].removeprefix("description: ")
                 self.assertEqual(json.loads(quoted), description)  # valid YAML: a double-quoted scalar
-                self.assertLessEqual(len(description), 1024)
                 self.assertIn(f"`agent-work-kit/{guide}`", text)
                 self.assertTrue((target / guide).is_file(), guide)
                 self.assertIn(f"]({guide})", readme)
                 self.assertIn(f"`{name}`", readme)
-            self.assertEqual(install_skills(self.project, provider)[0], [])
+            again = install_skills(self.project, provider)
+            self.assertEqual((again["created"], again["updated"], len(again["unchanged"])), ([], [], len(SITUATIONS)))
             self.assertFalse((self.project / folder / "awkit-connect").exists())  # workflow.md points there
+            self.assertFalse((self.project / folder / "awkit-workflow").exists())  # read from the kit folder
         self.assertIn("korean-writing.md", (self.project / ".claude/skills/awkit-writing/SKILL.md").read_text("utf-8"))
         (self.project / "elsewhere").mkdir()
         with self.assertRaisesRegex(ValueError, "No kit folder"):
-            install_skills(self.project / "elsewhere", "claude")
-        command = [sys.executable, "-m", "awkit", "kit", "skills", str(self.project), "--provider", "codex"]
-        again = subprocess.run(command, capture_output=True, text=True, encoding="utf-8", env=child_env())
-        self.assertEqual(again.returncode, 2)
+            install_skills(self.project / "elsewhere", "claude", self.project / "elsewhere")
+        # A file with an awkit skill's name that awkit did not write is kept, and the command says so.
+        mine = self.project / ".agents/skills/awkit-writing/SKILL.md"
+        mine.write_text("---\nname: awkit-writing\ndescription: mine\n---\nmine\n", encoding="utf-8")
+        self.assertEqual(install_skills(self.project, "codex")["kept"], [mine])
+
+    def test_self_contained_skills_hold_the_guides_and_parse_for_both_agents(self):
+        for provider, folder in (("claude", ".claude/skills"), ("codex", ".agents/skills")):
+            result = install_skills(self.project, provider)
+            self.assertEqual(len(result["created"]), len(SITUATIONS) + 1)
+            for name, guide, description, _ in (WORKFLOW, *SITUATIONS):
+                text = (self.project / folder / name / "SKILL.md").read_text(encoding="utf-8")
+                meta = skill_front_matter(text)
+                # Claude Code and Codex both read name and description; Codex limits them to 64 and 1024
+                # characters and the name to lowercase letters, digits and hyphens.
+                self.assertEqual(set(meta), {"name", "description"})
+                self.assertEqual(meta["name"], name)
+                self.assertRegex(name, r"^[a-z0-9-]{1,64}$")
+                self.assertEqual(meta["description"], description)
+                self.assertLessEqual(len(description), 1024)
+                self.assertNotIn("\n", description)
+                # One line, short: agents keep every description in context.
+                self.assertLessEqual(len(description.split()), 16, name)
+                heading = next(line for line in (ROOT / "kit" / guide).read_text("utf-8").splitlines() if line.startswith("# "))
+                self.assertIn(heading, text)
+                # No link points at a kit file the skill folder does not have.
+                for target in LINK.findall(text):
+                    self.assertRegex(target, r"^https?://", f"{name}: {target}")
+            self.assertEqual(broken_links(self.project / folder.split("/")[0]), [])
+        writing = (self.project / ".claude/skills/awkit-writing/SKILL.md").read_text("utf-8")
+        self.assertIn("# Korean Writing Guide", writing)  # the supplement is inside, one level down
+        self.assertIn("Copyright (c) 2026 epoko77-ai", writing)  # the adapted material keeps its notice
+        self.assertIn("Copyright (c) 2026 min-seokkim", writing)
+        records = (self.project / ".claude/skills/awkit-records/SKILL.md").read_text("utf-8")
+        self.assertIn("## Template: checkpoint.md", records)
+        self.assertIn("Connect the Kit to a Project",
+                      (self.project / ".claude/skills/awkit-workflow/SKILL.md").read_text("utf-8"))
+
+    def test_a_method_bundle_leaves_out_planning_review_and_delegation(self):
+        skills = self.project / ".claude" / "skills"
+        for name in ("brainstorming", "writing-plans", "requesting-code-review"):
+            (skills / name).mkdir(parents=True)
+            (skills / name / "SKILL.md").write_text(f"---\nname: {name}\ndescription: x\n---\n", encoding="utf-8")
+        result = install_skills(self.project, "claude")
+        made = {path.parent.name for path in result["created"]}
+        self.assertEqual(made, {"awkit-workflow", "awkit-writing", "awkit-checking", "awkit-delivery"})
+        self.assertEqual({name for name, _ in result["omitted"]},
+                         {"awkit-work-types", "awkit-delegation", "awkit-review-session", "awkit-records"})
+        self.assertTrue(all(reason.startswith("superpowers (skills ") for _, reason in result["omitted"]))
 
     def test_cli_roles(self):
         command = [sys.executable, "-m", "awkit", "kit", "roles", str(self.project), "--provider", "codex"]

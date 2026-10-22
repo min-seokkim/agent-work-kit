@@ -9,7 +9,7 @@ from pathlib import Path
 
 from . import __version__
 from .identity import author_problem, configured
-from .kit_install import SITUATIONS, SKILL_FOLDERS, read_version
+from .kit_install import SKILL_FOLDERS, read_version
 from .review import nested_repositories
 
 MIN_PYTHON = (3, 11)
@@ -102,14 +102,21 @@ def diagnose(folder="."):
                         "install the new kit beside it with awkit kit init --name agent-work-kit-new and compare")
                 else:
                     add("kit folder", "ok", f"{kit} (awkit {recorded})")
-                for provider, path in SKILL_FOLDERS.items():
-                    present = sum((top / path / name / "SKILL.md").is_file() for name, *_ in SITUATIONS)
-                    if present:
-                        add(f"{provider} skills", "ok", f"{present} of {len(SITUATIONS)} in {top / path}")
+                _skills(top, add)
             elif kit.exists():
                 add("kit folder", "warning", f"{kit} has no workflow.md; it may be an older kit",
                     "install the new version beside it with awkit kit init --name agent-work-kit-new")
+            else:
+                _skills(top, add)
     return findings
+
+
+def _skills(top, add):
+    from .environment import skills
+    for provider, found in skills(top).items():
+        mine = [s["name"] for s in found if s["awkit"]]
+        if mine:
+            add(f"{provider} skills", "ok", f"{len(mine)} awkit skills in {top / SKILL_FOLDERS[provider]}")
 
 
 def render(findings):

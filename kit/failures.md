@@ -338,7 +338,7 @@ Generated from the guards' own declarations: each guide section ends with a "Pre
 | F9 The agent's own identity replaces the repository's convention | connect.md | `awkit check commit`, `awkit kit hooks`, `awkit kit init and kit example (commit only the new folder)`, `awkit doctor` | `commit-identity (block)` |
 | F10 Irreversible publication prepared before it is justified | none | none | none |
 | F11 A guess is presented as a finding | workflow.md Do the work; connect.md; checking.md The checked version | `awkit kit scan` | none |
-| F12 Scope grows before anything is measured | connect.md | none | none |
+| F12 Scope grows before anything is measured | connect.md | `awkit kit skills` | none |
 | F13 AI writing patterns in English | workflow.md Report; writing.md Write plainly | `awkit check writing` | `writing-check (verify)` |
 | F14 Korean that reads like a translation, including from an agent that wrote the rules | korean-writing.md Writing process; korean-writing.md Tone and terminology; korean-writing.md Revise sentences | `awkit check writing` | `writing-check (verify)`, `korean-writing (inject)` |
 | F15 Writing for the wrong reader | writing.md Before writing; writing.md Write plainly | none | none |

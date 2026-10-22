@@ -1,14 +1,21 @@
-"""Copy the Markdown agent kit into a project."""
+"""Write the kit into a project: self-contained skills, role files, examples, or a copy of the kit folder."""
 
 from __future__ import annotations
 
 import json
+import posixpath
+import re
 import shutil
 import subprocess
 import uuid
 from pathlib import Path
 
+from .environment import GENERATED
+
 SKIP = {"__pycache__", "__init__.py"}
+# The failure catalogue entries (kit/failures.md) this command guards against: guidance kept in context
+# every session before anything shows it is needed, and a second copy of what a method bundle does (F12).
+PREVENTS = {"awkit kit skills": ("F12",)}
 
 
 def kit_root():
@@ -195,61 +202,196 @@ def install_roles(project: Path, provider: str, specs=None):
 
 
 # Situation guides and the skill each becomes: (skill name, guide file, description, extra instruction).
-# The description is what the agent sees before loading the skill, so it names the situation. connect.md has
-# no skill: workflow.md, read every session, already sends an agent there while the profile is empty, and
-# a connected project would carry the skill's description in every session for nothing.
+# The description is what the agent keeps in context every session to decide when to load the skill, so it
+# is one line naming the situation. connect.md has no skill of its own: the workflow skill carries it, and
+# a connected project would carry a second description in every session for a procedure used once.
+WORKFLOW = ("awkit-workflow", "workflow.md",
+            "Define, check and report any task here; connect the kit while the profile is empty.", "")
 SITUATIONS = (
     ("awkit-writing", "writing.md",
-     "Write or revise text people read: documents, reports, READMEs, UI text, CLI output, notifications, handoffs, "
-     "commit and PR descriptions.", "For Korean text, also read `{kit}/korean-writing.md`."),
+     "Write or revise text people read: documents, reports, UI text, commit messages.",
+     "For Korean text, also read `{kit}/korean-writing.md`."),
     ("awkit-work-types", "work-types.md",
-     "Decide inputs and completion evidence for work that is not a code change: research, writing, data "
-     "preparation and analysis, environment setup and troubleshooting, operating an application, learning, "
-     "automation.", ""),
+     "Inputs and evidence for research, data, setup, operations, learning or automation work.", ""),
     ("awkit-checking", "checking.md",
-     "Set up or interpret project checks: check configuration, isolated worktrees, databases, ports and devices "
-     "shared by checks, multiprocess programs, and failures that pass on a rerun.", ""),
+     "Set up project checks, or read results that fail, pass on rerun or share resources.", ""),
     ("awkit-delivery", "delivery.md",
-     "Hand over, submit, publish or deploy a result, or replace a running version, and confirm it arrived.", ""),
+     "Hand over, publish or deploy a result and confirm it arrived.", ""),
     ("awkit-delegation", "delegation.md",
-     "Split work across subagents, choose roles and models, or write a handoff for another agent.", ""),
+     "Split work across subagents, choose models or write a handoff.", ""),
     ("awkit-review-session", "review-session.md",
-     "Work with a separate review session through awkit channel, as the main session or as the reviewer.", ""),
+     "Work with a separate review session through awkit channel.", ""),
     ("awkit-records", "protocol.md",
-     "Keep task records and states, write review or decision records, or resume work another session left.", ""),
+     "Keep task records and states, or resume work another session left.", ""),
 )
 SKILL_FOLDERS = {"claude": Path(".claude") / "skills", "codex": Path(".agents") / "skills"}
+# Guides inlined after the main guide in a self-contained skill, with the heading they get there.
+APPENDED = {"awkit-workflow": ("connect.md",), "awkit-writing": ("korean-writing.md",)}
+TEMPLATES = ("task.md", "review.md", "decision.md", "checkpoint.md")
+# What a method bundle such as superpowers already does: planning, review and delegation. Its skills are
+# the project's way of doing those, so the kit keeps only the evidence loop: checks, delivery and writing,
+# and the workflow, whose check and report steps the bundle leaves to the project.
+COVERED_BY_BUNDLES = {
+    "awkit-work-types": "plans the work",
+    "awkit-delegation": "delegates to subagents",
+    "awkit-review-session": "runs reviews",
+    "awkit-records": "keeps plans and task state",
+}
+LINK = re.compile(r"\[([^\]\n]+)\]\(([^)\s]+)\)")
+HEADING = re.compile(r"^(#{1,5}) ", re.M)
 
 
-def install_skills(project: Path, provider: str, kit: Path | None = None):
-    """Write one skill per situation guide. Each skill points to the guide in the project's kit folder, so
-    the kit stays the single source. Existing skill files are never overwritten."""
-    if provider not in SKILL_FOLDERS:
-        raise ValueError("The provider must be claude or codex.")
-    project = Path(project).resolve()
-    kit = (project / "agent-work-kit") if kit is None else Path(kit).resolve()
-    if not (kit / "workflow.md").is_file():
-        raise ValueError(f"No kit folder with workflow.md at {kit}. Run `awkit kit init` first or pass --kit.")
-    try:
-        kit_path = kit.relative_to(project).as_posix()
-    except ValueError as exc:
-        raise ValueError("The kit folder must be inside the project folder.") from exc
-    written, skipped = [], []
-    for name, guide, description, extra in SITUATIONS:
-        path = project / SKILL_FOLDERS[provider] / name / "SKILL.md"
-        if path.exists():
-            skipped.append(path)
-            continue
+def _skill_of(guide):
+    for name, file, *_ in (WORKFLOW, *SITUATIONS):
+        if file == guide:
+            return name
+    for name, files in APPENDED.items():
+        if guide in files:
+            return name
+    return None
+
+
+def _rewrite_links(text, skill, base=""):
+    """Links between kit files lead nowhere inside a skill folder: name the skill or section instead.
+    `base` is the folder of the file the text comes from, relative to the kit."""
+    def replace(match):
+        label, target = match.groups()
+        if re.match(r"[a-z]+:", target):
+            return match.group(0)
+        path = target.split("#", 1)[0]
+        if not path:
+            return label
+        path = posixpath.normpath(base + path)
+        if path in ("LICENSE.md", "THIRD_PARTY_NOTICES.md"):
+            return f"{label} (at the end of this skill)" if skill == "awkit-writing" else label
+        if path == "templates/project.md":
+            return f"{label} (the Agent Work Kit section of AGENTS.md or CLAUDE.md)"
+        if path.startswith("templates/") and Path(path).name in TEMPLATES:
+            return f"{label} (below)" if skill == "awkit-records" else f"{label} (in the `awkit-records` skill)"
+        if path.startswith("templates/roles/"):
+            return f"{label} (`awkit kit roles` writes them)"
+        owner = _skill_of(path)
+        if owner == skill:
+            return f"{label} (below)" if path in APPENDED.get(skill, ()) else label
+        if owner:
+            return f"{label} (the `{owner}` skill)"
+        shown = f"`{path}`" if label == path else f"{label} (`{path}`"
+        return shown + " in the Agent Work Kit package" + ("" if label == path else ")")
+    return LINK.sub(replace, text)
+
+
+def _demote(text):
+    """Headings one level down, outside code blocks, for a guide appended under another."""
+    lines, fence = [], None
+    for line in text.splitlines():
+        marker = re.match(r"\s*(`{3,}|~{3,})", line)
+        if marker:
+            fence = None if fence and marker.group(1)[0] == fence else (fence or marker.group(1)[0])
+        elif fence is None and HEADING.match(line):
+            line = "#" + line
+        lines.append(line)
+    return "\n".join(lines) + "\n"
+
+
+def _guide(name):
+    return kit_root().joinpath(name).read_text(encoding="utf-8").replace("\r\n", "\n")
+
+
+def _source_label():
+    record = kit_source()
+    label = f"awkit {record['awkit']}"
+    if record.get("commit"):
+        label += f", kit commit {record['commit'][:7]}"
+    return label
+
+
+def skill_text(name, guide, description, extra="", kit_path=None):
+    """The SKILL.md for one guide. With `kit_path` it points to the guide in a kit folder inside the
+    project; otherwise it holds the guide itself, so nothing outside the skill folder is needed."""
+    head = f"---\nname: {name}\n" \
+           f"description: {json.dumps(description)}\n---\n\n"  # JSON is valid YAML; ": " needs quoting
+    if kit_path is not None:
         body = (f"Read `{kit_path}/{guide}` and follow it. It is a situation guide of Agent Work Kit; the baseline "
                 f"workflow in `{kit_path}/workflow.md` still applies.")
         if extra:
             body += " " + extra.format(kit=kit_path)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        # A JSON string is a valid YAML double-quoted scalar; descriptions contain ": ", which plain YAML forbids.
-        path.write_text(f"---\nname: {name}\ndescription: {json.dumps(description)}\n---\n\n{body}\n",
-                        encoding="utf-8", newline="\n")
-        written.append(path)
-    return written, skipped
+        return head + f"{GENERATED} by `awkit kit skills`; it regenerates this file and `awkit kit remove` deletes it -->\n\n" \
+            + body + "\n"
+    sources = [guide, *APPENDED.get(name, ())]
+    parts = [f"{GENERATED} by `awkit kit skills` from {', '.join(sources)} ({_source_label()}). "
+             "`awkit kit skills` regenerates this file and `awkit kit remove` deletes it. -->\n",
+             _rewrite_links(_guide(guide), name)]
+    for appended in APPENDED.get(name, ()):
+        parts.append(_demote(_rewrite_links(_guide(appended), name)))
+    if name == "awkit-records":
+        for template in TEMPLATES:
+            text = _rewrite_links(_guide(f"templates/{template}"), name, "templates/")
+            parts.append(f"## Template: {template}\n\nCopy it into the project's record location when the project "
+                         f"has no record system of its own.\n\n````markdown\n{text.rstrip()}\n````\n")
+    parts.append("## License\n\n" + _guide("LICENSE.md").replace("# MIT License", "MIT License", 1).strip() + "\n")
+    if name == "awkit-writing":
+        notices = _guide("THIRD_PARTY_NOTICES.md")
+        parts.append(_demote(_rewrite_links(notices, name)))
+    return head + "\n".join(part.rstrip("\n") + "\n" for part in parts)
+
+
+def planned_skills(project: Path, provider: str, kit: Path | None = None, found_bundles=None):
+    """([(skill name, path, text)], [(skill name, reason)]) that `install_skills` would write."""
+    from .environment import bundles
+    if provider not in SKILL_FOLDERS:
+        raise ValueError("The provider must be claude or codex.")
+    project = Path(project).resolve()
+    copied = project / "agent-work-kit"
+    if kit is None and (copied / "workflow.md").is_file():
+        kit = copied
+    kit_path = None
+    if kit is not None:
+        kit = Path(kit).resolve()
+        if not (kit / "workflow.md").is_file():
+            raise ValueError(f"No kit folder with workflow.md at {kit}. Leave out --kit to write self-contained skills.")
+        try:
+            kit_path = kit.relative_to(project).as_posix()
+        except ValueError as exc:
+            raise ValueError("The kit folder must be inside the project folder.") from exc
+    found_bundles = bundles(project) if found_bundles is None else found_bundles
+    # With a kit folder the instruction file points at workflow.md itself; without one the workflow is a skill.
+    chosen = SITUATIONS if kit_path is not None else (WORKFLOW, *SITUATIONS)
+    planned, omitted = [], []
+    for name, guide, description, extra in chosen:
+        if found_bundles and name in COVERED_BY_BUNDLES:
+            bundle = found_bundles[0]
+            omitted.append((name, f"{bundle['name']} ({bundle['evidence']}) {COVERED_BY_BUNDLES[name]}"))
+            continue
+        path = project / SKILL_FOLDERS[provider] / name / "SKILL.md"
+        planned.append((name, path, skill_text(name, guide, description, extra, kit_path)))
+    return planned, omitted
+
+
+def install_skills(project: Path, provider: str, kit: Path | None = None, changes=None):
+    """Write one skill per guide. Files awkit wrote earlier are regenerated; any other file with the same
+    name is kept. Returns {created, updated, unchanged, kept, omitted}."""
+    from .environment import is_awkit_skill
+    planned, omitted = planned_skills(project, provider, kit)
+    result = {"created": [], "updated": [], "unchanged": [], "kept": [], "omitted": omitted}
+    for _, path, text in planned:
+        if path.exists():
+            current = path.read_text(encoding="utf-8", errors="replace")
+            if not is_awkit_skill(current):
+                result["kept"].append(path)
+                continue
+            if current == text:
+                result["unchanged"].append(path)
+                continue
+            key = "updated"
+        else:
+            key = "created"
+        if changes is not None:
+            changes.write(path, text, "created")
+        else:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(text, encoding="utf-8", newline="\n")
+        result[key].append(path)
+    return result
 
 
 VERSION_FILE = "VERSION.txt"

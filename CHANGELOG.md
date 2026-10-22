@@ -8,6 +8,7 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Incompatible changes
 
+- `awkit kit skills` without `--kit` and without an `agent-work-kit` folder writes skills that hold the guides instead of pointing at a kit folder, and adds `awkit-workflow`. Descriptions are one line. Skills awkit wrote earlier are regenerated instead of kept. With a method bundle such as superpowers in the project, `awkit-work-types`, `awkit-delegation`, `awkit-review-session` and `awkit-records` are left out.
 - `awkit kit hooks --claude` writes `awkit hook` entries for every hook event to `.claude/settings.json`, which can be committed, and writes `rules.toml` when there is none; it no longer writes the done check to `.claude/settings.local.json` and removes the entries earlier versions put there. `--codex` writes the same to `.codex/hooks.json`.
 - CLI help and error messages changed from Korean to English. Scripts that read message text should check exit codes instead; their meaning is unchanged.
 - `awkit usage --json` uses result format 2: unmeasured token fields are `null` instead of `0`, and the result carries `format` and `total.complete`.

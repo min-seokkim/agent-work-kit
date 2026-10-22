@@ -28,6 +28,11 @@ def git(repo, *args, env=None):
 
 IDENTITY = ("-c", "user.name=Agent Work Kit", "-c", "user.email=awkit@localhost")
 
+# The failure catalogue entries (kit/failures.md) each command guards against.
+PREVENTS = {"awkit review snapshot": ("F17",), "awkit review check": ("F2", "F17"),
+            "awkit review accept": ("F16",), "awkit review compare": ("F16",),
+            "awkit kit init and kit example (commit only the new folder)": ("F8", "F9")}
+
 
 def _probe(folder, *args):
     return subprocess.run(["git", "-C", str(folder), *args], capture_output=True, text=True,
@@ -163,7 +168,10 @@ def snapshot(repo, paths):
         if not target.resolve().is_relative_to(repo.resolve()):
             raise ValueError("The file is outside the repository.")
         spec = (PurePosixPath(subdir) / rel).as_posix()
-        if not target.exists() and not git(repo, "ls-files", "--error-unmatch", "--", spec):
+        # A deleted file counts when HEAD or the index has it; `git rm` and `git mv` remove it from both
+        # the working tree and the index, so HEAD is the one that still knows it.
+        if (not target.exists() and _probe(repo, "ls-files", "--error-unmatch", "--", spec).returncode
+                and not git(repo, "ls-tree", "--name-only", parent, "--", spec)):
             raise ValueError(f"File not found: {name}")
         specs.append(spec)
     with tempfile.TemporaryDirectory(prefix="awkit-index-") as temporary:

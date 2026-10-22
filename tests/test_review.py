@@ -64,6 +64,23 @@ class ReviewTests(unittest.TestCase):
         self.assertNotIn("code.txt", tree)
         self.assertIn("literal[1].txt", tree)
 
+    def test_snapshot_of_files_removed_with_git_rm_and_git_mv(self):
+        # git mv and git rm take the old path out of the index too; HEAD still has it, and the snapshot
+        # must record the removal (found when this repository moved its failure catalogue).
+        (self.repo / "docs").mkdir()
+        (self.repo / "docs" / "notes.md").write_text("notes", encoding="utf-8")
+        git(self.repo, "add", "docs/notes.md")
+        git(self.repo, "-c", "user.name=t", "-c", "user.email=t@localhost", "commit", "-q", "-m", "notes")
+        git(self.repo, "mv", "docs/notes.md", "notes.md")
+        git(self.repo, "rm", "-q", "code.txt")
+        revision = snapshot(self.repo, ["docs/notes.md", "notes.md", "code.txt"])
+        tree = git(self.repo, "ls-tree", "-r", "--name-only", revision).split()
+        self.assertIn("notes.md", tree)
+        self.assertNotIn("docs/notes.md", tree)
+        self.assertNotIn("code.txt", tree)
+        with self.assertRaisesRegex(ValueError, "File not found"):
+            snapshot(self.repo, ["never-existed.md"])
+
     def test_rejects_broad_paths_traversal_and_ignored_files(self):
         (self.repo / "ignored.txt").write_text("excluded", encoding="utf-8")
         for paths in (["."], ["../outside"], [".git/config"], ["ignored.txt"], []):

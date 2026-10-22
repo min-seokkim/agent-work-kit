@@ -60,4 +60,4 @@ awkit kit init
 
 개발 중이며, 첫 릴리스 전까지 명령과 파일 위치가 바뀔 수 있습니다. 바뀐 내용은 [CHANGELOG.md](CHANGELOG.md)에, 개발 기록은 [docs/development.md](docs/development.md)에 있습니다.
 
-MIT 라이선스로 배포합니다. 한국어 작성 지침은 `im-not-ai`의 자료를 고쳐 썼으며, 출처와 라이선스는 [외부 자료 고지](kit/THIRD_PARTY_NOTICES.md)에 있습니다.
+MIT 라이선스로 배포합니다. 작성 지침의 일부는 `im-not-ai`의 자료를 고쳐 썼으며, 출처와 라이선스는 [외부 자료 고지](kit/THIRD_PARTY_NOTICES.md)에 있습니다.

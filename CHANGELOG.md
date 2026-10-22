@@ -24,6 +24,7 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 - `awkit usage`: user messages, commands and minutes per thread.
 - `awkit pipeline`: one-way deliveries (submissions, uploads) without `backup` and `rollback`.
 - Kit: work-type completion evidence (`work-types.md`), the "Connect the kit to a project" procedure in the agent instructions, and the command reference.
+- Kit: `writing.md`, a writing guide for any language covering the reader, the preservation list, plain style, corrections and the completion check. `korean-writing.md` keeps only what is specific to Korean and is used together with it.
 
 ### Fixed
 

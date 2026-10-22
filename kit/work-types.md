@@ -30,9 +30,9 @@ When the result will be sent outside the project, follow the project's existing 
 
 ## Writing
 
-**Inputs:** audience, purpose, the facts and decisions that must appear, the authoritative sources and the established terminology. For Korean text follow the [Korean Writing Guide](korean-writing.md), including its English draft and three reviews.
+**Inputs:** audience, purpose, the facts and decisions that must appear, the authoritative sources and the established terminology. Follow the [Writing Guide](writing.md), and for Korean text the [Korean Writing Guide](korean-writing.md).
 
-**Preserve:** numbers, dates, identifiers, commands, quotations and the degree of certainty in the source. Keep accepted wording in a revision unless the task changes it.
+**Preserve:** the Writing Guide's preservation list, and accepted wording in a revision unless the task changes it.
 
 **Completion evidence:** the preservation list is checked against the text, the fact review names the source for each claim, and the rendered form (links, headings, tables) was inspected. For a revision, the diff against the accepted version shows only intended changes.
 

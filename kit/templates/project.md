@@ -20,7 +20,8 @@ Fill these five fields first. They are enough for an agent to begin a task; add 
 - Authoritative requirements and decisions:
 - Document tracking implementation status:
 - Document for reporting results to people:
-- Writing guide: [Korean Writing Guide](../korean-writing.md), when writing Korean
+- Writing guide: [Writing Guide](../writing.md); [Korean Writing Guide](../korean-writing.md) for Korean
+- Per-document requirements (length, endings, layout):
 - Document audience and what readers should understand or do:
 - Established terminology and style exceptions:
 - Record date:

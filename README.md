@@ -60,4 +60,4 @@ To try it on a sample first, tell your agent to run `awkit kit example data demo
 
 The project is in development. Commands and file locations may change before the first release. Changes are listed in [CHANGELOG.md](CHANGELOG.md), and development notes are in [docs/development.md](docs/development.md).
 
-MIT license. The Korean writing guide is adapted from `im-not-ai`; its source and license are in the [third-party notices](kit/THIRD_PARTY_NOTICES.md).
+MIT license. The writing guides are adapted in part from `im-not-ai`; its source and license are in the [third-party notices](kit/THIRD_PARTY_NOTICES.md).

@@ -31,7 +31,7 @@ Fill the four sections below for each assignment. For a short task, one sentence
 - Authorized tools and execution environment:
 - Check-command names from the profile and their working directories:
 - Checks already run and reusable results:
-- Writing guidance: [Korean Writing Guide](../korean-writing.md), when writing Korean
+- Writing guidance: [Writing Guide](../writing.md); [Korean Writing Guide](../korean-writing.md) for Korean
 - Audience, purpose and facts to preserve:
 - Draft and fact-check locations; include English and Korean drafts for Korean writing:
 

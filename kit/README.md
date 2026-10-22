@@ -8,7 +8,8 @@ Instructions and templates for an agent working in this project. Start with [Age
 | [templates/project.md](templates/project.md) | Every session, once filled in |
 | [workflow.md](workflow.md), [protocol.md](protocol.md) | Doing development work or keeping task records |
 | [work-types.md](work-types.md) | Research, writing, data, environment setup, operating an application, learning, automation |
-| [korean-writing.md](korean-writing.md) | Writing Korean text for people |
+| [writing.md](writing.md) | Writing or revising text people read, including UI text and CLI output |
+| [korean-writing.md](korean-writing.md) | Writing Korean text for people, with writing.md |
 | [delegation.md](delegation.md), [templates/roles/](templates/roles/README.md) | Splitting work across subagents |
 | [review-session.md](review-session.md) | A separate session reviews the work |
 | [reference.md](reference.md) | Running an `awkit` command and needing its formats, rules or exit codes |
@@ -19,4 +20,4 @@ The project's own rules and the user's current instructions take precedence over
 
 To update the kit, never overwrite this folder: it holds the filled-in profile and task records. Install the new version beside it with `awkit kit init --name agent-work-kit-new`, compare, and carry over only the changes needed.
 
-The kit is MIT licensed ([LICENSE.md](LICENSE.md)). The Korean writing guide adapts third-party material; keep [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) when redistributing.
+The kit is MIT licensed ([LICENSE.md](LICENSE.md)). The writing guides adapt third-party material; keep [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) when redistributing.

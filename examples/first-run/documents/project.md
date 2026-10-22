@@ -14,4 +14,4 @@ A filled-in minimal profile for this example. Copy the shape for your own docume
 
 - Project language and target runtime: Markdown documents; checks run with the Python that runs awkit.
 - Focused check commands: `python check_docs.py docs`
-- Writing guide: the kit's Korean Writing Guide applies to every document under `docs/`.
+- Writing guide: the kit's Writing Guide and Korean Writing Guide apply to every document under `docs/`.

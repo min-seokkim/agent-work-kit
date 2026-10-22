@@ -51,4 +51,4 @@ The edited file is `changed` with a diff; the others are `same`. Explain that th
 
 ## Afterwards
 
-Commit the fix. To use this on the person's own documents, follow "Connect the kit to a project" in the kit's agent instructions; for Korean text, follow the kit's Korean Writing Guide.
+Commit the fix. To use this on the person's own documents, follow "Connect the kit to a project" in the kit's agent instructions; follow the kit's Writing Guide, and its Korean Writing Guide for Korean text.

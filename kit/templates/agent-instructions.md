@@ -27,6 +27,6 @@ Request independent review when the project requires it and it is authorized. La
 
 ## Report and resume
 
-For Korean text intended for people, follow the [Korean Writing Guide](../korean-writing.md). Report changed behavior, verified results and remaining limitations at completion. Leave a [checkpoint](checkpoint.md) when another session needs to continue.
+For text intended for people, follow the [Writing Guide](../writing.md), and for Korean text the [Korean Writing Guide](../korean-writing.md). Report changed behavior, verified results and remaining limitations at completion. Leave a [checkpoint](checkpoint.md) when another session needs to continue.
 
 These instructions do not automatically authorize data access, agent invocation, message transmission or deployment. Make routine decisions within the already authorized scope.

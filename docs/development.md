@@ -40,7 +40,7 @@ A new situation guard needs a failure entry it prevents, with a recorded occurre
 
 | Area | State |
 |---|---|
-| Kit | Agent instructions with a "Connect the kit to a project" procedure, task protocol, project profile with five "Start here" fields, work-type completion evidence, delegation guide and five role templates, review-session guide, Korean writing guide, task/review/decision/checkpoint templates, command reference. |
+| Kit | Agent instructions with a "Connect the kit to a project" procedure, task protocol, project profile with five "Start here" fields, work-type completion evidence, delegation guide and five role templates, review-session guide, writing guide with a Korean supplement, task/review/decision/checkpoint templates, command reference. |
 | `kit` commands | `init` and `example` (documents, data, analysis) commit only the folder they create; `scan` reports manifests, CI checks, docs and Git state and drafts `checks.toml`; `roles` writes Claude Code or Codex role files. |
 | `review` | `snapshot`, `check` (isolated worktree, setup and checks, artifacts with hashes, paths relative to the run folder), `verify`, `accept` (locked), `compare` (with a note for worktree-only outputs). Refuses untracked folders. |
 | `channel` | SQLite message log between `main` and `reviewer`: requests, replies, rebuttals, waits, close. One session per role. |

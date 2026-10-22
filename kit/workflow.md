@@ -44,7 +44,7 @@ Record what remains available after failure and how to retry or recover. Restori
 
 ## Publish documents and AI summaries
 
-For Korean documents, UI text and handoffs, follow the [Korean Writing Guide](korean-writing.md). Identify the audience and facts to preserve, write an actual English draft, then rewrite it naturally in Korean. Review facts, sentences and overall flow separately. Keep project-specific terminology in the project profile.
+For text people read, follow the [Writing Guide](writing.md), and for Korean text also the [Korean Writing Guide](korean-writing.md). Keep project-specific terminology in the project profile.
 
 Attach a reference revision to both the source and its summary. Restrict AI summaries to the designated inputs and check the response format, evidence references and excluded data. A valid evidence ID does not prove the explanation is true; a person checks important judgments against the source.
 

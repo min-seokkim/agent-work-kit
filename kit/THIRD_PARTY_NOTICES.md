@@ -2,7 +2,7 @@
 
 ## im-not-ai / humanize-korean
 
-The [Korean Writing Guide](korean-writing.md) incorporates material adapted from the `humanize-korean` skill in [epoko77-ai/im-not-ai](https://github.com/epoko77-ai/im-not-ai). Agent Work Kit revises and translates the guidance into English, retains Korean examples, and adds project-specific writing and review procedures.
+The [Korean Writing Guide](korean-writing.md) and the [Writing Guide](writing.md) incorporate material adapted from the `humanize-korean` skill in [epoko77-ai/im-not-ai](https://github.com/epoko77-ai/im-not-ai). Agent Work Kit revises and translates the guidance into English, retains Korean examples, and adds project-specific writing and review procedures.
 
 The upstream material is licensed under MIT. Its copyright and license notice is reproduced below from [the upstream LICENSE at revision adc2814](https://github.com/epoko77-ai/im-not-ai/blob/adc2814a162d7e9f020bf2b89e6fe131f133d074/LICENSE). Preserve this notice when redistributing the adapted material. Agent Work Kit's additions are covered by its [MIT license](LICENSE.md).
 

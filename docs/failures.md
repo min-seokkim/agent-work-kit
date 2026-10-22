@@ -114,14 +114,14 @@ Features and documents are added because they seem useful, before real use shows
 
 Contrasts against claims nobody made, lead-ins, closing lines that repeat the paragraph, slogans, bold labels, dashes, sales words, promotional headlines and repeated labels.
 - Evidence: observed here. The first rewrite of the README (owner's feedback, corrected in `8f93b7b`). Owner's records: em dashes in English and Korean application text; the largest line on a documentation index page was a slogan ("this is not a brochure"); every list entry carried a tag repeating its title; a README listed what the project does not do; consulting and promotional tone in reports.
-- Countermeasure: the pattern list in `AGENTS.md`.
+- Countermeasure: the pattern list in `kit/writing.md`, which `AGENTS.md` applies to this repository.
 - Check: planned: a writing check that flags the listed patterns.
 
 #### F14. Korean that reads like a translation, including from an agent that wrote the rules.
 
 Translationese, mixed sentence endings, noun chains; the agent's own Korean guide not applied to its own output.
 - Evidence: observed here. The Korean README and replies before the owner pointed it out. Owner's records: Korean still unnatural after an English draft and translation; `-세요` turning into `-시오` within one guide, then the same mix left in other documents; words Korean readers do not use in that sense (`정제`, `권위 순서`, `경계`, `흐름`); middle dots joining words; italics in Korean reports.
-- Countermeasure: `kit/korean-writing.md` applied to every Korean text, including the agent's replies.
+- Countermeasure: `kit/korean-writing.md` with `kit/writing.md`, applied to every Korean text, including the agent's replies.
 - Check: planned: Korean patterns in the same writing check.
 
 #### F15. Writing for the wrong reader.
@@ -291,7 +291,7 @@ Each section of the kit and the entries it serves. Sections marked "none" serve 
 | | Review independently | 280 | F17, F26 |
 | | Interpret check results | 76 | F2, F3 |
 | | Deliver results | 165 | F24 |
-| | Publish documents and AI summaries | 181 | F7, F14; the AI summary rules serve no entry yet |
+| | Publish documents and AI summaries | 166 | F7, F14; the AI summary rules serve no entry yet |
 | | Continue across sessions | 41 | F29 |
 | protocol.md | A task record, States | 239 | F1 (session end is not done); the state table itself: none |
 | | Roles and file ownership | 72 | F19 |
@@ -301,7 +301,7 @@ Each section of the kit and the entries it serves. Sections marked "none" serve 
 | | Connect optional tools | 95 | none (tool semantics; belongs in the reference) |
 | work-types.md | Common rules | 384 | F16, F22, F24, F28 |
 | | Research | 123 | F23 |
-| | Writing | 177 | F13, F14, F16 |
+| | Writing | 167 | F16, F30 |
 | | Data preparation and analysis | 225 | F22 |
 | | Environment setup | 224 | F24, F25 |
 | | Operating an application | 114 | F24 |
@@ -319,7 +319,13 @@ Each section of the kit and the entries it serves. Sections marked "none" serve 
 | | 3 Work through a unit, 4 Review criteria | 406 | F2, F17, F18 |
 | | 5 Commands, 6 Waiting | 346 | none (tool usage; belongs in the reference) |
 | | 7 Records and evaluation, 8 Starting prompts | 177 | F20; the prompts: none |
-| korean-writing.md | all sections | 1,297 | F14, F30 |
+| writing.md | Before writing | 150 | F15, F30, F34 |
+| | Write plainly | 167 | F13, F15, F30 |
+| | Preserve facts and judgments | 105 | F16, F30 |
+| | Corrections | 67 | F31, F32 |
+| | Rewriting and collaboration | 134 | F18, F21 |
+| | Completion check | 83 | F1, F33 |
+| korean-writing.md | all sections | 565 | F14, F31 |
 | templates/project.md | Start here | 59 | F11, F29 |
 | | Deliverables and completion | 195 | F3, F24 |
 | | Delegation and models | 109 | F18, F19, F20 |
@@ -327,4 +333,4 @@ Each section of the kit and the entries it serves. Sections marked "none" serve 
 | templates/task.md, review.md, decision.md, checkpoint.md | | 811 | F1, F17, F12, F29 |
 | templates/roles/README.md | | 316 | F20 |
 
-Sections marked "none" total roughly 1,700 words and are reviewed against the baseline workflow. Entries F4, F5, F9, F13 and F31 to F34 have no kit text at all, and F30 is served only through the Korean guide; they are the first candidates for checks (planned items above).
+Sections marked "none" total roughly 1,700 words and are reviewed against the baseline workflow. Entries F4, F5 and F9 have no kit text at all, and F13, F14 and F30 to F34 have only kit text; they are the first candidates for checks (planned items above).

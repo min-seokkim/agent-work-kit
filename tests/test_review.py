@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from awkit.review import check, git, snapshot, verify
+from awkit.review import accept, check, compare, git, snapshot, verify
 
 
 class ReviewTests(unittest.TestCase):
@@ -304,6 +304,71 @@ class ReviewTests(unittest.TestCase):
             verify(run)
         with self.assertRaises(ValueError):
             verify(self.root / "nowhere")
+
+    def test_accept_keeps_artifacts_and_compare_reports_regressions(self):
+        self.configure(["from pathlib import Path; Path('out').mkdir(exist_ok=True); "
+                        "Path('out/report.md').write_text(Path('code.txt').read_text() + ' report')"],
+                       artifacts=["out/report.md", "code.txt"])
+        first = check(self.repo, self.head, self.config, self.root / "runs")
+        record = accept(self.repo, first["run_dir"])
+        folder = self.repo / ".awkit" / "accepted" / "accepted"
+        self.assertEqual(Path(record["folder"]), folder)
+        self.assertEqual((folder / "out/report.md").read_text(), "old report")
+        self.assertEqual(json.loads((folder / "accepted.json").read_text())["snapshot"], self.head)
+        # The working tree has no out/report.md (it was produced in the worktree), code.txt is unchanged.
+        report = compare(self.repo)
+        self.assertEqual({f["path"]: f["status"] for f in report["files"]}, {"out/report.md": "missing", "code.txt": "same"})
+        self.assertFalse(report["unchanged"])
+        # A new run against an edited snapshot compares its own artifacts with the accepted ones.
+        (self.repo / "code.txt").write_text("new", encoding="utf-8")
+        revision = snapshot(self.repo, ["code.txt"])
+        second = check(self.repo, revision, self.config, self.root / "runs")
+        report = compare(self.repo, run_dir=second["run_dir"], diff=True)
+        statuses = {f["path"]: f for f in report["files"]}
+        self.assertEqual(statuses["out/report.md"]["status"], "changed")
+        self.assertIn("-old report", statuses["out/report.md"]["diff"])
+        self.assertIn("+new report", statuses["out/report.md"]["diff"])
+        self.assertEqual(statuses["code.txt"]["status"], "changed")
+        self.assertEqual(report["compared"], second["run_dir"])
+        # Accepting the second run replaces the first; the same run then compares as unchanged.
+        accept(self.repo, second["run_dir"])
+        self.assertTrue(compare(self.repo, run_dir=second["run_dir"])["unchanged"])
+        self.assertEqual((folder / "code.txt").read_text(), "new")
+        self.assertEqual([p.name for p in folder.parent.iterdir()], ["accepted"])
+
+    def test_accept_rejects_unverified_runs_bad_labels_and_missing_versions(self):
+        self.configure(["print('nothing retained')"])
+        bare = check(self.repo, self.head, self.config, self.root / "runs")
+        with self.assertRaises(ValueError):
+            accept(self.repo, bare["run_dir"])
+        self.configure(["from pathlib import Path; Path('a.txt').write_text('a')"], artifacts=["a.txt"])
+        run = check(self.repo, self.head, self.config, self.root / "runs")
+        for label in ("", "../x", "a/b", "x" * 81, 5):
+            with self.subTest(label=label), self.assertRaises(ValueError):
+                accept(self.repo, run["run_dir"], label)
+        (Path(run["run_dir"]) / "artifacts/a.txt").write_text("tampered")
+        with self.assertRaises(ValueError):
+            accept(self.repo, run["run_dir"])
+        with self.assertRaises(ValueError):
+            compare(self.repo, "nothing-accepted")
+
+    def test_cli_accept_and_compare(self):
+        self.configure(["from pathlib import Path; Path('a.txt').write_text('a')"], artifacts=["a.txt", "code.txt"])
+        run = check(self.repo, self.head, self.config, self.root / "runs")
+        env = {**os.environ, "PYTHONUTF8": "1"}
+        base = [sys.executable, "-m", "awkit", "review", "--repo", str(self.repo)]
+        accepted = subprocess.run(base + ["accept", run["run_dir"], "--label", "v1"], capture_output=True,
+                                  text=True, encoding="utf-8", env=env)
+        self.assertEqual(accepted.returncode, 0, accepted.stderr)
+        self.assertEqual(json.loads(accepted.stdout)["label"], "v1")
+        same = subprocess.run(base + ["compare", "--label", "v1", "--run", run["run_dir"]], capture_output=True,
+                              text=True, encoding="utf-8", env=env)
+        self.assertEqual(same.returncode, 0, same.stderr)
+        (self.repo / "code.txt").write_text("edited", encoding="utf-8")
+        changed = subprocess.run(base + ["compare", "--label", "v1", "--diff"], capture_output=True,
+                                 text=True, encoding="utf-8", env=env)
+        self.assertEqual(changed.returncode, 1)
+        self.assertIn("+edited", json.loads(changed.stdout)["files"][1]["diff"])
 
     def test_cli_verify_exit_codes(self):
         self.configure(["from pathlib import Path; Path('a.txt').write_text('a')"], artifacts=["a.txt"])

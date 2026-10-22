@@ -1,16 +1,18 @@
 """Freeze explicitly selected changes and check a fixed Git object in isolation."""
 
+import difflib
 import hashlib
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
 import tomllib
 from pathlib import Path, PurePosixPath
 
-from .pipeline import atomic_json
+from .pipeline import LABEL, atomic_json, stamp
 from .process import run_to_files
 
 
@@ -147,6 +149,91 @@ def verify(run_dir):
                 report["unexpected"].append(relative)
     report["verified"] = (not report["interrupted"] and not report["unexpected"]
                           and all(item["status"] == "ok" for item in report["artifacts"]))
+    return report
+
+
+def accepted_root(repo):
+    return Path(git(repo, "rev-parse", "--show-toplevel")) / ".awkit" / "accepted"
+
+
+def accept(repo, run_dir, label="accepted"):
+    """Keep a verified run's retained artifacts under .awkit/accepted/<label> for later comparison."""
+    if not isinstance(label, str) or not LABEL.fullmatch(label):
+        raise ValueError("A label uses letters, digits, dots, underscores and hyphens, up to 80 characters.")
+    report = verify(run_dir)
+    if not report["artifacts"]:
+        raise ValueError("The run retained no artifacts; list them under `artifacts` in the check configuration.")
+    if not report["verified"]:
+        raise ValueError("The run's retained artifacts no longer match its manifest, so they cannot be accepted.")
+    run = Path(run_dir).resolve()
+    manifest = json.loads((run / "artifacts" / "manifest.json").read_text(encoding="utf-8"))
+    root = accepted_root(repo)
+    root.mkdir(parents=True, exist_ok=True)
+    target = root / label
+    staging = root / f".{label}.{os.getpid()}.tmp"
+    if staging.exists():
+        shutil.rmtree(staging)
+    shutil.copytree(run / "artifacts", staging)
+    record = {"schema": 1, "label": label, "accepted_at": stamp(), "run_dir": str(run),
+              "snapshot": manifest.get("snapshot"), "config_sha256": manifest.get("config_sha256"),
+              "files": manifest["files"]}
+    atomic_json(staging / "accepted.json", record)
+    previous = root / f".{label}.previous"
+    if previous.exists():
+        shutil.rmtree(previous)
+    if target.exists():
+        target.rename(previous)
+    staging.rename(target)
+    if previous.exists():
+        shutil.rmtree(previous)
+    record["folder"] = str(target)
+    return record
+
+
+def _text_diff(before, after, relative):
+    try:
+        old_lines = before.decode("utf-8").splitlines(keepends=True)
+        new_lines = after.decode("utf-8").splitlines(keepends=True)
+    except UnicodeDecodeError:
+        return None
+    lines = list(difflib.unified_diff(old_lines, new_lines, f"accepted/{relative}", f"current/{relative}"))
+    if len(lines) > 400:
+        lines = lines[:400] + ["... (diff truncated)\n"]
+    return "".join(lines)
+
+
+def compare(repo, label="accepted", run_dir=None, diff=False):
+    """Compare the working tree (or a run's retained artifacts) with the accepted version."""
+    folder = accepted_root(repo) / label
+    record_path = folder / "accepted.json"
+    if not record_path.is_file():
+        raise ValueError(f"No accepted version named {label!r}. Run `awkit review accept` first.")
+    record = json.loads(record_path.read_text(encoding="utf-8"))
+    if run_dir is not None:
+        source = Path(run_dir).resolve() / "artifacts"
+        if not source.is_dir():
+            raise ValueError(f"The run folder has no retained artifacts: {run_dir}")
+        origin = str(Path(run_dir).resolve())
+    else:
+        source = Path(git(repo, "rev-parse", "--show-toplevel"))
+        origin = "working-tree"
+    report = {"label": label, "accepted_at": record.get("accepted_at"), "accepted_snapshot": record.get("snapshot"),
+              "compared": origin, "files": []}
+    for relative, entry in sorted(record["files"].items()):
+        rel = PurePosixPath(relative)
+        accepted_file = folder / rel
+        current = source / rel
+        item = {"path": relative, "status": "same"}
+        if current.is_symlink() or not current.is_file():
+            item["status"] = "missing"
+        else:
+            data = current.read_bytes()
+            if hashlib.sha256(data).hexdigest() != entry.get("sha256"):
+                item["status"] = "changed"
+                if diff and accepted_file.is_file():
+                    item["diff"] = _text_diff(accepted_file.read_bytes(), data, relative)
+        report["files"].append(item)
+    report["unchanged"] = all(item["status"] == "same" for item in report["files"])
     return report
 
 

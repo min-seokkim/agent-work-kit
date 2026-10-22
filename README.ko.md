@@ -45,6 +45,7 @@ Linux에서는 `.venv/bin/` 아래의 같은 실행 파일을 씁니다. 화면 
 ```powershell
 awkit kit example documents my-docs    # 깨진 링크가 든 한국어 문서 묶음
 awkit kit example data my-data         # 열 이름이 맞지 않는 CSV
+awkit kit example analysis my-analysis # 가정이 데이터와 어긋나는 센서 측정값
 ```
 
 프로젝트에 키트를 넣습니다.
@@ -92,7 +93,7 @@ awkit pipeline --config examples/local-release/pipeline.toml deploy ffffffffffff
 | `awkit kit example` | 결함을 하나 넣은 문서 또는 데이터 예제를 만들어 찾고 고치는 과정을 연습하게 합니다. | |
 | `awkit kit roles` | 기존 파일을 보존하면서 다섯 역할의 지침과 등급별 모델 설정을 파일로 만듭니다. | |
 | `awkit usage` | Claude Code와 Codex 실행 기록을 읽어 스레드별 실제 모델, 호출, 토큰을 모읍니다. | |
-| `awkit review` | 고른 변경을 Git commit으로 고정하고, 별도 worktree에서 프로젝트의 검사 명령을 실행합니다. 지정한 결과 파일을 해시와 함께 보존하고 나중에 대조합니다. | Git |
+| `awkit review` | 고른 변경을 Git commit으로 고정하고, 별도 worktree에서 프로젝트의 검사 명령을 실행합니다. 지정한 결과 파일을 해시와 함께 보존하고, 채택본을 남겨 이후 수정본과 비교합니다. | Git |
 | `awkit channel` | 같은 PC의 두 세션이 SQLite 파일로 검토 요청, 응답, 반박을 주고받습니다. | |
 | `awkit publish` | 정적 문서 빌드 결과의 링크를 검사하고 진입 페이지를 원자적으로 바꿉니다. 이전 버전으로 되돌릴 수 있습니다. | |
 | `awkit ui` | 지정한 화면을 여러 폭으로 캡처해 검토 시트 한 장에 모읍니다. | Playwright와 브라우저 |

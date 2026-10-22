@@ -1,6 +1,6 @@
 # 추가 도구
 
-검토할 변경을 고정하는 `review snapshot`, 고정한 버전을 따로 검사하는 `review check`, 정적 문서를 발행하는 `publish`, 화면을 여러 폭으로 캡처하는 `ui`를 다룹니다. 설치 방법은 [CLI 사용법](cli.md#설치)에 있습니다. 빌드와 검사는 모두 프로젝트에 이미 있는 명령을 연결해서 쓰므로 개발 언어는 상관없습니다.
+검토할 변경을 고정하는 `review snapshot`, 고정한 버전을 따로 검사하는 `review check`, 보존한 결과물을 대조하는 `review verify`, 채택본을 남기고 비교하는 `review accept`와 `review compare`, 정적 문서를 발행하는 `publish`, 화면을 여러 폭으로 캡처하는 `ui`를 다룹니다. 설치 방법은 [CLI 사용법](cli.md#설치)에 있습니다. 빌드와 검사는 모두 프로젝트에 이미 있는 명령을 연결해서 쓰므로 개발 언어는 상관없습니다.
 
 각 기능의 개발 범위는 [역할과 범위](scope.md)를 따릅니다. 아래 명령과 설정은 현재 구현을 설명합니다.
 
@@ -90,6 +90,24 @@ awkit review verify .awkit/reviews/review-abc123
 ```
 
 `verify`는 manifest의 각 파일을 다시 읽어 `ok`, `changed`, `missing`으로 보고하고, manifest에 없는 파일은 `unexpected`에 적습니다. `result.json`이 아직 `running`이면 중단된 실행으로 보고 `interrupted`를 `true`로 표시합니다. 모든 파일이 `ok`이고 중단이나 추가 파일이 없을 때만 `verified`가 `true`이고 종료 코드가 `0`입니다. 해시 일치는 파일이 검사 당시와 같은 바이트라는 뜻이며, 내용이 옳은지는 검토 기록이 말해 줍니다.
+
+## 채택본을 남기고 비교하기
+
+검사 결과를 보고 "이 버전이 맞다"고 판단했다면 그 실행을 채택본으로 남깁니다. 이후 수정본이 채택본에서 무엇이 달라졌는지 보는 데 씁니다. 좋다고 한 문서나 디자인이 다음 수정에서 퇴보하는 일을 잡기 위한 것입니다.
+
+```powershell
+awkit review accept .awkit/reviews/review-abc123
+awkit review accept .awkit/reviews/review-abc123 --label v1
+```
+
+`accept`는 먼저 `verify`와 같은 대조를 거쳐 보존한 파일이 manifest와 일치하는지 확인하고, 실행 기록 폴더의 `artifacts/`를 저장소의 `.awkit/accepted/<label>/`로 복사합니다. 기본 label은 `accepted`이고, 같은 label로 다시 채택하면 이전 채택본을 바꿉니다. 채택본 폴더의 `accepted.json`에 어느 실행, 어느 commit, 어느 설정에서 나온 파일인지와 파일별 해시가 남습니다. 보존한 파일이 없는 실행은 채택할 수 없습니다.
+
+```powershell
+awkit review compare                                   # 작업 폴더의 파일을 채택본과 비교
+awkit review compare --run .awkit/reviews/review-def456 --diff   # 새 실행의 결과물을 채택본과 비교
+```
+
+`compare`는 채택본의 파일마다 `same`, `changed`, `missing`을 보고합니다. `--run`을 주면 그 실행 기록 폴더의 `artifacts/`를, 주지 않으면 작업 폴더의 같은 경로를 비교합니다. `--diff`를 붙이면 바뀐 텍스트 파일의 unified diff를 함께 냅니다. 모두 `same`일 때만 종료 코드 `0`입니다. 바뀐 것이 의도한 수정뿐인지는 사람이 diff를 보고 판단합니다.
 
 [하위 폴더 검사 예제](../examples/review/subdirectory.toml)는 `examples/review`에서 설정 파일을 검사하고 그 파일을 보존합니다. 이 저장소의 예제 파일이 들어 있는 commit을 대상으로 실행하세요.
 

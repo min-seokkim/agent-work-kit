@@ -45,6 +45,7 @@ Run one example from start to finish. Each example creates a small project with 
 ```sh
 awkit kit example documents my-docs    # a Korean document set with a broken link
 awkit kit example data my-data         # a CSV whose column names do not match
+awkit kit example analysis my-analysis # sensor readings with an assumption that disagrees with the data
 ```
 
 Add the kit to a project:
@@ -92,7 +93,7 @@ The second release is built to fail its health check. The runner rolls back to t
 | `awkit kit example` | Creates a runnable documents or data example with one deliberate defect to find and fix. | |
 | `awkit kit roles` | Writes five subagent role files with a model per tier, preserving existing files. | |
 | `awkit usage` | Reads Claude Code and Codex session logs and totals the real model, calls and tokens per thread. | |
-| `awkit review` | Freezes selected changes as a Git commit, runs the project's checks against it in a separate worktree, retains the listed result files with hashes and verifies them later. | Git |
+| `awkit review` | Freezes selected changes as a Git commit, runs the project's checks against it in a separate worktree, retains the listed result files with hashes, keeps an accepted version and compares later revisions with it. | Git |
 | `awkit channel` | Passes review requests, replies and rebuttals between two local sessions through a SQLite file. | |
 | `awkit publish` | Checks the links in a static site build, switches the entry page atomically and can restore an earlier version. | |
 | `awkit ui` | Captures chosen pages at several widths and collects them on one review sheet. | Playwright and a browser |

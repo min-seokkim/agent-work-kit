@@ -12,8 +12,8 @@ from .channel import KINDS, ROLES, Channel, render
 from .kit_install import EXAMPLES, install, install_example, install_roles
 from .pipeline import Pipeline, StepError
 from .publish import Publisher
+from .review import accept, compare, snapshot
 from .review import check as run_checks
-from .review import snapshot
 from .review import verify as verify_run
 
 
@@ -28,7 +28,7 @@ def _parser():
     init.add_argument("dir", nargs="?", type=Path, default=Path("."), help="project folder that receives the kit")
     init.add_argument("--name", default="agent-work-kit", help="name of the folder to create (default: agent-work-kit)")
     example = kit_commands.add_parser("example", help="Create a folder with a runnable first-run example.")
-    example.add_argument("kind", choices=EXAMPLES, help="documents: a small Korean document set; data: a CSV to summarise")
+    example.add_argument("kind", choices=EXAMPLES, help="documents: a Korean document set; data: a CSV to summarise; analysis: sensor readings with assumptions")
     example.add_argument("dir", type=Path, help="new folder to create")
     roles = kit_commands.add_parser("roles", help="Generate Claude Code or Codex role files from the role templates. Existing files are kept.")
     roles.add_argument("dir", nargs="?", type=Path, default=Path("."), help="project folder that receives the role files")
@@ -80,8 +80,15 @@ def _parser():
     isolated.add_argument("--config", type=Path, required=True)
     isolated.add_argument("--runs-root", type=Path)
     isolated.add_argument("--keep", action="store_true")
-    compare = review_commands.add_parser("verify", help="Compare a run folder's retained artifacts with its manifest.")
-    compare.add_argument("run_dir", type=Path)
+    confirm = review_commands.add_parser("verify", help="Compare a run folder's retained artifacts with its manifest.")
+    confirm.add_argument("run_dir", type=Path)
+    keep = review_commands.add_parser("accept", help="Keep a run's retained artifacts as the accepted version.")
+    keep.add_argument("run_dir", type=Path)
+    keep.add_argument("--label", default="accepted", help="name of the accepted version (default: accepted)")
+    against = review_commands.add_parser("compare", help="Compare the working tree, or a run's artifacts, with the accepted version.")
+    against.add_argument("--label", default="accepted")
+    against.add_argument("--run", type=Path, help="compare this run folder's retained artifacts instead of the working tree")
+    against.add_argument("--diff", action="store_true", help="include a unified diff for changed text files")
 
     publish = groups.add_parser("publish", help="Validate a static document build and publish it locally")
     publish.add_argument("--output", type=Path, required=True)
@@ -159,6 +166,13 @@ def main(argv=None):
                 report = verify_run(args.run_dir)
                 print(json.dumps(report, ensure_ascii=False, indent=2))
                 return 0 if report["verified"] else 1
+            if args.action == "accept":
+                print(json.dumps(accept(args.repo, args.run_dir, args.label), ensure_ascii=False, indent=2))
+                return 0
+            if args.action == "compare":
+                report = compare(args.repo, args.label, args.run, args.diff)
+                print(json.dumps(report, ensure_ascii=False, indent=2))
+                return 0 if report["unchanged"] else 1
             result = run_checks(args.repo, args.snapshot, args.config, args.runs_root, args.keep)
             print(json.dumps(result, ensure_ascii=False, indent=2))
             return 0 if result["status"] == "passed" else 1

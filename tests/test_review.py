@@ -312,7 +312,8 @@ class ReviewTests(unittest.TestCase):
         first = check(self.repo, self.head, self.config, self.root / "runs")
         record = accept(self.repo, first["run_dir"])
         folder = self.repo / ".awkit" / "accepted" / "accepted"
-        self.assertEqual(Path(record["folder"]), folder)
+        # Git reports the long path; a Windows temp folder may come as an 8.3 short name.
+        self.assertEqual(Path(record["folder"]).resolve(), folder.resolve())
         self.assertEqual((folder / "out/report.md").read_text(), "old report")
         self.assertEqual(json.loads((folder / "accepted.json").read_text())["snapshot"], self.head)
         # The working tree has no out/report.md (it was produced in the worktree), code.txt is unchanged.

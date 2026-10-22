@@ -49,7 +49,8 @@ def broken_links(folder: Path, include=None):
                 continue  # GitHub-relative links such as ../../releases point outside the tree
             if path and not resolved.exists():
                 broken.append(f"{document.relative_to(folder).as_posix()} -> {target}")
-    return broken
+    # Path ordering is case-insensitive on Windows; sort the strings so the order is the same everywhere.
+    return sorted(broken)
 
 
 class KitTests(unittest.TestCase):

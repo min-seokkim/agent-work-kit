@@ -1,9 +1,10 @@
 """Connecting the kit to projects that already have their own agent setup, and taking it out again.
 
 Three kinds of project: an empty one, one with CLAUDE.md, hooks and MEMORY.md, and one with a method
-bundle, a completion gate and husky. For each: the words init adds to every session, the project's own
+bundle, a completion gate and husky. For each: the words awkit adds to every session, the project's own
 files unchanged apart from what awkit adds, hooks chained so both run, and after `kit remove` a tree
-equal to the one before.
+equal to the one before. init itself (the three layers) is tested in test_layers.py; here it runs without
+calling `kit hooks`, and the hooks are installed directly.
 """
 
 import json
@@ -21,7 +22,7 @@ from awkit.review import git
 from support import child_env
 
 ROOT = Path(__file__).resolve().parents[1]
-# What the kit may add to every session in a project: the Agent Work Kit section and one line per skill.
+# What the kit may add to every session in a project: one line per skill.
 SESSION_WORD_LIMIT = 250
 AGENT_TRAILER = "Co-Authored-By: Claude <noreply@anthropic.com>"
 
@@ -69,7 +70,7 @@ class Kinds(unittest.TestCase):
         return root
 
     def connect_everything(self, root):
-        report = connect.init(root)
+        report = connect.init(root, hooks=False)
         changes = connect.Changes(root)
         hooks = install_hooks(root, None, True, True, True, changes)
         changes.save()
@@ -87,7 +88,7 @@ class Kinds(unittest.TestCase):
         (root / "change.txt").unlink()
 
     def assert_removed_cleanly(self, root, before, hooks_before):
-        report = connect.remove(root)
+        report = connect.remove(root, hooks=False)
         self.assertEqual(tree(root), before, report)
         self.assertEqual(git_hooks(root), hooks_before)
         self.assertEqual(report["awkit_folder"], "deleted")
@@ -95,17 +96,13 @@ class Kinds(unittest.TestCase):
     def test_empty_project(self):
         root = self.repository("empty", {"README.md": "# Empty\n"})
         before, hooks_before = tree(root), git_hooks(root)
-        predicted = connect.predicted_words(connect.plan(root))
         report, _ = self.connect_everything(root)
-        # With no instruction file, init writes AGENTS.md and a CLAUDE.md that imports it.
-        self.assertEqual([p.name for p in report["created"]], ["AGENTS.md", "CLAUDE.md"])
-        self.assertEqual((root / "CLAUDE.md").read_text(encoding="utf-8"), connect.CLAUDE_IMPORT)
-        self.assertEqual(set(report["skills"]), {"claude", "codex"})
+        # With no instruction file, init writes none: the project gets checks.toml and nothing to read.
+        self.assertEqual(report["checks"], "created")
+        self.assertFalse((root / "AGENTS.md").exists() or (root / "CLAUDE.md").exists())
         words = environment.session_words(root)
-        self.assertEqual(words, predicted)
         self.assertLessEqual(max(words.values()), SESSION_WORD_LIMIT)
         self.assertEqual(tree(root)["README.md"], before["README.md"])
-        self.assertIn("awkit-workflow", {s["name"] for s in environment.skills(root)["claude"]})
         self.assert_removed_cleanly(root, before, hooks_before)
 
     def test_project_with_claude_md_hooks_and_memory(self):
@@ -121,17 +118,12 @@ class Kinds(unittest.TestCase):
         before, hooks_before = tree(root), git_hooks(root)
         scan_memory = environment.memory(root)
         self.assertEqual([m["path"] for m in scan_memory], ["MEMORY.md"])
-        predicted = connect.predicted_words(connect.plan(root))
         report, hooks = self.connect_everything(root)
-        # The block goes at the end of the file Claude Code reads; the profile points to MEMORY.md.
-        self.assertEqual([p.name for p in report["appended"]], ["CLAUDE.md"])
-        claude = (root / "CLAUDE.md").read_text(encoding="utf-8")
-        self.assertTrue(claude.startswith(before["CLAUDE.md"].decode("utf-8") + "\n\n" + environment.BEGIN))
-        self.assertIn("- Where results and records go: `MEMORY.md`", claude)
-        self.assertEqual(set(report["skills"]), {"claude"})
+        # CLAUDE.md is left as it is; the [kit] table points to MEMORY.md for records.
+        self.assertEqual(tree(root)["CLAUDE.md"], before["CLAUDE.md"])
+        self.assertEqual(connect.kit_table(root / "checks.toml")["records"], "MEMORY.md")
         self.assertFalse((root / "AGENTS.md").exists())
         words = environment.session_words(root)
-        self.assertEqual(words, predicted)
         self.assertLessEqual(words["claude"], SESSION_WORD_LIMIT)
         self.assertEqual(tree(root)["MEMORY.md"], before["MEMORY.md"])  # read only
         # The settings keep their handler, indentation and characters; only awkit's handlers are added.
@@ -170,12 +162,8 @@ class Kinds(unittest.TestCase):
         self.assertEqual(found["gates"], [{"name": "kkamak", "evidence": "gate.json"}])
         self.assertEqual(found["hooks"]["git"]["manager"], "husky")
         report, hooks = self.connect_everything(root)
-        self.assertEqual([p.name for p in report["appended"]], ["AGENTS.md"])
-        agents = (root / "AGENTS.md").read_text(encoding="utf-8")
-        self.assertIn("Plan, review and delegate with superpowers.", agents)
-        self.assertIn("- How completion is checked: kkamak (gate.json)", agents)
-        made = {p.parent.name for r in report["skills"].values() for p in r["created"]}
-        self.assertEqual(made, {"awkit-workflow", "awkit-writing", "awkit-checking", "awkit-delivery"})
+        self.assertEqual(tree(root)["AGENTS.md"], before["AGENTS.md"])
+        self.assertEqual(tree(root)[".claude/skills/brainstorming/SKILL.md"], before[".claude/skills/brainstorming/SKILL.md"])
         words = environment.session_words(root)
         self.assertLessEqual(max(words.values()), SESSION_WORD_LIMIT)
         # The gate already does what the done check does, so the handlers skip it and say why.
@@ -195,8 +183,8 @@ class Kinds(unittest.TestCase):
 
 
 class Writes(unittest.TestCase):
-    """awkit writes only to .awkit/, its skill files, its section of the instruction files and its hook
-    entries and line; memory files are read and never written."""
+    """awkit writes only to .awkit/, checks.toml and its hook entries and line; instruction and memory files
+    are read and never written."""
 
     def test_only_awkits_own_places_change(self):
         with tempfile.TemporaryDirectory() as temporary, mock.patch.dict(os.environ, child_env()):
@@ -210,7 +198,7 @@ class Writes(unittest.TestCase):
             before = tree(root)
             stamps = {name: (root / name).stat().st_mtime_ns for name in ("MEMORY.md", ".beads/issues.jsonl",
                                                                              ".planning/STATE.md")}
-            connect.init(root)
+            connect.init(root, hooks=False)
             changes = connect.Changes(root)
             install_hooks(root, None, True, True, True, changes)
             changes.save()
@@ -220,16 +208,15 @@ class Writes(unittest.TestCase):
                                   "tool_name": "WebSearch", "tool_input": {"query": "x"}}), kit_rules=True)
             after = tree(root)
             changed = {path for path in after if before.get(path) != after[path]}
-            allowed = {"CLAUDE.md", ".claude/settings.json", ".codex/hooks.json"}
+            allowed = {"checks.toml", ".claude/settings.json", ".codex/hooks.json"}
             for path in changed:
-                self.assertTrue(path in allowed or path.startswith((".awkit/", ".claude/skills/awkit-")), path)
-            self.assertEqual(after["CLAUDE.md"], before["CLAUDE.md"] + b"\n" + (
-                environment.awkit_block(after["CLAUDE.md"].decode()) + "\n").encode())
+                self.assertTrue(path in allowed or path.startswith(".awkit/"), path)
+            self.assertEqual(after["CLAUDE.md"], before["CLAUDE.md"])
             for name, stamp in stamps.items():
                 self.assertEqual((root / name).stat().st_mtime_ns, stamp, name)
                 self.assertEqual(after[name], before[name])
             self.assertTrue({p for p in changed if p.startswith(".awkit/")})
-            connect.remove(root, keep_records=False)
+            connect.remove(root, keep_records=False, hooks=False)
             self.assertEqual(tree(root), before)
 
     def test_line_endings_and_characters_are_kept(self):
@@ -238,22 +225,25 @@ class Writes(unittest.TestCase):
             git(root, "init", "-q")
             original = "# 규칙\r\n\r\n- 한 줄\r\n".encode()
             (root / "AGENTS.md").write_bytes(original)
+            checks = b'schema = 1\r\n\r\n[[checks]]\r\nname = "test"\r\nargv = ["make", "test"]\r\n'
+            (root / "checks.toml").write_bytes(checks)
             settings = b'{\r\n\t"hooks": {}\r\n}\r\n'
             (root / ".codex").mkdir()
             (root / ".codex" / "hooks.json").write_bytes(settings)
-            connect.init(root)
+            connect.init(root, hooks=False)
             changes = connect.Changes(root)
             install_hooks(root, None, False, False, True, changes)
             changes.save()
-            agents = (root / "AGENTS.md").read_bytes()
-            self.assertTrue(agents.startswith(original + b"\r\n" + environment.BEGIN.encode()))
-            self.assertNotIn(b"\n", agents.replace(b"\r\n", b""))
+            self.assertEqual((root / "AGENTS.md").read_bytes(), original)
+            table = (root / "checks.toml").read_bytes()
+            self.assertTrue(table.startswith(checks + b"\r\n" + connect.KIT_MARK.encode()))
+            self.assertNotIn(b"\n", table.replace(b"\r\n", b""))
             hooks_json = (root / ".codex" / "hooks.json").read_bytes()
             self.assertIn(b'\r\n\t"hooks"', hooks_json)
             # Edited after init, the files lose only awkit's part.
-            (root / "AGENTS.md").write_bytes(agents.replace("한 줄".encode(), "두 줄".encode()))
-            connect.remove(root)
-            self.assertEqual((root / "AGENTS.md").read_bytes(), original.replace("한 줄".encode(), "두 줄".encode()))
+            (root / "checks.toml").write_bytes(table.replace(b'"test"', b'"tests"'))
+            connect.remove(root, hooks=False)
+            self.assertEqual((root / "checks.toml").read_bytes(), checks.replace(b'"test"', b'"tests"'))
             self.assertEqual((root / ".codex" / "hooks.json").read_bytes(), settings)
 
     def test_pre_commit_hook_is_chained_through_its_legacy_file(self):
@@ -301,19 +291,19 @@ class Command(unittest.TestCase):
             before = tree(root)
             scan = self.run_awkit("kit", "scan", str(root))
             self.assertEqual(scan.returncode, 0, scan.stderr)
-            # The words the kit would add come first, before anything else is reported.
-            self.assertTrue(scan.stderr.startswith("awkit would add "), scan.stderr)
+            # The words the kit adds come first, before anything else is reported.
+            self.assertTrue(scan.stderr.startswith("awkit adds "), scan.stderr)
             self.assertEqual(next(iter(json.loads(scan.stdout))), "session_words")
             init = self.run_awkit("kit", "init", str(root))
             self.assertEqual(init.returncode, 0, init.stderr)
-            self.assertIn("appended: ", init.stdout)
+            self.assertIn("created: ", init.stdout)
             self.assertIn("words added to every session:", init.stdout)
-            self.assertIn("committed the kit's files", init.stdout)
-            # Only the section and the skills were committed; .awkit stays on this machine.
-            committed = git(root, "show", "--name-only", "--format=", "HEAD").splitlines()
-            self.assertIn("AGENTS.md", committed)
-            self.assertFalse([name for name in committed if name.startswith(".awkit")])
-            self.assertEqual(git(root, "status", "--porcelain"), "")
+            self.assertIn("nothing was committed", init.stdout)
+            # Nothing was committed and AGENTS.md is untouched; .awkit stays on this machine.
+            self.assertEqual(git(root, "rev-list", "--count", "HEAD"), "1")
+            self.assertEqual(tree(root)["AGENTS.md"], before["AGENTS.md"])
+            self.assertIn("?? checks.toml", git(root, "status", "--porcelain").splitlines())
+            self.assertNotIn(".awkit", git(root, "status", "--porcelain"))
             self.assertEqual(self.run_awkit("kit", "init", str(root)).returncode, 2)  # nothing new
             scanned = json.loads(self.run_awkit("kit", "scan", str(root)).stdout)
             self.assertEqual(scanned["kit"]["mode"], "connected")
@@ -327,7 +317,7 @@ class Command(unittest.TestCase):
             self.assertFalse((root / ".awkit" / "installed.json").exists())
             self.assertEqual({k: v for k, v in tree(root).items() if not k.startswith(".awkit/")}, before)
 
-    def test_init_does_not_commit_over_uncommitted_instruction_changes(self):
+    def test_init_commits_nothing_and_leaves_instruction_changes_alone(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve()
             git(root, "init", "-q")
@@ -339,8 +329,9 @@ class Command(unittest.TestCase):
             (root / "CLAUDE.md").write_text("# Rules\n\nunsaved\n", encoding="utf-8")
             init = self.run_awkit("kit", "init", str(root))
             self.assertEqual(init.returncode, 0, init.stderr)
-            self.assertIn("nothing was committed: CLAUDE.md had uncommitted changes", init.stderr)
+            self.assertIn("nothing was committed", init.stdout)
             self.assertEqual(git(root, "rev-list", "--count", "HEAD"), "1")
+            self.assertEqual((root / "CLAUDE.md").read_text(encoding="utf-8"), "# Rules\n\nunsaved\n")
 
     def test_remove_without_the_record_finds_awkits_markers(self):
         # Another clone has the committed section and skills but not .awkit/installed.json.
@@ -349,11 +340,15 @@ class Command(unittest.TestCase):
             git(root, "init", "-q")
             (root / "AGENTS.md").write_text("# Rules\n", encoding="utf-8")
             before = tree(root)
-            connect.init(root)
+            connect.init(root, hooks=False)
+            draft = (root / "checks.toml").read_text(encoding="utf-8")
             (root / ".awkit" / "installed.json").unlink()
-            report = connect.remove(root)
+            report = connect.remove(root, hooks=False)
             self.assertFalse(report["recorded"])
-            self.assertEqual({k: v for k, v in tree(root).items()}, before)
+            # Without the record, checks.toml may be the project's own by now: only the [kit] table goes.
+            after = tree(root)
+            self.assertEqual(after.pop("checks.toml").decode("utf-8"), draft[:draft.index(connect.KIT_MARK)].rstrip("\n") + "\n")
+            self.assertEqual(after, before)
 
 
 if __name__ == "__main__":

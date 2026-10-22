@@ -162,11 +162,13 @@ def _kit(folder, found):
         profile = kit / "templates" / "project.md"
         filled = _profile_fields(profile.read_text(encoding="utf-8", errors="replace")) if profile.is_file() else {}
         return {"present": True, "mode": "copy", "profile": str(profile) if profile.is_file() else None, **filled}
+    from .connect import CHECKS, kit_table
     sections = [f["path"] for f in found["instructions"] if f["awkit_words"]]
     skills = sorted({s["name"] for entries in found["skills"].values() for s in entries if s["awkit"]})
-    if not (sections or skills or (folder / RECORD).is_file()):
+    table = kit_table(folder / CHECKS) or {}
+    if not (sections or skills or table or (folder / RECORD).is_file()):
         return {"present": False}
-    result = {"present": True, "mode": "connected", "sections": sections, "skills": skills,
+    result = {"present": True, "mode": "connected", "kit_table": table, "sections": sections, "skills": skills,
               "record": (folder / RECORD).is_file()}
     if sections:
         block = awkit_block((folder / sections[0]).read_text(encoding="utf-8", errors="replace")) or ""
@@ -214,13 +216,10 @@ def scan(folder):
         while command["name"] in names:
             command["name"], number = f"{base}-{number}", number + 1
         names.add(command["name"])
-    from .connect import connected, plan, predicted_words
     from .environment import detect, session_words
     found = detect(folder, ci)
-    if connected(folder, found):
-        words = {**session_words(folder, found), "measured": True}
-    else:
-        words = {**predicted_words(plan(folder, found, ci)), "measured": False}
+    # kit init adds nothing to what sessions read, so the count now is the count after it too.
+    words = {**session_words(folder, found), "measured": True}
     docs = sorted(p.name for p in folder.iterdir() if p.is_dir() and p.name.lower() in ("docs", "doc", "documentation"))
     markdown = len([p for p in folder.glob("*.md")]) + sum(len(list((folder / d).rglob("*.md"))) for d in docs)
     return {

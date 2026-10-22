@@ -15,8 +15,9 @@ from .review import nested_repositories
 MIN_PYTHON = (3, 11)
 
 # The failure catalogue entries (kit/failures.md) this command guards against: an agent's commit
-# identity, and a kit copied by another awkit version.
-PREVENTS = {"awkit doctor": ("F9", "F25")}
+# identity, a kit or skills made by another awkit version (F25), and guides or hooks that a session never
+# loads, so the way of working does not reach it (F29).
+PREVENTS = {"awkit doctor": ("F9", "F25", "F29")}
 MIN_GIT = (2, 25)
 
 
@@ -107,25 +108,50 @@ def diagnose(folder="."):
                 add("kit folder", "warning", f"{kit} has no workflow.md; it may be an older kit",
                     "install the new version beside it with awkit kit init --copy --name agent-work-kit-new")
             else:
-                _connected(top, add)
+                _skills(top, add)
+            _layers(top, add)
     return findings
 
 
-def _connected(top, add):
-    """The version `kit init`, `kit skills` or `kit hooks` recorded, and the skills awkit wrote."""
-    import json
-
-    from .connect import RECORD
-    try:
-        recorded = json.loads((top / RECORD).read_text(encoding="utf-8")).get("awkit")
-    except (OSError, ValueError, AttributeError):
-        recorded = None
-    if recorded and recorded != __version__:
-        add("kit", "warning", f"connected by awkit {recorded}; awkit {__version__} is installed",
-            "regenerate the skills with awkit kit skills --provider claude or codex")
-    elif recorded:
-        add("kit", "ok", f"connected by awkit {recorded} ({top / RECORD})")
-    _skills(top, add)
+def _layers(top, add):
+    """The three layers: the skills in the user folder and the awkit that made them, the hooks a project with
+    checks.toml needs, the version in its [kit] table, and a kit folder copied before the guides moved to the
+    user folder."""
+    from .connect import CHECKS, kit_table, user_skills
+    from .environment import hooks, skills
+    from .kit_install import user_skill_folders
+    folders, mine, project = user_skill_folders(), user_skills(), skills(top)
+    for provider, found in mine.items():
+        older = sorted({version or "an unknown version" for _, version in found if version != __version__})
+        if older:
+            add(f"{provider} user skills", "warning", f"{len(found)} awkit skills in {folders[provider]}, made by awkit "
+                + ", ".join(older), "awkit kit skills  (regenerates them for the installed awkit)")
+        elif found:
+            add(f"{provider} user skills", "ok", f"{len(found)} awkit skills in {folders[provider]}")
+        elif not any(s["awkit"] for s in project[provider]):
+            add(f"{provider} user skills", "warning", f"no awkit skills in {folders[provider]}, so sessions never "
+                "load the guides", "awkit kit skills")
+    table = kit_table(top / CHECKS)
+    if table is None:
+        pass
+    elif "version" in table and table["version"] != __version__:
+        add("kit version", "warning", f"[kit] in {CHECKS} says awkit {table['version']}; awkit {__version__} is installed",
+            f'set version = "{__version__}" in [kit] once the project works with it, or install awkit {table["version"]}')
+    elif "version" in table:
+        add("kit version", "ok", f"[kit] in {CHECKS} matches awkit {__version__}")
+    if table is not None:
+        found = hooks(top)
+        commands = [c for provider in ("claude", "codex") for entry in found[provider]
+                    for cs in entry["events"].values() for c in cs]
+        if not any(c.strip().startswith("awkit") for c in commands):
+            add("hooks", "warning", f"{CHECKS} is here but no Claude Code or Codex hook runs awkit, so its checks run "
+                "only when the agent chooses to", "awkit kit hooks --git --claude --codex  (or awkit kit init)")
+    copied = top / "agent-work-kit"
+    if (copied / "workflow.md").is_file():
+        where = "the skills in your user folder hold the guides now" if any(mine.values()) else \
+            "awkit kit skills puts the guides in your user folder"
+        add("copied kit folder", "warning", f"{copied} is a copy of the guides an earlier awkit made; {where}",
+            "move any profile or task records you wrote there into the project's own records, then delete the folder")
 
 
 def _skills(top, add):

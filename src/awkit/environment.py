@@ -286,12 +286,20 @@ def detect(top: Path, ci=None):
             "gates": gates(top, found_hooks, found_plugins, ci)}
 
 
-def session_words(top: Path, found=None):
+def user_skills(home=None):
+    """{provider: [{name, description, awkit}]} for the user's skill folders, which the agent reads in every
+    project: `~/.claude/skills` and `~/.agents/skills`."""
+    return skills(Path.home() if home is None else Path(home))
+
+
+def session_words(top: Path, found=None, home=None):
     """Words awkit adds to every session, per agent: its block in the instruction files the agent loads
-    and the descriptions of its skills, which agents keep in context to decide when to load a skill."""
+    (awkit before the three layers appended one) and the descriptions of its skills in the project and the
+    user folder, which agents keep in context to decide when to load a skill. A skill in both counts once."""
     top = Path(top)
     found = detect(top) if found is None else found
     by_path = {f["path"]: f for f in found["instructions"]}
+    users = user_skills(home)
     result = {}
     for reader in SKILL_FOLDERS:
         loaded = read_every_session(top, reader, found["instructions"])
@@ -304,6 +312,7 @@ def session_words(top: Path, found=None):
                 block += words(found_block) if found_block else 0
             else:
                 block += entry["awkit_words"]
-        descriptions = sum(words(s["description"]) for s in found["skills"][reader] if s["awkit"])
-        result[reader] = block + descriptions
+        mine = {s["name"]: s["description"] for s in users[reader] if s["awkit"]}
+        mine.update({s["name"]: s["description"] for s in found["skills"][reader] if s["awkit"]})
+        result[reader] = block + sum(words(description) for description in mine.values())
     return result

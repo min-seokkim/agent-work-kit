@@ -124,11 +124,11 @@ awkit pipeline --config examples/local-release/pipeline.toml deploy ffffffffffff
 ```powershell
 $env:PYTHONPATH = "$PWD\src"
 python -m unittest discover -s tests -v
-python scripts/build_release.py        # setuptools>=68, wheel 필요
+python scripts/build_release.py        # setuptools>=77, wheel 필요
 ```
 
 브라우저 검사는 Playwright를 설치하고 `AWKIT_UI_TEST=1`을 지정했을 때만 실행합니다. GitHub Actions가 Windows와 Linux, Python 3.11~3.13에서 전체 검사를 돌립니다. 패키지 버전과 같은 태그(예: `v0.2.0`)를 올리면 wheel과 키트 ZIP을 만들어 릴리스에 붙입니다.
 
 ## 라이선스
 
-아직 정하지 않았습니다.
+[MIT 라이선스](LICENSE)로 배포합니다. 한국어 작성 지침에 반영한 `im-not-ai` 자료의 저작권과 MIT 라이선스 전문은 [외부 자료 고지](kit/THIRD_PARTY_NOTICES.md)에 보존합니다.

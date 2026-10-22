@@ -85,4 +85,4 @@ The main agent reads the final text itself and removes remaining awkward wording
 
 ## Style reference
 
-The style reference is the `humanize-korean` skill from `epoko77-ai/im-not-ai`. This guide is not a copy of that skill's distribution or complete rule set.
+This guide adapts material from the `humanize-korean` skill in [epoko77-ai/im-not-ai](https://github.com/epoko77-ai/im-not-ai), with local revisions, additions and an English translation. The upstream copyright and full MIT license are preserved in [Third-party notices](THIRD_PARTY_NOTICES.md). Include that notice when redistributing the adapted guide.

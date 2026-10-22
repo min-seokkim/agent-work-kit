@@ -52,6 +52,17 @@ class KitTests(unittest.TestCase):
         self.assertTrue((second / "README.md").exists())
         self.assertEqual([p.name for p in self.project.iterdir() if p.name.startswith(".")], [])
 
+    def test_init_preserves_project_and_third_party_license_notices(self):
+        target, copied = install(self.project)
+        self.assertIn("LICENSE.md", copied)
+        self.assertIn("THIRD_PARTY_NOTICES.md", copied)
+        self.assertEqual((target / "LICENSE.md").read_text(encoding="utf-8"),
+                         (ROOT / "LICENSE").read_text(encoding="utf-8"))
+        notices = (target / "THIRD_PARTY_NOTICES.md").read_text(encoding="utf-8")
+        self.assertEqual(notices, (ROOT / "kit" / "THIRD_PARTY_NOTICES.md").read_text(encoding="utf-8"))
+        self.assertIn("Copyright (c) 2026 epoko77-ai", notices)
+        self.assertEqual(broken_links(target), [])
+
     def test_init_rejects_path_names(self):
         for name in ("../escape", "a/b", "..", ""):
             with self.subTest(name=name), self.assertRaises(ValueError):

@@ -123,11 +123,11 @@ The release, review and publishing commands have been checked against mock proje
 
 ```sh
 PYTHONPATH=src python -m unittest discover -s tests -v
-python scripts/build_release.py        # needs setuptools>=68 and wheel
+python scripts/build_release.py        # needs setuptools>=77 and wheel
 ```
 
 The browser test is skipped unless `AWKIT_UI_TEST=1` is set with Playwright installed. GitHub Actions runs the suite on Windows and Linux with Python 3.11 to 3.13. Pushing a tag that matches the package version, such as `v0.2.0`, builds the wheel and the kit ZIP and attaches them to a release.
 
 ## License
 
-No license has been chosen yet.
+Licensed under [MIT](LICENSE). The adapted Korean writing guidance includes material from `im-not-ai`; its copyright and MIT license are preserved in [Third-party notices](kit/THIRD_PARTY_NOTICES.md).

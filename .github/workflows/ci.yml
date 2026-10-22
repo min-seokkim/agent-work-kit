@@ -37,7 +37,7 @@ jobs:
           python-version: "3.12"
       - name: Build release files
         run: |
-          python -m pip install "setuptools>=68" wheel
+          python -m pip install "setuptools>=77" wheel
           python scripts/build_release.py dist
       - name: Install into a clean environment and run the quick start
         shell: pwsh

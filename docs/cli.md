@@ -294,10 +294,10 @@ python -m unittest discover -s tests -v
 
 화면 캡처 검사는 기본으로 건너뜁니다. Playwright와 브라우저를 갖춘 뒤 `AWKIT_UI_TEST=1`을 지정하면 함께 실행하고, Edge로 돌리려면 `AWKIT_BROWSER_CHANNEL=msedge`도 지정합니다.
 
-릴리스 파일은 `scripts/build_release.py`가 만듭니다. 같은 Python 환경에 `setuptools>=68`과 `wheel`이 있어야 하고, 결과로 wheel과 키트 ZIP, `SHA256SUMS`가 `dist/`에 생깁니다.
+릴리스 파일은 `scripts/build_release.py`가 만듭니다. 같은 Python 환경에 `setuptools>=77`과 `wheel`이 있어야 하고, 결과로 wheel과 키트 ZIP, `SHA256SUMS`가 `dist/`에 생깁니다.
 
 ```powershell
-python -m pip install "setuptools>=68" wheel
+python -m pip install "setuptools>=77" wheel
 python scripts/build_release.py
 ```
 

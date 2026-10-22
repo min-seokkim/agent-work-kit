@@ -1,7 +1,7 @@
 """Build the release files: the wheel, the agent-work-kit ZIP and SHA256SUMS.
 
 Usage: python scripts/build_release.py [OUT_DIR]   (default: dist)
-Needs setuptools>=68 and wheel in the running Python. No network access is required.
+Needs setuptools>=77 and wheel in the running Python. No network access is required.
 """
 
 from __future__ import annotations

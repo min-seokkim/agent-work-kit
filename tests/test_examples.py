@@ -217,12 +217,13 @@ class ExampleTests(unittest.TestCase):
                     if number == 3:
                         rerun = lines
                     for line in (rerun if any("<new run_dir>" in line for line in lines) else []) + lines:
-                        line = line.replace("<new run_dir>", checks[-1]["run_dir"] if checks else "")
-                        line = line.replace("<run_dir>", checks[-1]["run_dir"] if checks else "")
                         target, _, command = line.rpartition("=$(") if "=$(" in line else ("", "", line)
                         command = command.removesuffix(")") if target else command
-                        argv = shlex.split(command)
-                        argv = [variables.get(arg.lstrip("$"), arg) if arg.startswith("$") else arg for arg in argv]
+                        # Split first, then substitute: run folders are Windows paths on Windows.
+                        argv = shlex.split(command.replace("<new run_dir>", "<run_dir>"))
+                        if checks:
+                            variables["<run_dir>"] = checks[-1]["run_dir"]
+                        argv = [variables.get(arg.lstrip("$") if arg.startswith("$") else arg, arg) for arg in argv]
                         self.assertEqual(argv[0], "awkit", line)
                         result = run(*argv[1:], cwd=folder)
                         self.assertIn(result.returncode, (0, 1), f"{kind}: {line}\n{result.stderr}")

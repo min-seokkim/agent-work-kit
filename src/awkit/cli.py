@@ -305,11 +305,17 @@ def _ask_keep_records(folder):
     found = awkit_records(project_top(folder))
     if not found:
         return None
-    if not sys.stdin.isatty():
+    # Windows reports the null device as a terminal, so an input that ends counts as no answer too.
+    answer = None
+    if sys.stdin.isatty() and sys.stdout.isatty():
+        try:
+            answer = input(".awkit/ holds " + ", ".join(found) + ". Keep it? [Y/n] ").strip().lower()
+        except EOFError:
+            answer = None
+    if answer is None:
         print("note: keeping .awkit/, which holds " + ", ".join(found) + "; pass --delete-records to delete it",
               file=sys.stderr)
         return True
-    answer = input(".awkit/ holds " + ", ".join(found) + ". Keep it? [Y/n] ").strip().lower()
     return answer not in ("n", "no")
 
 

@@ -342,14 +342,16 @@ LOCAL_ONLY = (".awkit", ".claude/settings.local.json", "CLAUDE.local.md")
 def _chain(text):
     """`text` with GIT_LINE after the hook's own commands, or before its last line when that line ends the
     script (`exit` or `exec`), so both run. Returns (new text, where)."""
+    newline = "\r\n" if "\r\n" in text else "\n"
+    line = GIT_LINE.replace("\n", newline)
     lines = text.splitlines(keepends=True)
     if lines and not lines[-1].endswith("\n"):
-        lines[-1] += "\n"
+        lines[-1] += newline
     last = next((i for i in range(len(lines) - 1, -1, -1)
                  if lines[i].strip() and not lines[i].lstrip().startswith("#")), None)
     if last is not None and lines[last].startswith(("exit", "exec ")):
-        return "".join(lines[:last] + [GIT_LINE] + lines[last:]), "before its last line, which ends the script"
-    return "".join(lines) + GIT_LINE, "after its own commands"
+        return "".join(lines[:last] + [line] + lines[last:]), "before its last line, which ends the script"
+    return "".join(lines) + line, "after its own commands"
 
 
 def install_git_hook(top, changes=None):

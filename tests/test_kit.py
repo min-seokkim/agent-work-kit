@@ -235,7 +235,7 @@ class RoleTests(unittest.TestCase):
         # A file with an awkit skill's name that awkit did not write is kept, and the command says so.
         mine = self.project / ".agents/skills/awkit-writing/SKILL.md"
         mine.write_text("---\nname: awkit-writing\ndescription: mine\n---\nmine\n", encoding="utf-8")
-        self.assertEqual(install_skills(self.project, "codex")["kept"], [mine])
+        self.assertEqual(install_skills(self.project, "codex")["kept"], [mine.resolve()])
 
     def test_self_contained_skills_hold_the_guides_and_parse_for_both_agents(self):
         for provider, folder in (("claude", ".claude/skills"), ("codex", ".agents/skills")):

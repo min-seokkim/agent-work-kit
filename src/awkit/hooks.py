@@ -1,4 +1,5 @@
-"""Hook runner: one command for Claude Code and Codex hooks, driven by the project's rules.toml.
+"""Hook runner: one command for Claude Code and Codex hooks, driven by the project's rules.toml, or with
+--kit-rules by the kit's own when the project has none.
 
 Instructions in a prompt are forgotten as turns accumulate, and they cost context every turn. A rule here
 costs nothing until the tool call it describes arrives: the runner reads the hook event on stdin, matches
@@ -144,16 +145,17 @@ def _expand(text, variables):
     return text
 
 
-def load_rules(path):
+def load_rules(path, kit=None):
     """(rules, problems) from a rules file. A file that cannot be read or parsed raises ValueError; a rule
-    that is wrong is left out and described in `problems`, so the other rules still run."""
+    that is wrong is left out and described in `problems`, so the other rules still run. `kit` overrides
+    the file's own `kit` value."""
     try:
         data = tomllib.loads(Path(path).read_text(encoding="utf-8"))
     except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError) as exc:
         raise ValueError(f"{path}: {exc}") from None
     if data.get("schema") != 1:
         raise ValueError(f"{path}: `schema = 1` is required")
-    kit = data.get("kit", "agent-work-kit")
+    kit = data.get("kit", "agent-work-kit") if kit is None else kit
     timeout = data.get("timeout_seconds", TIMEOUT)
     if not isinstance(kit, str) or isinstance(timeout, bool) or not isinstance(timeout, int | float) \
             or not 0 < timeout <= 600:
@@ -461,9 +463,10 @@ def log(root, entry):
 # Entry points
 
 
-def run(stdin_text, root=None):
+def run(stdin_text, root=None, skip=(), kit_rules=False):
     """Handle one hook event; returns the text to print on stdout (empty when nothing fired). Never raises:
-    every failure allows the call and is logged once."""
+    every failure allows the call and is logged once. Rules named in `skip` do not run. With `kit_rules`,
+    a project without rules.toml gets the kit's rules; without it, such a project gets none."""
     start = Path(root) if root else Path.cwd()
     try:
         payload = json.loads(stdin_text)
@@ -479,7 +482,7 @@ def run(stdin_text, root=None):
         if not root and isinstance(payload.get("cwd"), str) and Path(payload["cwd"]).is_dir():
             start = Path(payload["cwd"])
         base = find_root(start)
-        return _run(payload, base)
+        return _run(payload, base, skip, kit_rules)
     except Exception as exc:  # noqa: BLE001 - a hook failure must never block the agent
         try:
             log(find_root(start), {"session": payload.get("session_id"), "event": payload.get("hook_event_name"),
@@ -489,18 +492,21 @@ def run(stdin_text, root=None):
         return ""
 
 
-def _run(payload, root):
-    rules_path = root / RULES_FILE
+def _run(payload, root, skip=(), kit_rules=False):
+    rules_path, kit = root / RULES_FILE, None
     if not rules_path.is_file():
-        return ""
+        if not kit_rules:
+            return ""
+        rules_path, kit = default_rules(root)
     call = normalize(payload, root)
     state = _load_state(root, call.session)
     before = json.dumps(state, sort_keys=True)
     errors = []
     try:
-        rules, problems = load_rules(rules_path)
+        rules, problems = load_rules(rules_path, kit)
     except ValueError as exc:
         rules, problems = [], [str(exc)]
+    rules = [rule for rule in rules if rule.name not in skip]
     # A broken rule is reported once per session, not on every tool call.
     for problem in problems:
         if problem not in state["logged"]:
@@ -577,7 +583,8 @@ def report(folder):
 def render_report(result):
     lines = []
     if not result["rules_file"]:
-        lines.append(f"no {RULES_FILE} in {result['root']}: the hook runner does nothing here")
+        lines.append(f"no {RULES_FILE} in {result['root']}: the hook runner does nothing here unless its handlers "
+                     "pass --kit-rules, which applies the kit's rules")
     for problem in result["problems"]:
         lines.append(f"rule problem: {problem}")
     if not result["sessions"]:
@@ -597,11 +604,6 @@ def render_report(result):
 
 HEREDOC_SUBSTITUTION = re.compile(r"^\$\(\s*cat\s+<<-?\s*['\"]?(\w+)['\"]?[ \t]*\n(.*?)\n[ \t]*\1[ \t]*\n?\s*\)\s*$",
                                   re.S)
-HEREDOC = re.compile(r"<<-?\s*['\"]?(\w+)['\"]?[^\n]*\n(.*?)\n[ \t]*\1[ \t]*(?:\n|$)", re.S)
-ASSIGNMENT = re.compile(r"[A-Za-z_][A-Za-z0-9_]*=")
-IDENT = re.compile(r"\s*(.*?)\s*<([^>]*)>\s*$")
-
-
 HEREDOC = re.compile(r"<<-?\s*['\"]?(\w+)['\"]?[^\n]*\n(.*?)\n[ \t]*\1[ \t]*(?:\n|$)", re.S)
 ASSIGNMENT = re.compile(r"[A-Za-z_][A-Za-z0-9_]*=")
 IDENT = re.compile(r"\s*(.*?)\s*<([^>]*)>\s*$")
@@ -784,37 +786,76 @@ def check_commit_command(payload):
 HOOK_COMMAND = "awkit hook || exit 0"
 HOOK_EVENTS = ("SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "Stop")
 SETTINGS = {"claude": Path(".claude") / "settings.json", "codex": Path(".codex") / "hooks.json"}
+# The done check earlier versions wrote to .claude/settings.local.json.
+OLD_DONE_HOOK = "if command -v awkit >/dev/null 2>&1; then awkit check done --hook; fi"
 
 
-def install_settings(top, provider):
-    """Point every hook event at `awkit hook` in Claude Code's or Codex's project settings, keeping what
-    is there. The command names awkit, not an interpreter, so the file can be committed; `|| exit 0`
-    keeps an older awkit without the command from blocking tool calls. Returns (path, changed)."""
-    path = Path(top) / SETTINGS[provider]
-    settings = json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
+def hook_command(skip=()):
+    """The handler command. --kit-rules applies the kit's rules while the project has no rules.toml."""
+    return " ".join(["awkit", "hook", "--kit-rules", *(f"--skip {name}" for name in skip)]) + " || exit 0"
+
+
+def is_awkit_command(command):
+    """A hook command awkit wrote: the runner, with or without skipped rules, or the old done check."""
+    return command.strip().startswith("awkit hook") or command == OLD_DONE_HOOK
+
+
+def _settings_commands(path):
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    hooks = data.get("hooks") if isinstance(data, dict) else None
+    if not isinstance(hooks, dict):
+        return []
+    return [str(hook.get("command", "")) for entries in hooks.values() if isinstance(entries, list)
+            for entry in entries if isinstance(entry, dict) for hook in entry.get("hooks", []) if isinstance(hook, dict)]
+
+
+def install_settings(top, provider, changes=None, skip=()):
+    """Add a handler running `awkit hook` for every hook event to Claude Code's or Codex's project settings.
+    Every other key and handler stays as it was, and the file keeps its indentation and characters. When
+    another settings file of the same agent runs the runner already, nothing is added. The command names
+    awkit, not an interpreter, so the file can be committed; `|| exit 0` keeps an older awkit without the
+    command from blocking tool calls. Returns (path, changed)."""
+    from .connect import dump_json, read_exact
+    top = Path(top)
+    path = top / SETTINGS[provider]
+    others = [top / ".claude" / "settings.local.json"] if provider == "claude" else []
+    if any(cmd.strip().startswith("awkit hook") for other in others for cmd in _settings_commands(other)):
+        return others[0], False
+    original = read_exact(path) if path.is_file() else ""
+    settings = json.loads(original) if original.strip() else {}
     if not isinstance(settings, dict) or not isinstance(settings.setdefault("hooks", {}), dict):
         raise ValueError(f"{path} does not hold a JSON object with a `hooks` object")
     changed = False
+    command = hook_command(skip)
     for event in HOOK_EVENTS:
         entries = settings["hooks"].setdefault(event, [])
         commands = [str(hook.get("command", "")) for entry in entries if isinstance(entry, dict)
                     for hook in entry.get("hooks", []) if isinstance(hook, dict)]
-        if any("awkit hook" in command for command in commands):
+        if any(c.strip().startswith("awkit hook") for c in commands):
             continue
-        entries.append({"hooks": [{"type": "command", "command": HOOK_COMMAND, "timeout": 60}]})
+        entries.append({"hooks": [{"type": "command", "command": command, "timeout": 60}]})
         changed = True
     if changed:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8")
+        text = dump_json(settings, original)
+        if changes is not None:
+            changes.write(path, text, "merged")
+        else:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(text.encode("utf-8", errors="surrogateescape"))
     return path, changed
 
 
-def remove_entries(path, command):
+def remove_entries(path, command, changes=None):
     """Remove hook entries running exactly `command`, which an earlier awkit wrote. Returns True when
     the file changed."""
+    from .connect import dump_json, read_exact
     if not path.is_file():
         return False
-    settings = json.loads(path.read_text(encoding="utf-8"))
+    original = read_exact(path)
+    settings = json.loads(original)
     hooks = settings.get("hooks") if isinstance(settings, dict) else None
     if not isinstance(hooks, dict):
         return False
@@ -831,21 +872,21 @@ def remove_entries(path, command):
             else:
                 del hooks[event]
     if changed:
-        path.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8")
+        text = dump_json(settings, original)
+        if changes is not None:
+            changes.write(path, text, "merged")
+        else:
+            path.write_bytes(text.encode("utf-8", errors="surrogateescape"))
     return changed
 
 
-def install_rules(top):
-    """Write the kit's example rules.toml at the project root unless one exists. `kit` names the kit
-    folder the messages point to. Returns (path, written)."""
+def default_rules(root):
+    """The kit's rules, used when the project has no rules.toml of its own: (path, kit folder for {kit}).
+    Without a kit folder in the project, {kit} is the kit installed with awkit, so a message that names a
+    guide points at a file that exists on this machine."""
     from .kit_install import kit_root
-    path = Path(top) / RULES_FILE
-    if path.exists():
-        return path, False
-    top = Path(top)
-    kit = "kit" if not (top / "agent-work-kit" / "workflow.md").is_file() and (top / "kit" / "workflow.md").is_file() \
-        else "agent-work-kit"
-    text = kit_root().joinpath(RULES_FILE).read_text(encoding="utf-8")
-    text = re.sub(r'^kit = "[^"\n]*"', f'kit = "{kit}"', text, count=1, flags=re.M)
-    path.write_text(text, encoding="utf-8", newline="\n")
-    return path, True
+    for name in ("agent-work-kit", "kit"):
+        if (Path(root) / name / "workflow.md").is_file():
+            return kit_root().joinpath(RULES_FILE), name
+    kit = kit_root()
+    return kit.joinpath(RULES_FILE), str(kit)

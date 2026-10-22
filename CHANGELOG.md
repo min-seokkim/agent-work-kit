@@ -8,7 +8,10 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Incompatible changes
 
+- `awkit kit init` no longer copies the kit folder. It appends an Agent Work Kit section with the project profile to the end of `AGENTS.md` and `CLAUDE.md` (creating `AGENTS.md`, and a `CLAUDE.md` importing it, only when neither exists), writes self-contained skills, and records what it added in `.awkit/installed.json`, which replaces `VERSION.txt` for the version. `--copy` copies the folder as before, with `--name`. A kit is updated by running `awkit kit skills` again instead of installing a second folder beside it.
 - `awkit kit skills` without `--kit` and without an `agent-work-kit` folder writes skills that hold the guides instead of pointing at a kit folder, and adds `awkit-workflow`. Descriptions are one line. Skills awkit wrote earlier are regenerated instead of kept. With a method bundle such as superpowers in the project, `awkit-work-types`, `awkit-delegation`, `awkit-review-session` and `awkit-records` are left out.
+- `awkit kit hooks` no longer writes `rules.toml`; the handlers run `awkit hook --kit-rules`, which applies the kit's rules until the project has its own file. With an existing commit-msg hook it adds one line to it instead of leaving the check out, and with husky or pre-commit it uses their hook files. Settings files keep their indentation, line endings and characters (they were rewritten with two-space indentation and `\u` escapes). With a completion gate (kkamak, groundtruth, cngx) the done check is left out. It prints `connected:` for a line added to an existing hook, and `note:` lines.
+- `install_skills` returns a dictionary (`created`, `updated`, `unchanged`, `kept`, `omitted`) and `install_hooks` one with `installed`, `connected`, `kept` and `notes`, for code that calls them.
 - `awkit kit hooks --claude` writes `awkit hook` entries for every hook event to `.claude/settings.json`, which can be committed, and writes `rules.toml` when there is none; it no longer writes the done check to `.claude/settings.local.json` and removes the entries earlier versions put there. `--codex` writes the same to `.codex/hooks.json`.
 - CLI help and error messages changed from Korean to English. Scripts that read message text should check exit codes instead; their meaning is unchanged.
 - `awkit usage --json` uses result format 2: unmeasured token fields are `null` instead of `0`, and the result carries `format` and `total.complete`.
@@ -20,6 +23,9 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Added
 
+- `awkit kit remove`: takes out what `kit init`, `kit skills` and `kit hooks` added, restoring each file byte for byte when it is as awkit left it and removing only awkit's part otherwise; asks before deleting check records in `.awkit/`.
+- `awkit kit scan` reports first the words the kit adds to every Claude Code and Codex session, also as the first line on stderr, and what the project has for its agents: instruction files, skills, plugins and method bundles, hooks, memory and record locations, and completion gates.
+- `awkit hook --kit-rules` and `--skip RULE`.
 - `awkit hook`: one command for Claude Code and Codex hooks that applies the rules in the project's `rules.toml`. A rule blocks a tool call, verifies the result with a command and blocks once with its output, or injects one line of guidance once per session, matched on the event, the tool, the shell command, the edited paths and the text written. Every firing and error goes to `.awkit/hooks.ndjson`; `awkit hook report` counts them per session. Failures allow the call. The kit's example `rules.toml` checks commit identity before `git commit`, the done check when the agent stops and the writing check after a Markdown edit, and gives one line of guidance for Korean text, research, delivery and delegation. Each rule names the failure entries it guards, and the guard table in `kit/failures.md` lists them.
 - `awkit check commit --hook`: the commit identity check on a `git commit` command before it runs.
 - `awkit kit example documents|data|analysis`: first-run examples with one deliberate defect.
@@ -43,6 +49,8 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 ### Fixed
 
 - The `commit-identity` hook rule judged a commit made after `cd` into another repository by the session's repository, and read the body of a heredoc fed to a program (a Python script holding a `git commit` string) as commands. It follows `cd` and skips such heredoc bodies.
+- `awkit kit hooks --git` left the commit identity check out without saying so when the repository already had a commit-msg hook, and wrote into husky's generated `.husky/_` folder.
+- `awkit kit scan` reported no kit in a project whose skills point at a kit folder other than `agent-work-kit`, such as this repository's `kit/`.
 - `awkit doctor` passed a coding agent's Git identity such as `Claude <noreply@anthropic.com>` as fine. It now checks the configured identity against the repository's history, and `kit init` and `kit example` commit into a repository with history only as an identity that fits it, skipping the commit with the reason otherwise.
 - The hooks from `awkit kit hooks` named the Python interpreter awkit was installed with and broke when that environment moved; they call `awkit` by name.
 - `awkit check done` counted `.claude/settings.local.json`, which `kit hooks --claude` writes, as unchecked work and blocked every turn. Files local to the machine are left out, and the file is excluded from Git locally.

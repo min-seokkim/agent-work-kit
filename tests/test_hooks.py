@@ -322,19 +322,35 @@ class Report(Project):
 class Install(Project):
     rules = None
 
-    def test_codex_settings_point_at_the_runner_and_rules_are_written_once(self):
+    def test_codex_settings_point_at_the_runner_with_the_kit_rules(self):
         (self.root / "kit").mkdir()
         (self.root / "kit" / "workflow.md").write_text("# Workflow\n", encoding="utf-8")
-        written, kept = install_hooks(self.root, use_git=False, use_codex=True)
+        result = install_hooks(self.root, use_git=False, use_codex=True)
         settings = json.loads((self.root / ".codex" / "hooks.json").read_text(encoding="utf-8"))
         self.assertEqual(sorted(settings["hooks"]), sorted(hooks.HOOK_EVENTS))
         entry = settings["hooks"]["PreToolUse"][0]["hooks"][0]
-        self.assertEqual((entry["type"], entry["command"]), ("command", "awkit hook || exit 0"))
-        # The kit folder found in the project is what the messages point to.
-        self.assertIn('kit = "kit"', (self.root / "rules.toml").read_text(encoding="utf-8"))
-        self.assertEqual(len(written), 2)
-        self.assertEqual(install_hooks(self.root, use_git=False, use_codex=True), ([], written))
+        self.assertEqual((entry["type"], entry["command"]), ("command", "awkit hook --kit-rules || exit 0"))
+        self.assertFalse((self.root / "rules.toml").exists())
+        self.assertEqual(len(result["installed"]), 1)
+        again = install_hooks(self.root, use_git=False, use_codex=True)
+        self.assertEqual((again["installed"], again["kept"]), ([], result["installed"]))
+        # With --kit-rules the kit's rules apply, and the kit folder found in the project is what messages name.
+        payload = {"hook_event_name": "PreToolUse", "session_id": "s", "cwd": str(self.root),
+                   "tool_name": "WebSearch", "tool_input": {"query": "x"}}
+        fired = json.loads(hooks.run(json.dumps(payload), kit_rules=True))
+        self.assertIn("kit/work-types.md", fired["hookSpecificOutput"]["additionalContext"])
 
+    def test_kit_rules_name_the_installed_kit_when_the_project_has_none(self):
+        payload = {"hook_event_name": "PreToolUse", "session_id": "s", "cwd": str(self.root),
+                   "tool_name": "WebSearch", "tool_input": {"query": "x"}}
+        self.assertEqual(hooks.run(json.dumps(payload)), "")
+        fired = json.loads(hooks.run(json.dumps(payload), kit_rules=True))
+        from awkit.kit_install import kit_root
+        self.assertIn(str(kit_root()), fired["hookSpecificOutput"]["additionalContext"])
+        self.assertTrue(Path(str(kit_root()), "work-types.md").is_file())
+        # A rule a project leaves out with --skip does not run.
+        skipped = hooks.run(json.dumps({**payload, "session_id": "t"}), kit_rules=True, skip=["research"])
+        self.assertEqual(skipped, "")
 
 if __name__ == "__main__":
     unittest.main()

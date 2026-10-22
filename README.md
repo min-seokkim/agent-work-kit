@@ -16,7 +16,7 @@ Agents often report work as finished without evidence you could use to confirm i
 
 ## How it works
 
-After `awkit kit init`, ask your agent to connect the kit. The agent reads the project, asks you what counts as done and who receives the result, writes a one-page project profile and sets up checks from commands the project already has.
+After `awkit kit init`, ask your agent to connect the kit. The agent reads the project, asks you what counts as done and who receives the result, fills a short project profile in the instructions it already reads, and sets up checks from commands the project already has.
 
 Each task then follows the same steps:
 
@@ -60,9 +60,13 @@ In your project folder, run:
 awkit kit init
 ```
 
+It adds a short Agent Work Kit section to the end of your `CLAUDE.md` or `AGENTS.md`, creating `AGENTS.md` only when you have neither, and writes the kit's guides as skills your agent loads when a situation calls for one. It copies no folder, leaves your own instructions, hooks and memory files as they are, and prints how many words it adds to what your agent reads every session. `awkit kit scan` shows the same count before you run it.
+
 Then tell your agent:
 
-> Read `agent-work-kit/README.md` and connect the kit to this project.
+> Connect Agent Work Kit to this project.
+
+To move to a newer version, update awkit and run `awkit kit skills --provider claude` (or `codex`) again. `awkit kit remove` takes out everything the kit added.
 
 To try it on a sample first, tell your agent to run `awkit kit example data demo` and follow its README. The sample is a small data project with one wrong column name. The agent runs the check and sees it fail, fixes the input, runs the check again and shows you the files it kept.
 

@@ -96,19 +96,36 @@ def diagnose(folder="."):
                 recorded = read_version(kit).get("awkit")
                 if recorded is None:
                     add("kit folder", "warning", f"{kit} records no version",
-                        "it was copied by an awkit before 0.3.0; compare it with awkit kit init --name agent-work-kit-new")
+                        "it was copied by an awkit before 0.3.0; compare it with awkit kit init --copy --name agent-work-kit-new")
                 elif recorded != __version__:
                     add("kit folder", "warning", f"{kit} was copied by awkit {recorded}; awkit {__version__} is installed",
-                        "install the new kit beside it with awkit kit init --name agent-work-kit-new and compare")
+                        "install the new kit beside it with awkit kit init --copy --name agent-work-kit-new and compare")
                 else:
                     add("kit folder", "ok", f"{kit} (awkit {recorded})")
                 _skills(top, add)
             elif kit.exists():
                 add("kit folder", "warning", f"{kit} has no workflow.md; it may be an older kit",
-                    "install the new version beside it with awkit kit init --name agent-work-kit-new")
+                    "install the new version beside it with awkit kit init --copy --name agent-work-kit-new")
             else:
-                _skills(top, add)
+                _connected(top, add)
     return findings
+
+
+def _connected(top, add):
+    """The version `kit init`, `kit skills` or `kit hooks` recorded, and the skills awkit wrote."""
+    import json
+
+    from .connect import RECORD
+    try:
+        recorded = json.loads((top / RECORD).read_text(encoding="utf-8")).get("awkit")
+    except (OSError, ValueError, AttributeError):
+        recorded = None
+    if recorded and recorded != __version__:
+        add("kit", "warning", f"connected by awkit {recorded}; awkit {__version__} is installed",
+            "regenerate the skills with awkit kit skills --provider claude or codex")
+    elif recorded:
+        add("kit", "ok", f"connected by awkit {recorded} ({top / RECORD})")
+    _skills(top, add)
 
 
 def _skills(top, add):

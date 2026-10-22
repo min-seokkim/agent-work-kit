@@ -125,7 +125,8 @@ class KitTests(unittest.TestCase):
     def test_init_without_tracking_leaves_the_folder_untracked(self):
         install(self.project)
         self.assertEqual([p.name for p in self.project.iterdir() if p.name.startswith(".")], [])
-        plain = subprocess.run([sys.executable, "-m", "awkit", "kit", "init", str(self.project), "--name", "k", "--no-git"],
+        plain = subprocess.run([sys.executable, "-m", "awkit", "kit", "init", str(self.project), "--copy", "--name", "k",
+                                "--no-git"],
                                capture_output=True, text=True, encoding="utf-8", env=child_env())
         self.assertEqual(plain.returncode, 0, plain.stderr)
         self.assertEqual([p.name for p in self.project.iterdir() if p.name.startswith(".")], [])
@@ -146,12 +147,13 @@ class KitTests(unittest.TestCase):
             with self.subTest(name=name), self.assertRaises(ValueError):
                 install(self.project, name)
 
-    def test_cli_init(self):
-        result = subprocess.run([sys.executable, "-m", "awkit", "kit", "init", str(self.project)],
+    def test_cli_init_copy(self):
+        result = subprocess.run([sys.executable, "-m", "awkit", "kit", "init", str(self.project), "--copy"],
                                 capture_output=True, text=True, encoding="utf-8",
                                 env=child_env())
         self.assertEqual(result.returncode, 0, result.stderr)
-        again = subprocess.run([sys.executable, "-m", "awkit", "kit", "init", str(self.project)],
+        self.assertTrue((self.project / "agent-work-kit" / "workflow.md").is_file())
+        again = subprocess.run([sys.executable, "-m", "awkit", "kit", "init", str(self.project), "--copy"],
                                capture_output=True, text=True, encoding="utf-8",
                                env=child_env())
         self.assertEqual(again.returncode, 2)

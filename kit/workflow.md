@@ -40,7 +40,7 @@ Prevents: F1, F6, F13, F36.
 
 ## Continue across sessions
 
-Keep the current state of a task in one record and link reviews and decisions from it ([task records](protocol.md)). On interruption or a change of session, leave a [checkpoint](templates/checkpoint.md) with the changed files, completed checks, running work and the next action. The session that continues verifies the actual files and processes first and does not repeat an external operation without checking whether it already ran.
+Keep the current state of a task in one record, where the project already keeps state, and link reviews and decisions from it ([task records](protocol.md)). On interruption or a change of session, leave a [checkpoint](templates/checkpoint.md) with the changed files, completed checks, running work and the next action. The session that continues verifies the actual files and processes first and does not repeat an external operation without checking whether it already ran.
 
 These instructions do not authorize data access, agent calls, message transmission, publication or deployment. Ask before touching credentials, remote targets or settings outside the project folder, and make routine decisions within the scope already authorized.
 

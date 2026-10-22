@@ -1,6 +1,6 @@
 # Instructions for agents developing this repository
 
-This file is for agents that change Agent Work Kit itself. Agents that use the kit in another project read the copied `agent-work-kit/` folder instead, starting with [kit/README.md](kit/README.md).
+This file is for agents that change Agent Work Kit itself. Agents that use the kit in another project read the skills `awkit kit init` writes there, or a copied `agent-work-kit/` folder, starting with [kit/README.md](kit/README.md).
 
 ## What each document is for
 

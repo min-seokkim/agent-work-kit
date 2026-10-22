@@ -333,12 +333,12 @@ Generated from the guards' own declarations: each guide section ends with a "Pre
 | F4 Documents describe behavior the code does not have | none | none | none |
 | F5 Documents point at things that do not exist | none | `awkit publish` | none |
 | F6 Numbers reported beyond what was measured | workflow.md Report; delegation.md 1. Objective | `awkit usage` | none |
-| F7 A convenience changes state nobody asked to change | delivery.md Confirm it in its intended context | none | none |
+| F7 A convenience changes state nobody asked to change | connect.md; delivery.md Confirm it in its intended context | `awkit kit hooks`, `awkit kit init`, `awkit kit remove` | none |
 | F8 The user's unrelated work is bundled in | workflow.md Define the task | `awkit kit init and kit example (commit only the new folder)` | none |
 | F9 The agent's own identity replaces the repository's convention | connect.md | `awkit check commit`, `awkit kit hooks`, `awkit kit init and kit example (commit only the new folder)`, `awkit doctor` | `commit-identity (block)` |
 | F10 Irreversible publication prepared before it is justified | none | none | none |
 | F11 A guess is presented as a finding | workflow.md Do the work; connect.md; checking.md The checked version | `awkit kit scan` | none |
-| F12 Scope grows before anything is measured | connect.md | `awkit kit skills` | none |
+| F12 Scope grows before anything is measured | connect.md | `awkit kit scan`, `awkit kit init`, `awkit kit skills` | none |
 | F13 AI writing patterns in English | workflow.md Report; writing.md Write plainly | `awkit check writing` | `writing-check (verify)` |
 | F14 Korean that reads like a translation, including from an agent that wrote the rules | korean-writing.md Writing process; korean-writing.md Tone and terminology; korean-writing.md Revise sentences | `awkit check writing` | `writing-check (verify)`, `korean-writing (inject)` |
 | F15 Writing for the wrong reader | writing.md Before writing; writing.md Write plainly | none | none |
@@ -355,7 +355,7 @@ Generated from the guards' own declarations: each guide section ends with a "Pre
 | F26 Checks interfere through shared resources | checking.md Shared resources and processes | none | none |
 | F27 A one-off request becomes a standing automation | work-types.md Automation | none | none |
 | F28 The wrong level of autonomy | workflow.md Define the task; work-types.md Learning | none | none |
-| F29 Context is lost between sessions | workflow.md Continue across sessions; connect.md; protocol.md Resume after interruption | none | none |
+| F29 Context is lost between sessions | workflow.md Continue across sessions; connect.md; protocol.md A task record; protocol.md Resume after interruption | `awkit kit scan`, `awkit kit init` | none |
 | F30 Facts, attribution or certainty change while writing | work-types.md Writing; writing.md Before writing; writing.md Write plainly; writing.md Preserve facts and judgments | none | none |
 | F31 The form of a correction is fixed, not its reason | writing.md Corrections; korean-writing.md Revise sentences | none | none |
 | F32 One instance is fixed and the same problem stays elsewhere | writing.md Corrections | `awkit check writing` | `writing-check (verify)` |

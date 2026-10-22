@@ -35,11 +35,21 @@ def _parser():
                             "skills and hooks",
                             epilog=REFERENCE)
     kit_commands = kit.add_subparsers(dest="action", required=True, metavar="ACTION")
-    init = kit_commands.add_parser("init", help="create the kit folder; an existing folder is never touched (exit 2)")
+    init = kit_commands.add_parser("init", help="connect the kit to a project: a section at the end of the instruction "
+                                   "file, self-contained skills and .awkit/installed.json; nothing else is copied")
     init.add_argument("dir", nargs="?", type=Path, default=Path("."), help="project folder that receives the kit (default: .)")
-    init.add_argument("--name", default="agent-work-kit", help="name of the folder to create (default: agent-work-kit)")
+    init.add_argument("--copy", action="store_true",
+                      help="copy the whole kit folder instead, as earlier versions did; an existing folder is never "
+                           "touched (exit 2)")
+    init.add_argument("--name", default="agent-work-kit", help="with --copy, the folder to create (default: agent-work-kit)")
     init.add_argument("--no-git", action="store_true",
-                      help="only copy; by default the new folder is committed, creating the repository if needed")
+                      help="write only; by default what was added is committed, creating the repository if needed")
+    remove = kit_commands.add_parser("remove", help="take out what init, skills and hooks added, leaving the project "
+                                     "as it was before")
+    remove.add_argument("dir", nargs="?", type=Path, default=Path("."), help="project folder (default: .)")
+    records = remove.add_mutually_exclusive_group()
+    records.add_argument("--keep-records", action="store_true", help="keep the check runs and logs in .awkit/")
+    records.add_argument("--delete-records", action="store_true", help="delete .awkit/ with the check runs and logs")
     example = kit_commands.add_parser("example", help="create a runnable example with one deliberate defect")
     example.add_argument("kind", choices=EXAMPLES, help="documents: Korean documents with a broken link; "
                          "data: a CSV with a wrong column name; analysis: sensor readings with a wrong assumption")
@@ -62,14 +72,15 @@ def _parser():
                         help="claude writes .claude/skills/awkit-*/SKILL.md, codex writes .agents/skills/awkit-*/SKILL.md")
     skills.add_argument("--kit", type=Path, help="point the skills at this kit folder inside the project instead of "
                         "holding the guides (default: DIR/agent-work-kit when it exists)")
-    hooks = kit_commands.add_parser("hooks", help="install the commit identity hook for Git and the hook runner for "
-                                    "Claude Code and Codex; existing hooks are kept")
+    hooks = kit_commands.add_parser("hooks", help="add the commit identity check to Git and the hook runner to Claude "
+                                    "Code and Codex, beside the hooks already there")
     hooks.add_argument("dir", nargs="?", type=Path, default=Path("."), help="folder in the Git repository (default: .)")
-    hooks.add_argument("--git", action="store_true", help="write the repository's commit-msg hook (`awkit check commit`)")
+    hooks.add_argument("--git", action="store_true", help="add `awkit check commit` to the repository's commit-msg hook, "
+                       "after an existing hook's own commands")
     hooks.add_argument("--claude", action="store_true",
-                       help="run `awkit hook` on every hook event from .claude/settings.json; writes rules.toml if missing")
+                       help="run `awkit hook` on every hook event from .claude/settings.json")
     hooks.add_argument("--codex", action="store_true",
-                       help="run `awkit hook` on every hook event from .codex/hooks.json; writes rules.toml if missing")
+                       help="run `awkit hook` on every hook event from .codex/hooks.json")
 
     checks = groups.add_parser("check", help="checks for hooks and CI: commit identity, writing patterns, done reports",
                                epilog=REFERENCE)
@@ -100,6 +111,11 @@ def _parser():
     hook = groups.add_parser("hook", help="run as a Claude Code or Codex hook: apply rules.toml to the event on stdin "
                              "and print the decision JSON; always exit 0", epilog=REFERENCE)
     hook.add_argument("--root", type=Path, help="project folder with rules.toml (default: found from the event's cwd)")
+    hook.add_argument("--kit-rules", action="store_true",
+                      help="apply the kit's rules when the project has no rules.toml (`kit hooks` writes this)")
+    hook.add_argument("--skip", action="append", default=[], metavar="RULE",
+                      help="leave out a rule by name; `kit hooks` adds --skip done-check when the project has its own "
+                           "completion gate")
     hook_commands = hook.add_subparsers(dest="action", metavar="ACTION")
     hook_report = hook_commands.add_parser("report", help="how often rules fired, blocked and failed, per session")
     hook_report.add_argument("dir", nargs="?", type=Path, default=Path("."), help="project folder (default: .)")
@@ -218,13 +234,13 @@ def _read_body(args):
     return sys.stdin.read()
 
 
-def _report_tracking(record):
+def _report_tracking(record, what="the new folder"):
     if record["created"]:
         print(f"initialized a Git repository: {record['repository']}")
     if record["committed"]:
-        print(f"committed the new folder in {record['repository']}")
+        print(f"committed {what} in {record['repository']}")
     else:
-        print(f"note: the new folder was not committed ({record['skipped']}); commit it before `awkit review check`",
+        print(f"note: {what} was not committed ({record['skipped']}); commit it before `awkit review check`",
               file=sys.stderr)
 
 
@@ -234,6 +250,80 @@ def _print_skills(result, indent=""):
             print(f"{indent}{label}: {path}")
     for name, reason in result["omitted"]:
         print(f"{indent}left out {name}: {reason}")
+
+
+def _session_line(words):
+    return (f"words added to every session: {words['claude']} for Claude Code, {words['codex']} for Codex "
+            "(the Agent Work Kit section and the skill descriptions)")
+
+
+def _report_init(report, no_git, track):
+    top = Path(report["top"])
+    for path in report["created"]:
+        print(f"created: {path}")
+    for path in report["appended"]:
+        print(f"appended: {path} (the Agent Work Kit section with the project profile)")
+    for path in report["kept"]:
+        print(f"kept: {path} already has the Agent Work Kit section")
+    omitted = {}
+    for result in report["skills"].values():
+        made = result["created"] + result["updated"]
+        if made:
+            verb = "created" if result["created"] else "regenerated"
+            print(f"{verb}: {made[0].parent.parent} ({len(made)} skills: "
+                  + ", ".join(path.parent.name for path in made) + ")")
+        for path in result["kept"]:
+            print(f"kept existing file: {path}")
+        omitted.update(result["omitted"])
+    for name, reason in omitted.items():
+        print(f"left out {name}: {reason}")
+    if report["record"]:
+        print(f"recorded: {report['record']} (what `awkit kit remove` takes out)")
+    print(_session_line(report["words"]))
+    for note in report["notes"]:
+        print(f"note: {note}")
+    if not no_git:
+        paths = [p for p in report["changes"].changed if p.is_relative_to(top) and p.relative_to(top).parts[0] not in (".awkit", ".git")]
+        if report["dirty"]:
+            print("note: nothing was committed: " + ", ".join(report["dirty"]) + " had uncommitted changes, which a "
+                  "commit would bundle in; commit the kit's lines yourself", file=sys.stderr)
+        elif paths:
+            record = track(top, paths, "Add Agent Work Kit")
+            if record["created"]:
+                # The repository is new: keep .awkit/ out of it and note that remove leaves it in place.
+                report["changes"].data["repository_created"] = True
+                report["changes"].save()
+            _report_tracking(record, "the kit's files")
+    print("next: tell your agent to connect Agent Work Kit to this project (the awkit-workflow skill says how)")
+    return 0 if report["created"] or report["appended"] or any(
+        r["created"] or r["updated"] for r in report["skills"].values()) else 2
+
+
+def _ask_keep_records(folder):
+    """Ask whether to keep .awkit/ when it holds check runs or logs; without a terminal, keep it."""
+    from .connect import awkit_records, project_top
+    found = awkit_records(project_top(folder))
+    if not found:
+        return None
+    if not sys.stdin.isatty():
+        print("note: keeping .awkit/, which holds " + ", ".join(found) + "; pass --delete-records to delete it",
+              file=sys.stderr)
+        return True
+    answer = input(".awkit/ holds " + ", ".join(found) + ". Keep it? [Y/n] ").strip().lower()
+    return answer not in ("n", "no")
+
+
+def _print_remove(report):
+    for path, what in report["files"]:
+        print(f"{what}: {path}")
+    for path in report["dirs"]:
+        print(f"removed empty folder: {path}")
+    if report["awkit_folder"] != "absent":
+        print(f"{report['awkit_folder']}: {Path(report['top']) / '.awkit'}")
+    if not report["recorded"]:
+        print("note: no .awkit/installed.json here, so files were found by awkit's markers; check `git status`",
+              file=sys.stderr)
+    print("next: commit the removal; the commit `kit init` made stays in the history")
 
 
 def _print_report(report):
@@ -314,25 +404,42 @@ def main(argv=None):
                 text = sys.stdin.read()
             except (OSError, UnicodeDecodeError):
                 text = "\ufffd"
-            output = hooks.run(text, args.root)
+            output = hooks.run(text, args.root, args.skip, args.kit_rules)
             if output:
                 print(output)
             return 0
         if args.group == "kit" and args.action == "hooks":
             from .checks import install_hooks
+            from .connect import Changes, project_top
             if not (args.git or args.claude or args.codex):
                 parser.error("choose --git, --claude, --codex or several")
-            written, kept = install_hooks(args.dir, None, args.git, args.claude, args.codex)
-            for path in written:
+            changes = Changes(project_top(args.dir))
+            result = install_hooks(args.dir, None, args.git, args.claude, args.codex, changes)
+            changes.save()
+            for path in result["installed"]:
                 print(f"installed: {path}")
-            for path in kept:
+            for path in result["connected"]:
+                print(f"connected: {path}")
+            for path in result["kept"]:
                 print(f"kept existing hook: {path}")
+            for note in result["notes"]:
+                print(f"note: {note}")
             return 0
         if args.group == "kit" and args.action == "skills":
-            result = install_skills(args.dir, args.provider, args.kit)
+            from .connect import Changes, project_top
+            changes = Changes(project_top(args.dir))
+            result = install_skills(args.dir, args.provider, args.kit, changes)
+            changes.save()
             _print_skills(result)
             written = result["created"] + result["updated"]
             return 0 if written or not result["kept"] else 2
+        if args.group == "kit" and args.action == "remove":
+            from .connect import remove
+            keep = True if args.keep_records else False if args.delete_records else None
+            if keep is None:
+                keep = _ask_keep_records(args.dir)
+            _print_remove(remove(args.dir, keep))
+            return 0
         if args.group == "kit" and args.action == "roles":
             written, skipped, warnings = install_roles(args.dir, args.provider, args.model)
             for path in written:
@@ -356,6 +463,11 @@ def main(argv=None):
         if args.group == "kit" and args.action == "scan":
             from .scan import scan as scan_project
             report = scan_project(args.dir)
+            if not args.checks:
+                words = report["session_words"]
+                state = "adds" if words["measured"] else "would add"
+                print(f"awkit {state} {words['claude']} words to every Claude Code session and {words['codex']} to every "
+                      "Codex session here", file=sys.stderr)
             print(report["suggested_checks_toml"] if args.checks else json.dumps(report, ensure_ascii=False, indent=2))
             return 0
         if args.group in ("kit", "review"):
@@ -370,13 +482,17 @@ def main(argv=None):
                 _report_tracking(track(target, [target], f"Add the {args.kind} example"))
             print(f"next: read {target / 'README.md'} and run the commands there")
             return 0
-        if args.group == "kit":
+        if args.group == "kit" and args.copy:
             target, copied = install(args.dir, args.name)
             print(f"created the kit: {target}\ncopied {len(copied)} files")
             if not args.no_git:
                 _report_tracking(track(args.dir, [target], f"Add {args.name}"))
             print(f"next: tell your agent to read {target / 'README.md'} and connect the kit to this project")
             return 0
+        if args.group == "kit":
+            from .connect import init as connect
+            report = connect(args.dir)
+            return _report_init(report, args.no_git, track)
         if args.group == "review":
             if args.action == "snapshot":
                 print(snapshot(args.repo, args.files))

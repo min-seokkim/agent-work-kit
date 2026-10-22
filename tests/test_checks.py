@@ -8,8 +8,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from awkit.checks import CLAUDE_DONE_HOOK, check_text, check_writing, commit_identity, done, install_hooks
-from awkit.hooks import HOOK_EVENTS
+from awkit.checks import check_text, check_writing, commit_identity, done, install_hooks
+from awkit.hooks import HOOK_EVENTS, OLD_DONE_HOOK
 from awkit.review import check, git, snapshot
 from support import child_env
 
@@ -72,8 +72,8 @@ class CommitIdentityTests(Repository):
 
     def test_installed_git_hook_blocks_the_commit(self):
         self.commit("a.txt", "a", "First")
-        written, kept = install_hooks(self.repo, sys.executable, use_git=True)
-        self.assertEqual((len(written), kept), (1, []))
+        written = install_hooks(self.repo, sys.executable, use_git=True)["installed"]
+        self.assertEqual(len(written), 1)
         (self.repo / "b.txt").write_text("b", encoding="utf-8")
         git(self.repo, "add", "b.txt")
         env = child_env()
@@ -85,7 +85,8 @@ class CommitIdentityTests(Repository):
         allowed = subprocess.run(["git", "-C", str(self.repo), "commit", "-q", "-m", "Add b"],
                                  capture_output=True, text=True, encoding="utf-8", env=env)
         self.assertEqual(allowed.returncode, 0, allowed.stderr)
-        self.assertEqual(install_hooks(self.repo, sys.executable, use_git=True), ([], written))  # kept
+        again = install_hooks(self.repo, sys.executable, use_git=True)
+        self.assertEqual((again["installed"], again["kept"]), ([], written))
         self.assertNotIn(sys.executable, Path(written[0]).read_text(encoding="utf-8"))
 
 
@@ -284,21 +285,23 @@ class DoneTests(Repository):
         local = self.repo / ".claude" / "settings.local.json"
         local.parent.mkdir()
         local.write_text(json.dumps({"model": "x", "hooks": {"Stop": [{"hooks": [
-            {"type": "command", "command": CLAUDE_DONE_HOOK}]}]}}), encoding="utf-8")
-        written, _ = install_hooks(self.repo, sys.executable, use_git=False, use_claude=True)
+            {"type": "command", "command": OLD_DONE_HOOK}]}]}}), encoding="utf-8")
+        written = install_hooks(self.repo, sys.executable, use_git=False, use_claude=True)["installed"]
         settings = json.loads((self.repo / ".claude" / "settings.json").read_text(encoding="utf-8"))
         self.assertEqual(sorted(settings["hooks"]), sorted(HOOK_EVENTS))
         # The hooks call awkit by name, not this machine's interpreter, so the file can be committed.
         commands = {h["command"] for entries in settings["hooks"].values() for e in entries for h in e["hooks"]}
-        self.assertEqual(commands, {"awkit hook || exit 0"})
+        self.assertEqual(commands, {"awkit hook --kit-rules || exit 0"})
         self.assertNotIn(sys.executable, (self.repo / ".claude" / "settings.json").read_text(encoding="utf-8"))
         self.assertEqual(json.loads(local.read_text(encoding="utf-8")), {"model": "x", "hooks": {}})
-        self.assertTrue((self.repo / "rules.toml").is_file())
-        # The local settings file never counts as unchecked work; the project's settings and rules do.
+        # No rules.toml is written: the handlers pass --kit-rules, so the kit's rules apply until the project
+        # has its own.
+        self.assertFalse((self.repo / "rules.toml").exists())
+        # The local settings file never counts as unchecked work; the project's settings do.
         (self.repo / "value.txt").write_text("1\n", encoding="utf-8")
-        self.assertEqual(sorted(done(self.repo, self.root / "runs")["changed"]), [".claude/settings.json", "rules.toml"])
-        self.assertEqual(install_hooks(self.repo, sys.executable, use_git=False, use_claude=True)[0], [])
-        self.assertEqual(len(written), 3)
+        self.assertEqual(sorted(done(self.repo, self.root / "runs")["changed"]), [".claude/settings.json"])
+        self.assertEqual(install_hooks(self.repo, sys.executable, use_git=False, use_claude=True)["installed"], [])
+        self.assertEqual(len(written), 2)
 
 
 if __name__ == "__main__":

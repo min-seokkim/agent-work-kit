@@ -28,8 +28,10 @@ CHECK_TOOLS = {"pytest", "ruff", "mypy", "flake8", "black", "tox", "nox", "npm",
                "make", "mvn", "gradle", "./gradlew", "dotnet", "bundle", "rake", "composer"}
 CHECK_WORDS = {"test", "tests", "lint", "check", "typecheck", "build", "unittest", "pytest", "ruff", "mypy", "vet"}
 SHELL = re.compile(r"[|&;<>$`*?(){}\\]")
-# The failure catalogue entry (kit/failures.md) this command guards against: a guessed check command.
-PREVENTS = {"awkit kit scan": ("F11",)}
+# The failure catalogue entries (kit/failures.md) this command guards against: a guessed check command;
+# kit scan also reports what the project has before the kit adds anything, and the words it would add to
+# every session (F12), and where the project keeps state already (F29).
+PREVENTS = {"awkit kit scan": ("F11", "F12", "F29")}
 
 MAKE_TARGET = re.compile(r"^([A-Za-z][A-Za-z0-9_.-]*):(?!=)")
 
@@ -143,20 +145,33 @@ def _ci(folder):
     return found
 
 
-def _kit(folder):
+def _profile_fields(text):
+    start = text.split("## Start here", 1)[-1].split("##", 1)[0] if "## Start here" in text else text
+    fields = [line for line in start.splitlines() if line.startswith("- ")]
+    # Template labels end with a colon; anything after the first colon is a value the user wrote.
+    filled = sum(1 for line in fields if line.split(":", 1)[-1].strip())
+    return {"start_here_fields": len(fields), "start_here_filled": filled}
+
+
+def _kit(folder, found):
+    """How the kit is connected: copied as a folder, connected by `kit init`, or pointed at by skills."""
+    from .connect import RECORD
+    from .environment import awkit_block
     kit = folder / "agent-work-kit"
-    if not kit.is_dir():
+    if kit.is_dir():
+        profile = kit / "templates" / "project.md"
+        filled = _profile_fields(profile.read_text(encoding="utf-8", errors="replace")) if profile.is_file() else {}
+        return {"present": True, "mode": "copy", "profile": str(profile) if profile.is_file() else None, **filled}
+    sections = [f["path"] for f in found["instructions"] if f["awkit_words"]]
+    skills = sorted({s["name"] for entries in found["skills"].values() for s in entries if s["awkit"]})
+    if not (sections or skills or (folder / RECORD).is_file()):
         return {"present": False}
-    profile = kit / "templates" / "project.md"
-    filled = None
-    if profile.is_file():
-        text = profile.read_text(encoding="utf-8", errors="replace")
-        start = text.split("## Start here", 1)[-1].split("##", 1)[0] if "## Start here" in text else ""
-        fields = [line for line in start.splitlines() if line.startswith("- ")]
-        # Template labels end with a colon; anything after the first colon is a value the user wrote.
-        filled = sum(1 for line in fields if line.split(":", 1)[-1].strip())
-        filled = {"start_here_fields": len(fields), "start_here_filled": filled}
-    return {"present": True, "profile": str(profile) if profile.is_file() else None, **(filled or {})}
+    result = {"present": True, "mode": "connected", "sections": sections, "skills": skills,
+              "record": (folder / RECORD).is_file()}
+    if sections:
+        block = awkit_block((folder / sections[0]).read_text(encoding="utf-8", errors="replace")) or ""
+        result.update(_profile_fields(block))
+    return result
 
 
 def suggested_checks(commands):
@@ -199,12 +214,22 @@ def scan(folder):
         while command["name"] in names:
             command["name"], number = f"{base}-{number}", number + 1
         names.add(command["name"])
+    from .connect import connected, plan, predicted_words
+    from .environment import detect, session_words
+    found = detect(folder, ci)
+    if connected(folder, found):
+        words = {**session_words(folder, found), "measured": True}
+    else:
+        words = {**predicted_words(plan(folder, found, ci)), "measured": False}
     docs = sorted(p.name for p in folder.iterdir() if p.is_dir() and p.name.lower() in ("docs", "doc", "documentation"))
     markdown = len([p for p in folder.glob("*.md")]) + sum(len(list((folder / d).rglob("*.md"))) for d in docs)
     return {
+        "session_words": words,
         "folder": str(folder), "git": _git(folder), "manifests": manifests, "languages": languages,
         "commands": commands, "ci": ci, "docs_folders": docs, "markdown_files": markdown,
-        "kit": _kit(folder), "awkit_state": {"reviews": (folder / ".awkit" / "reviews").is_dir(),
+        "instructions": found["instructions"], "skills": found["skills"], "plugins": found["plugins"],
+        "bundles": found["bundles"], "hooks": found["hooks"], "memory": found["memory"], "gates": found["gates"],
+        "kit": _kit(folder, found), "awkit_state": {"reviews": (folder / ".awkit" / "reviews").is_dir(),
                                              "accepted": (folder / ".awkit" / "accepted").is_dir()},
         "suggested_checks_toml": suggested_checks(commands),
         "note": "File names and manifests only; confirm every command before using it as evidence.",

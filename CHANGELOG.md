@@ -45,6 +45,7 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 - `awkit pipeline`: one-way deliveries (submissions, uploads) without `backup` and `rollback`.
 - Kit: work-type completion evidence (`work-types.md`), the "Connect the kit to a project" procedure in the agent instructions, and the command reference.
 - Kit: `writing.md`, a writing guide for any language covering the reader, the preservation list, plain style, corrections and the completion check. `korean-writing.md` keeps only what is specific to Korean and is used together with it. The project profile gains a field for per-document requirements.
+- Kit: the writing guides set two grades of text by use. A reply that stays in the conversation keeps the endings and the pattern list and is read once before sending, with no draft and no preservation list; text saved to a file, pasted into another session or read later by someone else follows the whole procedure, and only it gets the Korean guide's English draft.
 
 - `install.ps1` and `install.sh`: install Git and Python when missing (winget, Homebrew), then awkit with pipx, then run `awkit doctor`.
 - `awkit doctor`: checks Python, Git, the Git identity, PATH and the project folder, and prints how to fix each missing item.

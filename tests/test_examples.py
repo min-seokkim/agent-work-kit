@@ -1,4 +1,6 @@
 import json
+import re
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -13,6 +15,31 @@ from support import child_env
 def run(*args, cwd):
     return subprocess.run([sys.executable, "-m", "awkit", *args], cwd=cwd, capture_output=True,
                           text=True, encoding="utf-8", env=child_env())
+
+
+# The edits each example README asks for in prose, keyed by (section number, index of the command
+# block they come before). "<new run_dir>" in a block means: snapshot and check again as in step 3.
+EDITS = {
+    "documents": {(3, 0): ("docs/index.md", "config.md", "setup.md"),
+                  (5, 1): ("docs/guide.md", "메모는", "새 메모는")},
+    "data": {(3, 0): ("input/orders.csv", "qty", "quantity"),
+             (5, 1): ("input/orders.csv", "notebook,3,", "notebook,4,")},
+    "analysis": {(3, 0): ("assumptions.toml", "sample_rate_hz = 10 ", "sample_rate_hz = 20 "),
+                 (4, 1): ("assumptions.toml", "counts_per_g = 2048", "counts_per_g = 1024")},
+}
+SECTION = re.compile(r"^## (\d+)\.", re.M)
+BLOCK = re.compile(r"^```sh\n(.*?)^```", re.M | re.S)
+
+
+def readme_blocks(readme):
+    """[(section number, block index, [command lines])] for the numbered sections of a README."""
+    text = readme.read_text(encoding="utf-8")
+    starts = [(int(m.group(1)), m.start()) for m in SECTION.finditer(text)] + [(None, len(text))]
+    blocks = []
+    for (number, start), (_, end) in zip(starts, starts[1:], strict=False):
+        for index, block in enumerate(BLOCK.findall(text[start:end])):
+            blocks.append((number, index, [line for line in block.splitlines() if line.strip()]))
+    return blocks
 
 
 class ExampleTests(unittest.TestCase):
@@ -164,6 +191,49 @@ class ExampleTests(unittest.TestCase):
         self.assertEqual(statuses, {"assumptions.toml": "changed", "input/readings.csv": "same",
                                     "output/report.json": "changed"})
         self.assertIn('"peak_g": 1.5', next(f["diff"] for f in diffed["files"] if f["path"] == "output/report.json"))
+
+    def test_readme_commands_work_as_written(self):
+        # F4, F5: an example created inside a repository with history was not committed, so the
+        # README's first command failed. Every command in the READMEs runs here as written.
+        for kind in EDITS:
+            with self.subTest(kind=kind):
+                outer = self.root / f"project-{kind}"
+                outer.mkdir()
+                git(outer, "init", "-q")
+                (outer / "notes.txt").write_text("mine", encoding="utf-8")
+                git(outer, "add", "notes.txt")
+                git(outer, "-c", "user.name=f", "-c", "user.email=f@localhost", "commit", "-q", "-m", "mine")
+                created = run("kit", "example", kind, str(outer / "example"), cwd=outer)
+                self.assertEqual(created.returncode, 0, created.stderr)
+                folder = outer / "example"
+                variables, checks, rerun = {}, [], None
+                for number, index, lines in readme_blocks(folder / "README.md"):
+                    if (number, index) in EDITS[kind]:
+                        name, old, new = EDITS[kind][(number, index)]
+                        path = folder / name
+                        text = path.read_text(encoding="utf-8")
+                        self.assertIn(old, text)
+                        path.write_text(text.replace(old, new, 1), encoding="utf-8")
+                    if number == 3:
+                        rerun = lines
+                    for line in (rerun if any("<new run_dir>" in line for line in lines) else []) + lines:
+                        line = line.replace("<new run_dir>", checks[-1]["run_dir"] if checks else "")
+                        line = line.replace("<run_dir>", checks[-1]["run_dir"] if checks else "")
+                        target, _, command = line.rpartition("=$(") if "=$(" in line else ("", "", line)
+                        command = command.removesuffix(")") if target else command
+                        argv = shlex.split(command)
+                        argv = [variables.get(arg.lstrip("$"), arg) if arg.startswith("$") else arg for arg in argv]
+                        self.assertEqual(argv[0], "awkit", line)
+                        result = run(*argv[1:], cwd=folder)
+                        self.assertIn(result.returncode, (0, 1), f"{kind}: {line}\n{result.stderr}")
+                        if target:
+                            variables[target] = result.stdout.strip()
+                        if argv[1:3] == ["review", "check"]:
+                            checks.append(json.loads(result.stdout))
+                statuses = [record["status"] for record in checks]
+                self.assertEqual(statuses[:2], ["failed", "passed"], kind)
+                self.assertTrue(all(status == "passed" for status in statuses[1:]), kind)
+                self.assertEqual(git(outer, "ls-files", "--", "notes.txt"), "notes.txt")
 
     def test_cli_example(self):
         created = run("kit", "example", "documents", str(self.root / "d"), cwd=self.root)

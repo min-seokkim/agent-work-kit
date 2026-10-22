@@ -21,7 +21,7 @@ Mechanism status: `enforced` means a check runs without the agent choosing to; `
 The agent reports success, but the checks ran on another state of the files, or did not run. For documents, the text was edited but the rendered output (line breaks, tables, page fit) was never looked at.
 - Evidence: owner's records. A documentation site was about to be committed with broken line breaks, which the owner found ("let's undo the commit and fix the line breaks"; "is there anything else to check before committing? I want to stop looking at this"). A table broke after IDs were replaced with long names.
 - Countermeasure: check a frozen snapshot and report its run folder; for documents, inspect the rendered output before reporting.
-- Check: `awkit review check` result for the reported revision. Status: tool; planned: a Stop hook that refuses a "done" report without a passing run for the current snapshot.
+- Check: `awkit check done`, as a Claude Code Stop hook from `awkit kit hooks --claude`: files changed in the session need a passing `review check` of exactly their current state. Status: enforced where the hook is installed, tool otherwise; rendered output is still prose. Test: `tests/test_checks.py` (changed after checking, untracked files, the hook blocking once per turn).
 
 #### F2. The first failure disappears.
 
@@ -44,14 +44,14 @@ Tests pass on one platform and the work is reported as working everywhere.
 The text states what the change was meant to do; the code does something else, and the test covers only the easy case.
 - Evidence: observed here. `f475f9e` documented that an example created inside an existing repository is committed there; the code skipped any repository that already had a commit, and the test used a repository without one. The example's first command then failed. Fixed in `b5d78ba`.
 - Countermeasure: for each behavior stated in a document, a test that exercises exactly that case.
-- Check: planned: run the commands in example READMEs in CI as written.
+- Check: `tests/test_examples.py` runs every command in the example READMEs as written, from an example created inside a repository with history; with the `f475f9e` behavior restored it fails. Status: enforced for the examples.
 
 #### F5. Documents point at things that do not exist.
 
 Install instructions, links or files that were never created.
 - Evidence: observed here. The README told users to download the 0.2.0 wheel from Releases; no tag or release had ever existed. The README's development command failed as written because of a relative `PYTHONPATH` (fixed in `6eb632c`).
 - Countermeasure: run every documented command; check that referenced releases and files exist.
-- Check: relative links are tested. Status: partial; planned: documented commands run in CI.
+- Check: relative links and the example READMEs' commands are tested. Status: enforced for links and examples; the install commands in the READMEs are covered by next work 4.
 
 #### F6. Numbers reported beyond what was measured.
 
@@ -83,7 +83,7 @@ A commit or snapshot includes changes the user had staged or made elsewhere.
 Commits are authored as the agent, or carry trailers the owner did not ask for.
 - Evidence: observed here. Commits on `dev` were authored as "Claude" with `Co-Authored-By` lines while the owner's commits used their own identity; the history had to be rewritten and force-pushed.
 - Countermeasure: read the existing history's author and message conventions before the first commit. In this repository the convention is stated in `AGENTS.md`, which coding agents read at the start of a session.
-- Check: prose in `AGENTS.md`; planned: a pre-commit hook comparing author and trailers with the repository's recent commits.
+- Check: `awkit check commit` compares the author and trailer keys with the last 50 commits; installed as a `commit-msg` hook by `awkit kit hooks --git`, and run by CI on every pushed commit of this repository. Status: enforced here. Test: `tests/test_checks.py` replays the agent identity with `Co-Authored-By` and `Claude-Session` lines.
 
 #### F10. Irreversible publication prepared before it is justified.
 
@@ -129,14 +129,14 @@ Where the facts do not settle a question, the agent stops at the uncertainty ins
 Contrasts against claims nobody made, lead-ins, closing lines that repeat the paragraph, slogans, bold labels, dashes, sales words, promotional headlines and repeated labels.
 - Evidence: observed here. The first rewrite of the README (owner's feedback, corrected in `8f93b7b`). Owner's records: em dashes in English and Korean application text; the largest line on a documentation index page was a slogan ("this is not a brochure"); every list entry carried a tag repeating its title; a README listed what the project does not do; consulting and promotional tone in reports.
 - Countermeasure: the pattern list in `kit/writing.md`, which `AGENTS.md` applies to this repository.
-- Check: planned: a writing check that flags the listed patterns.
+- Check: `awkit check writing`: em dashes fail; lead-ins, contrasts, sales words warn. The test suite runs it over this repository's documents. Status: enforced here for errors; the rest of the list is judgment.
 
 #### F14. Korean that reads like a translation, including from an agent that wrote the rules.
 
 Translationese, mixed sentence endings, noun chains; the agent's own Korean guide not applied to its own output.
 - Evidence: observed here. The Korean README and replies before the owner pointed it out. Owner's records: Korean still unnatural after an English draft and translation; `-세요` turning into `-시오` within one guide, then the same mix left in other documents; words Korean readers do not use in that sense (`정제`, `권위 순서`, `경계`, `흐름`); middle dots joining words; italics in Korean reports.
 - Countermeasure: `kit/korean-writing.md` with `kit/writing.md`, applied to every Korean text, including the agent's replies.
-- Check: planned: Korean patterns in the same writing check.
+- Check: `awkit check writing`: middle dots joining Korean words and `-세요` mixed with `-시오` fail; Korean stock phrases warn. Natural Korean remains a reader's judgment.
 
 #### F15. Writing for the wrong reader.
 
@@ -164,14 +164,14 @@ After a correction, the agent changes exactly what was named and repeats the und
 The passage the user pointed at is fixed; the same pattern remains in other passages, documents or outputs.
 - Evidence: owner's records. Mixed polite endings fixed in the document the owner showed and left in others; an "A and B" category name ("infrastructure and purchase documents") left after the first round; tracking codes left after a cleanup; the same "A and B" grouping in CLI status output after it was removed from documents.
 - Countermeasure: after a correction, search every text people read (documents, UI text, CLI output) for the same pattern and fix each occurrence, or list those left and why.
-- Check: planned: the writing check runs over all documents, not only the changed one.
+- Check: `awkit check writing` takes folders and searches them recursively, and the test suite runs it over every document in this repository. Status: enforced here for the mechanical patterns.
 
 #### F33. Following the writing procedure is reported as quality.
 
 The agent reports that it drafted in English, translated and ran review passes; the text still reads badly.
 - Evidence: owner's records. After English drafts, translation and repeated review passes, the owner still found the Korean unnatural ("why does this repository's documentation still read unnaturally") and had to ask whether the agent had read the research a previous agent left.
 - Countermeasure: judge the final text by reading it; report what it is, not the steps taken.
-- Check: prose; the planned writing check covers listed patterns only.
+- Check: prose; `awkit check writing` covers listed patterns only.
 
 #### F34. The user's own words become the document's text.
 

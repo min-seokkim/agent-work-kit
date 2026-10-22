@@ -18,6 +18,7 @@ Requirements: Python 3.11+, Git for `kit init`, `kit example` and `review`, Play
 | `kit example documents\|data\|analysis DIR [--no-git]` | Creates a small project with one deliberate defect and a README that walks through fail, fix, re-check, verify, accept. | 0, or 2 if `DIR` exists |
 | `kit scan [DIR] [--checks]` | Reports manifests, languages, check commands, CI run lines, docs folders, Git state and kit state, plus `suggested_checks_toml`. `--checks` prints only the TOML draft. | 0 |
 | `kit roles [DIR] --provider claude\|codex [--model TIER=MODEL[:EFFORT]]...` | Writes role files from the [role templates](templates/roles/README.md). Existing files are kept. | 0, or 2 if every file already existed |
+| `kit hooks [DIR] [--git] [--claude]` | `--git` writes the repository's `commit-msg` hook running `check commit`. `--claude` adds SessionStart and Stop hooks running `check done --hook` to `.claude/settings.local.json`. Both name this machine's Python, so neither is committed. Existing hooks are kept. | 0 |
 
 `kit scan` reads file names and manifests only. Its commands come in this order: check steps that GitHub Actions already runs (no shell syntax, install steps dropped), then package.json scripts, ruff and mypy settings, pytest when pytest is configured (`[tool.pytest]`, `pytest.ini`, `conftest.py`), Makefile targets, Go and Rust defaults. Equivalent commands appear once. Run the draft with `awkit review check HEAD --config checks.toml` and keep only what works.
 
@@ -79,6 +80,18 @@ Run folder (default under the system temp folder; use `--runs-root` to keep it):
 | `review compare [--label L] [--run RUN_DIR] [--diff]` | Compares each accepted file with the working tree, or with a run's artifacts given `--run`: `same`, `changed`, `missing`. `--diff` adds unified diffs for changed text files. | every file is `same` |
 
 Files a check produced exist only in its worktree, so comparing with the working tree reports them `missing` and adds a `note`; compare a later run with `--run` instead. A matching hash shows the bytes are unchanged; whether the content is right is for the review record to say.
+
+## check
+
+Checks meant to run without anyone choosing to: from a Git hook, a Claude Code hook or CI.
+
+| Command | Effect | Exit |
+|---|---|---|
+| `check commit --message FILE \| --rev REV [--history N]` | Compares the author and the trailer keys (`Key: value` lines Git recognizes at the end of the message) with the last N commits (default 50). An author whose email is not among them, or a trailer key none of them use, is reported with how to fix it. A repository without earlier commits passes. Allow a new contributor with `git config --add awkit.allowAuthor EMAIL` and a trailer with `git config --add awkit.allowTrailer KEY`. | 0 consistent, 1 not |
+| `check writing PATH... [--json]` | Searches Markdown files, and folders recursively, for the patterns in the [Writing Guide](writing.md). Errors: em dashes, a middle dot joining Korean words, `-세요` and `-시오` endings in one document. Warnings: lead-ins, contrasts against a claim nobody made, sales words, Korean stock phrases. Code blocks, blockquotes, inline code, quoted spans and link targets are skipped. | 0 no errors, 1 errors |
+| `check done [--session ID] [--mark] [--runs-root DIR] [--hook]` | `--mark` records the current state (HEAD plus every working-tree change, untracked files included, `.awkit/` excluded) as the session's starting point in `.awkit/done/`. Without it: passes when nothing changed since that point (or since HEAD when none was recorded), or when a passing `review check` run checked exactly the current state; otherwise lists the changed files. Runs are looked up in `--runs-root`, `.awkit/reviews` and the system temp default. | 0 yes, 1 no |
+
+With `--hook`, `check done` reads the Claude Code hook input from stdin: SessionStart marks the starting point, Stop exits 2 with the reason on stderr so the agent continues, and a second stop in the same turn (`stop_hook_active`) passes, so the agent can report work it could not check and say why.
 
 ## channel
 

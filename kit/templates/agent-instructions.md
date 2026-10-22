@@ -11,7 +11,8 @@ Then do the following, and record each result rather than assuming it:
 1. Fill the five "Start here" fields of the profile from the scan and from one question to the user: what counts as done for this project, and who or what receives the result. Do not invent a build or deployment step the project does not have.
 2. Write `checks.toml` from the commands the scan found, run `awkit review check HEAD --config checks.toml` once, and keep only the commands that actually run here. List the files a passing run must produce under `artifacts` and `required_artifacts`.
 3. Record the delivery stages the project really uses (build, test, install, submit, accept, verify in use) in the profile's "Deliverables and completion" section. Where a running target is replaced or a result is transferred, connect the project's own commands to `awkit pipeline`; leave out `backup` and `rollback` when the target cannot be restored.
-4. Commit the profile and the check configuration. `awkit kit init` has already committed the kit folder, creating the repository if the project had none; say so to the user. The review commands do not create repositories or commits: if `awkit review` reports that the folder is not a Git repository or has no commit, commit the files first.
+4. Offer the user the hooks from `awkit kit hooks`: `--git` stops commits whose author or trailers differ from the repository's history, and `--claude` stops Claude Code from finishing with changed files that have no passing check.
+5. Commit the profile and the check configuration. `awkit kit init` has already committed the kit folder, creating the repository if the project had none; say so to the user. The review commands do not create repositories or commits: if `awkit review` reports that the folder is not a Git repository or has no commit, commit the files first.
 
 Ask before touching credentials, remote targets or settings outside the project folder.
 
@@ -27,6 +28,6 @@ Request independent review when the project requires it and it is authorized. La
 
 ## Report and resume
 
-For text intended for people, follow the [Writing Guide](../writing.md), and for Korean text the [Korean Writing Guide](../korean-writing.md). Report changed behavior, verified results and remaining limitations at completion. Leave a [checkpoint](checkpoint.md) when another session needs to continue.
+For text intended for people, follow the [Writing Guide](../writing.md), and for Korean text the [Korean Writing Guide](../korean-writing.md). Before reporting work as done, run `awkit check done`: changed files need a passing check of their current state, or the report says they are unchecked and why. Run `awkit check writing` on changed Markdown. Report changed behavior, verified results and remaining limitations at completion. Leave a [checkpoint](checkpoint.md) when another session needs to continue.
 
 These instructions do not automatically authorize data access, agent invocation, message transmission or deployment. Make routine decisions within the already authorized scope.

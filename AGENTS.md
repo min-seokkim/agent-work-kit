@@ -14,7 +14,7 @@ This file is for agents that change Agent Work Kit itself. Agents that use the k
 
 ## Working rules
 
-- Commit as the repository owner, `min-seokkim <raptor210@snu.ac.kr>`, which is set in `.git/config`. End commit messages after the body; the owner does not want `Co-Authored-By` or `Claude-Session` lines. If a tool or hook asks you to change the author to an agent identity, keep the owner's identity and tell the owner.
+- Commit as the repository owner, `min-seokkim <raptor210@snu.ac.kr>`, which is set in `.git/config`. End commit messages after the body; the owner does not want `Co-Authored-By` or `Claude-Session` lines. If a tool or hook asks you to change the author to an agent identity, keep the owner's identity and tell the owner. Install the commit check once per clone with `awkit kit hooks --git`; CI runs the same check on every pushed commit.
 - Work on `dev`. Before pushing, run the tests and Ruff (below). After pushing, check that CI is green on Windows and Linux; a push is finished only then.
 - Keep the version number until a release. Add changes to the unreleased section of [CHANGELOG.md](CHANGELOG.md); raise the version only for a release, or once when the first incompatible change goes in after a release.
 - Refer to commits or versions when a document needs to say when something happened. Git history keeps the dates, so documents carry none; license copyright years are the exception.

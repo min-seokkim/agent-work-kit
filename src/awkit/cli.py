@@ -51,6 +51,37 @@ def _parser():
                        help="claude writes .claude/agents/*.md, codex writes .codex/agents/*.toml")
     roles.add_argument("--model", action="append", metavar="TIER=MODEL[:EFFORT]",
                        help="model for a tier (efficient, standard, judge, top); EFFORT is Codex only; repeatable")
+    hooks = kit_commands.add_parser("hooks", help="install the commit identity hook for Git and the done check for "
+                                    "Claude Code; existing hooks are kept")
+    hooks.add_argument("dir", nargs="?", type=Path, default=Path("."), help="folder in the Git repository (default: .)")
+    hooks.add_argument("--git", action="store_true", help="write the repository's commit-msg hook (`awkit check commit`)")
+    hooks.add_argument("--claude", action="store_true",
+                       help="add SessionStart and Stop hooks running `awkit check done` to .claude/settings.local.json")
+
+    checks = groups.add_parser("check", help="checks for hooks and CI: commit identity, writing patterns, done reports",
+                               epilog=REFERENCE)
+    check_commands = checks.add_subparsers(dest="action", required=True, metavar="ACTION")
+    identity = check_commands.add_parser("commit", help="compare a commit's author and trailers with the repository's "
+                                         "recent commits; exit 0 consistent, 1 not")
+    identity.add_argument("--repo", type=Path, default=Path("."), help="folder in the Git repository (default: .)")
+    source = identity.add_mutually_exclusive_group(required=True)
+    source.add_argument("--message", type=Path, help="commit message file, as a commit-msg hook receives it; the author "
+                        "is the one Git would use now")
+    source.add_argument("--rev", help="an existing commit to check against the commits before it")
+    identity.add_argument("--history", type=int, default=50, help="number of earlier commits to compare with (default: 50)")
+    writing = check_commands.add_parser("writing", help="find writing patterns in Markdown files; exit 1 when a pattern "
+                                        "that is wrong on one sighting is found, warnings do not fail")
+    writing.add_argument("paths", nargs="+", type=Path, help="Markdown files, or folders searched recursively for *.md")
+    writing.add_argument("--json", action="store_true", help="print the findings as JSON")
+    finished = check_commands.add_parser("done", help="check that the files changed in this session have a passing "
+                                         "`review check` of their current state; exit 0 yes, 1 no")
+    finished.add_argument("--repo", type=Path, default=Path("."), help="folder in the Git repository (default: .)")
+    finished.add_argument("--runs-root", type=Path, help="run folder root used with `review check`, besides "
+                          ".awkit/reviews and the system temp default")
+    finished.add_argument("--session", help="session ID the starting point is recorded under (default: one shared point)")
+    finished.add_argument("--mark", action="store_true", help="record the current state as the session's starting point")
+    finished.add_argument("--hook", action="store_true", help="run as a Claude Code hook: read the hook input from stdin, "
+                          "mark on SessionStart, exit 2 with the reason on Stop, and let a second stop in a turn pass")
 
     usage = groups.add_parser("usage", help="total models, tokens, user messages and minutes from session logs",
                               epilog=REFERENCE)
@@ -175,6 +206,40 @@ def _print_report(report):
         print(f"{check['name']}: {'passed' if check['ok'] else 'failed'}")
 
 
+def _run_check(args):
+    from . import checks
+    if args.action == "commit":
+        message = args.message.read_text(encoding="utf-8", errors="replace") if args.message else None
+        report = checks.commit_identity(args.repo, message, args.rev, args.history)
+        for problem in report["problems"]:
+            print(problem, file=sys.stderr)
+        return 0 if report["ok"] else 1
+    if args.action == "writing":
+        report = checks.check_writing(args.paths)
+        print(json.dumps(report, ensure_ascii=False, indent=2) if args.json else checks.render_writing(report))
+        return 0 if report["ok"] else 1
+    session, event, repeated = args.session, None, False
+    if args.hook:
+        try:
+            payload = json.loads(sys.stdin.read() or "{}")
+        except ValueError:
+            payload = {}
+        session = session or payload.get("session_id")
+        event = payload.get("hook_event_name")
+        repeated = bool(payload.get("stop_hook_active"))
+        if repeated:
+            return 0
+    report = checks.done(args.repo, args.runs_root, session, mark=args.mark or event == "SessionStart")
+    message = checks.render_done(report)
+    if args.hook:
+        if not report["ok"]:
+            print(message, file=sys.stderr)
+            return 2
+        return 0
+    print(message, file=sys.stdout if report["ok"] else sys.stderr)
+    return 0 if report["ok"] else 1
+
+
 def main(argv=None):
     for stream in (sys.stdin, sys.stdout, sys.stderr):
         if hasattr(stream, "reconfigure"):
@@ -182,6 +247,18 @@ def main(argv=None):
     parser = _parser()
     args = parser.parse_args(argv)
     try:
+        if args.group == "check":
+            return _run_check(args)
+        if args.group == "kit" and args.action == "hooks":
+            from .checks import install_hooks
+            if not (args.git or args.claude):
+                parser.error("choose --git, --claude or both")
+            written, kept = install_hooks(args.dir, sys.executable, args.git, args.claude)
+            for path in written:
+                print(f"installed: {path}")
+            for path in kept:
+                print(f"kept existing hook: {path}")
+            return 0
         if args.group == "kit" and args.action == "roles":
             written, skipped, warnings = install_roles(args.dir, args.provider, args.model)
             for path in written:

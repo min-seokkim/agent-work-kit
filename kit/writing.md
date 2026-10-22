@@ -46,7 +46,7 @@ A review comment names the passage, the problem and the fix. After a fix, check 
 
 - The rendered output (line breaks, tables, page fit, links) was inspected, not only the source text.
 - Every item on the preservation list is in the text, with plans, implementation, verification and use distinguished.
-- The patterns above were searched for in everything changed.
+- The patterns above were searched for in everything changed; `awkit check writing` finds the mechanical ones.
 - Endings, terms and actors are consistent.
 
 Report what the final text is and what was checked; following these steps does not show that it reads well. The main agent reads the final text before delivery.

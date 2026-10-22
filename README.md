@@ -4,6 +4,8 @@ English | [한국어](README.ko.md)
 
 Agent Work Kit is a set of instructions and a command-line tool for coding agents such as Claude Code and Codex. An agent using it reports a finished task together with the files it checked, the project checks it ran on them and what those checks produced. It works for code, documents, data and research, in any programming language.
 
+It is for people who hand work to an agent again and again in a Git project and already spend time checking what comes back. For a one-off document by someone who does not write code, it is not yet as easy to use.
+
 ## Why
 
 Agents often report work as finished without evidence you could use to confirm it. Common cases:
@@ -28,13 +30,13 @@ Each task then follows the same steps:
 
 ## By kind of work
 
-| Task | What the agent does | What you can check afterwards |
-|---|---|---|
-| Code change | Records the task, snapshots the change, runs the checks in a separate copy | The snapshot ID, the check logs, and what was not checked |
-| Korean document | Lists the facts to keep, drafts in English, writes the Korean, then reviews facts, sentences and structure separately | The document and the list of facts it was checked against |
-| Data cleanup or analysis | Records input hashes and keeps observations, assumptions and interpretation apart | Output files traced to their inputs, and assumptions checked against the data |
-| Research, setup and other work | Follows the per-type rules on what to fix first, what to keep and when to ask | The result, its sources or evidence, and the known gaps |
-| Second review | Another session reviews a fixed snapshot | Review comments tied to that snapshot |
+| Task | What the agent does | What you can check afterwards | Checked by the tool, or left to the agent |
+|---|---|---|---|
+| Code change | Records the task, snapshots the change, runs the checks in a separate copy | The snapshot ID, the check logs, and what was not checked | Checked: your project's checks run on the snapshot, and their logs and output files are kept |
+| Korean document | Lists the facts to keep, drafts in English, writes the Korean, then reviews facts, sentences and structure separately | The document and the list of facts it was checked against | Mostly left to the agent: `awkit check writing` finds mechanical patterns such as middle dots and mixed endings, but whether the Korean reads naturally is the agent's judgment |
+| Data cleanup or analysis | Records input hashes and keeps observations, assumptions and interpretation apart | Output files traced to their inputs, and assumptions checked against the data | Checked for data in files: checks run on them and the outputs are kept with hashes; keeping observations apart from interpretation is left to the agent |
+| Research, setup and other work | Follows the per-type rules on what to fix first, what to keep and when to ask | The result, its sources or evidence, and the known gaps | Left to the agent: whether the sources fit the question is its judgment |
+| Second review | Another session reviews a fixed snapshot | Review comments tied to that snapshot | The tool fixes the snapshot; the review is the other session's judgment |
 
 ## Get started
 

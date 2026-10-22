@@ -4,14 +4,7 @@ The single record for developing Agent Work Kit: scope, decisions, current state
 
 ## Rules for working in this repository
 
-- Commit as the repository owner, `min-seokkim <raptor210@snu.ac.kr>` (set in `.git/config`). Do not add `Co-Authored-By` or `Claude-Session` lines to commit messages.
-- Do not write dates in documents. Git history records when something changed; refer to a commit or version instead. License copyright years are the exception.
-- Do not raise the version per commit. Collect changes in the unreleased section of [CHANGELOG.md](../CHANGELOG.md); raise the version only for a release, or once when the first incompatible change goes in after a release.
-- Work on `dev`. CI runs on every push to `dev` and `main`; a push is done only when CI is green on Windows and Linux.
-- Documentation audience: `README.md` and `README.ko.md` are the only documents written for people, and stay short. Everything else, including this file, the kit and the CHANGELOG, is read by agents and written in English. The kit's Korean writing guide keeps its Korean examples.
-- Write plainly. State facts instead of staging them: no "not X but Y" contrasts against claims nobody made, no lead-ins ("here's", "you have probably seen"), no closing lines that repeat the paragraph, no slogans, no bold labels or decorative bold, no em dashes, no sales words. Korean text follows `kit/korean-writing.md`, including the preservation list and the separate fact, sentence and flow reviews.
-- Write agent-facing kit text as what to do, with the reason, instead of prohibitions. A failure from `docs/failures.md` can be the reason; the catalogue itself is not shipped to agents.
-- Keep the kit short: the instruction text in `kit/` (licenses and `reference.md` excluded) stays within the word limit enforced by `tests/test_kit.py`. Before adding a rule, look for an existing rule that covers the same failure; if the limit is exceeded, shorten something else.
+The working rules (commit identity, versions, dates, documentation audience, writing style, kit length) are in [AGENTS.md](../AGENTS.md) at the repository root, where coding agents read them automatically. `CLAUDE.md` imports it for Claude Code.
 
 ## Scope
 

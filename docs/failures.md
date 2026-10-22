@@ -80,8 +80,8 @@ A commit or snapshot includes changes the user had staged or made elsewhere.
 
 Commits are authored as the agent, or carry trailers the owner did not ask for.
 - Evidence: observed here. Commits on `dev` were authored as "Claude" with `Co-Authored-By` lines while the owner's commits used their own identity; the history had to be rewritten and force-pushed.
-- Countermeasure: read the existing history's author and message conventions before the first commit.
-- Check: planned: a pre-commit hook comparing author and trailers with the repository's recent commits.
+- Countermeasure: read the existing history's author and message conventions before the first commit. In this repository the convention is stated in `AGENTS.md`, which coding agents read at the start of a session.
+- Check: prose in `AGENTS.md`; planned: a pre-commit hook comparing author and trailers with the repository's recent commits.
 
 #### F10. Irreversible publication prepared before it is justified.
 

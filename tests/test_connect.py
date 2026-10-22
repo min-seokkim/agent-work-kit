@@ -169,7 +169,7 @@ class Kinds(unittest.TestCase):
         # The gate already does what the done check does, so the handlers skip it and say why.
         commands = {h["command"] for e in json.loads((root / ".claude" / "settings.json").read_text("utf-8"))["hooks"]
                     .values() for x in e for h in x["hooks"]}
-        self.assertEqual(commands, {"awkit hook --kit-rules --skip done-check || exit 0"})
+        self.assertEqual(commands, {"awkit hook --kit-rules --skip done-check"})
         self.assertTrue(any("kkamak (gate.json)" in note for note in hooks["notes"]))
         # husky runs .husky/commit-msg; the line goes there, after the project's own command.
         self.assertEqual(hooks["connected"], [f"{root / '.husky' / 'commit-msg'} (after its own commands; husky runs it)"])

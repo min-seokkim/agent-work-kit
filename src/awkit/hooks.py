@@ -58,7 +58,7 @@ STOPS = ("Stop", "SubagentStop")
 # The failure catalogue entries (kit/failures.md) the runner guards with the kit's rules: work reported as
 # done without a check (F1), commits as the agent (F9), writing patterns (F13, F14), and rules that live in
 # one agent's memory instead of a file every agent's hooks read (F29).
-PREVENTS = {"awkit hook": ("F1", "F9", "F13", "F14", "F29")}
+PREVENTS = {"awkit hook": ("F1", "F9", "F11", "F13", "F14", "F29")}
 
 
 # Rules
@@ -842,7 +842,7 @@ def check_commit_command(payload):
 # Installing the runner
 
 
-HOOK_COMMAND = "awkit hook || exit 0"
+HOOK_COMMAND = "awkit hook"
 HOOK_EVENTS = ("SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "Stop")
 SETTINGS = {"claude": Path(".claude") / "settings.json", "codex": Path(".codex") / "hooks.json"}
 # The done check earlier versions wrote to .claude/settings.local.json.
@@ -851,7 +851,32 @@ OLD_DONE_HOOK = "if command -v awkit >/dev/null 2>&1; then awkit check done --ho
 
 def hook_command(skip=()):
     """The handler command. --kit-rules applies the kit's rules while the project has no rules.toml."""
-    return " ".join(["awkit", "hook", "--kit-rules", *(f"--skip {name}" for name in skip)]) + " || exit 0"
+    return " ".join(["awkit", "hook", "--kit-rules", *(f"--skip {name}" for name in skip)])
+
+
+def migrate_commands(settings):
+    """Remove the shell fallback only from exact command forms earlier awkit versions generated.
+
+    PowerShell 5.1 rejects || before starting the runner (F11). Custom shell commands stay untouched.
+    Missing executables must remain visible as launch failures; rule errors are handled by the runner.
+    """
+    if not isinstance(settings, dict) or not isinstance(settings.get("hooks"), dict):
+        return False
+    legacy = re.compile(
+        r"awkit hook(?: (?:SessionStart|UserPromptSubmit|PreToolUse|PostToolUse|Stop) --kit-hooks"
+        r"| --kit-rules)?(?: --skip [A-Za-z0-9_.-]+)* \|\| exit 0"
+    )
+    changed = False
+    for entries in settings["hooks"].values():
+        for entry in entries if isinstance(entries, list) else []:
+            inner = entry.get("hooks", []) if isinstance(entry, dict) else []
+            for handler in inner if isinstance(inner, list) else []:
+                command = (handler.get("command") if isinstance(handler, dict)
+                           and handler.get("type") == "command" else None)
+                if isinstance(command, str) and legacy.fullmatch(command):
+                    handler["command"] = command.removesuffix(" || exit 0")
+                    changed = True
+    return changed
 
 
 def is_awkit_command(command):
@@ -875,8 +900,8 @@ def install_settings(top, provider, changes=None, skip=()):
     """Add a handler running `awkit hook` for every hook event to Claude Code's or Codex's project settings.
     Every other key and handler stays as it was, and the file keeps its indentation and characters. When
     another settings file of the same agent runs the runner already, nothing is added. The command names
-    awkit, not an interpreter, so the file can be committed; `|| exit 0` keeps an older awkit without the
-    command from blocking tool calls. Returns (path, changed)."""
+    awkit, not an interpreter, so the file can be committed. The runner handles rule errors; launch
+    failures stay visible to the host. Returns (path, changed)."""
     from .connect import dump_json, read_exact
     top = Path(top)
     path = top / SETTINGS[provider]
@@ -887,7 +912,7 @@ def install_settings(top, provider, changes=None, skip=()):
     settings = json.loads(original) if original.strip() else {}
     if not isinstance(settings, dict) or not isinstance(settings.setdefault("hooks", {}), dict):
         raise ValueError(f"{path} does not hold a JSON object with a `hooks` object")
-    changed = False
+    changed = migrate_commands(settings)
     command = hook_command(skip)
     for event in HOOK_EVENTS:
         entries = settings["hooks"].setdefault(event, [])

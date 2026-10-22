@@ -337,7 +337,7 @@ Generated from the guards' own declarations: each guide section ends with a "Pre
 | F8 The user's unrelated work is bundled in | workflow.md Define the task | `awkit kit init --commit and kit example (commit only what they wrote)` | none |
 | F9 The agent's own identity replaces the repository's convention | connect.md | `awkit check commit`, `awkit kit hooks`, `awkit kit init --commit and kit example (commit only what they wrote)`, `awkit doctor`, `awkit hook` | `commit-identity (block)` |
 | F10 Irreversible publication prepared before it is justified | none | none | none |
-| F11 A guess is presented as a finding | workflow.md Do the work; connect.md; checking.md The checked version | `awkit kit scan` | none |
+| F11 A guess is presented as a finding | workflow.md Do the work; connect.md; checking.md The checked version | `awkit kit scan`, `awkit hook` | none |
 | F12 Scope grows before anything is measured | connect.md | `awkit kit scan`, `awkit kit init`, `awkit kit skills` | none |
 | F13 AI writing patterns in English | workflow.md Report; writing.md Write plainly | `awkit check writing`, `awkit hook` | `writing-check (verify)` |
 | F14 Korean that reads like a translation, including from an agent that wrote the rules | korean-writing.md Writing process; korean-writing.md Tone and terminology; korean-writing.md Revise sentences | `awkit check writing`, `awkit hook`, `awkit hook reply` | `writing-check (verify)`, `korean-writing (inject)`, `writing-request (inject)`, `writing-reply (verify)` |

@@ -72,7 +72,7 @@ class KitHooks(unittest.TestCase):
             self.assertIn(f"installed: {self.root / name}", output)
         self.assertTrue((self.root / "rules.toml").read_text(encoding="utf-8").startswith(kit_hooks.DRAFT_MARK))
         for relative in kit_hooks.SETTINGS.values():
-            self.assertEqual(self.handlers(relative)["Stop"], ["awkit hook Stop --kit-hooks || exit 0"])
+            self.assertEqual(self.handlers(relative)["Stop"], ["awkit hook Stop --kit-hooks"])
         # The commit-msg hook awkit wrote refuses an agent's trailer and lets the owner's commit through.
         refused = self.commit("Fix", AGENT_TRAILER)
         self.assertNotEqual(refused.returncode, 0)
@@ -111,7 +111,7 @@ class KitHooks(unittest.TestCase):
         local = json.loads((self.root / ".claude" / "settings.local.json").read_text(encoding="utf-8"))
         self.assertEqual(local["model"], "sonnet")
         self.assertEqual(self.handlers(".claude/settings.local.json")["Stop"],
-                         ["echo 끝", "awkit hook Stop --kit-hooks || exit 0"])
+                         ["echo 끝", "awkit hook Stop --kit-hooks"])
         self.assertEqual((husky / "_" / "commit-msg").read_bytes(), before[".husky/_/commit-msg"][0])
         # Both commit hooks run: husky's writes its file, then awkit's line refuses the agent's trailer.
         refused = self.commit("Fix", AGENT_TRAILER)

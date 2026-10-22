@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "awkit hook || exit 0",
+            "command": "awkit hook",
             "timeout": 60
           }
         ]
@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "awkit hook || exit 0",
+            "command": "awkit hook",
             "timeout": 60
           }
         ]
@@ -27,7 +27,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "awkit hook || exit 0",
+            "command": "awkit hook",
             "timeout": 60
           }
         ]
@@ -38,7 +38,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "awkit hook || exit 0",
+            "command": "awkit hook",
             "timeout": 60
           }
         ]
@@ -49,7 +49,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "awkit hook || exit 0",
+            "command": "awkit hook",
             "timeout": 60
           }
         ]

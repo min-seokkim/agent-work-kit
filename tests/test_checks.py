@@ -312,7 +312,7 @@ class DoneTests(Repository):
         self.assertEqual(sorted(settings["hooks"]), sorted(HOOK_EVENTS))
         # The hooks call awkit by name, not this machine's interpreter, so the file can be committed.
         commands = {h["command"] for entries in settings["hooks"].values() for e in entries for h in e["hooks"]}
-        self.assertEqual(commands, {"awkit hook --kit-rules || exit 0"})
+        self.assertEqual(commands, {"awkit hook --kit-rules"})
         self.assertNotIn(sys.executable, (self.repo / ".claude" / "settings.json").read_text(encoding="utf-8"))
         self.assertEqual(json.loads(local.read_text(encoding="utf-8")), {"model": "x", "hooks": {}})
         # No rules.toml is written: the handlers pass --kit-rules, so the kit's rules apply until the project

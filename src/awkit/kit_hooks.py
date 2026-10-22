@@ -55,8 +55,8 @@ def _dump(data, original=""):
 
 def handler_command(event, skip=()):
     """The handler for one event. It names awkit, not an interpreter, so the file works after reinstalling;
-    `|| exit 0` keeps a missing awkit from blocking the agent, and MARK says which handlers this command added."""
-    return " ".join(["awkit", "hook", event, MARK, *(f"--skip {name}" for name in skip)]) + " || exit 0"
+    the runner handles rule errors itself. MARK says which handlers this command added."""
+    return " ".join(["awkit", "hook", event, MARK, *(f"--skip {name}" for name in skip)])
 
 
 def is_ours(command):
@@ -256,6 +256,7 @@ def install_settings(top, provider, record, skip=()):
     """Add a handler per event to the agent's project hook file, beside the handlers there. An event that
     already runs `awkit hook` in this file or another of the same agent's files is left alone. Returns
     (path, "installed" or "kept")."""
+    from .hooks import migrate_commands
     path = top / SETTINGS[provider]
     original = _read(path) if path.is_file() else ""
     settings = json.loads(original) if original.strip() else {}
@@ -264,13 +265,16 @@ def install_settings(top, provider, record, skip=()):
     elsewhere = set()
     for other in OTHER_SETTINGS[provider]:
         try:
-            data = json.loads(_read(top / other))
+            other_text = _read(top / other)
+            data = json.loads(other_text)
+            if migrate_commands(data):
+                record.write(top / other, _dump(data, other_text), "merged")
             for event, entries in data.get("hooks", {}).items():
                 if isinstance(entries, list) and any(_runs_awkit(c) for c in _commands(entries)):
                     elsewhere.add(event)
         except (OSError, ValueError, AttributeError):
             continue
-    changed = False
+    changed = migrate_commands(settings)
     for event in EVENTS:
         if event in elsewhere:
             continue

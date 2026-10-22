@@ -69,7 +69,7 @@ def diagnose(folder="."):
 
     if shutil.which("awkit") is None:
         add("awkit on PATH", "warning", "the awkit command was not found on PATH",
-            "run pipx ensurepath and open a new terminal")
+            "run pipx ensurepath, then restart the terminal and the app that runs hooks")
     else:
         add("awkit on PATH", "ok", shutil.which("awkit"))
 

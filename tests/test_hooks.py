@@ -329,7 +329,7 @@ class Install(Project):
         settings = json.loads((self.root / ".codex" / "hooks.json").read_text(encoding="utf-8"))
         self.assertEqual(sorted(settings["hooks"]), sorted(hooks.HOOK_EVENTS))
         entry = settings["hooks"]["PreToolUse"][0]["hooks"][0]
-        self.assertEqual((entry["type"], entry["command"]), ("command", "awkit hook --kit-rules || exit 0"))
+        self.assertEqual((entry["type"], entry["command"]), ("command", "awkit hook --kit-rules"))
         self.assertFalse((self.root / "rules.toml").exists())
         self.assertEqual(len(result["installed"]), 1)
         again = install_hooks(self.root, use_git=False, use_codex=True)

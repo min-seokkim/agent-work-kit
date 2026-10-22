@@ -1,0 +1,73 @@
+# Rules for `awkit hook`, which Claude Code and Codex run on every hook event (`awkit kit hooks --claude`
+# or `--codex`). Each rule fires only when a tool call has the shape it describes, so it costs no context
+# until then. Copy this file to the project root as rules.toml; `kit hooks` does that when none exists.
+# The format is in reference.md, section "hook"; `prevents` names the entries in failures.md each rule
+# guards, and every firing cites them so the agent can read why.
+schema = 1
+kit = "agent-work-kit"      # the kit folder, used as {kit} in messages
+timeout_seconds = 20        # per rule command; a command that takes longer is allowed and logged
+
+# Commits authored as the agent, or with trailers the project never uses, before they are made.
+[[rules]]
+name = "commit-identity"
+prevents = ["F9"]
+kind = "block"
+events = ["PreToolUse"]
+tools = ["Bash"]
+shell = '\bgit\b[^\n]*\bcommit\b'
+command = ["{python}", "-m", "awkit", "check", "commit", "--hook"]
+
+# Work reported as done while changed files have no passing check of their current state. The same
+# command records the session's starting point on SessionStart.
+[[rules]]
+name = "done-check"
+prevents = ["F1"]
+kind = "verify"
+events = ["SessionStart", "Stop"]
+command = ["{python}", "-m", "awkit", "check", "done", "--hook"]
+
+# Writing patterns readers recognize as generated, in the Markdown file just edited.
+[[rules]]
+name = "writing-check"
+prevents = ["F13", "F14", "F32"]
+kind = "verify"
+events = ["PostToolUse"]
+tools = ["Edit", "Write", "MultiEdit"]
+paths = ["*.md"]
+command = ["{python}", "-m", "awkit", "check", "writing", "{paths}"]
+message = "The edited Markdown has writing errors. Fix them before continuing."
+
+[[rules]]
+name = "korean-writing"
+prevents = ["F14"]
+kind = "inject"
+events = ["PreToolUse"]
+tools = ["Edit", "Write", "MultiEdit"]
+paths = ["*.md"]
+text = '[가-힣]'
+message = "Keep one ending style, no middle dots joining words and no translationese in Korean text. Read {kit}/korean-writing.md before writing more."
+
+[[rules]]
+name = "research"
+prevents = ["F23", "F37"]
+kind = "inject"
+events = ["PreToolUse"]
+tools = ["WebSearch", "WebFetch", "web_search"]
+message = "Pick sources that answer the question asked, cite what you read and report contradictions. Read Research in {kit}/work-types.md first."
+
+[[rules]]
+name = "delivery"
+prevents = ["F24"]
+kind = "inject"
+events = ["PreToolUse"]
+tools = ["Bash"]
+shell = '\bgit\s+push\b|\bgh\s+(release|pr)\s+create\b|\b(npm|pnpm|yarn|cargo)\s+publish\b|\btwine\s+upload\b|\b(scp|rsync|sftp)\b|\baws\s+s3\s+(cp|sync)\b|\bgsutil\s+(cp|rsync)\b'
+message = "A delivery is done when the recipient sees it. After this command, check where it arrives (CI, release page, server) and report what you saw."
+
+[[rules]]
+name = "delegation"
+prevents = ["F19", "F21"]
+kind = "inject"
+events = ["PreToolUse"]
+tools = ["Agent"]
+message = "Settle shared decisions first and hand off goal, output, tools and evidence, scope. Read section 5 of {kit}/delegation.md before writing the prompt."

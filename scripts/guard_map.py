@@ -1,8 +1,8 @@
 """Build the table in kit/failures.md that says what guards each failure entry.
 
 Nothing is kept by hand. Each guide section ends with a "Prevents:" line naming the entries it guards,
-and each module that implements a check or command declares PREVENTS in its code. This script collects
-both, reports declarations that name no entry or an unknown one, and writes the table between the
+each module that implements a check or command declares PREVENTS in its code, and each rule in the
+kit's example rules.toml for `awkit hook` names its entries in `prevents`. This script collects all three, reports declarations that name no entry or an unknown one, and writes the table between the
 markers in kit/failures.md. The test suite fails when the table in the file differs from a fresh one.
 
     python scripts/guard_map.py           print problems and the table
@@ -17,6 +17,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 KIT = ROOT / "kit"
 CATALOGUE = KIT / "failures.md"
+RULES = KIT / "rules.toml"
 GUIDES = ("workflow.md", "connect.md", "checking.md", "delivery.md", "protocol.md", "work-types.md",
           "delegation.md", "review-session.md", "writing.md", "korean-writing.md")
 MODULES = ("awkit.checks", "awkit.review", "awkit.doctor", "awkit.scan", "awkit.usage", "awkit.channel",
@@ -57,11 +58,18 @@ def code_guards():
     return found
 
 
+def hook_rules():
+    """([(rule label, [entry numbers])], problems) from the kit's example rules for `awkit hook`."""
+    from awkit.hooks import load_rules
+    rules, problems = load_rules(RULES)
+    return [(f"{rule.name} ({rule.kind})", list(rule.prevents)) for rule in rules], problems
+
+
 def build():
     """(problems, table text)."""
     known = entries()
     problems = []
-    guards = {number: {"guides": [], "code": []} for number in known}
+    guards = {number: {"guides": [], "code": [], "rules": []} for number in known}
     for guide, heading, numbers, problem in guide_sections():
         where = f"{guide} {heading}".strip()
         if problem:
@@ -80,11 +88,22 @@ def build():
                 problems.append(f"{command}: names {number}, which is not in the catalogue")
             else:
                 guards[number]["code"].append(f"`{command}`")
-    rows = ["| Entry | Guide sections | Checks and commands |", "|---|---|---|"]
+    rules, rule_problems = hook_rules()
+    problems.extend(f"rules.toml: {problem}" for problem in rule_problems)
+    for label, numbers in rules:
+        if not numbers:
+            problems.append(f"rules.toml {label}: declares no entry")
+        for number in numbers:
+            if number not in known:
+                problems.append(f"rules.toml {label}: names {number}, which is not in the catalogue")
+            else:
+                guards[number]["rules"].append(f"`{label}`")
+    rows = ["| Entry | Guide sections | Checks and commands | Hook rules |", "|---|---|---|---|"]
     for number in sorted(known, key=lambda n: int(n[1:])):
         g = guards[number]
-        rows.append(f"| {number} {known[number]} | {'; '.join(g['guides']) or 'none'} | {', '.join(g['code']) or 'none'} |")
-    unguarded = [n for n in sorted(known, key=lambda n: int(n[1:])) if not guards[n]["guides"] and not guards[n]["code"]]
+        rows.append(f"| {number} {known[number]} | {'; '.join(g['guides']) or 'none'} | {', '.join(g['code']) or 'none'} "
+                    f"| {', '.join(g['rules']) or 'none'} |")
+    unguarded = [n for n in sorted(known, key=lambda n: int(n[1:])) if not any(guards[n].values())]
     note = (f"\nEntries with no guard yet: {', '.join(unguarded)}.\n" if unguarded else "\n")
     return problems, "\n".join(rows) + "\n" + note
 

@@ -14,7 +14,7 @@ import tempfile
 from pathlib import Path
 
 from .identity import author_problem
-from .review import _probe, exclude_locally, git, nested_repositories, nested_warning, toplevel
+from .review import _probe, git, nested_repositories, nested_warning, toplevel
 
 HISTORY = 50
 
@@ -50,12 +50,13 @@ def trailer_keys(top, message):
     return keys
 
 
-def commit_identity(folder, message=None, rev=None, history=HISTORY):
+def commit_identity(folder, message=None, rev=None, history=HISTORY, author=None):
     """Compare a commit's author and trailers with the repository's recent commits.
 
     With `rev`, the commit is read from the repository and compared with the commits before it.
-    Otherwise the author is the one Git would use now and the message is `message`, as in a
-    commit-msg hook. A repository without earlier commits has nothing to compare with and passes.
+    Otherwise the author is `author` as (name, email), by default the one Git would use now, and the
+    message is `message`, as in a commit-msg hook or before `git commit` runs. A repository without
+    earlier commits has nothing to compare with and passes.
     Authors and trailer keys can be allowed with `git config --add awkit.allowAuthor EMAIL` and
     `git config --add awkit.allowTrailer KEY`.
     """
@@ -67,9 +68,12 @@ def commit_identity(folder, message=None, rev=None, history=HISTORY):
         parents = git(top, "log", "-1", "--format=%P", rev).split()
         base = parents[0] if parents else None
     else:
-        ident = git(top, "var", "GIT_AUTHOR_IDENT")
-        match = re.match(r"(.*?) <([^>]*)>", ident)
-        name, email = (match.group(1), match.group(2)) if match else (ident, "")
+        if author:
+            name, email = author
+        else:
+            ident = git(top, "var", "GIT_AUTHOR_IDENT")
+            match = re.match(r"(.*?) <([^>]*)>", ident)
+            name, email = (match.group(1), match.group(2)) if match else (ident, "")
         base = "HEAD" if has_commit else None
     report = {"author": f"{name} <{email}>", "trailers": trailer_keys(top, message or ""), "compared_commits": 0,
               "problems": []}
@@ -327,12 +331,16 @@ CLAUDE_DONE_HOOK = "if command -v awkit >/dev/null 2>&1; then awkit check done -
 LOCAL_ONLY = (".awkit", ".claude/settings.local.json", "CLAUDE.local.md")
 
 
-def install_hooks(folder, python=None, use_git=True, use_claude=False):
-    """Install the commit identity hook for Git and the done check for Claude Code.
+def install_hooks(folder, python=None, use_git=True, use_claude=False, use_codex=False):
+    """Install the commit identity hook for Git and the hook runner for Claude Code and Codex.
 
-    Both call awkit by name. The Git hook goes to the repository's hooks folder; the Claude Code hooks
-    go to .claude/settings.local.json, which is excluded from Git locally so it never counts as work.
-    Existing hooks are kept. `python` is accepted for compatibility and not used. Returns (written, kept)."""
+    The Git hook goes to the repository's hooks folder. The agents' hooks go to their project settings,
+    `.claude/settings.json` and `.codex/hooks.json`, and run `awkit hook`, which applies the project's
+    rules.toml; the kit's example rules are written there when the project has none. Everything calls
+    awkit by name, so the files can be committed. Existing hooks are kept; the done-check entries an
+    earlier awkit wrote to .claude/settings.local.json are removed, since the rules run that check now.
+    `python` is accepted for compatibility and not used. Returns (written, kept)."""
+    from .hooks import install_rules, install_settings, remove_entries
     top, _ = _repository(folder)
     written, kept = [], []
     if use_git:
@@ -344,22 +352,15 @@ def install_hooks(folder, python=None, use_git=True, use_claude=False):
             hook.write_text(GIT_HOOK, encoding="utf-8", newline="\n")
             hook.chmod(0o755)
             written.append(str(hook))
+    providers = [name for name, chosen in (("claude", use_claude), ("codex", use_codex)) if chosen]
+    for provider in providers:
+        path, changed = install_settings(top, provider)
+        (written if changed else kept).append(str(path))
     if use_claude:
-        path = top / ".claude" / "settings.local.json"
-        settings = json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
-        hooks = settings.setdefault("hooks", {})
-        changed = False
-        for event in ("SessionStart", "Stop"):
-            entries = hooks.setdefault(event, [])
-            if any("awkit check done" in h.get("command", "") for e in entries for h in e.get("hooks", [])):
-                continue
-            entries.append({"hooks": [{"type": "command", "command": CLAUDE_DONE_HOOK}]})
-            changed = True
-        exclude_locally(top, ".claude/settings.local.json")
-        if changed:
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8")
-            written.append(str(path))
-        else:
-            kept.append(str(path))
+        local = top / ".claude" / "settings.local.json"
+        if remove_entries(local, CLAUDE_DONE_HOOK):
+            written.append(str(local))
+    if providers:
+        path, created = install_rules(top)
+        (written if created else kept).append(str(path))
     return written, kept

@@ -24,7 +24,7 @@ Requirements: Python 3.11+, Git for `kit init`, `kit example` and `review`, Play
 | `kit scan [DIR] [--checks]` | Reports manifests, languages, check commands, CI run lines, docs folders, Git state and kit state, plus `suggested_checks_toml`. `--checks` prints only the TOML draft. | 0 |
 | `kit roles [DIR] --provider claude\|codex [--model TIER=MODEL[:EFFORT]]...` | Writes role files from the [role templates](templates/roles/README.md). Existing files are kept. | 0, or 2 if every file already existed |
 | `kit skills [DIR] --provider claude\|codex [--kit PATH]` | Writes one skill per situation guide except `connect.md`, which `workflow.md` already points to: `.claude/skills/awkit-*/SKILL.md` for Claude Code, `.agents/skills/awkit-*/SKILL.md` for Codex. Each holds the guide's situation as its description and tells the agent to read the guide in the kit folder (`--kit`, default `DIR/agent-work-kit`). Existing files are kept. | 0, or 2 if every file already existed |
-| `kit hooks [DIR] [--git] [--claude]` | `--git` writes the repository's `commit-msg` hook running `check commit`. `--claude` adds SessionStart and Stop hooks running `check done --hook` to `.claude/settings.local.json` and excludes that file from Git locally (`.git/info/exclude`). Both call `awkit` by name, falling back to `python3 -m awkit`, so reinstalling awkit does not break them. Existing hooks are kept. | 0 |
+| `kit hooks [DIR] [--git] [--claude] [--codex]` | `--git` writes the repository's `commit-msg` hook running `check commit`, calling `awkit` by name and falling back to `python3 -m awkit`. `--claude` and `--codex` add `awkit hook \|\| exit 0` for every hook event to `.claude/settings.json` and `.codex/hooks.json`, and write the kit's example `rules.toml` at the repository root when there is none, with `kit` set to the kit folder found there. The files name no interpreter, so they can be committed; `\|\| exit 0` keeps an older awkit without `hook` from blocking tool calls. `--claude` also removes the done-check entries earlier versions wrote to `.claude/settings.local.json`. Existing hooks are kept. | 0 |
 
 `kit scan` reads file names and manifests only. Its commands come in this order: check steps that GitHub Actions already runs (no shell syntax, install steps dropped), then package.json scripts, ruff and mypy settings, pytest when pytest is configured (`[tool.pytest]`, `pytest.ini`, `conftest.py`), Makefile targets, Go and Rust defaults. Equivalent commands appear once. Run the draft with `awkit review check HEAD --config checks.toml` and keep only what works.
 
@@ -94,11 +94,48 @@ Checks meant to run without anyone choosing to: from a Git hook, a Claude Code h
 
 | Command | Effect | Exit |
 |---|---|---|
-| `check commit --message FILE \| --rev REV [--history N]` | Reports an author that looks like a coding agent's identity, and compares the author and the trailer keys (`Key: value` lines Git recognizes at the end of the message) with the last N commits (default 50). An author whose email is not among them, or a trailer key none of them use, is reported with how to fix it. A repository without earlier commits passes. Allow a new contributor with `git config --add awkit.allowAuthor EMAIL` and a trailer with `git config --add awkit.allowTrailer KEY`. | 0 consistent, 1 not |
+| `check commit --message FILE \| --rev REV \| --hook [--history N]` | Reports an author that looks like a coding agent's identity, and compares the author and the trailer keys (`Key: value` lines Git recognizes at the end of the message) with the last N commits (default 50). An author whose email is not among them, or a trailer key none of them use, is reported with how to fix it. A repository without earlier commits passes. Allow a new contributor with `git config --add awkit.allowAuthor EMAIL` and a trailer with `git config --add awkit.allowTrailer KEY`. `--hook` reads a hook event on stdin and checks each `git commit` in its shell command before it runs (see hook). | 0 consistent, 1 not |
 | `check writing PATH... [--json]` | Searches Markdown files, and folders recursively, for the patterns in the [Writing Guide](writing.md). Errors: em dashes, a middle dot joining Korean words, `-세요` and `-시오` endings in one document. Warnings: lead-ins, contrasts against a claim nobody made, sales words, Korean stock phrases. Code blocks, blockquotes, inline code, quoted spans and link targets are skipped. Inside a repository a folder means the Markdown files Git tracks or would track there, so ignored folders and other repositories are left out. | 0 no errors, 1 errors |
 | `check done [--session ID] [--mark] [--runs-root DIR] [--hook]` | `--mark` records the current state (HEAD plus every working-tree change, untracked files included; `.awkit/`, `.claude/settings.local.json` and `CLAUDE.local.md` excluded as local to the machine) as the session's starting point in `.awkit/done/`. Without it: passes when nothing changed since that point (or since HEAD when none was recorded), or when a passing `review check` run checked exactly the current state; otherwise lists the changed files. Runs are looked up in `--runs-root`, `.awkit/reviews` and the system temp folder older versions used. | 0 yes, 1 no |
 
 With `--hook`, `check done` reads the Claude Code hook input from stdin: SessionStart marks the starting point (a resumed or compacted session keeps the one it has), Stop exits 2 with the reason on stderr so the agent continues, and a second stop in the same turn (`stop_hook_active`) passes, so the agent can report work it could not check and say why.
+
+## hook
+
+`awkit hook [--root DIR]` is the command Claude Code and Codex run on every hook event (`kit hooks --claude`, `--codex`). It reads the event JSON on stdin, applies the rules in `rules.toml` and prints the decision JSON on stdout, or nothing. It always exits 0. The project root is the nearest folder at or above the event's `cwd` that has `rules.toml`. Both agents use the same event names, input fields (`hook_event_name`, `tool_name`, `tool_input`, `cwd`, `session_id`) and output fields, so one runner serves both.
+
+```toml
+schema = 1
+kit = "agent-work-kit"        # {kit} in messages and commands
+timeout_seconds = 20          # default for each rule command, at most 600
+
+[[rules]]
+name = "commit-identity"      # letters, digits, . _ -
+prevents = ["F9"]             # entries in failures.md, cited in every message
+kind = "block"                # block, verify or inject
+events = ["PreToolUse"]
+tools = ["Bash"]              # tool names; * and ? allowed
+shell = '\bgit\b[^\n]*\bcommit\b'   # regular expression searched in the shell command
+command = ["{python}", "-m", "awkit", "check", "commit", "--hook"]
+# also: paths = ["*.md"], text = '[가-힣]', message = "...", decision = "ask", timeout = 10
+```
+
+| Kind | Events (default first) | Fires | Output |
+|---|---|---|---|
+| `block` | PreToolUse, UserPromptSubmit, PostToolUse, Stop, SubagentStop | The conditions match and, with `command`, the command fails | PreToolUse: `permissionDecision` `deny` (or `ask` with `decision = "ask"`) and the reason; other events: `decision: block` |
+| `verify` | Stop, PostToolUse, PreToolUse, UserPromptSubmit, SubagentStop, SessionStart | The command fails; once per distinct output per session | `decision: block` with the message and the output; on SessionStart, `additionalContext` |
+| `inject` | PreToolUse, PostToolUse, UserPromptSubmit, SessionStart | The conditions match; once per session | `additionalContext` |
+
+- Conditions: every condition given must match. `tools` also matches Codex's `apply_patch` as `Edit` and `Write`, `spawn_agent` and Claude Code's `Task` as `Agent`. `paths` are globs for the edited files (`file_path`, `notebook_path`, or the file headers of an `apply_patch` patch); a pattern without `/` matches the file name in any folder. `text` searches the text being written (`content`, `new_string`, `edits`, `new_source`, added patch lines); `shell` searches `tool_input.command`.
+- `message`: at most 200 characters after `{kit}` is filled in, ending with what to do. Every reason and context starts with `awkit NAME (PREVENTS): `; several firings on one event are joined, and `deny` wins over `ask`.
+- `command`: an argument array, never a shell, run in the project root with the event JSON on stdin. Placeholders: `{python}` (the interpreter running awkit), `{kit}`, `{root}`, and an element `{paths}` that becomes the matching edited files that exist (the rule is skipped when none does). Exit 0 with no output is no opinion; exit 0 with a JSON object `{"decision": "deny"|"ask"|"block"|"allow", "reason": TEXT, "context": TEXT}` is that decision; any other exit fires the rule with the output (stdout and stderr, first 1,000 characters).
+- A second stop in the same turn (`stop_hook_active`) skips `block` and `verify` rules, so the agent can report what it could not fix.
+- Errors allow the call and leave one log line: unreadable input, an unreadable rules file (no rule runs), a wrong rule (only that rule is skipped; reported once per session), a command that runs past its timeout (its process tree is stopped) or cannot start. Without `rules.toml` the runner does nothing and writes nothing.
+- Files: session state in `.awkit/hooks/SESSION.json`; the log `.awkit/hooks.ndjson`, one line per firing or error with `time`, `session`, `event`, `tool`, `rule` and `decision` (`deny`, `ask`, `block`, `context`, `error`). `.awkit/` is excluded from Git locally when the runner creates it.
+
+`awkit hook report [DIR] [--json]` prints per session how often rules fired, blocked (`deny` and `block`), asked, injected and failed, with counts per rule, and any problems in `rules.toml`.
+
+`check commit --hook` is the command behind the example `commit-identity` rule. It reads the message from `-m`, `--message`, `-F` (a file, or `-` with a heredoc) and `$(cat <<'EOF' ...)` substitutions, and the author from `--author`, `GIT_AUTHOR_*` assignments before `git`, `-c user.*` or Git's configuration. A command it cannot split, such as one with an unclosed quote, passes.
 
 ## channel
 

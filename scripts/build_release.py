@@ -42,7 +42,7 @@ def build_kit_zip(out: Path) -> Path:
     target = out / f"agent-work-kit-{__version__}.zip"
     kit = ROOT / "kit"
     with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as archive:
-        for path in sorted(kit.rglob("*.md")):
+        for path in sorted([*kit.rglob("*.md"), *kit.rglob("*.toml")]):
             archive.write(path, Path("agent-work-kit") / path.relative_to(kit))
     return target
 

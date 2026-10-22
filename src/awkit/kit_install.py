@@ -304,7 +304,7 @@ def install(parent: Path, name="agent-work-kit"):
     staging.mkdir()
     copied: list[str] = []
     try:
-        _copy(kit_root(), staging, copied)
+        _copy(kit_root(), staging, copied, suffixes=(".md", ".toml"))
         record = kit_source()
         (staging / VERSION_FILE).write_text(
             "Written by awkit kit init. Compare it with a newer kit's before carrying changes over.\n"

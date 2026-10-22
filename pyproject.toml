@@ -36,7 +36,7 @@ packages = ["awkit", "awkit.extras", "awkit.kit", "awkit.kit.templates", "awkit.
 "awkit.examples" = "examples/first-run"
 
 [tool.setuptools.package-data]
-"awkit.kit" = ["*.md"]
+"awkit.kit" = ["*.md", "*.toml"]
 "awkit.kit.templates" = ["*.md"]
 "awkit.kit.templates.roles" = ["*.md"]
 "awkit.kit.examples" = ["*.md"]

@@ -58,12 +58,14 @@ def _parser():
     skills.add_argument("--provider", choices=("claude", "codex"), required=True,
                         help="claude writes .claude/skills/awkit-*/SKILL.md, codex writes .agents/skills/awkit-*/SKILL.md")
     skills.add_argument("--kit", type=Path, help="the kit folder inside the project (default: DIR/agent-work-kit)")
-    hooks = kit_commands.add_parser("hooks", help="install the commit identity hook for Git and the done check for "
-                                    "Claude Code; existing hooks are kept")
+    hooks = kit_commands.add_parser("hooks", help="install the commit identity hook for Git and the hook runner for "
+                                    "Claude Code and Codex; existing hooks are kept")
     hooks.add_argument("dir", nargs="?", type=Path, default=Path("."), help="folder in the Git repository (default: .)")
     hooks.add_argument("--git", action="store_true", help="write the repository's commit-msg hook (`awkit check commit`)")
     hooks.add_argument("--claude", action="store_true",
-                       help="add SessionStart and Stop hooks running `awkit check done` to .claude/settings.local.json")
+                       help="run `awkit hook` on every hook event from .claude/settings.json; writes rules.toml if missing")
+    hooks.add_argument("--codex", action="store_true",
+                       help="run `awkit hook` on every hook event from .codex/hooks.json; writes rules.toml if missing")
 
     checks = groups.add_parser("check", help="checks for hooks and CI: commit identity, writing patterns, done reports",
                                epilog=REFERENCE)
@@ -75,6 +77,8 @@ def _parser():
     source.add_argument("--message", type=Path, help="commit message file, as a commit-msg hook receives it; the author "
                         "is the one Git would use now")
     source.add_argument("--rev", help="an existing commit to check against the commits before it")
+    source.add_argument("--hook", action="store_true", help="read a Claude Code or Codex hook event on stdin and check "
+                        "each `git commit` in its shell command before it runs")
     identity.add_argument("--history", type=int, default=50, help="number of earlier commits to compare with (default: 50)")
     writing = check_commands.add_parser("writing", help="find writing patterns in Markdown files; exit 1 when a pattern "
                                         "that is wrong on one sighting is found, warnings do not fail")
@@ -88,6 +92,14 @@ def _parser():
     finished.add_argument("--mark", action="store_true", help="record the current state as the session's starting point")
     finished.add_argument("--hook", action="store_true", help="run as a Claude Code hook: read the hook input from stdin, "
                           "mark on SessionStart, exit 2 with the reason on Stop, and let a second stop in a turn pass")
+
+    hook = groups.add_parser("hook", help="run as a Claude Code or Codex hook: apply rules.toml to the event on stdin "
+                             "and print the decision JSON; always exit 0", epilog=REFERENCE)
+    hook.add_argument("--root", type=Path, help="project folder with rules.toml (default: found from the event's cwd)")
+    hook_commands = hook.add_subparsers(dest="action", metavar="ACTION")
+    hook_report = hook_commands.add_parser("report", help="how often rules fired, blocked and failed, per session")
+    hook_report.add_argument("dir", nargs="?", type=Path, default=Path("."), help="project folder (default: .)")
+    hook_report.add_argument("--json", action="store_true", help="print the summary as JSON")
 
     doctor = groups.add_parser("doctor", help="check Python, Git, the Git identity and the project folder, and say how "
                                "to fix each missing item; exit 0 ready, 1 something required is missing",
@@ -220,6 +232,16 @@ def _print_report(report):
 
 def _run_check(args):
     from . import checks
+    if args.action == "commit" and args.hook:
+        from .hooks import check_commit_command
+        try:
+            payload = json.loads(sys.stdin.read() or "{}")
+        except ValueError:
+            return 0
+        problems = check_commit_command(payload if isinstance(payload, dict) else {})
+        for problem in problems:
+            print(problem, file=sys.stderr)
+        return 1 if problems else 0
     if args.action == "commit":
         message = args.message.read_text(encoding="utf-8", errors="replace") if args.message else None
         report = checks.commit_identity(args.repo, message, args.rev, args.history)
@@ -270,11 +292,25 @@ def main(argv=None):
             return 1 if any(f["status"] == "missing" for f in findings) else 0
         if args.group == "check":
             return _run_check(args)
+        if args.group == "hook":
+            from . import hooks
+            if args.action == "report":
+                result = hooks.report(args.dir)
+                print(json.dumps(result, ensure_ascii=False, indent=2) if args.json else hooks.render_report(result))
+                return 0
+            try:
+                text = sys.stdin.read()
+            except (OSError, UnicodeDecodeError):
+                text = "\ufffd"
+            output = hooks.run(text, args.root)
+            if output:
+                print(output)
+            return 0
         if args.group == "kit" and args.action == "hooks":
             from .checks import install_hooks
-            if not (args.git or args.claude):
-                parser.error("choose --git, --claude or both")
-            written, kept = install_hooks(args.dir, None, args.git, args.claude)
+            if not (args.git or args.claude or args.codex):
+                parser.error("choose --git, --claude, --codex or several")
+            written, kept = install_hooks(args.dir, None, args.git, args.claude, args.codex)
             for path in written:
                 print(f"installed: {path}")
             for path in kept:

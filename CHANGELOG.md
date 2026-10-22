@@ -8,6 +8,7 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Incompatible changes
 
+- `awkit kit hooks --claude` writes `awkit hook` entries for every hook event to `.claude/settings.json`, which can be committed, and writes `rules.toml` when there is none; it no longer writes the done check to `.claude/settings.local.json` and removes the entries earlier versions put there. `--codex` writes the same to `.codex/hooks.json`.
 - CLI help and error messages changed from Korean to English. Scripts that read message text should check exit codes instead; their meaning is unchanged.
 - `awkit usage --json` uses result format 2: unmeasured token fields are `null` instead of `0`, and the result carries `format` and `total.complete`.
 - `awkit review` resolves file names, step `cwd` and `artifacts` patterns relative to the folder it runs in. Run from the repository root it behaves as before; from a subfolder, the same subfolder of the worktree is the base, recorded as `subdir` in results and manifests.
@@ -18,6 +19,8 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Added
 
+- `awkit hook`: one command for Claude Code and Codex hooks that applies the rules in the project's `rules.toml`. A rule blocks a tool call, verifies the result with a command and blocks once with its output, or injects one line of guidance once per session, matched on the event, the tool, the shell command, the edited paths and the text written. Every firing and error goes to `.awkit/hooks.ndjson`; `awkit hook report` counts them per session. Failures allow the call. The kit's example `rules.toml` checks commit identity before `git commit`, the done check when the agent stops and the writing check after a Markdown edit, and gives one line of guidance for Korean text, research, delivery and delegation. Each rule names the failure entries it guards, and the guard table in `kit/failures.md` lists them.
+- `awkit check commit --hook`: the commit identity check on a `git commit` command before it runs.
 - `awkit kit example documents|data|analysis`: first-run examples with one deliberate defect.
 - `awkit kit scan`: reports a project's manifests, the checks its CI runs, docs folders and Git state, and drafts a check configuration.
 - `artifacts` and `required_artifacts` in `awkit review check`: checked outputs retained with hashes in the run folder.

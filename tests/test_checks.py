@@ -8,7 +8,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from awkit.checks import check_text, check_writing, commit_identity, done, install_hooks
+from awkit.checks import CLAUDE_DONE_HOOK, check_text, check_writing, commit_identity, done, install_hooks
+from awkit.hooks import HOOK_EVENTS
 from awkit.review import check, git, snapshot
 from support import child_env
 
@@ -279,19 +280,25 @@ class DoneTests(Repository):
         self.assertEqual(again.returncode, 0)
         plain = run("check", "done", "--session", "abc", cwd=self.repo)
         self.assertEqual(plain.returncode, 1)
+        # An earlier awkit wrote the done check to the local settings; the hook rules run it now.
+        local = self.repo / ".claude" / "settings.local.json"
+        local.parent.mkdir()
+        local.write_text(json.dumps({"model": "x", "hooks": {"Stop": [{"hooks": [
+            {"type": "command", "command": CLAUDE_DONE_HOOK}]}]}}), encoding="utf-8")
         written, _ = install_hooks(self.repo, sys.executable, use_git=False, use_claude=True)
-        settings = json.loads((self.repo / ".claude" / "settings.local.json").read_text(encoding="utf-8"))
-        self.assertEqual(sorted(settings["hooks"]), ["SessionStart", "Stop"])
-        # The hooks call awkit by name, not this machine's interpreter, so a moved environment cannot break them.
-        commands = [h["command"] for e in settings["hooks"]["Stop"] for h in e["hooks"]]
-        self.assertEqual(commands, ["if command -v awkit >/dev/null 2>&1; then awkit check done --hook; fi"])
-        self.assertNotIn(sys.executable, (self.repo / ".claude" / "settings.local.json").read_text(encoding="utf-8"))
-        # The settings file the kit wrote is local: it never counts as unchecked work.
+        settings = json.loads((self.repo / ".claude" / "settings.json").read_text(encoding="utf-8"))
+        self.assertEqual(sorted(settings["hooks"]), sorted(HOOK_EVENTS))
+        # The hooks call awkit by name, not this machine's interpreter, so the file can be committed.
+        commands = {h["command"] for entries in settings["hooks"].values() for e in entries for h in e["hooks"]}
+        self.assertEqual(commands, {"awkit hook || exit 0"})
+        self.assertNotIn(sys.executable, (self.repo / ".claude" / "settings.json").read_text(encoding="utf-8"))
+        self.assertEqual(json.loads(local.read_text(encoding="utf-8")), {"model": "x", "hooks": {}})
+        self.assertTrue((self.repo / "rules.toml").is_file())
+        # The local settings file never counts as unchecked work; the project's settings and rules do.
         (self.repo / "value.txt").write_text("1\n", encoding="utf-8")
-        self.assertTrue(done(self.repo, self.root / "runs")["ok"])
-        self.assertIn(".claude/settings.local.json", (self.repo / ".git" / "info" / "exclude").read_text(encoding="utf-8"))
+        self.assertEqual(sorted(done(self.repo, self.root / "runs")["changed"]), [".claude/settings.json", "rules.toml"])
         self.assertEqual(install_hooks(self.repo, sys.executable, use_git=False, use_claude=True)[0], [])
-        self.assertEqual(len(written), 1)
+        self.assertEqual(len(written), 3)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-work-kit"
+version = "0.2.0"
+description = "Working instructions, a Korean writing guide, and verification tools for development with coding agents"
+requires-python = ">=3.11"
+dependencies = []
+readme = "README.md"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Environment :: Console",
+]
+
+[project.optional-dependencies]
+ui = ["playwright>=1.48,<2"]
+
+[project.scripts]
+awkit = "awkit.cli:main"
+
+[tool.setuptools]
+# The kit lives at the repository root so it can be browsed and copied as-is;
+# the wheel ships it as awkit/kit so `awkit kit init` works after installation.
+packages = ["awkit", "awkit.kit", "awkit.kit.templates", "awkit.kit.templates.roles", "awkit.kit.examples"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+"awkit.kit" = "kit"
+
+[tool.setuptools.package-data]
+"awkit.kit" = ["*.md"]
+"awkit.kit.templates" = ["*.md"]
+"awkit.kit.templates.roles" = ["*.md"]
+"awkit.kit.examples" = ["*.md"]

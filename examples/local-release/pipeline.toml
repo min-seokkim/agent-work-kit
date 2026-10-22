@@ -1,0 +1,16 @@
+schema_version = 1
+
+[pipeline]
+target = "local-demo"
+state_dir = ".awkit/releases"
+timeout_seconds = 10
+required_checks = ["service"]
+# 모의 대상은 데이터 변경이 없어 이전 앱으로 돌아갈 수 있습니다.
+auto_rollback = true
+
+[commands]
+preflight = ["{python}", "{project}/adapter.py", "preflight", "{target}", "{release}"]
+backup = ["{python}", "{project}/adapter.py", "backup", "{target}", "{release}"]
+deploy = ["{python}", "{project}/adapter.py", "deploy", "{target}", "{release}"]
+verify = ["{python}", "{project}/adapter.py", "verify", "{target}", "{release}"]
+rollback = ["{python}", "{project}/adapter.py", "rollback", "{target}", "{release}"]

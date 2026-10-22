@@ -1,0 +1,16 @@
+schema = 1
+timeout_seconds = 120
+
+# 실제 프로젝트의 생성 명령과 검사 명령으로 바꾸세요.
+# Node.js 예시: argv = ["node", "--test"]
+# Go 예시: argv = ["go", "test", "./..."]
+[env]
+REVIEW_INSTANCE = "{run_id}"
+
+[[setup]]
+name = "prepare-demo"
+argv = ["{python}", "-c", "from pathlib import Path; import os; Path(os.environ['AWKIT_RUN_DIR'], 'prepared.txt').write_text('ready')"]
+
+[[checks]]
+name = "verify-demo"
+argv = ["{python}", "-c", "from pathlib import Path; import os; assert Path(os.environ['AWKIT_RUN_DIR'], 'prepared.txt').read_text() == 'ready'; print('demo check passed')"]

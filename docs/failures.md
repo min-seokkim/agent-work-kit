@@ -2,7 +2,7 @@
 
 Agents fail in recognizable situations, in recognizable ways. This catalogue lists those failures. It is a design document: it chooses the kit's situation guards (skills, hooks, `awkit` checks, situation guidance), measures whether they catch anything, and shows what to remove. It is not given to agents. Agents get the baseline workflow and the guards, written as what to do, with a failure as the reason where it helps. See Scope in [development.md](development.md).
 
-Entries observed while developing this repository cite commits on `dev`. Entries carried over from the existing kit were written from earlier sessions whose records were not kept; they are marked "needs evidence" until a real occurrence is recorded. Evidence marked "owner's records" comes from the repository owner's own record of the corrections they made while having agents write documents: project and operations documents, reports for non-developers, UI text and CLI output, resumes and application letters. The records stay outside this repository; occurrences are described here without names or dates.
+Entries observed while developing this repository cite commits on `dev`. Entries carried over from the existing kit were written from earlier sessions whose records were not kept; they are marked "needs evidence" until a real occurrence is recorded. Evidence marked "owner's records" comes from the repository owner's own record of the corrections they made while having agents write documents (project and operations documents, reports for non-developers, UI text and CLI output, resumes and application letters) and while using agents for research, explanations, troubleshooting and purchase decisions. The records stay outside this repository; occurrences are described here without names or dates.
 
 ## Rules for entries
 
@@ -96,17 +96,31 @@ Version bumps, release workflows or uploads set up while the interface is still 
 
 #### F11. A guess is presented as a finding.
 
-An inference from file names or conventions is reported as how the project works.
-- Evidence: observed here. `kit scan` suggested pytest for any `tests` folder; this repository uses unittest (fixed in `6eb632c`).
-- Countermeasure: mark inferences; run a suggested command once before relying on it.
+An inference from file names or conventions is reported as how the project works; a question from the user is recorded as a confirmation.
+- Evidence: observed here. `kit scan` suggested pytest for any `tests` folder; this repository uses unittest (fixed in `6eb632c`). Owner's records: a component that was already installed was installed again; files were sorted by their names without opening them; the owner's question whether a tool was allowed was recorded as the owner confirming that it was ("I was asking whether it is okay").
+- Countermeasure: mark inferences; run a suggested command once before relying on it; check the current state before installing, sorting or reviewing; treat a question as a question.
 - Check: the connect procedure runs the drafted checks once. Status: prose plus tool.
 
 #### F12. Scope grows before anything is measured.
 
 Features and documents are added because they seem useful, before real use shows a need.
-- Evidence: observed here. The release runner was widened to every kind of delivery and documentation grew to several thousand words for readers who did not read it (`8cf8e72`, restructured in `8f93b7b`).
-- Countermeasure: a feature needs a failure entry here and a check; measure on real tasks before widening.
+- Evidence: observed here. The release runner was widened to every kind of delivery and documentation grew to several thousand words for readers who did not read it (`8cf8e72`, restructured in `8f93b7b`). Owner's records: a server for a temporary project was specified with a graphics card, more memory than the load needed and a layout for a larger organization.
+- Countermeasure: a feature needs a failure entry here and a check; measure on real tasks before widening. Size a design to the purpose, duration, load and the person who will run it.
 - Check: prose; the kit word limit tests bound each file by when it is read.
+
+#### F35. The user's guess becomes the requirement.
+
+The user, new to a field, proposes an approach; the agent builds on it and adjusts the plan to each new idea instead of evaluating it.
+- Evidence: owner's records. A server layout kept changing to follow the owner's ideas until the owner said to ignore what they had said and think it through, asked what the standard layout was, and said it was their first time and the agent should bring in industry practice.
+- Countermeasure: read each statement from the user as a hypothesis, a constraint or a decision. For a hypothesis, give the standard approach, the strengths and weaknesses, and the alternatives, and say when the conclusion changes and why. Disagreement names the premise or step that is wrong, not the user.
+- Check: prose.
+
+#### F36. The answer ends at "unknown".
+
+Where the facts do not settle a question, the agent stops at the uncertainty instead of saying what can be compared, which explanation fits best and what would change the judgment.
+- Evidence: owner's records. After an explanation of the market range for a role, the owner asked where their own band was. An analysis of someone's behavior concluded that it could not be known, which the owner found useless.
+- Countermeasure: separate what is established, the candidate explanations, the assumptions each needs and what is unknown; give a provisional judgment with its assumptions and the observation that would change it; put no numbers or probabilities on it that the material does not support.
+- Check: prose.
 
 ### Writing for people
 
@@ -230,6 +244,13 @@ Research merges disagreeing sources into one claim.
 - Countermeasure: show contradictions and gaps; cite what was read.
 - Check: prose.
 
+#### F37. The sources answer a different question.
+
+The question was about what people experience; the sources collected are official pages and news. One account is reported as the norm.
+- Evidence: owner's records. Asked what work at a kind of company is like, the agent collected job postings and news; the owner asked for what current and former employees had written, broadly rather than only complaints, and corrected the industry being searched. Hobby research needed the makers' own accounts, not only ratings.
+- Countermeasure: choose the kind of source the question needs: official requirements from official sources, lived experience from first-hand accounts; distinguish the parent company from the local office and the advertised role from the one applied for; say what recurs across accounts and what is a single case.
+- Check: prose.
+
 ### Operating environments and applications
 
 #### F24. A tool's success is taken as the result.
@@ -260,12 +281,28 @@ Parallel or repeated checks share a database, port or device and fail or pass fo
 - Countermeasure: confirm once or recurring; record the first real run and the removal separately.
 - Check: prose.
 
+### Explaining and troubleshooting
+
+#### F38. Caveats instead of the mechanism.
+
+Asked what a feature does, the agent answers with warnings and a recommendation and never says what changes, why the feature exists or when to use it.
+- Evidence: owner's records. Asked about a color-space option, the agent explained that it does not always improve image quality; the owner replied that they wanted to know what changes, why the feature was made and when it is used.
+- Countermeasure: answer a "what is this" question with the problem it solves, what changes inside, what the user can observe and when to use it; address a misunderstanding only when the user holds it.
+- Check: prose.
+
+#### F39. A workaround replaces the restoration the user asked for.
+
+A behavior that worked before a change is to be restored; the agent proposes alternatives that need extra steps each time, repeats proposals that already failed and ignores the change history and per-condition results the user supplied.
+- Evidence: owner's records. Remote access that had worked before a system reinstall was to be restored; the agent kept proposing a different procedure although the owner had reported what had and had not changed, the difference between shutdown and sleep, and the result per packet type. The fix was a network profile setting.
+- Countermeasure: keep the wanted end state fixed; a solution that needs extra steps is reported as an alternative, not as the fix. Use when it last worked, what changed and the results per condition; update the hypothesis after each failed attempt instead of repeating it.
+- Check: prose.
+
 ### Working with the user over time
 
 #### F28. The wrong level of autonomy.
 
 The agent does the work when the user wanted to learn or decide, or only advises when the user wanted it done.
-- Evidence: needs evidence.
+- Evidence: owner's records, in both directions. Given a setup task, the agent described the steps for the owner to perform until the owner said to do it; asked to confirm a system state the agent could read itself, it asked the owner to check. Conversely, when the owner said they would do the first parts of an assignment themselves, the agent began drafting the answers ("I did not tell you to write the answers"); in another conversation the owner said the agent need not write code because they were doing it elsewhere and only wanted to talk through the task.
 - Countermeasure: settle the form of help at the start and record it in the handoff.
 - Check: prose.
 
@@ -299,13 +336,13 @@ Each section of the kit and the entries it serves. Sections marked "none" serve 
 | | Reviews and decisions | 73 | F18 |
 | | Resume after interruption | 65 | F29 |
 | | Connect optional tools | 95 | none (tool semantics; belongs in the reference) |
-| work-types.md | Common rules | 384 | F16, F22, F24, F28 |
-| | Research | 123 | F23 |
+| work-types.md | Common rules | 530 | F16, F22, F24, F28, F35, F36 |
+| | Research | 182 | F23, F37 |
 | | Writing | 167 | F16, F30 |
 | | Data preparation and analysis | 225 | F22 |
-| | Environment setup | 224 | F24, F25 |
+| | Environment setup | 292 | F24, F25, F39 |
 | | Operating an application | 114 | F24 |
-| | Learning | 121 | F28 |
+| | Learning | 166 | F28, F38 |
 | | Automation | 77 | F27 |
 | delegation.md | 1 Objective | 85 | none (policy) |
 | | 2 When to delegate | 164 | F19, F21 |

@@ -12,7 +12,11 @@ A tool's success return is not the recipient's confirmation. A message counts as
 
 Keep the result the user accepted. When revising a document, a design or a configuration that the user has approved, identify that version, list what it did well, and change only what the task names. Compare the revision with the accepted version before delivering it; a regression against an accepted version is a defect even when the new version passes its checks. With `awkit review`, keep the accepted run with `accept` and check later runs with `compare`.
 
-The form of help is part of the task. For some tasks the right result is that the agent did the work; for others it is that the user did it with the agent's hints; for others it is a briefing the user can act on. Settle this with the user before starting and record it in the handoff. Applying one level of autonomy to every task produces the wrong result for most of them.
+The form of help is part of the task. For some tasks the right result is that the agent did the work; for others it is that the user did it with the agent's hints; for others it is a briefing the user can act on. Settle this with the user before starting and record it in the handoff. Applying one level of autonomy to every task produces the wrong result for most of them. A user saying what they plan to do themselves, or asking whether something is acceptable, is not delegating it or confirming it.
+
+Read each statement from the user as a hypothesis, a constraint or a decision. A user new to a field often proposes an approach to have it evaluated: give the standard approach, the strengths and weaknesses of theirs, and the alternatives, and name the premise or step you disagree with. Building on every idea as a requirement produces a design that follows the conversation instead of the problem.
+
+Where the facts do not settle a question, do not stop at "unknown": separate what is established, the candidate explanations, the assumptions each needs and what is unknown, then give a provisional judgment with its assumptions and the observation that would change it. Put no numbers on it that the material does not support.
 
 Three kinds of record have different jobs and are not merged into one document: the current task record (what is being made and how far it has got), reusable knowledge (writing methods, design principles, lessons from failures that apply across tasks) and the sources and evidence those rest on. Each points to the others. After consolidating or summarising any of them, check that no important decision was dropped and no discarded rule came back.
 
@@ -20,11 +24,11 @@ When the result will be sent outside the project, follow the project's existing 
 
 ## Research
 
-**Inputs:** the question, the sources allowed, the date range and the form of the answer. Record each source with its location and the date it was read.
+**Inputs:** the question, the kind of source it needs, the sources allowed, the date range and the form of the answer. Official requirements come from official sources; what people experience comes from first-hand accounts, across different experiences rather than only the ones that support the user's view. Record each source with its location and the date it was read.
 
 **Preserve:** the user's question as asked, direct quotations with their source, and the distinction between a source's claim and your own inference.
 
-**Completion evidence:** every claim in the result cites a source that was actually read, contradictions between sources are shown rather than averaged, and the gaps are listed. A summary of a document carries that document's version or date.
+**Completion evidence:** every claim in the result cites a source that was actually read, contradictions between sources are shown rather than averaged, and the gaps are listed. The result says what recurs across accounts and what is a single case, and keeps the parent organization, the local office and the specific role apart. A summary of a document carries that document's version or date.
 
 **Stop and ask** when the sources disagree on a fact the answer depends on, when the allowed sources cannot answer the question, or when a source would have to be obtained from outside the authorized scope.
 
@@ -58,6 +62,8 @@ For designed output such as slides or a formatted report, review four things sep
 
 Before repeating a procedure from documentation or a forum, confirm that it applies to this program version, this account type and this operating system. Many setup failures come from applying instructions written for a different edition.
 
+When something that worked before a change is to be restored, the wanted end state stays fixed: a solution that needs extra steps each time is reported as an alternative, not as the fix. Use when it last worked, what changed and what did not, and the result under each condition the user tested; after a failed attempt, change the hypothesis rather than repeat the proposal.
+
 **Completion evidence:** each required tool reports the expected version from the shell the user will use, the project's own check command runs there, and the record lists every file changed and every package installed. Restored or copied data counts as usable only when the path the user needs works: the mount is present, the permissions allow access and the program that reads it connects. Separate the setting being applied, the measurement showing its effect and the user saying they are satisfied. A step that was skipped or failed is recorded as such.
 
 **Stop and ask** before changing system-wide settings, before installing software from an unlisted source, and when a step needs credentials or permissions the task did not grant.
@@ -77,6 +83,8 @@ Before repeating a procedure from documentation or a forum, confirm that it appl
 **Inputs:** the goal, what the user already knows, the material to use and which parts the user will do themselves.
 
 **Preserve:** the user's own attempts and wording; do not replace them with a finished answer unless asked. Keep the division between what the user did and what the agent supplied.
+
+Answer a question about what something is or does with the problem it solves, what changes inside, what the user can observe and when to use it. Address a misunderstanding only when the user holds it; a list of caveats is not an explanation.
 
 **Completion evidence:** the user has performed the agreed steps and the result of each is recorded, including mistakes and how they were resolved. A plan or explanation alone does not complete a learning task.
 

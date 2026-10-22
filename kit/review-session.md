@@ -57,7 +57,7 @@ awkit channel --db $db post main reviewer review --snap $snap --body-file reques
 | `notice` | Either | Inform without requiring a reply |
 | `close` | Main | End the unit and stop the reviewer's wait |
 
-When user judgment is needed, reply to the original request with `re` and start the body with `decision-needed:`. Exclude credentials, actual personal data, private source material and variable values from error traces. See the repository's CLI documentation for command details.
+When user judgment is needed, reply to the original request with `re` and start the body with `decision-needed:`. Exclude credentials, actual personal data, private source material and variable values from error traces. See the [command reference](reference.md) for command details.
 
 ## 6. Waiting
 

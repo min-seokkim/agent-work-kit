@@ -2,8 +2,8 @@
   "base_url": "http://127.0.0.1:8765",
   "widths": [320, 1440],
   "pages": [
-    {"name": "처음 화면", "path": "/index.html"},
-    {"name": "사용 안내", "path": "/guide.html"}
+    {"name": "Home", "path": "/index.html"},
+    {"name": "Guide", "path": "/guide.html"}
   ],
   "timeout_ms": 15000
 }

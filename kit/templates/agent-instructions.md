@@ -1,6 +1,6 @@
 # Agent Instructions
 
-Follow existing project instructions and the user's current request first. Before working, read the completed [project profile](project.md) and only the authoritative documents needed for the task. Fill missing profile values from verifiable configuration or mark them unresolved. Do not interpret blank template fields as executable commands. For work other than code changes, such as research, writing, data preparation or environment setup, use the completion evidence in [Work Types](../work-types.md).
+Follow existing project instructions and the user's current request first. Before working, read the completed [project profile](project.md) and only the authoritative documents needed for the task. Fill missing profile values from verifiable configuration or mark them unresolved. Do not interpret blank template fields as executable commands. For work other than code changes, such as research, writing, data preparation or environment setup, use the completion evidence in [Work Types](../work-types.md). When running `awkit`, look up formats, rules and exit codes in the [command reference](../reference.md).
 
 ## Connect the kit to a project
 

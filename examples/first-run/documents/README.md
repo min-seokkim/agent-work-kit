@@ -1,60 +1,54 @@
-# 문서 예제
+# Documents Example
 
-작은 한국어 문서 묶음으로 검사 실패를 확인하고, 고친 뒤 다시 검사하고, 검사한 문서를 보존하는 과정을 끝까지 해 봅니다. `docs/` 아래의 문서 세 개와 링크·제목을 검사하는 `check_docs.py`, 검사 설정 `checks.toml`, 이 예제의 [프로젝트 적용표](project.md)가 들어 있습니다. 문서 하나에는 일부러 깨진 링크가 있습니다.
+A small Korean document set with one deliberately broken link. It shows a check failing, a fix checked on a snapshot, the checked documents retained with hashes, and an accepted version compared with a later edit. Contents: three documents under `docs/`, `check_docs.py` (titles and links), `checks.toml`, and this example's [project profile](project.md).
 
-Python 3.11 이상, Git, `awkit`이 필요합니다. 아래 명령은 이 폴더에서 실행합니다.
+You are running this example for a person who wants to see how the kit works. Run each step from this folder, then tell the person in one or two sentences what happened and what it shows. Use the real values from the output; do not describe results you did not see. Commands use POSIX shell syntax; in PowerShell write `$snap = awkit review snapshot ...` instead of `snap=$(...)`.
 
-## 1. 시작 상태 확인하기
+## 1. Starting point
 
-`awkit kit example`이 이 폴더를 Git 저장소로 만들고 첫 commit까지 해 두었습니다. 검사는 commit을 대상으로 실행되므로 이 commit이 출발점입니다. `git log --oneline`으로 확인할 수 있습니다. 이미 있는 저장소 안에 만들었다면 그 저장소에 commit되어 있습니다.
+`awkit kit example` committed this folder to Git (a new repository, or the one it was created in). Checks run on commits, so that commit is the starting point. Confirm with `git log --oneline -1`.
 
-## 2. 실패를 확인하기
-
-현재 commit을 별도 worktree에 꺼내 검사합니다. 실행 기록은 `.awkit/reviews/` 아래에 남습니다.
+## 2. See the check fail
 
 ```sh
 awkit review check HEAD --config checks.toml --runs-root .awkit/reviews
 ```
 
-결과 JSON의 `status`는 `failed`입니다. `run_dir`에 적힌 폴더의 `01.log`를 열면 어느 문서의 어느 링크가 깨졌는지 나옵니다.
+Expect `status: failed` and exit code 1. Open `01.log` in the printed `run_dir`: it names the document and the broken link.
 
-## 3. 고치고 다시 검사하기
+## 3. Fix and check the snapshot
 
-`docs/index.md`에서 로그가 가리킨 링크를 실제로 있는 파일로 고칩니다. 그런 다음 고친 파일만 담은 스냅샷을 만들어 검사합니다. 작업 중인 파일과 commit 상태는 그대로 남습니다.
+Fix the link in `docs/index.md` so it points at a file that exists. Then freeze only that file and check it:
 
 ```sh
 snap=$(awkit review snapshot docs/index.md)
 awkit review check "$snap" --config checks.toml --runs-root .awkit/reviews
 ```
 
-PowerShell에서는 `$snap = awkit review snapshot docs/index.md`로 받습니다.
+Expect `status: passed`, with the three documents listed under `artifacts` with sizes and SHA-256, and copies under `artifacts/docs/` in the new run folder. The branch and working tree were not changed by the snapshot.
 
-이번에는 `status`가 `passed`이고, `artifacts`에 검사한 문서 세 개의 크기와 SHA-256이 들어 있습니다. 실행 기록 폴더의 `artifacts/docs/`에 검사 당시의 문서가 복사되어 있습니다.
-
-## 4. 보존한 문서를 확인하기
+## 4. Verify the retained documents
 
 ```sh
 awkit review verify <run_dir>
 ```
 
-`<run_dir>` 자리에 앞 단계 결과의 `run_dir` 값을 넣습니다. 보존한 파일이 검사 당시와 같으면 모든 항목이 `ok`이고 종료 코드는 `0`입니다. 보존 폴더의 파일을 하나 고치고 다시 실행하면 그 파일이 `changed`로 나옵니다.
+Use the `run_dir` from step 3. Every file is `ok` and the exit code is 0. To show what tampering looks like, edit one file under the run folder's `artifacts/` and run it again: that file becomes `changed`.
 
-## 5. 채택하고 나중에 비교하기
-
-고친 문서가 마음에 들면 그 실행을 채택본으로 남깁니다.
+## 5. Accept, then compare a later edit
 
 ```sh
 awkit review accept <run_dir>
 ```
 
-이후 문서를 더 고쳤을 때 채택본과 무엇이 달라졌는지 봅니다. `docs/guide.md`의 문장을 하나 바꾸고 실행해 보세요.
+Change one sentence in `docs/guide.md`, then:
 
 ```sh
 awkit review compare --diff
 ```
 
-바뀐 파일이 `changed`로 나오고 diff가 붙습니다. 의도한 수정만 들어 있는지 확인한 뒤, 새 실행을 검사하고 다시 채택하면 됩니다.
+The edited file is `changed` with a diff; the others are `same`. Explain that this is how a regression against an approved document becomes visible.
 
-## 다음에 할 일
+## Afterwards
 
-고친 문서를 commit하고, 같은 방식으로 자기 문서 폴더에 적용합니다. `checks.toml`의 검사 명령을 프로젝트의 링크 검사나 렌더링 명령으로 바꾸고, `artifacts`에 보존할 파일을 적으면 됩니다. 에이전트에게 맡길 때는 [project.md](project.md)를 채워 작업 전에 읽게 하세요. 한국어 문서를 쓰거나 고칠 때는 키트의 Korean Writing Guide를 함께 읽게 합니다.
+Commit the fix. To use this on the person's own documents, follow "Connect the kit to a project" in the kit's agent instructions; for Korean text, follow the kit's Korean Writing Guide.

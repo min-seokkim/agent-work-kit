@@ -1,63 +1,34 @@
-# 프로젝트별 적용 예시
+# Project Profile Examples
 
-프로젝트가 만드는 결과물과 사용 환경에 맞춰 [적용표](../templates/project.md)를 채우세요. 아래는 항목을 고르는 예시입니다. 각 환경에서 빌드하거나 장치에 적용해 검증한 결과를 뜻하지 않습니다. 실제 명령과 완료 조건은 프로젝트의 설정, 요구사항과 기존 기록에서 확인합니다.
+Use this when filling the [project profile](../templates/project.md) for a kind of project you have not set up before. The rows say what to look at; they are not results of building or deploying in those environments. Take the actual commands and completion criteria from the project's configuration, requirements and records.
 
-## 결과물에 맞춰 채우기
+## What to record by kind of project
 
-| 프로젝트 | 먼저 확인할 자료 | 적용표에 적을 내용 | 완료를 확인할 근거 |
+| Project | Read first | Record in the profile | Completion evidence |
 |---|---|---|---|
-| 시스템 프로그램·CLI | 컴파일러 설정, 실행 인자, 프로세스와 IPC 구조 | 빌드 환경, 시작 순서, 시나리오 완료 조건, 소켓과 자식 프로세스 정리 방법 | 실행 파일이나 소스 묶음, 시나리오 결과, 종료·정리 확인 |
-| 라이브러리·SDK | 패키지 설정, 지원 런타임, 설치와 사용 예제 | 도구 실행 환경과 대상 런타임, 검사 폴더, 새 환경에서 설치하는 방법 | 패키지 식별자, 설치 후 실행한 사용 예제, 검사 결과 |
-| 펌웨어 | 대상 MCU, 툴체인, 빌드 설정, 플래시·디버그 설정 | 보드와 장비 식별자, 바이너리 생성 방법, 장치 시험 조건 | 소스와 ELF 등의 해시, 보드에 적용한 결과, 관찰 기록 |
-| 브라우저 확장 프로그램 | manifest, 권한, 대상 페이지, 패키징·배포 안내 | 테스트 브라우저, 확장 로드 방법, 설정 보존 검사, 제출 대상 | 패키지 내용과 버전, 브라우저 확인 결과, 필요한 제출·승인 기록 |
-| 배치 처리·데이터 분석 | 입력 데이터 버전, 매개변수, 실행 환경, 결과 형식 | 입력 식별자, 재현에 필요한 설정, 출력 위치, 실패 시 재실행 방법 | 결과 파일, 입력과 설정에 대한 참조, 형식·내용 검사 |
-| 실행 중인 서비스 | 런타임, 빌드·배포 명령, 상태 확인, 복구 절차 | 대상 식별자, 실제 버전 확인 방법, 동작 검사, 데이터 호환성 | 적용된 버전, 동작 검사 결과, 필요한 복구 확인 |
-| 문서·콘텐츠 | 기준 원문, 독자, 생성 도구, 공개할 파일 | 사실 검토, 한국어 작성 기준, 렌더링 검사, 전달 위치 | 원문과 결과물의 버전, 내용 검토, 링크·화면 확인 |
+| System program or CLI | Compiler settings, arguments, process and IPC layout | Build environment, start order, when a scenario is complete, how sockets and child processes are cleaned up | Binary or source bundle, scenario result, confirmed shutdown and cleanup |
+| Library or SDK | Package configuration, supported runtimes, install and usage examples | Tool runtime versus target runtime, test folders, installing into a fresh environment | Package identifier, a usage example run after installing, check results |
+| Firmware | Target MCU, toolchain, build, flash and debug settings | Board and equipment identifiers, how binaries are produced, device test conditions | Hashes of sources and ELF files, result on the board, observation notes |
+| Browser extension | Manifest, permissions, target pages, packaging and store rules | Test browser, how the extension is loaded, settings that must survive, submission target | Package contents and version, browser check, any submission or approval record |
+| Batch processing or data analysis | Input data version, parameters, runtime, output format | Input identifiers, settings needed to reproduce, output location, how to rerun after failure | Output file, references to inputs and settings, format and content checks |
+| Running service | Runtime, build and deploy commands, health checks, recovery procedure | Target identity, how to read the running version, behavior checks, data compatibility | Version actually applied, behavior check results, confirmed recovery when needed |
+| Documents or content | Authoritative source, audience, generator, files to publish | Fact review, writing guide, rendering checks, delivery location | Versions of source and result, content review, link and rendering checks |
 
-한 프로젝트에 여러 결과물이 있으면 각각 적습니다. 예를 들어 글 작성 앱의 실행 버전과 앱에서 발행한 글은 서로 다른 완료 조건을 가집니다. 모든 프로젝트에 빌드나 서비스 배포 단계를 추가할 필요는 없습니다.
+A project with several deliverables gets one row each: an application release and the articles it publishes have different completion criteria. Do not add build or deployment stages a project does not have.
 
-공통 기록에는 작업 ID, 목표, 담당 파일과 검사한 소스 식별자를 남깁니다. Git을 사용하면 commit이나 검토 스냅샷을 쓰고, 다른 방식으로 보관한 소스는 파일 목록과 해시 등으로 검사 대상을 고정합니다. `awkit review`를 사용하려면 HEAD commit이 있는 Git 저장소가 필요합니다.
+Every record names the task ID, goal, files owned and the source identifier that was checked: a commit or review snapshot with Git, otherwise a file list with hashes.
 
-## 실행 조건 기록하기
+## Execution conditions
 
-| 명령 이름 | 실행 폴더 | 실행 파일과 인자 | 준비 조건 | 기대 결과 | 부수 효과 |
-|---|---|---|---|---|---|
-| 빌드·생성 | | | | | |
-| 빠른 검사 | | | | | |
-| 통합·장치 검사 | | | | | |
-| 결과물 확인·전달 | | | | | |
+Fill only the commands the project uses. The profile's command table is read by people and agents; it is not configuration for a runner. Name the shell when a command needs one.
 
-프로젝트에서 사용하는 항목만 채우세요. 이 Markdown 표는 사람과 에이전트가 읽는 기록이며 자동 실행 설정은 아닙니다. 셸이 필요한 명령은 셸과 인자를 명시합니다.
+- Separate the machine that runs the checks from the environment the result runs in: cross compilers, target interpreters, board settings. Confirm the Python running the checks is the one the project expects, and that a reused environment loads the source under review.
+- For checks that start several processes, record how readiness and scenario completion are decided, give each check its own sockets, ports and output locations, and say who cleans up what. Run checks that share a single device one at a time.
 
-검사를 실행하는 PC와 결과물이 동작할 환경을 구분하세요. 교차 컴파일러, 대상 인터프리터, 보드 설정을 적고, 검사 도구가 사용하는 Python과 대상 프로젝트의 Python이 같은지 확인합니다. 기존 개발 환경을 재사용한다면 실제로 검사할 소스가 로드되는지도 확인하세요.
+## Delivery stages
 
-여러 프로세스를 띄우는 검사는 준비 완료와 시나리오 완료를 어떻게 판단하는지 적습니다. 검사마다 필요한 소켓, 포트와 출력 위치를 나누고, 누가 만든 자원을 언제 정리하는지 정하세요. 장치가 하나뿐이면 해당 검사를 순서대로 실행합니다.
+Record only the stages a task needs: produced, checked, installed or applied, submitted or delivered, accepted, verified in use. For example, a source assignment is complete with the required revision or submission bundle; an SDK with an installable package and a working example; firmware is recorded separately for build, board test and field check. Follow the project's existing permissions for anything sent outside.
 
-## 전달 완료 조건 정하기
+Decide what to keep when a stage fails and how to retry. Reapplying an earlier program, restoring data and resubmitting a corrected version are different actions; record which recovery was actually verified.
 
-작업에 필요한 단계와 근거만 선택하세요. 아래 단계는 모든 작업이 따라야 하는 고정 순서가 아닙니다.
-
-| 단계 | 확인할 내용 |
-|---|---|
-| 생성 | 필요한 형식의 파일이 만들어졌고 소스와 생성 설정을 식별할 수 있는가 |
-| 검사 | 어떤 파일·버전을 어떤 조건에서 검사했으며 무엇이 통과했는가 |
-| 설치·적용 | 받는 쪽의 환경이나 장치에서 설치·적용 결과를 확인했는가 |
-| 제출·전달 | 지정한 대상에 어떤 버전과 파일을 보냈으며 확인 기록이 있는가 |
-| 승인·수락 | 이 작업에 필요한 심사나 수락 결과가 확인됐는가 |
-| 사용 확인 | 실제 사용 환경에서 필요한 동작을 관찰했는가 |
-
-예를 들어 소스 과제는 지정한 저장소의 리비전이나 제출 묶음이, SDK는 설치 가능한 패키지와 실행 예제가 완료 근거가 될 수 있습니다. 펌웨어는 빌드, 보드 시험과 차량·현장 확인을 나눠 기록합니다. 외부 전달은 프로젝트에 이미 정해진 권한과 절차를 따릅니다.
-
-실패 시 보존할 결과물과 재시도 방법도 정하세요. 이전 프로그램 적용, 데이터 복원, 수정본 재제출은 필요한 조치가 다릅니다. 실제로 확인한 복구 범위를 기록합니다.
-
-## 검사 결과물 보존하기
-
-검사한 소스 식별자와 함께 결과 파일의 위치와 해시, 생성에 사용한 설정을 남기세요. 임시 작업 폴더를 정리하기 전에 필요한 바이너리, 제출 묶음과 보고서를 보존 위치로 내보냅니다. 검사에 실패했을 때 남긴 진단 자료도 해당 실행에 연결하세요.
-
-`awkit review check`는 검사 설정의 `artifacts`에 적은 파일을 실행 기록 폴더에 복사하고 크기와 SHA-256을 `result.json`과 `artifacts/manifest.json`에 남깁니다. `required_artifacts`에 적은 파일이 없으면 검사가 통과했어도 실패로 기록합니다. 보존한 파일이 그대로인지는 `awkit review verify <실행 기록 폴더>`로 확인합니다. 기본 기록 위치는 임시 폴더이므로 장기 보존할 때는 `--runs-root`로 프로젝트의 보관 위치를 지정하세요.
-
-## 실행 중인 버전을 교체할 때
-
-현재 버전을 읽고 새 버전을 적용한 뒤 실제 상태를 확인하는 프로젝트는 `awkit pipeline`에 기존 명령을 연결할 수 있습니다. 현재 상태 확인, 백업, 적용, 검증, 이전 버전 복귀의 다섯 명령과 정해진 JSON 응답이 필요합니다. 복귀와 데이터 복원의 조건은 프로젝트에서 정합니다.
-
-각 작업의 결과와 전달 상태는 적용표와 작업 기록에 남깁니다. 자동 실행이 필요한 부분부터 프로젝트의 기존 명령을 연결하세요.
+Keep the checked source identifier together with result locations, hashes and the settings that produced them, and copy binaries, bundles and reports out of temporary folders before they are cleaned. With `awkit`, list them under `artifacts` in the check configuration and keep runs with `--runs-root` ([reference](../reference.md)). A target whose running version is replaced can connect its own commands to `awkit pipeline`; restore conditions remain the project's decision.

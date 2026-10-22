@@ -16,9 +16,10 @@ LINK = re.compile(r"\]\(([^)\s]+)\)")
 
 # Folders that hold dependencies, build output or run records rather than managed documents.
 SKIP_DIRS = {"build", "dist", "node_modules", "site-packages", "__pycache__"}
-# Upper bound on the words an agent may be asked to read from the kit (licenses excluded).
-# Adding a rule means removing words elsewhere; see docs/scope.md.
-KIT_WORD_LIMIT = 12_200
+# Upper bounds on the kit's length; see docs/development.md. The instruction text excludes the licenses
+# and the command reference, which agents look up on demand and which has its own bound.
+KIT_WORD_LIMIT = 11_600
+REFERENCE_WORD_LIMIT = 2_400
 
 
 def managed_documents(folder: Path, include=None):
@@ -195,10 +196,13 @@ class DocumentationTests(unittest.TestCase):
 
     def test_kit_instructions_stay_within_the_word_limit(self):
         counts = {path.relative_to(ROOT / "kit").as_posix(): len(path.read_text(encoding="utf-8").split())
-                  for path in (ROOT / "kit").rglob("*.md") if path.name not in ("LICENSE.md", "THIRD_PARTY_NOTICES.md")}
+                  for path in (ROOT / "kit").rglob("*.md")
+                  if path.name not in ("LICENSE.md", "THIRD_PARTY_NOTICES.md", "reference.md")}
         total = sum(counts.values())
         largest = ", ".join(f"{name} {words}" for name, words in sorted(counts.items(), key=lambda i: -i[1])[:5])
         self.assertLessEqual(total, KIT_WORD_LIMIT, f"kit instructions have {total} words; largest: {largest}")
+        reference = len((ROOT / "kit" / "reference.md").read_text(encoding="utf-8").split())
+        self.assertLessEqual(reference, REFERENCE_WORD_LIMIT, f"kit/reference.md has {reference} words")
 
     def test_link_check_skips_dependency_folders_but_not_managed_documents(self):
         with tempfile.TemporaryDirectory() as temporary:

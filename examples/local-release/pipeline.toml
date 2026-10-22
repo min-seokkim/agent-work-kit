@@ -5,7 +5,7 @@ target = "local-demo"
 state_dir = ".awkit/releases"
 timeout_seconds = 10
 required_checks = ["service"]
-# 모의 대상은 데이터 변경이 없어 이전 앱으로 돌아갈 수 있습니다.
+# The mock target changes no data, so returning to the previous release is safe.
 auto_rollback = true
 
 [commands]

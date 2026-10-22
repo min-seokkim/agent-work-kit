@@ -16,100 +16,139 @@ from .review import accept, compare, snapshot, track
 from .review import check as run_checks
 from .review import verify as verify_run
 
+REFERENCE = ("Formats, rules and exit codes are in agent-work-kit/reference.md "
+             "(kit/reference.md in the awkit repository).")
+
 
 def _parser():
-    parser = argparse.ArgumentParser(prog="awkit", description="Agent Work Kit: working instructions, a Korean writing guide and verification tools")
+    parser = argparse.ArgumentParser(
+        prog="awkit", epilog=REFERENCE,
+        description="Agent Work Kit: working instructions for coding agents and tools that freeze changes, "
+                    "check them in isolation and retain the evidence.")
     parser.add_argument("--version", action="version", version=f"awkit {__version__}")
-    groups = parser.add_subparsers(dest="group", required=True)
+    groups = parser.add_subparsers(dest="group", required=True, metavar="COMMAND")
 
-    kit = groups.add_parser("kit", help="Copy the Markdown kit into a project")
-    kit_commands = kit.add_subparsers(dest="action", required=True)
-    init = kit_commands.add_parser("init", help="Create the kit folder. An existing folder is never overwritten.")
-    init.add_argument("dir", nargs="?", type=Path, default=Path("."), help="project folder that receives the kit")
+    kit = groups.add_parser("kit", help="add the kit to a project, create examples, scan a project, write role files",
+                            epilog=REFERENCE)
+    kit_commands = kit.add_subparsers(dest="action", required=True, metavar="ACTION")
+    init = kit_commands.add_parser("init", help="create the kit folder; an existing folder is never touched (exit 2)")
+    init.add_argument("dir", nargs="?", type=Path, default=Path("."), help="project folder that receives the kit (default: .)")
     init.add_argument("--name", default="agent-work-kit", help="name of the folder to create (default: agent-work-kit)")
-    init.add_argument("--no-git", action="store_true", help="do not create a Git repository or commit")
-    example = kit_commands.add_parser("example", help="Create a folder with a runnable first-run example.")
-    example.add_argument("kind", choices=EXAMPLES, help="documents: a Korean document set; data: a CSV to summarise; analysis: sensor readings with assumptions")
-    example.add_argument("dir", type=Path, help="new folder to create")
-    example.add_argument("--no-git", action="store_true", help="do not create a Git repository or commit")
-    scan = kit_commands.add_parser("scan", help="Report a project's manifests, commands, CI and Git state for connecting the kit.")
-    scan.add_argument("dir", nargs="?", type=Path, default=Path("."), help="project folder to look at")
-    scan.add_argument("--checks", action="store_true", help="print only a suggested checks.toml")
-    roles = kit_commands.add_parser("roles", help="Generate Claude Code or Codex role files from the role templates. Existing files are kept.")
-    roles.add_argument("dir", nargs="?", type=Path, default=Path("."), help="project folder that receives the role files")
-    roles.add_argument("--provider", choices=("claude", "codex"), required=True)
+    init.add_argument("--no-git", action="store_true",
+                      help="only copy; by default the new folder is committed, creating the repository if needed")
+    example = kit_commands.add_parser("example", help="create a runnable example with one deliberate defect")
+    example.add_argument("kind", choices=EXAMPLES, help="documents: Korean documents with a broken link; "
+                         "data: a CSV with a wrong column name; analysis: sensor readings with a wrong assumption")
+    example.add_argument("dir", type=Path, help="new folder to create; must not exist")
+    example.add_argument("--no-git", action="store_true",
+                         help="only copy; by default the new folder is committed, creating the repository if needed")
+    scan = kit_commands.add_parser("scan", help="report manifests, check commands, CI steps, docs and Git state as JSON")
+    scan.add_argument("dir", nargs="?", type=Path, default=Path("."), help="project folder to look at (default: .)")
+    scan.add_argument("--checks", action="store_true", help="print only the suggested checks.toml")
+    roles = kit_commands.add_parser("roles", help="write Claude Code or Codex subagent role files; existing files are kept")
+    roles.add_argument("dir", nargs="?", type=Path, default=Path("."), help="project folder that receives the role files (default: .)")
+    roles.add_argument("--provider", choices=("claude", "codex"), required=True,
+                       help="claude writes .claude/agents/*.md, codex writes .codex/agents/*.toml")
     roles.add_argument("--model", action="append", metavar="TIER=MODEL[:EFFORT]",
-                       help="model for a tier (efficient, standard, judge, top); may be repeated")
+                       help="model for a tier (efficient, standard, judge, top); EFFORT is Codex only; repeatable")
 
-    usage = groups.add_parser("usage", help="Collect actual models and tokens from Claude Code and Codex session logs")
-    usage.add_argument("paths", nargs="+", type=Path, help="session log files (.jsonl) or folders")
-    usage.add_argument("--since", help="read only files modified on or after this date (YYYY-MM-DD, UTC)")
-    usage.add_argument("--json", action="store_true")
+    usage = groups.add_parser("usage", help="total models, tokens, user messages and minutes from session logs",
+                              epilog=REFERENCE)
+    usage.add_argument("paths", nargs="+", type=Path, help="Claude Code or Codex .jsonl files, or folders searched recursively")
+    usage.add_argument("--since", metavar="YYYY-MM-DD", help="read only files modified on or after this date (UTC)")
+    usage.add_argument("--json", action="store_true", help="print the result as JSON (format 2)")
 
-    channel = groups.add_parser("channel", help="Local review channel between two agent sessions")
-    channel.add_argument("--db", type=Path, default=Path(".awkit/channel.sqlite3"))
-    commands = channel.add_subparsers(dest="action", required=True)
-    post = commands.add_parser("post", help="Record a message. The body comes from stdin, --body or --body-file.")
-    post.add_argument("sender", choices=ROLES)
-    post.add_argument("receiver", choices=ROLES)
-    post.add_argument("kind", choices=KINDS)
-    post.add_argument("--reply-to")
-    post.add_argument("--snap")
+    channel = groups.add_parser("channel", help="message log for a main session and a reviewer session",
+                                epilog=REFERENCE)
+    channel.add_argument("--db", type=Path, default=Path(".awkit/channel.sqlite3"),
+                         help="SQLite file both sessions use (default: .awkit/channel.sqlite3)")
+    commands = channel.add_subparsers(dest="action", required=True, metavar="ACTION")
+    post = commands.add_parser("post", help="record a message and print its ID; the body comes from --body, --body-file or stdin")
+    post.add_argument("sender", choices=ROLES, help="who sends")
+    post.add_argument("receiver", choices=ROLES, help="who receives; must differ from the sender")
+    post.add_argument("kind", choices=KINDS, help="request kinds: review, scout, test, draft, question, final; "
+                      "notice; re and rebut answer --reply-to; close (main only) ends the channel")
+    post.add_argument("--reply-to", metavar="ID", help="message ID that a re or rebut answers, sent by the other side")
+    post.add_argument("--snap", metavar="ID", help="snapshot or commit the message is about (7-64 hex characters)")
     body = post.add_mutually_exclusive_group()
     body.add_argument("--body", help="body text")
     body.add_argument("--body-file", type=Path, help="UTF-8 file with the body")
-    wait = commands.add_parser("wait", help="Wait for messages.")
-    wait.add_argument("role", choices=ROLES)
-    wait.add_argument("mode", choices=("request", "new", "reply"))
-    wait.add_argument("target", nargs="?")
-    wait.add_argument("--max", type=float, default=120)
-    wait.add_argument("--json", action="store_true")
-    export = commands.add_parser("export", help="Print the whole channel.")
-    export.add_argument("--json", action="store_true")
+    wait = commands.add_parser("wait", help="wait for messages; exit 0 found, 1 timeout, 3 channel closed (reviewer)")
+    wait.add_argument("role", choices=ROLES, help="the role that is waiting")
+    wait.add_argument("mode", choices=("request", "new", "reply"),
+                      help="request: unanswered requests and rebuttals; new: messages after the read position; "
+                           "reply: answers to the given ID")
+    wait.add_argument("target", nargs="?", metavar="ID", help="message ID, for reply mode only")
+    wait.add_argument("--max", type=float, default=120, metavar="SECONDS", help="how long to wait; 0 checks once (default: 120)")
+    wait.add_argument("--json", action="store_true", help="print messages as JSON")
+    export = commands.add_parser("export", help="print the whole channel; does not move read positions")
+    export.add_argument("--json", action="store_true", help="print messages as JSON")
 
-    pipeline = groups.add_parser("pipeline", help="Replace a running version with project commands and verify the result")
-    pipeline.add_argument("--config", type=Path, required=True)
-    pipeline.add_argument("action", choices=("plan", "deploy", "rollback", "status", "reconcile", "history"))
-    pipeline.add_argument("release", nargs="?")
+    pipeline = groups.add_parser("pipeline", help="extra for web projects: run delivery commands and verify the live release",
+                                 epilog=REFERENCE)
+    pipeline.add_argument("--config", type=Path, required=True, help="pipeline TOML (schema_version = 1)")
+    pipeline.add_argument("action", choices=("plan", "deploy", "rollback", "status", "reconcile", "history"),
+                          help="plan: show phases without running anything; deploy RELEASE; rollback: one healthy release back; "
+                               "status: verify what runs now; reconcile: record the real state after an uncertain run; "
+                               "history: healthy releases")
+    pipeline.add_argument("release", nargs="?", help="release ID for deploy (7-64 lowercase hex characters)")
     pipeline.add_argument("--allow-unhealthy-current", action="store_true",
                           help="deploy even though the current version fails its checks; use it to ship a fix")
-    pipeline.add_argument("--json", action="store_true")
+    pipeline.add_argument("--json", action="store_true", help="print the full record as JSON")
 
-    review = groups.add_parser("review", help="Freeze selected changes and check them in a separate worktree")
-    review.add_argument("--repo", type=Path, default=Path.cwd())
-    review_commands = review.add_subparsers(dest="action", required=True)
-    freeze = review_commands.add_parser("snapshot", help="Write the named files' changes into a Git commit object.")
-    freeze.add_argument("files", nargs="+")
-    isolated = review_commands.add_parser("check", help="Run the project's checks on a frozen revision in a separate worktree.")
+    review = groups.add_parser("review", help="freeze changes, check them in a separate worktree, keep and compare results",
+                               epilog=REFERENCE)
+    review.add_argument("--repo", type=Path, default=Path.cwd(),
+                        help="folder in a Git repository with a commit; paths are relative to it (default: current folder)")
+    review_commands = review.add_subparsers(dest="action", required=True, metavar="ACTION")
+    freeze = review_commands.add_parser("snapshot", help="print a commit of HEAD plus the named files; nothing else changes")
+    freeze.add_argument("files", nargs="+", help="files to include, relative to --repo; added and deleted files count")
+    isolated = review_commands.add_parser("check", help="run the configured checks on a commit in a new worktree; "
+                                          "exit 0 passed, 1 failed or uncertain, 2 cannot run")
     isolated.add_argument("snapshot", help="full commit ID from `review snapshot`, or HEAD")
-    isolated.add_argument("--config", type=Path, required=True)
-    isolated.add_argument("--runs-root", type=Path)
-    isolated.add_argument("--keep", action="store_true")
-    confirm = review_commands.add_parser("verify", help="Compare a run folder's retained artifacts with its manifest.")
-    confirm.add_argument("run_dir", type=Path)
-    keep = review_commands.add_parser("accept", help="Keep a run's retained artifacts as the accepted version.")
-    keep.add_argument("run_dir", type=Path)
+    isolated.add_argument("--config", type=Path, required=True, help="checks TOML (schema = 1) with setup, checks and artifacts")
+    isolated.add_argument("--runs-root", type=Path, help="where run folders are kept (default: a folder in the system temp directory)")
+    isolated.add_argument("--keep", action="store_true", help="keep the worktree after a normal finish")
+    confirm = review_commands.add_parser("verify", help="rehash a run's retained artifacts against its manifest; exit 0 when all match")
+    confirm.add_argument("run_dir", type=Path, help="run folder printed by `review check`")
+    keep = review_commands.add_parser("accept", help="keep a verified run's artifacts as the accepted version")
+    keep.add_argument("run_dir", type=Path, help="run folder printed by `review check`")
     keep.add_argument("--label", default="accepted", help="name of the accepted version (default: accepted)")
-    against = review_commands.add_parser("compare", help="Compare the working tree, or a run's artifacts, with the accepted version.")
-    against.add_argument("--label", default="accepted")
+    against = review_commands.add_parser("compare", help="compare the working tree, or a run's artifacts, with the accepted "
+                                         "version; exit 0 when nothing changed")
+    against.add_argument("--label", default="accepted", help="accepted version to compare with (default: accepted)")
     against.add_argument("--run", type=Path, help="compare this run folder's retained artifacts instead of the working tree")
     against.add_argument("--diff", action="store_true", help="include a unified diff for changed text files")
 
-    publish = groups.add_parser("publish", help="Validate a static document build and publish it locally")
-    publish.add_argument("--output", type=Path, required=True)
-    publish.add_argument("--project", required=True)
-    publications = publish.add_subparsers(dest="action", required=True)
-    build = publications.add_parser("build")
-    build.add_argument("--source", type=Path, required=True)
-    build.add_argument("--files", type=Path, required=True, help="JSON array of relative file paths to publish")
-    restore = publications.add_parser("restore")
-    restore.add_argument("version")
+    publish = groups.add_parser("publish", help="extra for web projects: check a static site build and switch to it atomically",
+                                epilog=REFERENCE)
+    publish.add_argument("--output", type=Path, required=True, help="publish folder; must be empty on first use")
+    publish.add_argument("--project", required=True, help="project name owning the output folder (lowercase, digits, _ and -)")
+    publications = publish.add_subparsers(dest="action", required=True, metavar="ACTION")
+    build = publications.add_parser("build", help="check links in the listed files, store a new version and switch to it")
+    build.add_argument("--source", type=Path, required=True, help="build folder the listed paths are relative to")
+    build.add_argument("--files", type=Path, required=True, help="JSON array of relative file paths to publish; must include index.html")
+    restore = publications.add_parser("restore", help="re-verify an earlier version and switch back to it")
+    restore.add_argument("version", help="full version hash printed by build")
 
-    ui = groups.add_parser("ui", help="Capture the listed pages at several widths")
-    ui.add_argument("--config", type=Path, required=True)
-    ui.add_argument("--output", type=Path, required=True)
-    ui.add_argument("--channel", choices=("chrome", "msedge", "chromium"))
+    ui = groups.add_parser("ui", help="extra for web projects: capture pages at several widths into one review sheet",
+                           epilog=REFERENCE)
+    ui.add_argument("--config", type=Path, required=True, help="JSON with base_url, pages and widths")
+    ui.add_argument("--output", type=Path, required=True, help="empty folder for PNGs, index.html, sheet.png and result.json")
+    ui.add_argument("--channel", choices=("chrome", "msedge", "chromium"), help="use an installed browser instead of Playwright's Chromium")
+    _describe(parser)
     return parser
+
+
+def _describe(parser):
+    """Show each command's one-line help at the top of its own --help, with the reference pointer below."""
+    for action in parser._actions:
+        if isinstance(action, argparse._SubParsersAction):
+            for choice in action._choices_actions:
+                sub = action.choices[choice.dest]
+                sub.description = sub.description or choice.help
+                sub.epilog = sub.epilog or REFERENCE
+                _describe(sub)
 
 
 def _read_body(args):
@@ -180,8 +219,7 @@ def main(argv=None):
             print(f"created the kit: {target}\ncopied {len(copied)} files")
             if not args.no_git:
                 _report_tracking(track(args.dir, [target], f"Add {args.name}"))
-            print(f"next: have your agent read {target / 'templates' / 'agent-instructions.md'}; "
-                  f"`awkit kit scan {args.dir}` reports what the project already has")
+            print(f"next: tell your agent to read {target / 'README.md'} and connect the kit to this project")
             return 0
         if args.group == "review":
             if args.action == "snapshot":

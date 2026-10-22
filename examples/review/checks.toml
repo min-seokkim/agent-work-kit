@@ -1,9 +1,9 @@
 schema = 1
 timeout_seconds = 120
 
-# 실제 프로젝트의 생성 명령과 검사 명령으로 바꾸세요.
-# Node.js 예시: argv = ["node", "--test"]
-# Go 예시: argv = ["go", "test", "./..."]
+# Replace these with the project's own build and check commands.
+# Node.js example: argv = ["node", "--test"]
+# Go example: argv = ["go", "test", "./..."]
 [env]
 REVIEW_INSTANCE = "{run_id}"
 

@@ -1,65 +1,22 @@
-# 공통 개발 키트 사용법
+# Agent Work Kit
 
-개발 언어나 에이전트 제품이 달라도 작업을 정의하고 검사와 검토를 거쳐 인계하는 절차는 함께 사용할 수 있습니다. 이 키트는 그 절차를 Markdown 지침과 양식으로 제공합니다. 사용 자체에 Python 설치나 별도 모델 계정은 필요하지 않습니다.
+Instructions and templates for an agent working in this project. Start with [Agent Instructions](templates/agent-instructions.md); it says what to read for each task. If the [project profile](templates/project.md) is still empty, follow its "Connect the kit to a project" section first.
 
-에이전트 지침과 작업 양식은 영어로, 사용 안내는 한국어로 제공합니다.
+| File | Read when |
+|---|---|
+| [templates/agent-instructions.md](templates/agent-instructions.md) | Every session |
+| [templates/project.md](templates/project.md) | Every session, once filled in |
+| [workflow.md](workflow.md), [protocol.md](protocol.md) | Doing development work or keeping task records |
+| [work-types.md](work-types.md) | Research, writing, data, environment setup, operating an application, learning, automation |
+| [korean-writing.md](korean-writing.md) | Writing Korean text for people |
+| [delegation.md](delegation.md), [templates/roles/](templates/roles/README.md) | Splitting work across subagents |
+| [review-session.md](review-session.md) | A separate session reviews the work |
+| [reference.md](reference.md) | Running an `awkit` command and needing its formats, rules or exit codes |
+| [examples/project-profiles.md](examples/project-profiles.md) | Filling the profile for a kind of project you have not set up before |
+| templates/task.md, review.md, decision.md, checkpoint.md | Copy into the project's record location when the task needs that record |
 
-## 프로젝트에 넣기
+The project's own rules and the user's current instructions take precedence over this kit. Nothing here authorizes data access, agent calls, publication or deployment.
 
-두 가지 방법이 있습니다.
+To update the kit, never overwrite this folder: it holds the filled-in profile and task records. Install the new version beside it with `awkit kit init --name agent-work-kit-new`, compare, and carry over only the changes needed.
 
-- **ZIP으로 넣기**: 릴리스의 `agent-work-kit-<버전>.zip`을 작업용 위치에 풀면 `agent-work-kit` 폴더가 나옵니다. 대상 프로젝트에 같은 이름의 폴더가 없는지 확인한 뒤 복사하세요.
-- **CLI로 넣기**: `awkit`을 설치했다면 프로젝트 폴더에서 `awkit kit init`을 실행하세요. `agent-work-kit` 폴더를 새로 만들며, 같은 이름의 폴더가 있으면 아무것도 바꾸지 않고 멈춥니다. 키트 폴더를 Git에 commit하며, 프로젝트가 아직 저장소가 아니면 저장소를 먼저 만듭니다. 원하지 않으면 `--no-git`을 붙입니다.
-
-키트를 새 버전으로 바꿀 때는 기존 폴더를 덮어쓰지 마세요. ZIP을 별도 위치에 풀거나 `awkit kit init --name agent-work-kit-new`로 옆에 설치한 뒤 비교하고, 작성해 둔 적용표와 작업 기록을 보존하며 필요한 변경만 반영하세요.
-
-기존 에이전트 지침 파일을 통째로 바꾸지 않습니다. 프로젝트의 규칙과 사용자 지시를 먼저 따릅니다.
-
-## 처음 써 보기
-
-`awkit`을 설치했다면 적용표를 채우기 전에 예제 하나를 끝까지 돌려 보는 편이 빠릅니다. `awkit kit example documents <새 폴더>`는 깨진 링크가 든 한국어 문서 묶음을, `data`는 열 이름이 틀린 CSV를, `analysis`는 가정이 데이터와 어긋나는 센서 측정값을 만듭니다. 만든 폴더는 Git에 commit되어 있어 README의 명령을 바로 실행할 수 있습니다. 각 폴더의 README가 검사 실패 확인, 수정, 재검사, 결과물 확인과 채택까지 안내합니다.
-
-## 적용표 채우기
-
-에이전트에게 맡기면 빠릅니다. [에이전트 지침](templates/agent-instructions.md)의 "Connect the kit to a project" 절이 `awkit kit scan`으로 프로젝트의 명령과 Git 상태를 읽고, 적용표와 검사 설정을 채운 뒤 한 번 실행해 확인하는 순서를 정합니다. 직접 채운다면 [프로젝트 적용표](templates/project.md)의 "Start here" 다섯 항목부터 채우세요. 원하는 결과, 기준 자료와 버전, 고칠 파일과 보존할 조건, 완료 확인 방법, 결과를 둘 위치입니다. 나머지 절은 위임, 전달이나 배포가 필요한 작업에서 채웁니다. 프로젝트의 목표, 기준 문서, 사용 언어와 실행 환경도 같은 문서에 적습니다. 검사 명령은 저장소의 설정 파일과 기존 CI에서 확인합니다. [적용 예시](examples/project-profiles.md)는 무엇을 확인할지 설명하며 자동으로 실행할 설정을 제공하지 않습니다.
-
-산출물마다 받는 대상과 완료를 확인할 근거를 정하세요. 패키지 설치, 과제 제출, 장치 시험이나 문서 발행 중 작업에 필요한 단계를 적습니다. 명령마다 실행 폴더, 인자, 필요한 준비와 기대 결과를 기록하세요. 인증값은 적지 않고 필요한 환경변수 이름만 남깁니다. 작업 기록을 둘 위치와 독립 검토가 필요한 조건도 정합니다.
-
-## 에이전트에 연결하기
-
-작업 전에 [에이전트 지침](templates/agent-instructions.md)과 작성한 적용표를 읽게 하세요. 사용하는 도구의 기존 지침 파일이나 시작 메시지에 아래처럼 위치를 안내할 수 있습니다.
-
-> Before you start, read `agent-work-kit/templates/agent-instructions.md` and the filled-in `agent-work-kit/templates/project.md`. The project's existing rules take precedence.
-
-특정 파일명을 모든 에이전트가 자동으로 읽는다고 가정하지 않습니다. 사용 중인 환경에서 지침을 전달하는 방법에 맞춰 연결하세요.
-
-## 첫 작업 진행하기
-
-1. [작업 인계](templates/task.md)를 적용표에서 정한 기록 위치로 복사합니다. 목표, 완료 조건, 기준 버전, 담당 파일과 사용할 검사 명령을 채웁니다.
-2. [작업 기록 규약](protocol.md)에 따라 상태와 담당자를 적고 작업합니다. 실행한 검사는 실제 결과와 근거 위치를 남깁니다.
-3. 독립 검토가 필요하고 허용된 작업이면 검토할 버전을 고정해 요청합니다. [검토 기록](templates/review.md)에 문제와 처리 결과를 남깁니다. 직접 검토했다면 자체 검토로 표시합니다.
-4. 중요한 선택은 [결정 기록](templates/decision.md)에 적습니다. 완료 조건과 필요한 검사를 충족한 뒤 남은 제한을 밝히고 작업을 마칩니다.
-5. 다른 세션이 이어받아야 하면 [작업 재개 기록](templates/checkpoint.md)에 현재 상태와 바로 다음 행동을 남깁니다.
-
-자료 조사, 문서 작성, 데이터 정리, 환경 설정, 앱 조작과 학습처럼 코드 변경이 아닌 작업은 [작업 유형별 완료 근거](work-types.md)에서 고정할 입력, 보존할 것, 완료 근거와 멈춰서 물어볼 시점을 가져옵니다.
-
-자식 에이전트에게 일을 나눠 맡긴다면 [위임 지침](delegation.md)과 [역할 양식](templates/roles/README.md)을, 별도 세션을 검토자로 붙인다면 [검토 세션 협업](review-session.md)을 함께 쓰세요. 둘 다 위임하거나 검토를 붙일 때만 읽으면 됩니다.
-
-양식의 상대경로 링크는 배포된 폴더 구성을 기준으로 합니다. 완성한 기록을 다른 위치로 옮기면 작성 가이드와 규약을 가리키는 링크도 새 위치에 맞춰 고치세요.
-
-## CLI를 추가할 때
-
-공통 키트는 CLI 없이도 사용할 수 있습니다. 검토 메시지, 고정된 변경본의 검사, 문서 발행, 화면 캡처나 배포 절차를 자동화하려면 `awkit` CLI를 추가하세요.
-
-- `awkit channel`은 같은 PC의 세션들이 공유하는 검토 메시지 채널입니다. 검토할 버전을 메시지에 고정하고, 응답과 반박을 요청에 연결합니다.
-- `awkit review`는 선택한 변경을 Git 객체로 고정하고 별도 작업 폴더에서 프로젝트의 검사 명령을 실행합니다. 검사한 결과물을 해시와 함께 보존하고 나중에 대조합니다.
-- `awkit publish`는 정적 문서 결과물의 링크를 검사한 뒤 진입점을 교체하고, 이전 버전으로 되돌릴 수 있게 합니다.
-- `awkit ui`는 지정한 화면을 여러 폭으로 캡처해 한 장의 검토 시트로 모읍니다.
-- `awkit pipeline`은 결과를 대상에 전달하는 프로젝트 명령을 정해진 순서로 실행하고 실제 상태와 검사 결과를 확인합니다. 서버 교체뿐 아니라 제출, 업로드, 장치 적용처럼 프로젝트마다 다른 "전달"에 같은 틀을 씁니다. 상태가 불확실하면 다음 실행을 막습니다.
-- `awkit kit roles`는 역할 양식으로 Claude Code나 Codex의 역할 파일을 만들고, `awkit usage`는 실행 기록에서 역할별 실제 모델과 토큰을 모읍니다.
-
-CLI를 실행하는 PC에는 Python 3.11 이상이 필요합니다. `review`는 HEAD commit이 있는 Git 저장소, `ui`는 Playwright와 브라우저가 추가로 필요합니다. 대상 프로젝트의 언어에는 제한이 없습니다. 설치와 명령 설명은 툴킷 저장소의 `docs/` 폴더에 있습니다.
-
-## 라이선스
-
-이 키트는 [MIT 라이선스](LICENSE.md)로 배포합니다. 키트나 작성 지침을 재배포할 때는 저작권과 라이선스 고지를 함께 포함하세요. 한국어 작성 지침의 원출처와 라이선스 전문은 [외부 자료 고지](THIRD_PARTY_NOTICES.md)에 있습니다.
+The kit is MIT licensed ([LICENSE.md](LICENSE.md)). The Korean writing guide adapts third-party material; keep [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) when redistributing.

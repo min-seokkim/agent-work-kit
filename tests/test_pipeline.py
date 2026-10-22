@@ -35,6 +35,29 @@ class PipelineTests(unittest.TestCase):
             env={**os.environ, "PYTHONUTF8": "1"},
         )
 
+    def test_one_way_delivery_without_backup_or_rollback(self):
+        shutil.copyfile(EXAMPLE / "deliver.toml", self.root / "deliver.toml")
+        runner = Pipeline(self.root / "deliver.toml")
+        self.assertEqual(runner.run("deploy", A)["status"], "passed")
+        # First delivery: no current release to verify, no backup command to run.
+        self.assertEqual([e["phase"] for e in runner.last()["events"]], ["preflight", "deploy", "verify"])
+        with self.assertRaises(ValueError):
+            runner.run("rollback")
+        self.fault(fail_after_change=True)
+        failed = runner.run("deploy", B, allow_unhealthy_current=True)
+        self.assertEqual(failed["status"], "failed-unrecovered")
+        self.assertEqual(failed["recovery"], {"skipped": "no-rollback-command"})
+        self.fault()
+        with self.assertRaises(ValueError):
+            runner.run("deploy", A)  # blocked until reconcile
+        self.assertEqual(runner.reconcile()["status"], "reconciled")
+        text = (self.root / "deliver.toml").read_text(encoding="utf-8") + "\n"
+        (self.root / "auto.toml").write_text(text.replace('required_checks = ["service"]',
+                                                           'required_checks = ["service"]\nauto_rollback = true'),
+                                             encoding="utf-8")
+        with self.assertRaises(ValueError):
+            Pipeline(self.root / "auto.toml")
+
     def test_deploy_update_idempotent_and_manual_rollback(self):
         self.assertEqual(self.pipeline.run("deploy", A)["status"], "passed")
         result = self.pipeline.run("deploy", B)

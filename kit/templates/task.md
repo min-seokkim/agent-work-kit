@@ -63,6 +63,7 @@ Add the result to this document or return it to the main agent when the work end
 - Remaining limitations and decisions needed:
 - For writing tasks, results of factual, sentence-level and overall-flow review:
 - Actual model and usage: verified from execution logs, or `unverified` if unavailable
+- Cost of the task: wall-clock minutes, tokens, messages the user sent after the first instruction, defects found after acceptance (from `awkit usage` where it applies; otherwise `unverified`)
 
 For review assignments, include the following for each finding.
 

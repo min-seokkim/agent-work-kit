@@ -1,0 +1,14 @@
+schema_version = 1
+
+# A one-way delivery: the target can be read and verified but not backed up or restored.
+# Use this shape for submissions, uploads and transfers that the project cannot undo itself.
+[pipeline]
+target = "local-demo"
+state_dir = ".awkit/deliveries"
+timeout_seconds = 10
+required_checks = ["service"]
+
+[commands]
+preflight = ["{python}", "{project}/adapter.py", "preflight", "{target}", "{release}"]
+deploy = ["{python}", "{project}/adapter.py", "deploy", "{target}", "{release}"]
+verify = ["{python}", "{project}/adapter.py", "verify", "{target}", "{release}"]

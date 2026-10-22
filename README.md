@@ -4,7 +4,7 @@ English | [한국어](README.ko.md)
 
 Agent Work Kit provides working instructions, a Korean writing guide, and verification tools for work done with coding agents: development, document writing, research, data preparation and environment setup.
 
-Start with a runnable example, then copy the Markdown kit into your project for task instructions, handoffs and document writing. The `awkit` CLI freezes the files under review, runs your project's checks on that exact revision, retains the checked results with hashes, exchanges review messages between sessions and records release results.
+Start with a runnable example, then copy the Markdown kit into your project; an agent reads the project with `awkit kit scan` and fills in the profile and check configuration. The `awkit` CLI freezes the files under review, runs your project's checks on that exact revision, retains the checked results with hashes, keeps the version you accepted, exchanges review messages between sessions and records what a delivery actually did. It assumes the files are tracked by Git and creates the repository when there is none.
 
 Agent instructions and templates are in English. The kit setup guide and the guides under `docs/` are in Korean.
 
@@ -90,14 +90,15 @@ The second release is built to fail its health check. The runner rolls back to t
 | Command | What it does | Extra requirement |
 |---|---|---|
 | `awkit kit init` | Copies the Markdown kit into a new project folder. | |
-| `awkit kit example` | Creates a runnable documents or data example with one deliberate defect to find and fix. | |
+| `awkit kit example` | Creates a runnable documents, data or analysis example with one deliberate defect to find and fix, already committed to Git. | |
+| `awkit kit scan` | Reports a project's manifests, defined commands, CI steps, docs and Git state, with a suggested check configuration, so an agent can connect the kit. | |
 | `awkit kit roles` | Writes five subagent role files with a model per tier, preserving existing files. | |
-| `awkit usage` | Reads Claude Code and Codex session logs and totals the real model, calls and tokens per thread. | |
+| `awkit usage` | Reads Claude Code and Codex session logs and totals the real model, calls, tokens, user messages and minutes per thread. | |
 | `awkit review` | Freezes selected changes as a Git commit, runs the project's checks against it in a separate worktree, retains the listed result files with hashes, keeps an accepted version and compares later revisions with it. | Git |
 | `awkit channel` | Passes review requests, replies and rebuttals between two local sessions through a SQLite file. | |
 | `awkit publish` | Checks the links in a static site build, switches the entry page atomically and can restore an earlier version. | |
 | `awkit ui` | Captures chosen pages at several widths and collects them on one review sheet. | Playwright and a browser |
-| `awkit pipeline` | Runs your deploy commands in a fixed order and verifies the release that is actually live. | Your deploy commands |
+| `awkit pipeline` | Runs your delivery commands in a fixed order and verifies the target's actual state afterwards, whether the delivery is a server release, a submission, an upload or a device update. | Your delivery commands |
 
 ## How the release runner handles failure
 

@@ -21,6 +21,8 @@ from .process import run_to_files
 RELEASE = re.compile(r"[0-9a-f]{7,64}\Z")
 LABEL = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,79}\Z")
 PHASES = ("preflight", "backup", "deploy", "verify", "rollback")
+# A target that cannot be backed up or restored (a submission, a one-way transfer) omits these.
+OPTIONAL = ("backup", "rollback")
 # A previous run ended in a state the controller cannot vouch for.
 BLOCKING = ("running", "uncertain", "rollback-failed", "failed-unrecovered")
 HISTORY_LIMIT = 50
@@ -79,10 +81,14 @@ class Pipeline:
         self.commands = config["commands"]
         for phase in PHASES:
             argv = self.commands.get(phase)
+            if argv is None and phase in OPTIONAL:
+                continue
             if not isinstance(argv, list) or not argv or not all(isinstance(v, str) and v for v in argv):
                 raise ValueError(f"The {phase} command must be a non-empty array of strings.")
             for arg in argv:
                 self.expand(arg, "a" * 40, "b" * 40, Path("run"))
+        if self.auto_rollback and "rollback" not in self.commands:
+            raise ValueError("auto_rollback needs a rollback command.")
 
     def expand(self, arg, release, previous, run_dir):
         values = {"python": sys.executable, "project": str(self.project), "target": self.target,
@@ -285,6 +291,8 @@ class Pipeline:
             raise ValueError("deploy needs a release ID of 7 to 64 lowercase hex characters.")
         if action == "rollback" and release:
             raise ValueError("rollback does not take a release.")
+        if action == "rollback" and "rollback" not in self.commands:
+            raise ValueError("This target has no rollback command; restore it by the project's own procedure.")
         with self.locked():
             last = self.last()
             if last and last["status"] in BLOCKING:
@@ -320,7 +328,8 @@ class Pipeline:
                 if current == release and current_healthy is not False:
                     record["outcome"] = "already-current"
                 else:
-                    self.call("backup", release, current, run_dir, record["events"])
+                    if "backup" in self.commands:
+                        self.call("backup", release, current, run_dir, record["events"])
                     changed = True
                     self.call("deploy" if action == "deploy" else "rollback",
                               release, current, run_dir, record["events"])
@@ -350,6 +359,8 @@ class Pipeline:
                     except StepError as recovery:
                         record["status"] = "uncertain" if recovery.uncertain else "rollback-failed"
                 elif changed:
+                    if "rollback" not in self.commands:
+                        record["recovery"] = {"skipped": "no-rollback-command"}
                     record["status"] = "failed-unrecovered"
             except BaseException:
                 record["status"] = "uncertain" if changed else "failed"

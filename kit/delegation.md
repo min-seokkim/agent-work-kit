@@ -115,7 +115,8 @@ Record the following per task in the session record. Mark unavailable values as 
 - Risk and `premium_slot`; the reason for a second premium call.
 - Roles invoked, actual models and reasoning effort, calls and retries.
 - Fresh input, cache-write, cache-read and output tokens; credits when available.
-- High and Major findings, who found each one and at which stage.
+- Wall-clock minutes and the number of messages the user had to send after the first instruction (`awkit usage` reports both per thread).
+- High and Major findings, who found each one and at which stage, and defects found after acceptance.
 
 Evaluate delegation against main-agent-only execution on comparable tasks. Alternate similar tasks between the approaches rather than doing the same work twice. Keep any claimed advantage `unverified` until there are at least three tasks per approach. Compare quality in this order: the proportion of tasks with High or Major findings, the proportion with significant defects discovered after acceptance, and corrections per task. Improvement in a later measure does not offset deterioration in an earlier one. If a defect appears later, reopen the measurement and include its correction cost.
 

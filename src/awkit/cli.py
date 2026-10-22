@@ -27,9 +27,14 @@ def _parser():
     init = kit_commands.add_parser("init", help="Create the kit folder. An existing folder is never overwritten.")
     init.add_argument("dir", nargs="?", type=Path, default=Path("."), help="project folder that receives the kit")
     init.add_argument("--name", default="agent-work-kit", help="name of the folder to create (default: agent-work-kit)")
+    init.add_argument("--no-git", action="store_true", help="do not create a Git repository or commit")
     example = kit_commands.add_parser("example", help="Create a folder with a runnable first-run example.")
     example.add_argument("kind", choices=EXAMPLES, help="documents: a Korean document set; data: a CSV to summarise; analysis: sensor readings with assumptions")
     example.add_argument("dir", type=Path, help="new folder to create")
+    example.add_argument("--no-git", action="store_true", help="do not create a Git repository or commit")
+    scan = kit_commands.add_parser("scan", help="Report a project's manifests, commands, CI and Git state for connecting the kit.")
+    scan.add_argument("dir", nargs="?", type=Path, default=Path("."), help="project folder to look at")
+    scan.add_argument("--checks", action="store_true", help="print only a suggested checks.toml")
     roles = kit_commands.add_parser("roles", help="Generate Claude Code or Codex role files from the role templates. Existing files are kept.")
     roles.add_argument("dir", nargs="?", type=Path, default=Path("."), help="project folder that receives the role files")
     roles.add_argument("--provider", choices=("claude", "codex"), required=True)
@@ -76,7 +81,7 @@ def _parser():
     freeze = review_commands.add_parser("snapshot", help="Write the named files' changes into a Git commit object.")
     freeze.add_argument("files", nargs="+")
     isolated = review_commands.add_parser("check", help="Run the project's checks on a frozen revision in a separate worktree.")
-    isolated.add_argument("snapshot")
+    isolated.add_argument("snapshot", help="full commit ID from `review snapshot`, or HEAD")
     isolated.add_argument("--config", type=Path, required=True)
     isolated.add_argument("--runs-root", type=Path)
     isolated.add_argument("--keep", action="store_true")
@@ -148,15 +153,21 @@ def main(argv=None):
             result = collect(args.paths, since)
             print(json.dumps(result, ensure_ascii=False, indent=2) if args.json else render_usage(result))
             return 0
+        if args.group == "kit" and args.action == "scan":
+            from .scan import scan as scan_project
+            report = scan_project(args.dir)
+            print(report["suggested_checks_toml"] if args.checks else json.dumps(report, ensure_ascii=False, indent=2))
+            return 0
         if args.group == "kit" and args.action == "example":
-            target, copied = install_example(args.kind, args.dir)
+            target, copied = install_example(args.kind, args.dir, track=not args.no_git)
             print(f"created the {args.kind} example: {target}\ncopied {len(copied)} files")
             print(f"next: read {target / 'README.md'} and run the commands there")
             return 0
         if args.group == "kit":
-            target, copied = install(args.dir, args.name)
+            target, copied = install(args.dir, args.name, track=not args.no_git)
             print(f"created the kit: {target}\ncopied {len(copied)} files")
-            print(f"next: open {target / 'README.md'} and fill in the project profile")
+            print(f"next: have your agent read {target / 'templates' / 'agent-instructions.md'}; "
+                  f"`awkit kit scan {args.dir}` reports what the project already has")
             return 0
         if args.group == "review":
             if args.action == "snapshot":

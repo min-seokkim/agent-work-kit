@@ -12,6 +12,8 @@ Decide these first, because text written for the wrong reader has to be rewritte
 
 Write from the reader's needs and use existing documents and the conversation only as sources of facts. A developer document reworded for stakeholders keeps the developer's structure, and the user's own words pasted in keep the conversation's framing. State decisions and their reasons directly instead of describing the conversation that produced them.
 
+Prevents: F15, F30, F34.
+
 ## Write plainly
 
 State the conclusion first, then the evidence. Name who does what and what results. Explain or replace terms the reader does not know. Keep tracking codes (task IDs, commit IDs, decision-record numbers) in records for agents and out of text people read; readers cannot decode them.
@@ -24,11 +26,15 @@ The pattern list is for the agent's own prose. Leave a listed pattern alone insi
 
 Use paragraphs for connected explanation, lists for parallel items and steps, tables for items compared on the same criteria, and a figure or screenshot where it explains better than text.
 
+Prevents: F13, F15, F30.
+
 ## Preserve facts and judgments
 
 Keep plans, approved decisions, implementation, check results and actual operation distinct; completing implementation does not establish verification or use. Keep unverified figures marked as unverified. Do not merge work from different projects or people, and do not turn possibility into certainty or permission into obligation while shortening.
 
 When revising accepted text, keep its adopted wording, structure and design unless the task changes them, and compare the revision with the accepted version. A style edit must not imply fresh fact-checking. If a style edit changes more than about a third of the text, it has become a rewrite: stop and confirm the scope with the user before continuing. For numbers, prices and external capabilities, keep the source and the date it was checked. Check incoming links when changing heading anchors.
+
+Prevents: F16, F30.
 
 ## Corrections
 
@@ -36,11 +42,15 @@ When the user corrects text, identify the reader's problem behind the correction
 
 Then search every text people read (other documents, UI text, CLI output) for the same pattern and fix each occurrence, or list those left and why. The user should not have to point at each one.
 
+Prevents: F31, F32.
+
 ## Rewriting and collaboration
 
 If a text has been revised more than twice, or has accumulated additions and repetition, reconsider its structure: make a preservation list, draft from a blank document, compare with the source and keep the prior content recoverable. Maintain one authoritative document per topic and link to it; keep historical records without maintaining them as duplicate current procedures.
 
 A review comment names the passage, the problem and the fix. After a fix, check that passage and the affected content instead of rescoring resolved issues. When reviews conflict, the main agent decides; established terms are not changed to suit a reviewer. A full rewrite gets one independent review where the project authorizes it. Before splitting writing among agents, finish one representative section and hand off the audience, purpose, preservation list, sources and drafts.
+
+Prevents: F18, F21.
 
 ## Completion check
 
@@ -50,3 +60,5 @@ A review comment names the passage, the problem and the fix. After a fix, check 
 - Endings, terms and actors are consistent.
 
 Report what the final text is and what was checked; following these steps does not show that it reads well. The main agent reads the final text before delivery.
+
+Prevents: F1, F33.

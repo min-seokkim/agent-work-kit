@@ -1,4 +1,4 @@
-"""Each test replays a recorded occurrence from docs/failures.md that the check must catch."""
+"""Each test replays a recorded occurrence from kit/failures.md that the check must catch."""
 
 import json
 import os

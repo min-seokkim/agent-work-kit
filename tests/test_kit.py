@@ -1,3 +1,4 @@
+import importlib.util
 import json
 import re
 import subprocess
@@ -25,6 +26,9 @@ SKIP_DIRS = {"build", "dist", "node_modules", "site-packages", "__pycache__"}
 EVERY_SESSION = ("README.md", "workflow.md", "templates/project.md")
 EVERY_SESSION_WORD_LIMIT = 2_000
 SITUATION_FILE_WORD_LIMIT = 3_500
+# Reference documents are looked up in part, when a command or a guard points to them, never read whole.
+REFERENCES = ("reference.md", "failures.md")
+REFERENCE_WORD_LIMIT = 9_000
 LICENSES = ("LICENSE.md", "THIRD_PARTY_NOTICES.md")
 
 
@@ -225,6 +229,24 @@ class RoleTests(unittest.TestCase):
         self.assertEqual(again.returncode, 2)
 
 
+def guard_map():
+    spec = importlib.util.spec_from_file_location("guard_map", ROOT / "scripts" / "guard_map.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+class GuardTableTests(unittest.TestCase):
+    def test_every_guard_names_entries_and_the_table_is_current(self):
+        # Each guide section and each awkit command declares the catalogue entries it guards; the table
+        # in kit/failures.md is built from those declarations, never kept by hand.
+        module = guard_map()
+        problems, table = module.build()
+        self.assertEqual(problems, [])
+        self.assertEqual(module.current_table(), table,
+                         "kit/failures.md is out of date: run python scripts/guard_map.py --write")
+
+
 class DocumentationTests(unittest.TestCase):
     def test_repository_links_resolve(self):
         # The documents example ships one broken link on purpose; everything else must resolve.
@@ -235,6 +257,9 @@ class DocumentationTests(unittest.TestCase):
         counts = {path.relative_to(ROOT / "kit").as_posix(): len(path.read_text(encoding="utf-8").split())
                   for path in (ROOT / "kit").rglob("*.md") if path.name not in LICENSES}
         every_session = sum(counts.pop(name) for name in EVERY_SESSION)
+        for name in REFERENCES:
+            words = counts.pop(name)
+            self.assertLessEqual(words, REFERENCE_WORD_LIMIT, f"kit/{name} has {words} words")
         self.assertLessEqual(every_session, EVERY_SESSION_WORD_LIMIT,
                              f"the files read every session have {every_session} words")
         for name, words in counts.items():

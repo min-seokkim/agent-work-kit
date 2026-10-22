@@ -17,6 +17,10 @@ from pathlib import Path
 from ..process import run_to_files
 from ..records import LABEL, atomic_json, stamp
 
+# The failure catalogue entry (kit/failures.md) this command guards against: a successful command
+# taken as a live release.
+PREVENTS = {"awkit pipeline": ("F24",)}
+
 RELEASE = re.compile(r"[0-9a-f]{7,64}\Z")
 PHASES = ("preflight", "backup", "deploy", "verify", "rollback")
 # A target that cannot be backed up or restored (a submission, a one-way transfer) omits these.

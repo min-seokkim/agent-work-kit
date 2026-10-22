@@ -6,6 +6,8 @@ Use this when a task needs a record that another session or person will read: ta
 
 Assign each task a stable ID, owner, base revision, change scope, acceptance criteria and next action. Maintain current state in one task record and link related reviews and decisions. Do not copy entire conversations into multiple documents.
 
+Prevents: F1.
+
 ## States
 
 | State | Meaning | Next action |
@@ -21,11 +23,15 @@ Assign each task a stable ID, owner, base revision, change scope, acceptance cri
 
 A small task that does not require independent review may go directly from `running` to `done`. Label self-review accurately. Resume a `blocked` task as `ready` or `running` only after checking that its blocker is resolved. Cancellation is distinct from completion; an agent ending its session does not make a task `done`.
 
+Prevents: F1.
+
 ## Roles and file ownership
 
 The coordinator defines scope and acceptance criteria and assigns file ownership. The implementer makes changes and prepares check evidence. The reviewer examines the specified revision and records issues to resolve.
 
 One session may perform multiple roles when permitted. When work spans sessions, assign ownership to avoid concurrent edits to the same file. Use delegation capabilities authorized in the current environment. This document does not authorize calls to other agents or data transfers.
+
+Prevents: F19.
 
 ## Reviews and decisions
 
@@ -33,8 +39,12 @@ Each finding in the [review record](templates/review.md) includes reproduction c
 
 Closing a channel is not a review pass. Resolve findings that block completion or obtain a decision from the project's authorized decision-maker, then explain remaining limitations. Design approval alone does not mean implementation or deployment is complete.
 
+Prevents: F18.
+
 ## Resume after interruption
 
 Leave changed files, the base revision, working directory, running processes, completed checks and the next action in the [checkpoint](templates/checkpoint.md). The receiving session verifies actual file and process state before proceeding. Do not repeat an external operation without checking whether it already ran.
 
 Deployment, external publication and changes that are difficult to reverse follow the existing authorization scope. Task state alone is not evidence of permission.
+
+Prevents: F29.

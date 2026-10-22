@@ -13,6 +13,10 @@ from .kit_install import SITUATIONS, SKILL_FOLDERS, read_version
 from .review import nested_repositories
 
 MIN_PYTHON = (3, 11)
+
+# The failure catalogue entries (kit/failures.md) this command guards against: an agent's commit
+# identity, and a kit copied by another awkit version.
+PREVENTS = {"awkit doctor": ("F9", "F25")}
 MIN_GIT = (2, 25)
 
 

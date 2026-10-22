@@ -11,6 +11,10 @@ from contextlib import contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
 
+# The failure catalogue entries (kit/failures.md) this command guards against: reviews of an unnamed
+# version, and rebuttals without end.
+PREVENTS = {"awkit channel": ("F17", "F18")}
+
 ROLES = ("main", "reviewer")
 REQUESTS = ("review", "scout", "test", "draft", "question", "final")
 KINDS = (*REQUESTS, "notice", "close", "re", "rebut")

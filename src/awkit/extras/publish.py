@@ -13,6 +13,9 @@ from urllib.parse import unquote, urlsplit
 
 from ..review import relative_file
 
+# The failure catalogue entries (kit/failures.md) this command guards against.
+PREVENTS = {"awkit publish": ("F5", "F24")}
+
 
 def digest(data):
     return hashlib.sha256(data).hexdigest()

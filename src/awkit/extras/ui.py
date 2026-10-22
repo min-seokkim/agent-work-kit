@@ -5,6 +5,9 @@ from html import escape
 from pathlib import Path
 from urllib.parse import urljoin, urlsplit
 
+# The failure catalogue entry (kit/failures.md) this command guards against: rendered output not inspected.
+PREVENTS = {"awkit ui": ("F1",)}
+
 CHECKS = """() => {
   const issues = [];
   if (document.documentElement.scrollWidth > innerWidth + 1) issues.push('horizontal-overflow');

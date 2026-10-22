@@ -14,3 +14,5 @@ Then do the following, and record each result rather than assuming it:
 6. Commit the profile, the check configuration and any skill files. `awkit kit init` has already committed the kit folder, creating the repository if the project had none; say so to the user. The review commands do not create repositories or commits: if `awkit review` reports that the folder is not a Git repository or has no commit, commit the files first.
 
 Ask before touching credentials, remote targets or settings outside the project folder.
+
+Prevents: F9, F11, F12, F29.

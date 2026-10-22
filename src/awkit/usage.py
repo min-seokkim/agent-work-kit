@@ -18,6 +18,10 @@ from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
 
+# The failure catalogue entries (kit/failures.md) this command guards against: unmeasured values
+# reported as zero, and a subagent's self-reported model.
+PREVENTS = {"awkit usage": ("F6", "F20")}
+
 FORMAT = 2
 FIELDS = ("fresh_input", "cache_write", "cache_read", "output")
 CLAUDE_FIELDS = {"fresh_input": "input_tokens", "cache_write": "cache_creation_input_tokens",

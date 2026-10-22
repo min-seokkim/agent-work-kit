@@ -6,6 +6,8 @@ Use this workflow when a main implementation session and an independent review s
 
 An independent review session is intended to find defects and conflicts earlier than a single-session workflow. It also consumes more time and credits. The user chooses whether to attach one for each unit. Once attached, evaluate it by how early it finds defects rather than by cost (section 7). The main agent may ask whether to attach a review session when starting a `high`-risk unit.
 
+Prevents: F17.
+
 ## 2. Session setup
 
 The user opens both sessions. Prefer a different provider for the reviewer; with the same provider, open a fresh session on a judge-tier model. Do not continue or fork the main conversation. A reviewer exposed to the implementation's reasoning is not independent.
@@ -18,6 +20,8 @@ The user opens both sessions. Prefer a different provider for the reviewer; with
 
 The review session may delegate mechanical exploration and test execution to efficient- or standard-tier subagents while performing judgments itself.
 
+Prevents: F17.
+
 ## 3. Work through a unit
 
 1. **Start.** The main session selects a fresh channel file and announces the unit. The reviewer waits for requests.
@@ -29,11 +33,15 @@ The review session may delegate mechanical exploration and test execution to eff
 
 The main session closes Minor findings and small issues by checking the diff; they do not trigger another review request. If the reviewer discovers a High risk while handling another request, report it with `notice`. Otherwise, stay within the requested work.
 
+Prevents: F2, F17, F18.
+
 ## 4. Review criteria
 
 Separate the response into verdict, findings, execution results and unverified scope. Each finding includes severity (High, Major, Minor), file and line, failure scenario and corrective direction. State both what to add and what to remove. Execution results identify the snapshot, commands, pass and failure counts, and cause classification for each failure. Avoid reassurance without evidence.
 
 Locks and failures seen once follow [Checking](checking.md): a concurrent test against a real database, and a fresh worktree for the rerun.
+
+Prevents: F2, F18.
 
 ## 5. Commands
 
@@ -47,6 +55,8 @@ awkit channel --db $db post main reviewer review --snap $snap --body-file reques
 
 The main session sends requests (`review`, `final`, `test`, `scout`, `draft`, `question`) and `close`; either side answers with `re` (no further reply) or `rebut` (the other side must answer), or informs with `notice`. Use one channel file per review; the channel knows only the roles `main` and `reviewer`. When user judgment is needed, reply to the original request with `re` and start the body with `decision-needed:`. Exclude credentials, actual personal data, private source material and variable values from error traces. See the [command reference](reference.md) for command details.
 
+Prevents: F17.
+
 ## 6. Waiting
 
 `awkit channel wait <role> <mode> --max <seconds>` prints the awaited messages and exits with `0`. It exits with `1` on timeout and `3` when the reviewer receives `close`.
@@ -56,6 +66,8 @@ The main session sends requests (`review`, `final`, `test`, `scout`, `draft`, `q
 
 Do not end the unit with open requests or an unapplied final result. Waiting for user judgment on a `decision-needed` item is the exception.
 
+Prevents: F18.
+
 ## 7. Records and evaluation
 
 The main session records the following, marking unavailable values as `unverified`:
@@ -63,6 +75,8 @@ The main session records the following, marking unavailable values as `unverifie
 - Actual models used by both sessions and their subagents, verified from logs rather than self-reports.
 - For each High or Major finding, who found it (main, review session or the main session's verifier) and when (incremental review, tests, final review or after acceptance).
 - Request counts by kind and whether the main session also ran its own verifier.
+
+Prevents: F20.
 
 ## 8. Starting prompts
 
@@ -82,3 +96,5 @@ Review session:
 Act as the independent review session for <unit>. Read agent-work-kit/review-session.md and follow the reviewer role.
 Use .awkit/review-<unit>.sqlite3 as the channel file. Receive and handle requests with awkit channel wait reviewer request; stop when close arrives.
 ```
+
+Prevents: F17.

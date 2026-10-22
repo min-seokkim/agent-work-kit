@@ -28,6 +28,9 @@ CHECK_TOOLS = {"pytest", "ruff", "mypy", "flake8", "black", "tox", "nox", "npm",
                "make", "mvn", "gradle", "./gradlew", "dotnet", "bundle", "rake", "composer"}
 CHECK_WORDS = {"test", "tests", "lint", "check", "typecheck", "build", "unittest", "pytest", "ruff", "mypy", "vet"}
 SHELL = re.compile(r"[|&;<>$`*?(){}\\]")
+# The failure catalogue entry (kit/failures.md) this command guards against: a guessed check command.
+PREVENTS = {"awkit kit scan": ("F11",)}
+
 MAKE_TARGET = re.compile(r"^([A-Za-z][A-Za-z0-9_.-]*):(?!=)")
 
 

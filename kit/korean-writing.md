@@ -9,11 +9,15 @@ Use this guide with the [Writing Guide](writing.md) when writing or reviewing Ko
 3. **Rewrite the meaning in natural Korean.** Do not copy English subjects and word order or translate word by word.
 4. **Review three times, each for one purpose:** facts against the preservation list and source (for implementation claims, also the code and check results); the Korean read on its own, for word order, translation artifacts, repetition and unclear references; and the overall order, duplication, terms and links. This is not three full rewrites. Style scores, comma counts and sentence lengths are not acceptance criteria.
 
+Prevents: F14, F33.
+
 ## Tone and terminology
 
 Use `-습니다` for explanations to people and `-하세요` for action instructions, including documents people and agents share. Forms, slides and administrative reports often end items with nouns (`-함`, `-음`); follow the document's convention. Korean instructions only for agents may keep `-다`. Keep one style per text: do not mix `-하세요`, `-하십시오` and `-하시오`. Preserve historical records, code and quotations as written.
 
 Use one name for each concept and match the project's UI terms and verified role names. Reduce unnecessary English glosses while keeping exact identifiers (Python, JSON, API, commit). Do not use italics, and do not join words with middle dots (`·`) where a sentence or list can say the relationship. This toolkit uses `모의` for mock material and `다운로드` for downloading files.
+
+Prevents: F14.
 
 ## Revise sentences
 
@@ -29,6 +33,10 @@ Make one claim per sentence and let the next develop it.
 
 Before delivery, read the Korean on its own, without the English draft.
 
+Prevents: F14, F31.
+
 ## Style reference
 
 This guide adapts material from the `humanize-korean` skill in [epoko77-ai/im-not-ai](https://github.com/epoko77-ai/im-not-ai), with local revisions, additions and an English translation. The upstream copyright and full MIT license are preserved in [Third-party notices](THIRD_PARTY_NOTICES.md). Include that notice when redistributing the adapted guide.
+
+Prevents: none (credit for the adapted material).

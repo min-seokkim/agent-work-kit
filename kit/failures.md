@@ -1,8 +1,13 @@
 # Failure Catalogue
 
-Agents fail in recognizable situations, in recognizable ways. This catalogue lists those failures. It is a design document: it chooses the kit's situation guards (skills, hooks, `awkit` checks, situation guidance), measures whether they catch anything, and shows what to remove. It is not given to agents. Agents get the baseline workflow and the guards, written as what to do, with a failure as the reason where it helps. See Scope in [development.md](development.md).
+Agents fail in recognizable situations, in recognizable ways. This catalogue lists those failures and says what in the kit guards against each: a section of a guide, an `awkit` check or a hook. It is what the kit is for. It is not read every session; read an entry when a guard names it as its reason, and read the catalogue when designing a new guard. `workflow.md` and the situation guides say what to do; this catalogue says why.
 
-Entries observed while developing this repository cite commits on `dev`. Entries carried over from the existing kit were written from earlier sessions whose records were not kept; they are marked "needs evidence" until a real occurrence is recorded. Evidence marked "owner's records" comes from the repository owner's own record of the corrections they made while having agents write documents (project and operations documents, reports for non-developers, UI text and CLI output, resumes and application letters) and while using agents for research, explanations, troubleshooting and purchase decisions. The records stay outside this repository; occurrences are described here without names or dates.
+Evidence comes in two kinds, never with names, dates, company names or personal context:
+
+- Observed in awkit's development: cited by commit ID in the awkit repository.
+- Owner's records: the awkit owner's own record of the corrections they made while having agents write documents (project and operations documents, reports for non-developers, UI text and CLI output, application documents) and while using agents for research, explanations, troubleshooting and purchase decisions. The records are not published; occurrences are described without identifying details.
+
+Entries carried over from the kit's earlier versions were written from sessions whose records were not kept; they are marked "needs evidence" until an occurrence is recorded, and are removed after real-work measurement if none is.
 
 ## Rules for entries
 
@@ -33,7 +38,7 @@ A check fails, a rerun passes, and the report mentions only the pass.
 #### F3. Support claimed for environments that were not run.
 
 Tests pass on one platform and the work is reported as working everywhere.
-- Evidence: observed here. Tests passed on Linux; the first Windows CI run on `dev` failed two tests (path ordering, 8.3 short names), fixed in `a5eec42`.
+- Evidence: observed in awkit's development. Tests passed on Linux; the first Windows CI run on `dev` failed two tests (path ordering, 8.3 short names), fixed in `a5eec42`.
 - Countermeasure: name the environments a claim covers; run all of them before claiming.
 - Check: CI matrix for this repository. Status: enforced here, prose for user projects; planned: profile field for target environments that the done-check reads.
 
@@ -42,21 +47,21 @@ Tests pass on one platform and the work is reported as working everywhere.
 #### F4. Documents describe behavior the code does not have.
 
 The text states what the change was meant to do; the code does something else, and the test covers only the easy case.
-- Evidence: observed here. `f475f9e` documented that an example created inside an existing repository is committed there; the code skipped any repository that already had a commit, and the test used a repository without one. The example's first command then failed. Fixed in `b5d78ba`.
+- Evidence: observed in awkit's development. `f475f9e` documented that an example created inside an existing repository is committed there; the code skipped any repository that already had a commit, and the test used a repository without one. The example's first command then failed. Fixed in `b5d78ba`.
 - Countermeasure: for each behavior stated in a document, a test that exercises exactly that case.
 - Check: `tests/test_examples.py` runs every command in the example READMEs as written, from an example created inside a repository with history; with the `f475f9e` behavior restored it fails. Status: enforced for the examples.
 
 #### F5. Documents point at things that do not exist.
 
 Install instructions, links or files that were never created.
-- Evidence: observed here. The README told users to download the 0.2.0 wheel from Releases; no tag or release had ever existed. The README's development command failed as written because of a relative `PYTHONPATH` (fixed in `6eb632c`).
+- Evidence: observed in awkit's development. The README told users to download the 0.2.0 wheel from Releases; no tag or release had ever existed. The README's development command failed as written because of a relative `PYTHONPATH` (fixed in `6eb632c`).
 - Countermeasure: run every documented command; check that referenced releases and files exist.
 - Check: relative links and the example READMEs' commands are tested, and CI runs `install.sh` and `install.ps1` from the checkout and then `awkit doctor`. Status: enforced for links, examples and the installers; the winget and Homebrew branches run only where Git or Python is missing, which CI runners never are.
 
 #### F6. Numbers reported beyond what was measured.
 
 A count from part of the data is stated as the whole, or a metric counts things it should not.
-- Evidence: observed here. The kit's size was given as about 10,800 words from a count that left out `kit/examples/` (about 800 more words). `awkit usage` counted notices and command output as user messages (13 instead of 9 in a real log; fixed in `6eb632c`).
+- Evidence: observed in awkit's development. The kit's size was given as about 10,800 words from a count that left out `kit/examples/` (about 800 more words). `awkit usage` counted notices and command output as user messages (13 instead of 9 in a real log; fixed in `6eb632c`).
 - Countermeasure: state the scope of every number; check a metric against one real record before using it.
 - Check: prose; for `usage`, a test built from a real log's record kinds.
 
@@ -65,7 +70,7 @@ A count from part of the data is stated as the whole, or a metric counts things 
 #### F7. A convenience changes state nobody asked to change.
 
 A read or check command creates, commits or deletes something.
-- Evidence: observed here. `review compare` in a folder without Git created a repository and committed every file, `.env` included (from `f475f9e`, fixed in `b5d78ba`).
+- Evidence: observed in awkit's development. `review compare` in a folder without Git created a repository and committed every file, `.env` included (from `f475f9e`, fixed in `b5d78ba`).
 - Countermeasure: read commands never write; write commands touch only what was named.
 - Check: tests that read commands leave the folder unchanged. Status: enforced for `awkit`.
 
@@ -81,30 +86,30 @@ A commit or snapshot includes changes the user had staged or made elsewhere.
 #### F9. The agent's own identity replaces the repository's convention.
 
 Commits are authored as the agent, or carry trailers the owner did not ask for.
-- Evidence: observed here. Commits on `dev` were authored as "Claude" with `Co-Authored-By` lines while the owner's commits used their own identity; the history had to be rewritten and force-pushed.
+- Evidence: observed in awkit's development. Commits on `dev` were authored as "Claude" with `Co-Authored-By` lines while the owner's commits used their own identity; the history had to be rewritten and force-pushed.
 - Countermeasure: read the existing history's author and message conventions before the first commit. In this repository the convention is stated in `AGENTS.md`, which coding agents read at the start of a session.
 - Check: `awkit check commit` compares the author and trailer keys with the last 50 commits; installed as a `commit-msg` hook by `awkit kit hooks --git`, and run by CI on every pushed commit of this repository. Status: enforced here. Test: `tests/test_checks.py` replays the agent identity with `Co-Authored-By` and `Claude-Session` lines.
 
 #### F10. Irreversible publication prepared before it is justified.
 
 Version bumps, release workflows or uploads set up while the interface is still changing.
-- Evidence: observed here. A PyPI release was prepared (`cb24596`) before the kit split and real-use measurement; the owner held it (`5a2ad25`).
+- Evidence: observed in awkit's development. A PyPI release was prepared (`cb24596`) before the kit split and real-use measurement; the owner held it (`5a2ad25`).
 - Countermeasure: written release conditions; no tag until they are met.
-- Check: prose (release conditions in `docs/development.md`).
+- Check: prose (release conditions in awkit's development record).
 
 ### Proposing and inferring
 
 #### F11. A guess is presented as a finding.
 
 An inference from file names or conventions is reported as how the project works; a question from the user is recorded as a confirmation.
-- Evidence: observed here. `kit scan` suggested pytest for any `tests` folder; this repository uses unittest (fixed in `6eb632c`). Owner's records: a component that was already installed was installed again; files were sorted by their names without opening them; the owner's question whether a tool was allowed was recorded as the owner confirming that it was ("I was asking whether it is okay").
+- Evidence: observed in awkit's development. `kit scan` suggested pytest for any `tests` folder; this repository uses unittest (fixed in `6eb632c`). Owner's records: a component that was already installed was installed again; files were sorted by their names without opening them; the owner's question whether a tool was allowed was recorded as the owner confirming that it was ("I was asking whether it is okay").
 - Countermeasure: mark inferences; run a suggested command once before relying on it; check the current state before installing, sorting or reviewing; treat a question as a question.
 - Check: the connect procedure runs the drafted checks once. Status: prose plus tool.
 
 #### F12. Scope grows before anything is measured.
 
 Features and documents are added because they seem useful, before real use shows a need.
-- Evidence: observed here. The release runner was widened to every kind of delivery and documentation grew to several thousand words for readers who did not read it (`8cf8e72`, restructured in `8f93b7b`). Owner's records: a server for a temporary project was specified with a graphics card, more memory than the load needed and a layout for a larger organization.
+- Evidence: observed in awkit's development. The release runner was widened to every kind of delivery and documentation grew to several thousand words for readers who did not read it (`8cf8e72`, restructured in `8f93b7b`). Owner's records: a server for a temporary project was specified with a graphics card, more memory than the load needed and a layout for a larger organization.
 - Countermeasure: a feature needs a failure entry here and a check; measure on real tasks before widening. Size a design to the purpose, duration, load and the person who will run it.
 - Check: prose; the kit word limit tests bound each file by when it is read.
 
@@ -127,21 +132,21 @@ Where the facts do not settle a question, the agent stops at the uncertainty ins
 #### F13. AI writing patterns in English.
 
 Contrasts against claims nobody made, lead-ins, closing lines that repeat the paragraph, slogans, bold labels, dashes, sales words, promotional headlines and repeated labels.
-- Evidence: observed here. The first rewrite of the README (owner's feedback, corrected in `8f93b7b`). Owner's records: em dashes in English and Korean application text; the largest line on a documentation index page was a slogan ("this is not a brochure"); every list entry carried a tag repeating its title; a README listed what the project does not do; consulting and promotional tone in reports.
-- Countermeasure: the pattern list in `kit/writing.md`, which `AGENTS.md` applies to this repository.
+- Evidence: observed in awkit's development. The first rewrite of the README (owner's feedback, corrected in `8f93b7b`). Owner's records: em dashes in English and Korean application text; the largest line on a documentation index page was a slogan ("this is not a brochure"); every list entry carried a tag repeating its title; a README listed what the project does not do; consulting and promotional tone in reports.
+- Countermeasure: the pattern list in `writing.md`; awkit's own repository applies it through its `AGENTS.md`.
 - Check: `awkit check writing`: em dashes fail; lead-ins, contrasts, sales words warn. The test suite runs it over this repository's documents. Status: enforced here for errors; the rest of the list is judgment.
 
 #### F14. Korean that reads like a translation, including from an agent that wrote the rules.
 
 Translationese, mixed sentence endings, noun chains; the agent's own Korean guide not applied to its own output.
-- Evidence: observed here. The Korean README and replies before the owner pointed it out. Owner's records: Korean still unnatural after an English draft and translation; `-세요` turning into `-시오` within one guide, then the same mix left in other documents; words Korean readers do not use in that sense (`정제`, `권위 순서`, `경계`, `흐름`); middle dots joining words; italics in Korean reports.
-- Countermeasure: `kit/korean-writing.md` with `kit/writing.md`, applied to every Korean text, including the agent's replies.
+- Evidence: observed in awkit's development. The Korean README and replies before the owner pointed it out. Owner's records: Korean still unnatural after an English draft and translation; `-세요` turning into `-시오` within one guide, then the same mix left in other documents; words Korean readers do not use in that sense (`정제`, `권위 순서`, `경계`, `흐름`); middle dots joining words; italics in Korean reports.
+- Countermeasure: `korean-writing.md` with `writing.md`, applied to every Korean text, including the agent's replies.
 - Check: `awkit check writing`: middle dots joining Korean words and `-세요` mixed with `-시오` fail; Korean stock phrases warn. Natural Korean remains a reader's judgment.
 
 #### F15. Writing for the wrong reader.
 
 Long human-oriented documents for a tool whose user is an agent, or agent details in what people read. A document for one reader is made by rewording one written for another.
-- Evidence: observed here. Five human-oriented documents under `docs/` that neither the owner nor agents needed in that form (restructured in `8f93b7b`). Owner's records: tracking codes (`AB-001`, `S1` to `U8`) throughout documents people read; commit IDs and evidence references in a report for non-developers; the abbreviation ADR in an administrative form; a status report for stakeholders built from developer documents with the wording changed ("LLMs just copy the development documents"); a resume that read like a technical report; one developer's Windows and Edge setup written as everyone's.
+- Evidence: observed in awkit's development. Five human-oriented documents under `docs/` that neither the owner nor agents needed in that form (restructured in `8f93b7b`). Owner's records: tracking codes (`AB-001`, `S1` to `U8`) throughout documents people read; commit IDs and evidence references in a report for non-developers; the abbreviation ADR in an administrative form; a status report for stakeholders built from developer documents with the wording changed ("LLMs just copy the development documents"); a resume that read like a technical report; one developer's Windows and Edge setup written as everyone's.
 - Countermeasure: decide the reader, what they must understand or decide, and the kind of document first; write from that, using other documents only as sources of facts. Keep tracking codes where the agent needs them and out of the text people read.
 - Check: prose.
 
@@ -185,7 +190,7 @@ Conversational phrasing, the user's feelings or the conversation itself appear i
 #### F16. Approved work regresses during a later change.
 
 A revision passes its checks but loses what the user had accepted.
-- Evidence: needs evidence (carried over from `kit/work-types.md`). awkit's own loop (accept and compare) guards it, so whether it occurs in real work is a main question of next work 5.
+- Evidence: needs evidence (carried over from `work-types.md`). awkit's own loop (accept and compare) guards it, so whether it occurs in real work is a main question of next work 5.
 - Countermeasure: keep the accepted version; compare every revision with it.
 - Check: `awkit review accept` and `compare`. Status: tool.
 
@@ -201,7 +206,7 @@ The author keeps editing during review, or the reviewer has seen the author's re
 #### F18. Review never ends.
 
 Each fix produces new findings and more premium calls.
-- Evidence: needs evidence (carried over from `kit/delegation.md`).
+- Evidence: needs evidence (carried over from `delegation.md`).
 - Countermeasure: one premium call by default, a stated reason for a second, a cap of three, then a user decision.
 - Check: prose; `awkit usage` shows the calls afterwards.
 
@@ -313,58 +318,52 @@ The user explains the project again, or an interrupted external operation is rep
 - Countermeasure: standing rules in a repository file every agent reads (`AGENTS.md`); project profile; checkpoint with the next action; verify actual state before resuming.
 - Check: prose plus templates.
 
-## Current kit mapped to entries
+## What guards each entry
 
-Each section of the kit, the entries it serves and whether it can become a check, since a check runs without the agent choosing to and an instruction does not (Rules for entries). `workflow.md`, the kit README and the project profile are read every session; every other guide is read when its situation arises, as a skill where the agent supports skills. A section that serves no entry is either a step of the baseline workflow or moves to `kit/reference.md` or out of the kit.
+Generated from the guards' own declarations: each guide section ends with a "Prevents:" line, and each `awkit` command declares its entries in its code. The test suite fails when this table differs from a fresh one; regenerate it with `python scripts/guard_map.py --write` in the awkit repository.
 
-| File | Section | Words | Entries | As a check |
-|---|---|---|---|---|
-| workflow.md (every session) | Introduction, Define the task | 190 | F8, F19, F28, F35 | No: reading the user's intent is judgment. |
-| | Do the work | 58 | F11 | Partly: a hook could ask for a state check before install commands; not built. |
-| | Check a frozen version | 169 | F1, F2, F3, F17, F24 | Yes: `check done` as a Stop hook. |
-| | Report | 97 | F1, F6, F13, F36 | Partly: `check done`; the scope of numbers and provisional judgments are judgment. |
-| | Continue across sessions | 103 | F29 | Partly: a SessionStart hook could print the latest checkpoint; not built. |
-| connect.md | all | 380 | F9, F11, F12, F29 | Partly: `doctor` checks the setup it produces. |
-| checking.md | The checked version | 168 | F3, F11, F17 | Yes: `review check` runs in a separate worktree. |
-| | Shared resources and processes | 129 | F26 | Partly: `{run_id}` placeholders; conflicts between checks are not detected. |
-| | Interpreting results | 84 | F2 | Partly: every run is kept; explaining a first failure is judgment. |
-| delivery.md | Identify what is delivered, Confirm it in its intended context | 181 | F7, F24 | Partly: `pipeline status` for releases; other deliveries no. |
-| | Failure and recovery | 108 | F24 | Partly: `pipeline` rollback for releases. |
-| protocol.md | A task record, States | 243 | F1 (session end is not done) | No. |
-| | Roles and file ownership | 76 | F19 | Partly: a hook could refuse edits outside the files a task names; not built. |
-| | Reviews and decisions | 76 | F18 | No. |
-| | Resume after interruption | 68 | F29 | Partly: as Continue across sessions. |
-| work-types.md | Common rules | 256 | F16, F22 | Partly: `review accept` and `compare` catch regressions of accepted work. |
-| | Research | 182 | F23, F37 | No. |
-| | Writing | 167 | F16, F30 | Partly: `check writing`. |
-| | Data preparation and analysis | 229 | F22 | Yes, per project: a check script that recomputes from the input, as in the data example. |
-| | Environment setup | 292 | F24, F25, F39 | Partly: version checks like `doctor`'s. |
-| | Operating an application | 117 | F24 | No. |
-| | Learning | 166 | F28, F38 | No. |
-| | Automation | 78 | F27 | No. |
-| delegation.md | 1 Objective | 72 | F6 (the limits are starting values, not measurements) | No. |
-| | 2 When to delegate | 168 | F19, F21 | No. |
-| | 3 Risk and premium calls | 246 | F18 | Partly: call counts from `awkit usage` against the cap; not built. |
-| | 4 Roles and execution paths | 381 | F19, F20 | Partly: actual models from `awkit usage`. |
-| | 5 Handoffs and results | 266 | F21 | Partly: handoff size limits could be measured; not built. |
-| | 6 Failures and retries | 127 | F18 | No. |
-| | 7 Model tiers, 8 Measurement | 217 | F20 | Yes: `awkit usage` reads models and tokens from logs. |
-| review-session.md | 1 Purpose and cost, 2 Session setup | 215 | F17 | No. |
-| | 3 Work through a unit, 4 Review criteria | 352 | F2, F17, F18 | Partly: snapshot IDs on channel messages (`--snap`). |
-| | 5 Commands, 6 Waiting | 303 | F17, F18 | Partly: `channel wait` exit codes. |
-| | 7 Records and evaluation, 8 Starting prompts | 184 | F17, F20 | Partly: `awkit usage`. |
-| writing.md | Before writing | 159 | F15, F30, F34 | No. |
-| | Write plainly | 222 | F13, F15, F30 | Partly: `check writing` finds the listed patterns. |
-| | Preserve facts and judgments | 133 | F16, F30 | Partly: `review compare` against the accepted version. |
-| | Corrections | 67 | F31, F32 | Partly: `check writing` over every document finds the same pattern elsewhere. |
-| | Rewriting and collaboration | 134 | F18, F21 | No. |
-| | Completion check | 83 | F1, F33 | Partly: `check writing`; rendering of web pages with `ui`. |
-| korean-writing.md | all | 565 | F14, F31 | Partly: `check writing` (mixed endings, middle dots, stock phrases). |
-| templates/project.md (every session) | Start here | 59 | F11, F29 | No: fields. |
-| | Deliverables and completion | 195 | F3, F24 | No: fields. |
-| | Delegation and models | 109 | F18, F19, F20 | No: fields. |
-| | Other sections | 446 | fields; next work 5 shows which ones tasks use | No: fields. |
-| templates/task.md, review.md, decision.md, checkpoint.md | | 811 | F1, F12, F17, F29 | No: templates. |
-| templates/roles/README.md | | 316 | F20 | Partly: `kit roles` writes the role files. |
+<!-- guard table: generated by scripts/guard_map.py -->
+| Entry | Guide sections | Checks and commands |
+|---|---|---|
+| F1 Done without a check on the delivered version | workflow.md Check a frozen version; workflow.md Report; protocol.md A task record; protocol.md States; writing.md Completion check | `awkit check done`, `awkit kit hooks`, `awkit ui` |
+| F2 The first failure disappears | workflow.md Check a frozen version; checking.md Interpreting results; review-session.md 3. Work through a unit; review-session.md 4. Review criteria | `awkit review check` |
+| F3 Support claimed for environments that were not run | workflow.md Check a frozen version; checking.md The checked version | none |
+| F4 Documents describe behavior the code does not have | none | none |
+| F5 Documents point at things that do not exist | none | `awkit publish` |
+| F6 Numbers reported beyond what was measured | workflow.md Report; delegation.md 1. Objective | `awkit usage` |
+| F7 A convenience changes state nobody asked to change | delivery.md Confirm it in its intended context | none |
+| F8 The user's unrelated work is bundled in | workflow.md Define the task | `awkit kit init and kit example (commit only the new folder)` |
+| F9 The agent's own identity replaces the repository's convention | connect.md | `awkit check commit`, `awkit kit hooks`, `awkit kit init and kit example (commit only the new folder)`, `awkit doctor` |
+| F10 Irreversible publication prepared before it is justified | none | none |
+| F11 A guess is presented as a finding | workflow.md Do the work; connect.md; checking.md The checked version | `awkit kit scan` |
+| F12 Scope grows before anything is measured | connect.md | none |
+| F13 AI writing patterns in English | workflow.md Report; writing.md Write plainly | `awkit check writing` |
+| F14 Korean that reads like a translation, including from an agent that wrote the rules | korean-writing.md Writing process; korean-writing.md Tone and terminology; korean-writing.md Revise sentences | `awkit check writing` |
+| F15 Writing for the wrong reader | writing.md Before writing; writing.md Write plainly | none |
+| F16 Approved work regresses during a later change | work-types.md Common rules; work-types.md Writing; writing.md Preserve facts and judgments | `awkit review accept`, `awkit review compare` |
+| F17 The reviewed version is not the shipped version | workflow.md Check a frozen version; checking.md The checked version; review-session.md 1. Purpose and cost; review-session.md 2. Session setup; review-session.md 3. Work through a unit; review-session.md 5. Commands; review-session.md 8. Starting prompts | `awkit review snapshot`, `awkit review check`, `awkit channel` |
+| F18 Review never ends | protocol.md Reviews and decisions; delegation.md 3. Risk and premium calls; delegation.md 6. Failures and retries; review-session.md 3. Work through a unit; review-session.md 4. Review criteria; review-session.md 6. Waiting; writing.md Rewriting and collaboration | `awkit channel` |
+| F19 Parallel subagents make conflicting decisions | workflow.md Define the task; protocol.md Roles and file ownership; delegation.md 2. When to delegate; delegation.md 4. Roles and execution paths | none |
+| F20 A subagent's self-report is trusted | delegation.md 4. Roles and execution paths; delegation.md 7. Model tiers; delegation.md 8. Measurement; review-session.md 7. Records and evaluation | `awkit usage` |
+| F21 Handoffs carry too much or too little | delegation.md 2. When to delegate; delegation.md 5. Handoffs and results; writing.md Rewriting and collaboration | none |
+| F22 Observations, assumptions and interpretation are mixed | work-types.md Common rules; work-types.md Data preparation and analysis | none |
+| F23 Contradicting sources are averaged | work-types.md Research | none |
+| F24 A tool's success is taken as the result | workflow.md Check a frozen version; delivery.md Identify what is delivered; delivery.md Confirm it in its intended context; delivery.md Failure and recovery; work-types.md Environment setup; work-types.md Operating an application | `awkit pipeline`, `awkit publish` |
+| F25 Instructions for another version are applied | work-types.md Environment setup | `awkit doctor` |
+| F26 Checks interfere through shared resources | checking.md Shared resources and processes | none |
+| F27 A one-off request becomes a standing automation | work-types.md Automation | none |
+| F28 The wrong level of autonomy | workflow.md Define the task; work-types.md Learning | none |
+| F29 Context is lost between sessions | workflow.md Continue across sessions; connect.md; protocol.md Resume after interruption | none |
+| F30 Facts, attribution or certainty change while writing | work-types.md Writing; writing.md Before writing; writing.md Write plainly; writing.md Preserve facts and judgments | none |
+| F31 The form of a correction is fixed, not its reason | writing.md Corrections; korean-writing.md Revise sentences | none |
+| F32 One instance is fixed and the same problem stays elsewhere | writing.md Corrections | `awkit check writing` |
+| F33 Following the writing procedure is reported as quality | writing.md Completion check; korean-writing.md Writing process | none |
+| F34 The user's own words become the document's text | writing.md Before writing | none |
+| F35 The user's guess becomes the requirement | workflow.md Define the task | none |
+| F36 The answer ends at "unknown" | workflow.md Report | none |
+| F37 The sources answer a different question | work-types.md Research | none |
+| F38 Caveats instead of the mechanism | work-types.md Learning | none |
+| F39 A workaround replaces the restoration the user asked for | work-types.md Environment setup | none |
 
-F1, F4, F5, F9, F13, F14 and F32 have mechanical checks (see their Check fields); the other entries rely on kit text and are measured in next work 5. The checks marked "not built" above are the candidate checks in development.md.
+Entries with no guard yet: F4, F10.
+<!-- end of guard table -->

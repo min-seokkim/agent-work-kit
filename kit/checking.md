@@ -8,14 +8,20 @@ Run checks on a snapshot in a separate worktree (`awkit review check`), so the r
 
 Use the commands recorded in the [project profile](templates/project.md). Do not assume a test tool exists because of the programming language. Use argument arrays, or name the shell when shell syntax is required. Record the working directory, the command, the revision, the exit code, the output location and the scope of each check, without secrets. For checks a person does, state the method and its limits and keep them apart from automated results.
 
+Prevents: F3, F11, F17.
+
 ## Shared resources and processes
 
 Isolate what checks share: databases, ports, sockets, devices and output directories. Allocate them per run with the `{run_id}` placeholder, and run checks that need one physical device one at a time; parallel or repeated checks that share a resource fail or pass for the wrong reason. For programs with several processes, define readiness, the end of the scenario and cleanup, and record which processes the check owns before stopping anything. Keep artifacts and reports outside disposable worktrees, connected to the checked source and build settings.
 
 A new or changed lock needs a test with two concurrent executions against a real database, covering the changed operations against each other and against existing operations that lock the same rows. Without it, list the concurrency risk as unverified.
 
+Prevents: F26.
+
 ## Interpreting results
 
 Interpret an exit status against the task's expected result; a long-running process may need a scenario runner to decide when it is done and to stop it. Inspect the actual rendering after interface changes. For firmware, report host checks, target builds and device observations separately.
 
 A failure seen once stays unresolved until its cause is explained, even if a rerun passes. Run the rerun in a fresh worktree so the first failure is not hidden by state the first run left behind.
+
+Prevents: F2.

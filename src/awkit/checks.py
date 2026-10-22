@@ -18,6 +18,10 @@ from .review import _probe, exclude_locally, git, nested_repositories, nested_wa
 
 HISTORY = 50
 
+# The failure catalogue entries (kit/failures.md) each command guards against.
+PREVENTS = {"awkit check commit": ("F9",), "awkit check writing": ("F13", "F14", "F32"), "awkit check done": ("F1",),
+            "awkit kit hooks": ("F1", "F9")}
+
 
 def _repository(folder):
     """(top level, has a commit) for a folder inside a Git repository."""

@@ -9,7 +9,7 @@ This file is for agents that change Agent Work Kit itself. Agents that use the k
 | [README.md](README.md), [README.ko.md](README.ko.md) | People | Changing what users are told |
 | [kit/](kit/README.md) | Agents using the kit in their projects; shipped in the package | Changing instructions, templates or the command reference |
 | [docs/development.md](docs/development.md) | Agents developing this repository | Before planning work: scope, decisions, current state, next work, release, verification record |
-| [docs/failures.md](docs/failures.md) | Agents developing this repository | Before adding or changing kit text, a hook or a check: each guard must prevent a listed failure |
+| [kit/failures.md](kit/failures.md) | Agents using the kit, when a guard names an entry as its reason; agents developing this repository, before adding or changing kit text, a hook or a check | Each guard must prevent a listed failure and declare it: a `Prevents:` line in a guide section, `PREVENTS` in the code of a command; then run `python scripts/guard_map.py --write` |
 | [CHANGELOG.md](CHANGELOG.md) | Agents and release notes | Add an entry for every behavior change |
 
 ## The kit applied to this repository
@@ -34,7 +34,7 @@ In a cloud session, `.claude/hooks/session-start.sh` installs a copy of awkit fr
 - Refer to commits or versions when a document needs to say when something happened. Git history keeps the dates, so documents carry none; license copyright years are the exception.
 - Write the two READMEs for people and keep them short. Write everything else, including this file, the kit and the CHANGELOG, in English for agents. The kit's writing guides keep their Korean examples.
 - Follow [kit/writing.md](kit/writing.md) in everything you write; its pattern list is what the owner removes. Korean text also follows [kit/korean-writing.md](kit/korean-writing.md). This applies to replies to the owner as well.
-- Write agent-facing kit text as what to do, with the reason. A failure from [docs/failures.md](docs/failures.md) can be the reason; the catalogue itself is not shipped.
+- Write agent-facing kit text as what to do, with the reason. A failure from [kit/failures.md](kit/failures.md) can be the reason. The catalogue ships with the kit as a reference, not read every session.
 - Keep the kit short. The files read every session and each situation file stay within the word limits in `tests/test_kit.py`, which come from Claude Code's guidance on CLAUDE.md and from what survives a context compaction. Before adding a rule, look for an existing rule that covers the same failure; if a limit is exceeded, shorten something else in that file.
 
 ## Checks before pushing

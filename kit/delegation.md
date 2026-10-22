@@ -8,6 +8,8 @@ Delegate to finish the user's outcome with fewer credits at the same quality gat
 
 The numbers in this guide are starting values, not measured optima. The handoff limits in section 5 come from 55 handoffs in one project; the concurrency, scouting and premium-call limits are unmeasured defaults. Change them in the project profile when your own records (section 8) disagree.
 
+Prevents: F6.
+
 ## 2. When to delegate
 
 Delegate only when one of these conditions holds:
@@ -19,6 +21,8 @@ Delegate only when one of these conditions holds:
 The main agent handles short document edits, straightforward changes within one file, sequential lookups, and tasks whose evidence it has already read. If it needs to read several files outside its assigned ownership (three or more by default), first use a scout to locate the relevant material. Do not delegate when briefing and integration would cost more than doing the work directly.
 
 Run at most three independent reading tasks concurrently. Delegate implementation sequentially when shared decisions remain, even if files do not overlap. Interface shape, naming and error handling are examples: concurrent subagents cannot see each other's decisions. Before parallel implementation, settle the shared decisions and put the same wording in every handoff.
+
+Prevents: F19, F21.
 
 ## 3. Risk and premium calls
 
@@ -43,6 +47,8 @@ A second premium call is allowed only when:
 
 The main agent records the reason. Even under these conditions, premium calls are capped at three per task, adjustable in the project profile. At the cap, pass unresolved High and Major findings to the user as `decision-needed`. This prevents an endless review loop in which every correction produces a new finding.
 
+Prevents: F18.
+
 ## 4. Roles and execution paths
 
 | Role | Tier | Access | Responsibility | Exclusions |
@@ -65,6 +71,8 @@ Subagents do not delegate further. Only the main agent makes additional calls. W
 | New document or major rewrite | Writer draft and fact-check record, main-agent fact check, verifier if needed |
 
 If a change only addresses findings and adds no behavior or scope, the main agent can finish by inspecting the diff. For a sequence of commits, inspect the cumulative diff before the final commit. If the user has opened an independent review session, its `final` fills `premium_slot = final`; follow [Review Session Collaboration](review-session.md).
+
+Prevents: F19, F20.
 
 ## 5. Handoffs and results
 
@@ -89,6 +97,8 @@ Start the result with one of the following statuses. Then list files examined, c
 
 Do not call another subagent at the same tier with an unchanged handoff. Change something first.
 
+Prevents: F21.
+
 ## 6. Failures and retries
 
 The main agent handles failures involving executables, permissions, dependencies, networks or DB connections as execution failures, not reasoning failures. For incorrect content, narrow the evidence and remaining issue, then allow one correction in the same thread. If it fails again, stop calling; the main agent takes over or calls a top-tier analyst once under the conditions in section 4. Minor findings, stylistic opinions and a review with no findings do not justify another call.
@@ -96,6 +106,8 @@ The main agent handles failures involving executables, permissions, dependencies
 Switch providers only for temporary issues such as usage limits or connectivity. Do not switch providers to evade a security refusal, content failure or failed verification.
 
 Builders run focused tests. The main agent runs the full suite once after integration and repeats it only for new changes or failures.
+
+Prevents: F18.
 
 ## 7. Model tiers
 
@@ -110,6 +122,10 @@ Map tiers to actual models for each provider in the project profile. These are o
 
 Confirm the actual model from execution logs rather than a subagent's self-report or configuration alone. Check actual permissions as well: restrictions in role files may not be enforced by the provider. `awkit usage` collects models and tokens from execution logs.
 
+Prevents: F20.
+
 ## 8. Measurement
 
 Record per task the risk, the roles called, the actual models, calls, tokens and minutes (`awkit usage` reads them from the logs), and who found each High or Major finding. Keep any claimed advantage of delegation `unverified` until at least three comparable tasks were done each way, and compare the share of tasks with High or Major findings before anything else.
+
+Prevents: F20.

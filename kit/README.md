@@ -17,7 +17,7 @@ Read a situation guide when its situation arises. `awkit kit skills --provider c
 | [review-session.md](review-session.md) | A separate session reviews the work | `awkit-review-session` |
 | [protocol.md](protocol.md) | Task records, states, review and decision records, resuming another session's work | `awkit-records` |
 
-Look up commands, formats and exit codes in [reference.md](reference.md). Copy the record templates (templates/task.md, review.md, decision.md, checkpoint.md) into the project's record location when a task needs them. [Example profiles](examples/project-profiles.md) show filled profiles for several kinds of project.
+Look up commands, formats and exit codes in [reference.md](reference.md). The failures each guide section and command guards against are in [failures.md](failures.md); read an entry when a guard names it, not every session. Copy the record templates (templates/task.md, review.md, decision.md, checkpoint.md) into the project's record location when a task needs them. [Example profiles](examples/project-profiles.md) show filled profiles for several kinds of project.
 
 To update the kit, never overwrite this folder: it holds the filled-in profile and task records. Install the new version beside it with `awkit kit init --name agent-work-kit-new`, compare the two `VERSION.txt` files and the guides, and carry over only the changes needed.
 

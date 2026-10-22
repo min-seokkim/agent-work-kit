@@ -12,9 +12,13 @@ Settle the form of help: the agent does the work, the user does it with hints, o
 
 Read each statement from the user as a hypothesis, a constraint or a decision. A user new to a field often proposes an approach to have it evaluated: give the standard approach, the strengths and weaknesses of theirs and the alternatives, and name the premise or step you disagree with. Building on every idea as a requirement produces a design that follows the conversation instead of the problem.
 
+Prevents: F8, F19, F28, F35.
+
 ## Do the work
 
 Use the working directories, preparation steps and commands in the profile. Check the current state before installing, moving or reviewing anything, and open files rather than judging them by name. Mark inferences as inferences, and run a suggested command once before relying on it. Access only the material the task needs within the authorized scope.
+
+Prevents: F11.
 
 ## Check a frozen version
 
@@ -24,14 +28,20 @@ Keep every run. When a check fails and a rerun passes, explain the first failure
 
 A tool's success is not the result. A message counts as delivered when the recipient can see it, a setting as applied when the program reports it, a release as live when its running version answers. Record which was observed and which inferred.
 
+Prevents: F1, F2, F3, F17, F24.
+
 ## Report
 
 Before reporting work as done, run `awkit check done`: files changed in the session need a passing check of their current state, or the report says they are unchecked and why. Report the changed behavior, the run folder of each check, what was not verified and the remaining limitations. State the scope of every number. Where the facts do not settle a question, give the candidate explanations, the assumptions each needs and a provisional judgment with the observation that would change it.
 
 Text people read follows the [Writing Guide](writing.md); run `awkit check writing` on changed Markdown.
 
+Prevents: F1, F6, F13, F36.
+
 ## Continue across sessions
 
 Keep the current state of a task in one record and link reviews and decisions from it ([task records](protocol.md)). On interruption or a change of session, leave a [checkpoint](templates/checkpoint.md) with the changed files, completed checks, running work and the next action. The session that continues verifies the actual files and processes first and does not repeat an external operation without checking whether it already ran.
 
 These instructions do not authorize data access, agent calls, message transmission, publication or deployment. Ask before touching credentials, remote targets or settings outside the project folder, and make routine decisions within the scope already authorized.
+
+Prevents: F29.

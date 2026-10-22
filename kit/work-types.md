@@ -14,6 +14,8 @@ Three kinds of record have different jobs and are not merged into one document: 
 
 When the result will be sent outside the project, follow the project's existing authorization rules.
 
+Prevents: F16, F22.
+
 ## Research
 
 **Inputs:** the question, the kind of source it needs, the sources allowed, the date range and the form of the answer. Official requirements come from official sources; what people experience comes from first-hand accounts, across different experiences rather than only the ones that support the user's view. Record each source with its location and the date it was read.
@@ -23,6 +25,8 @@ When the result will be sent outside the project, follow the project's existing 
 **Completion evidence:** every claim in the result cites a source that was actually read, contradictions between sources are shown rather than averaged, and the gaps are listed. The result says what recurs across accounts and what is a single case, and keeps the parent organization, the local office and the specific role apart. A summary of a document carries that document's version or date.
 
 **Stop and ask** when the sources disagree on a fact the answer depends on, when the allowed sources cannot answer the question, or when a source would have to be obtained from outside the authorized scope.
+
+Prevents: F23, F37.
 
 ## Writing
 
@@ -36,6 +40,8 @@ For designed output such as slides or a formatted report, review four things sep
 
 **Stop and ask** when a fact in the source is missing or contradicted, when a style choice changes meaning, or when the text must state a decision nobody has recorded.
 
+Prevents: F16, F30.
+
 ## Data preparation and analysis
 
 **Inputs:** the input files or queries with their identifiers and hashes, the required columns and types, the transformation rules and the expected shape of the output. For an analysis, also the assumptions used to turn raw values into meaningful ones (scales, units, rates, thresholds), each with its source, kept in a file next to the data.
@@ -45,6 +51,8 @@ For designed output such as slides or a formatted report, review four things sep
 **Completion evidence:** the output has the expected columns and row count, totals or counts recomputed from the input match the output, and the input, output and the command that produced it are retained together with hashes. With `awkit review check`, list them under `artifacts` and name the output under `required_artifacts`. An analysis report shows observed values, assumptions, computed values and interpretation in separate sections, checks each assumption against the data where it can (a stated sample rate against the observed interval, a stated range against the observed extremes), and leaves the interpretation to a person, marked as such.
 
 **Stop and ask** when input values fall outside the stated types or ranges, when a rule is ambiguous for real rows, when an assumption disagrees with the data, or when a transformation would discard data the task did not mention.
+
+Prevents: F22.
 
 ## Environment setup
 
@@ -60,6 +68,8 @@ When something that worked before a change is to be restored, the wanted end sta
 
 **Stop and ask** before changing system-wide settings, before installing software from an unlisted source, and when a step needs credentials or permissions the task did not grant.
 
+Prevents: F24, F25, F39.
+
 ## Operating an application
 
 **Inputs:** the application and account, the actions to perform, the expected end state and the actions that must not be taken. Distinguish reading from changing.
@@ -69,6 +79,8 @@ When something that worked before a change is to be restored, the wanted end sta
 **Completion evidence:** the expected end state was observed after the last action, in the application itself rather than inferred from a success message. For a change that sends something or spends money, the confirmation the application shows is recorded.
 
 **Stop and ask** before any action that sends a message, publishes, pays, deletes or changes permissions, and whenever the application shows a state the task did not anticipate.
+
+Prevents: F24.
 
 ## Learning
 
@@ -82,6 +94,10 @@ Answer a question about what something is or does with the problem it solves, wh
 
 **Stop and ask** when the user is about to skip a step they chose to do themselves, when the material does not cover the goal, or when a check requires knowledge the user has not yet reached.
 
+Prevents: F28, F38.
+
 ## Automation
 
 A task that sets up something to run repeatedly also records the trigger, the inputs it reads, the actions it may take, its expiry or stop condition and who is notified when it fails. Confirm whether the user wants it once or every time; "just this once" means a one-shot run and no registered schedule. Record the first real run's result separately from the test run, and record the removal of a schedule as its own step.
+
+Prevents: F27.

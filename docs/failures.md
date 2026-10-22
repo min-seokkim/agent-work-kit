@@ -2,11 +2,13 @@
 
 Agents fail in recognizable situations, in recognizable ways. This catalogue lists those failures. It is a design document: it chooses the kit's situation guards (skills, hooks, `awkit` checks, situation guidance), measures whether they catch anything, and shows what to remove. It is not given to agents. Agents get the baseline workflow and the guards, written as what to do, with a failure as the reason where it helps. See Scope in [development.md](development.md).
 
-Entries observed while developing this repository cite commits on `dev`. Entries carried over from the existing kit were written from earlier sessions whose records were not kept; they are marked "needs evidence" until a real occurrence is recorded. The repository owner is collecting the patterns they actually corrected when having AI write documents; those will be merged here.
+Entries observed while developing this repository cite commits on `dev`. Entries carried over from the existing kit were written from earlier sessions whose records were not kept; they are marked "needs evidence" until a real occurrence is recorded. Evidence marked "owner's records" comes from the repository owner's own record of the corrections they made while having agents write documents: project and operations documents, reports for non-developers, UI text and CLI output, resumes and application letters. The records stay outside this repository; occurrences are described here without names or dates.
 
 ## Rules for entries
 
 An entry needs four things: the situation that triggers it (so the countermeasure can be loaded only then), the failure as it shows in the output, at least one recorded occurrence, and a check that would have caught that occurrence. Prefer checks a machine runs (a test, an `awkit` command, a hook) over instructions; use instructions only where no check is possible, and say so. Remove an entry, and the kit text that serves it, when it has not been seen in real work for a long time.
+
+Record the failure that recurred, not the instruction that corrected it. A correction given for one document (one page, noun endings, no bullets, five revision passes) is that document's requirement and belongs in the project's profile. Before adding an entry, check whether an existing entry already describes the same failure, and add the occurrence there instead.
 
 Mechanism status: `enforced` means a check runs without the agent choosing to; `tool` means `awkit` records or verifies it when the agent uses it; `prose` means only an instruction exists; `planned` names the check to build.
 
@@ -16,9 +18,9 @@ Mechanism status: `enforced` means a check runs without the agent choosing to; `
 
 #### F1. Done without a check on the delivered version.
 
-The agent reports success, but the checks ran on another state of the files, or did not run.
-- Evidence: needs evidence (the project's premise; recorded occurrences wanted).
-- Countermeasure: check a frozen snapshot and report its run folder.
+The agent reports success, but the checks ran on another state of the files, or did not run. For documents, the text was edited but the rendered output (line breaks, tables, page fit) was never looked at.
+- Evidence: owner's records. A documentation site was about to be committed with broken line breaks, which the owner found ("let's undo the commit and fix the line breaks"; "is there anything else to check before committing? I want to stop looking at this"). A table broke after IDs were replaced with long names.
+- Countermeasure: check a frozen snapshot and report its run folder; for documents, inspect the rendered output before reporting.
 - Check: `awkit review check` result for the reported revision. Status: tool; planned: a Stop hook that refuses a "done" report without a passing run for the current snapshot.
 
 #### F2. The first failure disappears.
@@ -110,30 +112,58 @@ Features and documents are added because they seem useful, before real use shows
 
 #### F13. AI writing patterns in English.
 
-Contrasts against claims nobody made, lead-ins, closing lines that repeat the paragraph, slogans, bold labels, dashes, sales words.
-- Evidence: observed here. The first rewrite of the README (owner's feedback, corrected in `8f93b7b`).
-- Countermeasure: the pattern list in `docs/development.md`; the owner's collected patterns when merged.
+Contrasts against claims nobody made, lead-ins, closing lines that repeat the paragraph, slogans, bold labels, dashes, sales words, promotional headlines and repeated labels.
+- Evidence: observed here. The first rewrite of the README (owner's feedback, corrected in `8f93b7b`). Owner's records: em dashes in English and Korean application text; the largest line on a documentation index page was a slogan ("this is not a brochure"); every list entry carried a tag repeating its title; a README listed what the project does not do; consulting and promotional tone in reports.
+- Countermeasure: the pattern list in `AGENTS.md`.
 - Check: planned: a writing check that flags the listed patterns.
 
 #### F14. Korean that reads like a translation, including from an agent that wrote the rules.
 
 Translationese, mixed sentence endings, noun chains; the agent's own Korean guide not applied to its own output.
-- Evidence: observed here. The Korean README and replies before the owner pointed it out.
+- Evidence: observed here. The Korean README and replies before the owner pointed it out. Owner's records: Korean still unnatural after an English draft and translation; `-세요` turning into `-시오` within one guide, then the same mix left in other documents; words Korean readers do not use in that sense (`정제`, `권위 순서`, `경계`, `흐름`); middle dots joining words; italics in Korean reports.
 - Countermeasure: `kit/korean-writing.md` applied to every Korean text, including the agent's replies.
 - Check: planned: Korean patterns in the same writing check.
 
 #### F15. Writing for the wrong reader.
 
-Long human-oriented documents for a tool whose user is an agent, or agent details in what people read.
-- Evidence: observed here. Five human-oriented documents under `docs/` that neither the owner nor agents needed in that form (restructured in `8f93b7b`).
-- Countermeasure: decide the reader of each document first; people get the README only.
+Long human-oriented documents for a tool whose user is an agent, or agent details in what people read. A document for one reader is made by rewording one written for another.
+- Evidence: observed here. Five human-oriented documents under `docs/` that neither the owner nor agents needed in that form (restructured in `8f93b7b`). Owner's records: tracking codes (`AB-001`, `S1` to `U8`) throughout documents people read; commit IDs and evidence references in a report for non-developers; the abbreviation ADR in an administrative form; a status report for stakeholders built from developer documents with the wording changed ("LLMs just copy the development documents"); a resume that read like a technical report; one developer's Windows and Edge setup written as everyone's.
+- Countermeasure: decide the reader, what they must understand or decide, and the kind of document first; write from that, using other documents only as sources of facts. Keep tracking codes where the agent needs them and out of the text people read.
 - Check: prose.
 
-#### F30. Facts or certainty change during rewriting.
+#### F30. Facts, attribution or certainty change while writing.
 
-A rewrite for style drops a number, condition or exception, turns a possibility into a certainty or a permission into an obligation, or claims something was verified when only the wording changed.
-- Evidence: needs evidence (carried over from `kit/korean-writing.md`).
-- Countermeasure: list what must be preserved before rewriting and check the text against the list.
+A rewrite drops a number, condition or exception, turns a possibility into a certainty or a permission into an obligation, or claims something was verified when only the wording changed. Shortening removes facts instead of repetition. A plan reads as what happened, or one person's or project's work is credited to another.
+- Evidence: owner's records. A purchase plan read as the purchase actually made, and had to be rewritten to say what was planned and what was bought. Asked to write a status document more compactly, the agent cut content; the owner corrected that it should say the same in fewer words, over more than one page if needed. In resumes: results from two projects merged, a problem someone else found written as the owner's discovery, integration work written as ownership of the system, a technology used once listed as a skill.
+- Countermeasure: list what must be preserved (facts, numbers, conditions, who did what, plan or done) before writing and check the text against the list; shorten by removing repetition and wordy phrasing.
+- Check: prose.
+
+#### F31. The form of a correction is fixed, not its reason.
+
+After a correction, the agent changes exactly what was named and repeats the underlying problem in another form.
+- Evidence: owner's records. Told not to name categories "A and B", the agent renamed them all to four-character names that still did not say what each held. Told that tracking codes were hard to read, it put long names in the ID column, which broke the table.
+- Countermeasure: state the reader's problem behind the correction and check the edit against that problem.
+- Check: prose.
+
+#### F32. One instance is fixed and the same problem stays elsewhere.
+
+The passage the user pointed at is fixed; the same pattern remains in other passages, documents or outputs.
+- Evidence: owner's records. Mixed polite endings fixed in the document the owner showed and left in others; an "A and B" category name ("infrastructure and purchase documents") left after the first round; tracking codes left after a cleanup; the same "A and B" grouping in CLI status output after it was removed from documents.
+- Countermeasure: after a correction, search every text people read (documents, UI text, CLI output) for the same pattern and fix each occurrence, or list those left and why.
+- Check: planned: the writing check runs over all documents, not only the changed one.
+
+#### F33. Following the writing procedure is reported as quality.
+
+The agent reports that it drafted in English, translated and ran review passes; the text still reads badly.
+- Evidence: owner's records. After English drafts, translation and repeated review passes, the owner still found the Korean unnatural ("why does this repository's documentation still read unnaturally") and had to ask whether the agent had read the research a previous agent left.
+- Countermeasure: judge the final text by reading it; report what it is, not the steps taken.
+- Check: prose; the planned writing check covers listed patterns only.
+
+#### F34. The user's own words become the document's text.
+
+Conversational phrasing, the user's feelings or the conversation itself appear in a document written for someone else.
+- Evidence: owner's records. A note for an administrative discussion repeated the owner's complaint as its argument ("don't be a parrot of what I say"); development documents used "the user" as a subject ("reflecting the mail server restriction the user reported") instead of stating the decision.
+- Countermeasure: treat the user's words as material; write what the reader needs to understand or decide, and state decisions and reasons directly.
 - Check: prose.
 
 ### Revising approved work
@@ -242,8 +272,8 @@ The agent does the work when the user wanted to learn or decide, or only advises
 #### F29. Context is lost between sessions.
 
 The user explains the project again, or an interrupted external operation is repeated.
-- Evidence: needs evidence (the README lists it as a common case).
-- Countermeasure: project profile; checkpoint with the next action; verify actual state before resuming.
+- Evidence: owner's records. Writing rules kept in one agent's memory did not reach another agent working on the same documents; the owner repeated the instructions and asked whether the second agent had read the first one's research.
+- Countermeasure: standing rules in a repository file every agent reads (`AGENTS.md`); project profile; checkpoint with the next action; verify actual state before resuming.
 - Check: prose plus templates.
 
 ## Current kit mapped to entries
@@ -297,4 +327,4 @@ Each section of the kit and the entries it serves. Sections marked "none" serve 
 | templates/task.md, review.md, decision.md, checkpoint.md | | 811 | F1, F17, F12, F29 |
 | templates/roles/README.md | | 316 | F20 |
 
-Sections marked "none" total roughly 1,700 words and are reviewed against the baseline workflow. Entries F4, F5, F9 and F13 have no kit text at all, and F30 is served only through the Korean guide; they are the first candidates for checks (planned items above).
+Sections marked "none" total roughly 1,700 words and are reviewed against the baseline workflow. Entries F4, F5, F9, F13 and F31 to F34 have no kit text at all, and F30 is served only through the Korean guide; they are the first candidates for checks (planned items above).

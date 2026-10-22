@@ -1,5 +1,4 @@
 import json
-import os
 import subprocess
 import sys
 import tempfile
@@ -7,6 +6,7 @@ import unittest
 from pathlib import Path
 
 from awkit.usage import collect
+from support import child_env
 
 
 def write_jsonl(path, records, tail=""):
@@ -87,16 +87,26 @@ class UsageTests(unittest.TestCase):
              "message": {"role": "user", "content": [{"type": "text", "text": "no, the other one"}]}},
             {"type": "user", "isSidechain": True, "agentId": "a1",
              "message": {"role": "user", "content": "handoff prompt to a subagent"}},
+            # Written by Claude Code, not typed: notices, command output, interruptions, hook feedback.
+            {"type": "user", "isMeta": True, "message": {"role": "user", "content": "<system-reminder>x</system-reminder>"}},
+            {"type": "user", "isMeta": True, "message": {"role": "user", "content": "Stop hook feedback: commit"}},
+            {"type": "user", "message": {"role": "user", "content": "<local-command-stdout>Set model</local-command-stdout>"}},
+            {"type": "user", "message": {"role": "user", "content": [{"type": "text", "text": "[Request interrupted by user]"}]}},
+            {"type": "user", "origin": {"kind": "hook"}, "message": {"role": "user", "content": "from a hook"}},
+            {"type": "user", "isCompactSummary": True, "message": {"role": "user", "content": "summary of earlier turns"}},
+            # A slash command the person ran is counted, but apart from messages.
+            {"type": "user", "message": {"role": "user", "content": "<command-name>/model</command-name>"}},
+            {"type": "user", "origin": {"kind": "human"}, "message": {"role": "user", "content": "<command-name>/review</command-name>"}},
             {**claude_turn("s1", isSidechain=True, agentId="a1"), "timestamp": "2026-10-22T09:03:00.000Z"},
         ])
         result = collect([session])
         threads = {row["thread"]: row for row in result["threads"]}
-        self.assertEqual(threads["main"]["user_messages"], 2)
+        self.assertEqual((threads["main"]["user_messages"], threads["main"]["commands"]), (2, 2))
         self.assertEqual(threads["main"]["minutes"], 2.5)
         self.assertEqual(threads["main"]["started_at"], "2026-10-22T09:00:00+00:00")
         self.assertEqual(threads["subagent a1"]["user_messages"], 0)
         self.assertEqual(threads["subagent a1"]["minutes"], 0.0)
-        self.assertEqual(result["total"]["user_messages"], 2)
+        self.assertEqual((result["total"]["user_messages"], result["total"]["commands"]), (2, 2))
         rollout = self.root / "codex" / "rollout.jsonl"
         write_jsonl(rollout, [
             {"type": "event_msg", "timestamp": "2026-10-22T10:00:00Z", "payload": {"type": "user_message", "message": "go"}},
@@ -163,7 +173,7 @@ class UsageTests(unittest.TestCase):
     def test_cli_json_and_table(self):
         write_jsonl(self.root / "s.jsonl", [claude_turn("m1")])
         command = [sys.executable, "-m", "awkit", "usage", str(self.root)]
-        env = {**os.environ, "PYTHONUTF8": "1"}
+        env = child_env()
         table = subprocess.run(command, capture_output=True, text=True, encoding="utf-8", env=env)
         self.assertEqual(table.returncode, 0, table.stderr)
         self.assertIn("claude-sonnet", table.stdout)

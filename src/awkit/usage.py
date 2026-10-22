@@ -70,7 +70,7 @@ def _count(value):
 
 def _thread(provider, path, label, counted):
     return {"provider": provider, "file": str(path), "thread": label, "models": Counter(),
-            "effort": None, "calls": 0, "counted": counted, "user_messages": 0,
+            "effort": None, "calls": 0, "counted": counted, "user_messages": 0, "commands": 0,
             "started_at": None, "ended_at": None, "minutes": None,
             **{field: 0 for field in FIELDS}, "missing": Counter(), "invalid": Counter()}
 
@@ -91,16 +91,38 @@ def _touch(thread, record):
     thread["_times"][1] = max(thread["_times"][1], moment)
 
 
-def _person_wrote(message):
-    """True for a Claude Code user record typed by a person, not a tool result sent back."""
-    if not isinstance(message, dict) or message.get("role") != "user":
-        return False
+# Text that Claude Code writes into user records on its own: command output, notices and
+# interruption markers. A record starting with one of these was not typed as a message.
+GENERATED = ("<local-command-", "<system-reminder>", "<bash-stdout>", "<bash-stderr>", "[Request interrupted")
+COMMANDS = ("<command-name>", "<command-message>", "<bash-input>")
+
+
+def _person_wrote(record):
+    """Classify a Claude Code user record: "message" typed by a person, "command" for a slash or
+    shell command the person ran, or None for tool results, notices and generated text.
+
+    Recent logs mark a typed message with origin.kind == "human"; older ones carry no origin, so
+    the content decides.
+    """
+    message = record.get("message")
+    if (not isinstance(message, dict) or message.get("role") != "user" or record.get("isSidechain")
+            or record.get("isMeta") or record.get("isCompactSummary")):
+        return None
     content = message.get("content")
-    if isinstance(content, str):
-        return bool(content.strip())
     if isinstance(content, list):
-        return any(isinstance(block, dict) and block.get("type") == "text" for block in content)
-    return False
+        content = "\n".join(block.get("text", "") for block in content
+                            if isinstance(block, dict) and block.get("type") == "text")
+    if not isinstance(content, str) or not content.strip():
+        return None
+    text = content.lstrip()
+    if text.startswith(COMMANDS):
+        return "command"
+    if text.startswith(GENERATED):
+        return None
+    origin = record.get("origin")
+    if isinstance(origin, dict) and "kind" in origin:
+        return "message" if origin["kind"] == "human" else None
+    return "message"
 
 
 def _add(thread, field, raw, present):
@@ -133,10 +155,12 @@ def _claude(path, problems):
     threads, seen = {}, set()
     for record in _records(path, problems):
         message = record.get("message")
-        if record.get("type") == "user" and not record.get("isSidechain") and _person_wrote(message):
-            thread = threads.setdefault("main", _thread("claude", path, "main", "responses"))
-            thread["user_messages"] += 1
-            _touch(thread, record)
+        if record.get("type") == "user":
+            kind = _person_wrote(record)
+            if kind:
+                thread = threads.setdefault("main", _thread("claude", path, "main", "responses"))
+                thread["user_messages" if kind == "message" else "commands"] += 1
+                _touch(thread, record)
             continue
         if record.get("type") != "assistant" or not isinstance(message, dict):
             continue
@@ -240,6 +264,7 @@ def collect(paths, since=None):
     summary = {field: sum(thread[field] for thread in threads if thread[field] is not None)
                for field in FIELDS}
     summary["user_messages"] = sum(thread["user_messages"] for thread in threads)
+    summary["commands"] = sum(thread["commands"] for thread in threads)
     summary["complete"] = not incomplete and not unknown and not problems
     summary["incomplete_threads"] = len(incomplete)
     return {"format": FORMAT, "threads": threads, "models": totals, "total": summary,

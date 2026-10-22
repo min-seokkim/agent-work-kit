@@ -1,4 +1,3 @@
-import os
 import re
 import subprocess
 import sys
@@ -9,6 +8,7 @@ from pathlib import Path
 
 from awkit.kit_install import install, install_roles, load_roles
 from awkit.review import track
+from support import child_env
 
 ROOT = Path(__file__).resolve().parents[1]
 LINK = re.compile(r"\]\(([^)\s]+)\)")
@@ -93,7 +93,7 @@ class KitTests(unittest.TestCase):
         install(self.project)
         self.assertEqual([p.name for p in self.project.iterdir() if p.name.startswith(".")], [])
         plain = subprocess.run([sys.executable, "-m", "awkit", "kit", "init", str(self.project), "--name", "k", "--no-git"],
-                               capture_output=True, text=True, encoding="utf-8", env={**os.environ, "PYTHONUTF8": "1"})
+                               capture_output=True, text=True, encoding="utf-8", env=child_env())
         self.assertEqual(plain.returncode, 0, plain.stderr)
         self.assertEqual([p.name for p in self.project.iterdir() if p.name.startswith(".")], [])
 
@@ -116,11 +116,11 @@ class KitTests(unittest.TestCase):
     def test_cli_init(self):
         result = subprocess.run([sys.executable, "-m", "awkit", "kit", "init", str(self.project)],
                                 capture_output=True, text=True, encoding="utf-8",
-                                env={**os.environ, "PYTHONUTF8": "1"})
+                                env=child_env())
         self.assertEqual(result.returncode, 0, result.stderr)
         again = subprocess.run([sys.executable, "-m", "awkit", "kit", "init", str(self.project)],
                                capture_output=True, text=True, encoding="utf-8",
-                               env={**os.environ, "PYTHONUTF8": "1"})
+                               env=child_env())
         self.assertEqual(again.returncode, 2)
 
 
@@ -176,7 +176,7 @@ class RoleTests(unittest.TestCase):
 
     def test_cli_roles(self):
         command = [sys.executable, "-m", "awkit", "kit", "roles", str(self.project), "--provider", "codex"]
-        env = {**os.environ, "PYTHONUTF8": "1"}
+        env = child_env()
         first = subprocess.run(command, capture_output=True, text=True, encoding="utf-8", env=env)
         self.assertEqual(first.returncode, 0, first.stderr)
         self.assertIn("inherit the [agents] default", first.stderr)

@@ -1,5 +1,4 @@
 import json
-import os
 import shutil
 import subprocess
 import sys
@@ -9,6 +8,7 @@ import unittest
 from pathlib import Path
 
 from awkit.pipeline import Pipeline, StepError
+from support import child_env
 
 EXAMPLE = Path(__file__).resolve().parents[1] / "examples" / "local-release"
 A, B, BAD = "a" * 40, "b" * 40, "f" * 40
@@ -32,7 +32,7 @@ class PipelineTests(unittest.TestCase):
         return subprocess.run(
             [sys.executable, "-m", "awkit", "pipeline", "--config", str(self.config), *args],
             capture_output=True, text=True, encoding="utf-8",
-            env={**os.environ, "PYTHONUTF8": "1"},
+            env=child_env(),
         )
 
     def test_one_way_delivery_without_backup_or_rollback(self):

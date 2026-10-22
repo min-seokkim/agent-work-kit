@@ -62,7 +62,7 @@ awkit kit scan C:\work\my-project --checks
 |---|---|
 | `git` | 저장소 위치, HEAD, 브랜치, 커밋하지 않은 파일 수, 원격 주소 |
 | `manifests`, `languages` | `pyproject.toml`, `package.json`, `go.mod`, `Cargo.toml`, `Makefile`, `Dockerfile` 같은 파일과 거기서 짐작한 언어 |
-| `commands` | `package.json`의 scripts, `pyproject.toml`의 pytest·ruff·mypy 설정, Makefile의 test·lint·check·build·docs 대상, Go와 Rust의 기본 테스트 명령 |
+| `commands` | GitHub Actions에서 이미 돌리는 검사 명령이 먼저 옵니다. 셸 기호가 없고 테스트·린트·빌드 도구를 부르는 `run:` 줄만 옮기며 설치 단계는 뺍니다. 그 뒤에 `package.json`의 scripts, `pyproject.toml`의 ruff·mypy 설정, pytest 설정(`[tool.pytest]`, `pytest.ini`, `conftest.py`)이 있을 때의 pytest, Makefile의 test·lint·check·build·docs 대상, Go와 Rust의 기본 테스트 명령이 옵니다. `tests` 폴더만으로는 pytest를 제안하지 않습니다. `ruff check .`와 `python -m ruff check .`처럼 같은 검사는 한 번만 넣습니다. |
 | `ci` | GitHub Actions 워크플로 파일과 그 안의 `run:` 명령 |
 | `docs_folders`, `markdown_files` | 문서 폴더와 Markdown 파일 수 |
 | `kit`, `awkit_state` | 키트 폴더 유무, 적용표 "Start here" 다섯 항목 중 채운 수, 실행 기록과 채택본 폴더 유무 |
@@ -97,7 +97,7 @@ awkit usage $HOME\.claude\projects\<프로젝트 폴더>
 awkit usage $HOME\.codex\sessions\2026\10 --since 2026-10-01 --json
 ```
 
-폴더를 주면 그 아래의 `.jsonl` 파일을 모두 읽습니다. 스레드마다 공급자, 실제 모델과 추론 수준, 호출 수, 사용자가 보낸 메시지 수(`user`), 첫 기록과 마지막 기록 사이의 분(`min`), 새로 보낸 입력, cache 쓰기, cache 읽기, 출력 토큰을 보여 주고 마지막 줄에 합계를 붙입니다. 사용자 메시지 수는 첫 지시 뒤에 몇 번 끼어들었는지를 보는 값입니다. Claude Code에서는 사람이 쓴 메시지만 세고 도구 결과는 세지 않으며, 자식 에이전트 스레드의 지시는 세지 않습니다. Codex에서는 `user_message` 이벤트를 셉니다. `--since`는 그 날짜(UTC) 이후에 바뀐 파일만 읽고, `--json`은 같은 내용을 구조화해서 내보냅니다.
+폴더를 주면 그 아래의 `.jsonl` 파일을 모두 읽습니다. 스레드마다 공급자, 실제 모델과 추론 수준, 호출 수, 사용자가 보낸 메시지 수(`user`), 첫 기록과 마지막 기록 사이의 분(`min`), 새로 보낸 입력, cache 쓰기, cache 읽기, 출력 토큰을 보여 주고 마지막 줄에 합계를 붙입니다. 사용자 메시지 수는 첫 지시 뒤에 몇 번 끼어들었는지를 보는 값입니다. Claude Code에서는 사람이 입력한 메시지만 셉니다. 도구 결과, 자식 에이전트에게 준 지시, 그리고 Claude Code가 스스로 써 넣는 기록은 세지 않습니다. 시스템 안내(`isMeta`), 대화 압축 요약, 로컬 명령의 출력, 중단 표시, hook이 보낸 메시지가 여기에 해당합니다. 최근 기록은 사람이 입력한 메시지에 `origin.kind = human`을 붙이므로 그 표시를 따릅니다. `/model` 같은 슬래시 명령과 셸 명령은 메시지와 따로 `commands`에 셉니다(JSON에만 나옵니다). Codex에서는 `user_message` 이벤트를 셉니다. `--since`는 그 날짜(UTC) 이후에 바뀐 파일만 읽고, `--json`은 같은 내용을 구조화해서 내보냅니다.
 
 | 공급자 | 읽는 방식 |
 |---|---|
@@ -108,7 +108,7 @@ awkit usage $HOME\.codex\sessions\2026\10 --since 2026-10-01 --json
 
 기록에 토큰 필드가 없거나 값이 잘못된 스레드는 그 필드를 `0`이 아니라 측정하지 못한 값으로 표시합니다. 표에서는 `?`로 나오고, JSON에서는 `null`입니다. 각 스레드의 `missing`과 `invalid`에는 필드별로 영향을 받은 기록 수가 들어 있고, `counted`는 호출 수가 응답 수(`responses`)인지 턴 수(`turns`)인지 알려 줍니다.
 
-합계는 알려진 값만 더합니다. `total.complete`가 `true`이면 모든 스레드의 모든 필드를 측정했고 건너뛴 파일이나 줄도 없다는 뜻입니다. 그렇지 않으면 표의 마지막 줄이 `total` 대신 `known`으로 바뀌고 측정하지 못한 스레드 수가 함께 나옵니다. JSON을 읽는 프로그램은 `format` 값이 `2`인지 확인하고, 토큰 필드가 `null`일 수 있다는 점과 `total.complete`를 함께 보세요. 이전 형식에는 `format` 키가 없고 모든 필드가 정수였습니다.
+합계는 알려진 값만 더합니다. `total.complete`가 `true`이면 모든 스레드의 모든 필드를 측정했고 건너뛴 파일이나 줄도 없다는 뜻입니다. 그렇지 않으면 표의 마지막 줄이 `total` 대신 `known`으로 바뀌고 측정하지 못한 스레드 수가 함께 나옵니다. JSON을 읽는 프로그램은 `format` 값이 `2`인지 확인하고, 토큰 필드가 `null`일 수 있다는 점과 `total.complete`를 함께 보세요. 이전 형식에는 `format` 키가 없고 모든 필드가 정수였습니다. 형식 2에는 이후 스레드별 `user_messages`, `commands`, `started_at`, `ended_at`, `minutes`와 합계의 `user_messages`, `commands`가 추가됐습니다. 기존 필드의 뜻은 그대로라서 형식 번호는 올리지 않았습니다. 시각이 없는 기록만 있는 스레드는 `minutes`가 `null`입니다.
 
 JSON으로 해석되지 않는 줄은 건너뛰고 `skipped_lines`에 파일별로 적습니다. 파일 끝에서 줄바꿈 없이 끝난 줄은 아직 기록 중인 줄로 보고 `partial_line`으로, 그 밖의 줄은 `damaged_lines`로 셉니다.
 

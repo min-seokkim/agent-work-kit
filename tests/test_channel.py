@@ -1,5 +1,4 @@
 import json
-import os
 import sqlite3
 import subprocess
 import sys
@@ -9,6 +8,7 @@ import unittest
 from pathlib import Path
 
 from awkit.channel import Channel, render
+from support import child_env
 
 
 class ChannelTests(unittest.TestCase):
@@ -82,7 +82,7 @@ class ChannelTests(unittest.TestCase):
         )
         processes = [subprocess.Popen([sys.executable, "-c", code, str(self.path)],
                                       stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                      env={**os.environ, "PYTHONUTF8": "1"}) for _ in range(6)]
+                                      env=child_env()) for _ in range(6)]
         results = []
         try:
             for process in processes:
@@ -119,7 +119,7 @@ class ChannelTests(unittest.TestCase):
 
     def test_cli_body_options(self):
         command = [sys.executable, "-m", "awkit", "channel", "--db", str(self.path)]
-        env = {**os.environ, "PYTHONUTF8": "1"}
+        env = child_env()
         body_file = Path(self.temp.name) / "본문.md"
         body_file.write_text("파일 본문\n두 번째 줄", encoding="utf-8")
         first = subprocess.run(command + ["post", "main", "reviewer", "review", "--body-file", str(body_file)],

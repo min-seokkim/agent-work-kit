@@ -1,5 +1,4 @@
 import json
-import os
 import subprocess
 import sys
 import tempfile
@@ -8,11 +7,12 @@ from pathlib import Path
 
 from awkit.kit_install import EXAMPLES, install_example
 from awkit.review import accept, check, compare, git, snapshot, track, verify
+from support import child_env
 
 
 def run(*args, cwd):
     return subprocess.run([sys.executable, "-m", "awkit", *args], cwd=cwd, capture_output=True,
-                          text=True, encoding="utf-8", env={**os.environ, "PYTHONUTF8": "1"})
+                          text=True, encoding="utf-8", env=child_env())
 
 
 class ExampleTests(unittest.TestCase):

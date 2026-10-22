@@ -1,5 +1,5 @@
 import json
-import os
+import sqlite3
 import subprocess
 import sys
 import tempfile
@@ -7,6 +7,7 @@ import unittest
 from pathlib import Path
 
 from awkit.review import accept, check, compare, git, snapshot, verify
+from support import child_env
 
 
 class ReviewTests(unittest.TestCase):
@@ -319,6 +320,8 @@ class ReviewTests(unittest.TestCase):
         # The working tree has no out/report.md (it was produced in the worktree), code.txt is unchanged.
         report = compare(self.repo)
         self.assertEqual({f["path"]: f["status"] for f in report["files"]}, {"out/report.md": "missing", "code.txt": "same"})
+        self.assertIn("--run", report["note"])
+        self.assertNotIn("note", compare(self.repo, run_dir=first["run_dir"]))
         self.assertFalse(report["unchanged"])
         # A new run against an edited snapshot compares its own artifacts with the accepted ones.
         (self.repo / "code.txt").write_text("new", encoding="utf-8")
@@ -347,6 +350,19 @@ class ReviewTests(unittest.TestCase):
         for label in ("", "../x", "a/b", "x" * 81, 5):
             with self.subTest(label=label), self.assertRaises(ValueError):
                 accept(self.repo, run["run_dir"], label)
+        # A second accept changes nothing while another one holds the lock.
+        state = self.repo / ".awkit"
+        state.mkdir(exist_ok=True)
+        holder = sqlite3.connect(state / "accept.lock.sqlite3")
+        holder.execute("BEGIN IMMEDIATE")
+        try:
+            with self.assertRaisesRegex(ValueError, "Another accept is running"):
+                accept(self.repo, run["run_dir"])
+            self.assertEqual([p.name for p in (state / "accepted").iterdir()], [])
+        finally:
+            holder.rollback()
+            holder.close()
+        self.assertTrue(accept(self.repo, run["run_dir"])["folder"].endswith("accepted"))
         (Path(run["run_dir"]) / "artifacts/a.txt").write_text("tampered")
         with self.assertRaises(ValueError):
             accept(self.repo, run["run_dir"])
@@ -356,7 +372,7 @@ class ReviewTests(unittest.TestCase):
     def test_cli_accept_and_compare(self):
         self.configure(["from pathlib import Path; Path('a.txt').write_text('a')"], artifacts=["a.txt", "code.txt"])
         run = check(self.repo, self.head, self.config, self.root / "runs")
-        env = {**os.environ, "PYTHONUTF8": "1"}
+        env = child_env()
         base = [sys.executable, "-m", "awkit", "review", "--repo", str(self.repo)]
         accepted = subprocess.run(base + ["accept", run["run_dir"], "--label", "v1"], capture_output=True,
                                   text=True, encoding="utf-8", env=env)
@@ -375,7 +391,7 @@ class ReviewTests(unittest.TestCase):
         self.configure(["from pathlib import Path; Path('a.txt').write_text('a')"], artifacts=["a.txt"])
         result = check(self.repo, self.head, self.config, self.root / "runs")
         command = [sys.executable, "-m", "awkit", "review", "verify", result["run_dir"]]
-        env = {**os.environ, "PYTHONUTF8": "1"}
+        env = child_env()
         ok = subprocess.run(command, capture_output=True, text=True, encoding="utf-8", env=env)
         self.assertEqual(ok.returncode, 0, ok.stderr)
         self.assertTrue(json.loads(ok.stdout)["verified"])

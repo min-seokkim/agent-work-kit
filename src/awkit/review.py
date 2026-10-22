@@ -6,10 +6,12 @@ import json
 import os
 import re
 import shutil
+import sqlite3
 import subprocess
 import sys
 import tempfile
 import tomllib
+from contextlib import contextmanager
 from pathlib import Path, PurePosixPath
 
 from .pipeline import LABEL, atomic_json, stamp
@@ -230,6 +232,23 @@ def accepted_root(repo):
     return toplevel(repo) / ".awkit" / "accepted"
 
 
+@contextmanager
+def _accept_lock(root):
+    """One accept at a time per repository, like the release runner's state lock.
+
+    The lock file sits next to the accepted folder so that folder holds only labels."""
+    conn = sqlite3.connect(root.parent / "accept.lock.sqlite3", timeout=0)
+    try:
+        try:
+            conn.execute("BEGIN IMMEDIATE")
+        except sqlite3.OperationalError as exc:
+            raise ValueError("Another accept is running in this repository. Try again when it finishes.") from exc
+        yield
+    finally:
+        conn.rollback()
+        conn.close()
+
+
 def accept(repo, run_dir, label="accepted"):
     """Keep a verified run's retained artifacts under .awkit/accepted/<label> for later comparison."""
     if not isinstance(label, str) or not LABEL.fullmatch(label):
@@ -244,22 +263,23 @@ def accept(repo, run_dir, label="accepted"):
     root = accepted_root(repo)
     root.mkdir(parents=True, exist_ok=True)
     target = root / label
-    staging = root / f".{label}.{os.getpid()}.tmp"
-    if staging.exists():
-        shutil.rmtree(staging)
-    shutil.copytree(run / "artifacts", staging)
     record = {"schema": 1, "label": label, "accepted_at": stamp(), "run_dir": str(run),
               "snapshot": manifest.get("snapshot"), "config_sha256": manifest.get("config_sha256"),
               "subdir": manifest.get("subdir", ""), "files": manifest["files"]}
-    atomic_json(staging / "accepted.json", record)
-    previous = root / f".{label}.previous"
-    if previous.exists():
-        shutil.rmtree(previous)
-    if target.exists():
-        target.rename(previous)
-    staging.rename(target)
-    if previous.exists():
-        shutil.rmtree(previous)
+    with _accept_lock(root):
+        staging = root / f".{label}.{os.getpid()}.tmp"
+        if staging.exists():
+            shutil.rmtree(staging)
+        shutil.copytree(run / "artifacts", staging)
+        atomic_json(staging / "accepted.json", record)
+        previous = root / f".{label}.previous"
+        if previous.exists():
+            shutil.rmtree(previous)
+        if target.exists():
+            target.rename(previous)
+        staging.rename(target)
+        if previous.exists():
+            shutil.rmtree(previous)
     record["folder"] = str(target)
     return record
 
@@ -308,6 +328,9 @@ def compare(repo, label="accepted", run_dir=None, diff=False):
                     item["diff"] = _text_diff(accepted_file.read_bytes(), data, relative)
         report["files"].append(item)
     report["unchanged"] = all(item["status"] == "same" for item in report["files"])
+    if run_dir is None and any(item["status"] == "missing" for item in report["files"]):
+        report["note"] = ("A file the check produced exists only in the worktree it ran in, not in the working "
+                          "tree. To compare the outputs of a later run, pass its run folder with --run.")
     return report
 
 

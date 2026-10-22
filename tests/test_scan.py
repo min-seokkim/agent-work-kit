@@ -1,5 +1,4 @@
 import json
-import os
 import subprocess
 import sys
 import tempfile
@@ -10,6 +9,7 @@ from pathlib import Path
 from awkit.kit_install import install
 from awkit.review import track
 from awkit.scan import scan
+from support import child_env
 
 
 class ScanTests(unittest.TestCase):
@@ -26,7 +26,10 @@ class ScanTests(unittest.TestCase):
         (self.root / "Makefile").write_text("lint:\n\truff check .\ndeploy:\n\t./deploy.sh\n", encoding="utf-8")
         workflows = self.root / ".github" / "workflows"
         workflows.mkdir(parents=True)
-        (workflows / "ci.yml").write_text("jobs:\n  t:\n    steps:\n      - run: npm test\n      - name: x\n        run: |\n          make lint\n", encoding="utf-8")
+        (workflows / "ci.yml").write_text(
+            "jobs:\n  t:\n    steps:\n      - run: npm ci\n      - run: npm test\n"
+            "      - run: python -m unittest discover -s tests -v\n      - run: ruff check .\n"
+            "      - run: echo done && make lint\n      - name: x\n        run: |\n          make lint\n", encoding="utf-8")
         (self.root / "docs").mkdir()
         (self.root / "docs" / "a.md").write_text("# a", encoding="utf-8")
         (self.root / "README.md").write_text("# r", encoding="utf-8")
@@ -34,18 +37,28 @@ class ScanTests(unittest.TestCase):
         self.assertEqual(report["manifests"], ["Makefile", "package.json", "pyproject.toml"])
         self.assertEqual(report["languages"], ["javascript", "make", "python"])
         names = {c["name"]: c for c in report["commands"]}
-        self.assertEqual(names["test"]["argv"], ["npm", "run", "test"])
-        self.assertEqual(names["tests"]["argv"], ["{python}", "-m", "pytest", "-q"])
-        self.assertEqual(names["lint"]["source"], "pyproject.toml [tool.ruff]")
+        # What CI runs comes first; install steps and shell lines are not offered as checks.
+        self.assertEqual([(c["name"], c["source"]) for c in report["commands"][:3]],
+                         [("npm-test", ".github/workflows/ci.yml"), ("unittest-discover", ".github/workflows/ci.yml"),
+                          ("ruff-check", ".github/workflows/ci.yml")])
+        self.assertEqual(names["unittest-discover"]["argv"], ["{python}", "-m", "unittest", "discover", "-s", "tests", "-v"])
+        # The same check from a manifest is not repeated: npm run test and python -m ruff check . are dropped.
+        self.assertNotIn("test", names)
+        self.assertNotIn("lint", names)
+        self.assertEqual(names["build"]["argv"], ["npm", "run", "build"])
         self.assertIn("make-lint", names)
         self.assertNotIn("make-deploy", names)
-        self.assertEqual(report["ci"], [{"file": ".github/workflows/ci.yml", "run": ["npm test"]}])
+        # A tests folder without pytest configuration does not make pytest a suggestion.
+        self.assertFalse(any("pytest" in c["argv"] for c in report["commands"]))
+        self.assertEqual(report["ci"][0]["run"][:2], ["npm ci", "npm test"])
         self.assertEqual((report["docs_folders"], report["markdown_files"]), (["docs"], 2))
         self.assertIsNone(report["git"]["repository"])
         self.assertFalse(report["kit"]["present"])
         suggested = tomllib.loads(report["suggested_checks_toml"])
         self.assertEqual(suggested["schema"], 1)
         self.assertEqual([c["name"] for c in suggested["checks"]], list(names))
+        (self.root / "conftest.py").write_text("", encoding="utf-8")
+        self.assertIn(["{python}", "-m", "pytest", "-q"], [c["argv"] for c in scan(self.root)["commands"]])
 
     def test_reports_the_kit_and_repository_once_installed(self):
         target, _ = install(self.root)
@@ -63,7 +76,7 @@ class ScanTests(unittest.TestCase):
 
     def test_cli_scan(self):
         (self.root / "go.mod").write_text("module x\n", encoding="utf-8")
-        env = {**os.environ, "PYTHONUTF8": "1"}
+        env = child_env()
         full = subprocess.run([sys.executable, "-m", "awkit", "kit", "scan", str(self.root)], capture_output=True,
                               text=True, encoding="utf-8", env=env)
         self.assertEqual(full.returncode, 0, full.stderr)

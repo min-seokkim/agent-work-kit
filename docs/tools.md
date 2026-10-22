@@ -100,14 +100,14 @@ awkit review accept .awkit/reviews/review-abc123
 awkit review accept .awkit/reviews/review-abc123 --label v1
 ```
 
-`accept`는 먼저 `verify`와 같은 대조를 거쳐 보존한 파일이 manifest와 일치하는지 확인하고, 실행 기록 폴더의 `artifacts/`를 저장소의 `.awkit/accepted/<label>/`로 복사합니다. 기본 label은 `accepted`이고, 같은 label로 다시 채택하면 이전 채택본을 바꿉니다. 채택본 폴더의 `accepted.json`에 어느 실행, 어느 commit, 어느 설정에서 나온 파일인지와 파일별 해시가 남습니다. 보존한 파일이 없는 실행은 채택할 수 없습니다.
+`accept`는 먼저 `verify`와 같은 대조를 거쳐 보존한 파일이 manifest와 일치하는지 확인하고, 실행 기록 폴더의 `artifacts/`를 저장소의 `.awkit/accepted/<label>/`로 복사합니다. 기본 label은 `accepted`이고, 같은 label로 다시 채택하면 이전 채택본을 바꿉니다. 한 저장소에서 `accept`는 한 번에 하나만 돌며, 다른 `accept`가 진행 중이면 아무것도 바꾸지 않고 멈춥니다. 잠금 파일은 `.awkit/accept.lock.sqlite3`입니다. 채택본 폴더의 `accepted.json`에 어느 실행, 어느 commit, 어느 설정에서 나온 파일인지와 파일별 해시가 남습니다. 보존한 파일이 없는 실행은 채택할 수 없습니다.
 
 ```powershell
 awkit review compare                                   # 작업 폴더의 파일을 채택본과 비교
 awkit review compare --run .awkit/reviews/review-def456 --diff   # 새 실행의 결과물을 채택본과 비교
 ```
 
-`compare`는 채택본의 파일마다 `same`, `changed`, `missing`을 보고합니다. `--run`을 주면 그 실행 기록 폴더의 `artifacts/`를, 주지 않으면 작업 폴더의 같은 경로를 비교합니다. `--diff`를 붙이면 바뀐 텍스트 파일의 unified diff를 함께 냅니다. 모두 `same`일 때만 종료 코드 `0`입니다. 바뀐 것이 의도한 수정뿐인지는 사람이 diff를 보고 판단합니다.
+`compare`는 채택본의 파일마다 `same`, `changed`, `missing`을 보고합니다. `--run`을 주면 그 실행 기록 폴더의 `artifacts/`를, 주지 않으면 작업 폴더의 같은 경로를 비교합니다. 검사 중에 만들어진 결과 파일은 검사용 worktree에만 있고 작업 폴더에는 없으므로 작업 폴더와 비교하면 `missing`으로 나옵니다. 이때 결과에 그 이유와 `--run`을 쓰라는 `note`가 붙습니다. `--diff`를 붙이면 바뀐 텍스트 파일의 unified diff를 함께 냅니다. 모두 `same`일 때만 종료 코드 `0`입니다. 바뀐 것이 의도한 수정뿐인지는 사람이 diff를 보고 판단합니다.
 
 [하위 폴더 검사 예제](../examples/review/subdirectory.toml)는 `examples/review`에서 설정 파일을 검사하고 그 파일을 보존합니다. 이 저장소의 예제 파일이 들어 있는 commit을 대상으로 실행하세요.
 

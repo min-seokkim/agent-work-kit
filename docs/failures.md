@@ -1,6 +1,6 @@
 # Failure Catalogue
 
-Agents fail in recognizable situations, in recognizable ways. This catalogue lists those failures; the kit exists to prevent them. Skills, hooks, `awkit` checks and kit text are derived from the entries here, and a piece of the kit that prevents no listed failure is a candidate for removal.
+Agents fail in recognizable situations, in recognizable ways. This catalogue lists those failures. It is a design document: it chooses the kit's situation guards (skills, hooks, `awkit` checks, situation guidance), measures whether they catch anything, and shows what to remove. It is not given to agents. Agents get the baseline workflow and the guards, written as what to do, with a failure as the reason where it helps. See Scope in [development.md](development.md).
 
 Draft of 2026-10-22. Entries from this session cite commits on `dev`. Entries carried over from the existing kit were written from earlier sessions whose records were not kept; they are marked "needs evidence" until a real occurrence is recorded. The repository owner is collecting the patterns they actually corrected when having AI write documents; those will be merged here.
 
@@ -248,7 +248,7 @@ The user explains the project again, or an interrupted external operation is rep
 
 ## Current kit mapped to entries
 
-Each section of the kit and the entries it serves. Sections marked "none" serve no entry and are candidates to remove or move to `kit/reference.md`.
+Each section of the kit and the entries it serves. Sections marked "none" serve no entry; for each, decide whether the baseline workflow needs it, and otherwise move it to `kit/reference.md` or remove it.
 
 | File | Section | Words | Entries |
 |---|---|---|---|
@@ -297,4 +297,4 @@ Each section of the kit and the entries it serves. Sections marked "none" serve 
 | templates/task.md, review.md, decision.md, checkpoint.md | | 811 | F1, F17, F12, F29 |
 | templates/roles/README.md | | 316 | F20 |
 
-Sections marked "none" total roughly 1,700 words. Entries F4, F5, F9 and F13 have no kit text at all, and F30 is served only through the Korean guide; they are the first candidates for checks (planned items above).
+Sections marked "none" total roughly 1,700 words and are reviewed against the baseline workflow. Entries F4, F5, F9 and F13 have no kit text at all, and F30 is served only through the Korean guide; they are the first candidates for checks (planned items above).

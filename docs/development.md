@@ -9,17 +9,26 @@ The single record for developing Agent Work Kit: scope, decisions, current state
 - Work on `dev`. CI runs on every push to `dev` and `main`; a push is done only when CI is green on Windows and Linux.
 - Documentation audience: `README.md` and `README.ko.md` are the only documents written for people, and stay short. Everything else, including this file, the kit and the CHANGELOG, is read by agents and written in English. The kit's Korean writing guide keeps its Korean examples.
 - Write plainly. State facts instead of staging them: no "not X but Y" contrasts against claims nobody made, no lead-ins ("here's", "you have probably seen"), no closing lines that repeat the paragraph, no slogans, no bold labels or decorative bold, no em dashes, no sales words. Korean text follows `kit/korean-writing.md`, including the preservation list and the separate fact, sentence and flow reviews.
+- Write agent-facing kit text as what to do, with the reason, instead of prohibitions. A failure from `docs/failures.md` can be the reason; the catalogue itself is not shipped to agents.
 - Keep the kit short: the instruction text in `kit/` (licenses and `reference.md` excluded) stays within the word limit enforced by `tests/test_kit.py`. Before adding a rule, look for an existing rule that covers the same failure; if the limit is exceeded, shorten something else.
 
 ## Scope
 
-Agent Work Kit is a public project. It prevents specific, recurring agent failures instead of prescribing a whole way of working; methodology packs such as superpowers or spec-kit already cover that, and the kit should work alongside them. Each failure is an entry in [failures.md](failures.md) with the situation it occurs in, a recorded occurrence and a check. Where possible the check is mechanical (an `awkit` command, a hook, a test), and kit text is loaded only in the situation it serves.
+Agent Work Kit is a public project. It has three layers:
 
-The tool's core loop supports those checks: fix the input, run the project's checks on it, retain the evidence, compare later results with what was accepted.
+| Layer | Content | Why it exists |
+|---|---|---|
+| Baseline workflow | A short default procedure for any task: define it, do it, check a frozen version, report with evidence. Written as what to do, with the reason. | The kit needs a coherent way of working, and new situations have nothing else to fall back on. Overlap with other projects is fine. |
+| Situation guards | Guidance loaded only when its situation arises (skills where the agent supports them), hooks, and `awkit` checks. | Each prevents an entry in [failures.md](failures.md) and needs a recorded occurrence and a check. |
+| Failure catalogue | [failures.md](failures.md). A design document, not given to agents. | Chooses the guards, measures whether they catch anything, and shows what to remove. |
+
+Overlap with other projects such as superpowers or spec-kit is decided by whether the kit's users need the piece, not by whether another project has it. Overlapping text is kept short and written so it does not conflict when used together with those projects.
+
+The tool's core loop supports the workflow and the guards: fix the input, run the project's checks on it, retain the evidence, compare later results with what was accepted.
 
 The project environment keeps running agents, builds, tests, services, deployment and hosting. awkit connects to the project's existing commands and records identifiers and evidence: which revision was checked, with which command, with what result.
 
-A new feature or piece of kit text needs a failure entry it prevents, with a recorded occurrence, and a check that would have caught that occurrence. It also needs a reason the existing commands cannot be extended, a way to see the target version, the result and the cause of failure, and tests for its important failure paths. Kit text that prevents no listed failure is removed or moved to the reference. Measure effect by time to finish, rework, usage and defects found after acceptance, never by the number of features or roles.
+A new situation guard needs a failure entry it prevents, with a recorded occurrence, and a check that would have caught that occurrence. Baseline workflow text needs a step of the default procedure it describes and stays within its word limit. Any new feature also needs a reason the existing commands cannot be extended, a way to see the target version, the result and the cause of failure, and tests for its important failure paths. Kit text that is neither baseline workflow nor a guard for a listed failure moves to the reference or is removed. Measure effect by time to finish, rework, usage and defects found after acceptance, never by the number of features or roles.
 
 ## Decisions
 
@@ -27,9 +36,9 @@ A new feature or piece of kit text needs a failure entry it prevents, with a rec
 |---|---|
 | Git is required | The review commands work on Git-tracked files. Non-developers get an easy install path instead of a Git-free mode (see next work: `doctor`, install scripts). |
 | Web-only tools are extras | `pipeline`, `publish` and `ui` are useful mainly for web projects. They move to `src/awkit/extras/` with their command names unchanged and are not mentioned in the READMEs. If real use does not need them, they leave the package. |
-| Public project, failure-driven | The kit is organized around the failure catalogue. Countermeasures are delivered by situation: a small always-read core, guidance loaded when its situation arises (skills where the agent supports them), and hooks or `awkit` checks for what a machine can verify. This replaces the earlier plan to split the kit into `dev` and `work` profiles chosen at install time. |
+| Public project; baseline workflow plus failure guards | See Scope. The failure catalogue chooses and measures the guards; agents receive the baseline workflow and the guards, written as what to do. This replaces the earlier plan to split the kit into `dev` and `work` profiles chosen at install time. |
 | One repository, one package | Unchanged. |
-| Restrain the kit's length | One word limit for now; separate limits for the always-read core and for each situation's guidance once the kit is restructured. |
+| Restrain the kit's length | One word limit for now; separate limits for the baseline workflow and for each situation's guidance once the kit is restructured. |
 | Agents are the readers | See the documentation rule above. |
 | Hold the first release | Until the release conditions below are met. |
 
@@ -51,7 +60,7 @@ A new feature or piece of kit text needs a failure entry it prevents, with a rec
 |---|---|---|
 | 1 | Complete the failure catalogue | The owner's collected writing patterns merged; every "needs evidence" entry either gets a recorded occurrence or is marked for removal. |
 | 2 | First mechanical checks | For entries with no kit text and clear evidence: run documented commands in CI (F4, F5); a commit identity check (F9); a writing check for the listed English and Korean patterns (F13, F14); a done-report check that requires a passing run for the current snapshot (F1). Each check comes with the occurrence it would have caught as a test. |
-| 3 | Restructure the kit by situation | Always-read core within its own word limit; situation guidance loaded on trigger, generated as skills for agents that support them (confirm Codex support first); sections mapped to no entry in `failures.md` removed or moved to the reference; extras moved to `src/awkit/extras/`. |
+| 3 | Restructure the kit into baseline and guards | Baseline workflow within its own word limit; situation guidance loaded on trigger, generated as skills for agents that support them (confirm Codex support first); each section mapped to no entry in `failures.md` either kept as baseline workflow, moved to the reference or removed; extras moved to `src/awkit/extras/`. |
 | 4 | Easy setup for non-developers | `awkit doctor` checks Python, Git and Git user name and email (without them awkit's commits fail) and says how to fix each; `install.ps1` and `install.sh` install missing Git or Python with winget or brew, then awkit with pipx. |
 | 5 | Run real tasks and compare | One document, one data and one code task, each also done without the kit and with a methodology pack alone where practical. Record minutes, tokens, user messages (`awkit usage`), defects found after acceptance and which catalogue failures occurred or were caught. Checks that catch nothing are fixed or removed. Also connect one existing project with `kit scan` and record how many drafted commands were right. |
 | 6 | Check usage against current logs | Compare format 2 values with what Claude Code and Codex show, using current log files; mismatched fields must surface as `missing` or `invalid`. |

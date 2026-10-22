@@ -19,6 +19,7 @@ Fill the four sections below for each assignment. For a short task, one sentence
 ## Output
 
 - Output location and format:
+- Recipient and required completion stage, if delivery is part of the task:
 - Required evidence and length:
 - Assigned role: scout, analyst, builder, verifier or writer from the [delegation guide](../delegation.md)
 - First-line result status: DONE, DONE_WITH_CONCERNS, NEEDS_CONTEXT or BLOCKED
@@ -55,7 +56,9 @@ Add the result to this document or return it to the main agent when the work end
 - Evidence read and evidence that could not be read:
 - Revision checked:
 - Checks run and results:
-- Actual commands, exit codes and output locations:
+- Actual commands, working directories, exit codes and output locations:
+- Retained artifact identifiers or hashes and their source revision:
+- Delivery stage reached and evidence, when required:
 - Failure causes and scope rechecked:
 - Remaining limitations and decisions needed:
 - For writing tasks, results of factual, sentence-level and overall-flow review:

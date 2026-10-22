@@ -17,7 +17,8 @@ Copy this template into a project, fill the relevant fields and remove unused on
 
 ## Working environment
 
-- Project language and runtime:
+- Project language and target runtime:
+- Runtime used to run the kit CLI, if selected:
 - Existing build tools and check configuration:
 - Agent environment and how instructions are supplied:
 - Selected CLI tools and versions:
@@ -27,12 +28,14 @@ Copy this template into a project, fill the relevant fields and remove unused on
 - Project repository:
 - Starting branch and base revision:
 - Existing work in progress and owners:
-- Operating system and execution environment:
+- Build host, operating system and toolchain versions:
+- Execution target and required device or service identifiers:
 - Dependency installation and required generation steps:
 - Focused check commands:
 - Integration check commands:
-- UI inspection method:
-- DBs, ports and output directories to isolate:
+- Manual inspection or device-test method, where needed:
+- Resources to isolate (such as DBs, ports, sockets, devices and output directories):
+- Process readiness, completion conditions and cleanup procedure:
 
 ## Commands
 
@@ -78,15 +81,30 @@ Complete this section only when delegating to subagents. Follow the [delegation 
 - Conditions and provider combinations for a review session: [Review Session Collaboration](../review-session.md)
 - Location for risk, model, call-count and token records:
 
-## Publication or deployment
+## Deliverables and completion
 
-- Publication target and allowed files:
-- Reference revision displayed for documents and summaries:
-- Successful output to retain on failure:
-- Data backup before deployment:
-- Deployment-result verification:
-- Conditions for restoring an earlier revision:
-- Method for checking DB restoration and compatibility:
+Fill only the stages needed for this project. Use a separate row when outputs have different recipients or completion criteria, such as an application and the documents it produces. Reuse the project's existing release or submission records.
+
+| Deliverable and format | Recipient or destination | Source revision and artifact identifier | Required stage and evidence |
+|---|---|---|---|
+| | | | |
+
+- Files to include and exclude from the deliverable:
+- Recipient's runtime, installation steps or device configuration:
+- Commands or manual steps for producing and checking the deliverable:
+- Location for retained artifacts, hashes and reports:
+- Evidence connecting checked source, build settings and delivered artifact:
+- Required stages (such as build, test, install, submit, accept or verify in use):
+- Evidence of delivery or receipt, when required by the task:
+- State and successful output to preserve on failure:
+- Recovery or retry procedure and its verified scope:
+
+For a target whose running version is replaced, also record:
+
+- Target identity and method for reading its actual version:
+- Required behavior checks after replacement:
+- Data backup and compatibility checks, where applicable:
+- Conditions and procedure for restoring an earlier version:
 
 ## First application results
 

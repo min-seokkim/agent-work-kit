@@ -30,6 +30,12 @@ def relative_file(value):
     return path
 
 
+def relative_directory(value):
+    if not isinstance(value, str):
+        raise ValueError("cwd에는 worktree 기준 상대경로를 문자열로 지정하세요.")
+    return PurePosixPath(".") if value == "." else relative_file(value)
+
+
 def snapshot(repo, paths):
     repo = Path(git(repo, "rev-parse", "--show-toplevel"))
     parent = git(repo, "rev-parse", "--verify", "HEAD^{commit}")
@@ -82,6 +88,7 @@ def check(repo, revision, config, runs_root=None, keep=False):
         names.add(name)
         if not isinstance(argv, list) or not argv or any(not isinstance(s, str) for s in argv):
             raise ValueError("명령은 문자열 인자 배열이어야 합니다.")
+        relative_directory(step.get("cwd", "."))
     custom_env = settings.get("env", {})
     if not isinstance(custom_env, dict) or any(not isinstance(v, str) for v in custom_env.values()):
         raise ValueError("env에는 문자열 값을 지정하세요.")
@@ -109,19 +116,27 @@ def check(repo, revision, config, runs_root=None, keep=False):
         git(repo, "worktree", "add", "--detach", str(worktree), commit)
         added = True
         for index, step in enumerate(setup + checks):
-            entry = {"name": step["name"], "phase": "setup" if index < len(setup) else "check",
+            step_dir = worktree / relative_directory(step.get("cwd", "."))
+            entry = {"name": step["name"], "cwd": str(step_dir), "phase": "setup" if index < len(setup) else "check",
                      "log": f"{index + 1:02d}.log", "argv": [expand(s) for s in step["argv"]]}
             result["steps"].append(entry)
             with (run / entry["log"]).open("wb") as log:
                 try:
-                    returncode = run_to_files(entry["argv"], cwd=worktree, env=env,
+                    # Resolve after preceding setup steps, which may create this directory.
+                    resolved_dir = step_dir.resolve()
+                    if not resolved_dir.is_relative_to(worktree.resolve()):
+                        raise ValueError("cwd가 worktree 밖을 가리킵니다.")
+                    if not resolved_dir.is_dir():
+                        raise ValueError("cwd 디렉터리가 없습니다: " + str(step_dir))
+                    entry["cwd"] = str(resolved_dir)
+                    returncode = run_to_files(entry["argv"], cwd=resolved_dir, env=env,
                                               stdout=log, stderr=subprocess.STDOUT, timeout=timeout)
                     entry.update(exit_code=returncode,
                                  status="passed" if returncode == 0 else "failed")
                 except subprocess.TimeoutExpired:
                     entry["status"] = "timeout"
                     preserve = True
-                except OSError as exc:
+                except (OSError, ValueError) as exc:
                     entry.update(status="failed", error=str(exc))
             save()
             if entry["status"] == "timeout" or (index < len(setup) and entry["status"] != "passed"):

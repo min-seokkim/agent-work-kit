@@ -29,8 +29,10 @@ class ReviewTests(unittest.TestCase):
     def configure(self, checks, setup=(), timeout=10):
         text = f"schema = 1\ntimeout_seconds = {timeout}\n"
         for phase, steps in (("setup", setup), ("checks", checks)):
-            for i, code in enumerate(steps):
-                text += f'\n[[{phase}]]\nname = "{phase}-{i}"\nargv = ' + json.dumps(["{python}", "-c", code]) + "\n"
+            for i, item in enumerate(steps):
+                code = item["code"] if isinstance(item, dict) else item
+                cwd = "\ncwd = " + json.dumps(item["cwd"]) if isinstance(item, dict) and "cwd" in item else ""
+                text += f'\n[[{phase}]]\nname = "{phase}-{i}"\nargv = ' + json.dumps(["{python}", "-c", code]) + cwd + "\n"
         self.config.write_text(text, encoding="utf-8")
 
     def test_snapshot_preserves_index_head_and_unselected_changes(self):
@@ -114,6 +116,109 @@ class ReviewTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             check(self.repo, self.head, self.config, self.root / "runs")
         self.assertFalse((self.root / "runs").exists())
+
+    def test_step_directories_use_snapshot_and_setup_generated_directories(self):
+        folder = self.repo / "sdk with spaces"
+        folder.mkdir()
+        (folder / "input.txt").write_text("snapshot input", encoding="utf-8")
+        revision = snapshot(self.repo, ["sdk with spaces/input.txt"])
+        (folder / "input.txt").write_text("later edit", encoding="utf-8")
+        self.configure([
+            {"cwd": "sdk with spaces/generated", "code":
+             "from pathlib import Path; assert Path('../input.txt').read_text() == 'snapshot input'; "
+             "assert Path('marker').read_text() == 'ready'"},
+            {"cwd": ".", "code": "from pathlib import Path; assert Path('code.txt').read_text() == 'old'"},
+        ], setup=[
+            {"cwd": "sdk with spaces", "code": "from pathlib import Path; Path('generated').mkdir()"},
+            {"cwd": "sdk with spaces/generated", "code":
+             "from pathlib import Path; Path('marker').write_text('ready')"},
+        ])
+        result = check(self.repo, revision, self.config, self.root / "runs")
+        self.assertEqual(result["status"], "passed", result)
+        self.assertEqual(Path(result["steps"][2]["cwd"]), Path(result["worktree"]) / "sdk with spaces/generated")
+        self.assertFalse((folder / "generated").exists())
+        self.assertEqual((folder / "input.txt").read_text(), "later edit")
+
+    def test_invalid_step_directory_rejected_before_execution(self):
+        for cwd in ("", "..", "../outside", "a/../../outside", "/tmp", "C:/tmp", "C:tmp",
+                    "a\\b", ".git", "a/.GIT", "a//b", "a/./b", "a\x00b", 4, False, []):
+            with self.subTest(cwd=cwd):
+                self.configure([{"cwd": cwd, "code": "raise AssertionError('must not run')"}])
+                with self.assertRaises(ValueError):
+                    check(self.repo, self.head, self.config, self.root / "runs")
+                self.assertFalse((self.root / "runs").exists())
+
+    def test_unavailable_step_directory_is_recorded_and_checks_continue(self):
+        for cwd in ("missing", "code.txt"):
+            with self.subTest(cwd=cwd):
+                self.configure([
+                    {"cwd": cwd, "code": "raise AssertionError('must not run')"},
+                    "print('remaining check')",
+                ])
+                result = check(self.repo, self.head, self.config, self.root / "runs")
+                self.assertEqual(result["status"], "failed")
+                self.assertIn("error", result["steps"][0])
+                self.assertNotIn("exit_code", result["steps"][0])
+                self.assertEqual(result["steps"][1]["status"], "passed")
+                self.assertFalse(result["worktree_retained"])
+
+    def test_unavailable_setup_directory_skips_checks(self):
+        self.configure(["raise AssertionError('must not run')"],
+                       setup=[{"cwd": "missing", "code": "print('must not run')"}])
+        result = check(self.repo, self.head, self.config, self.root / "runs")
+        self.assertEqual(result["status"], "failed")
+        self.assertEqual(len(result["steps"]), 1)
+        self.assertIn("error", result["steps"][0])
+
+    def test_setup_cannot_redirect_step_directory_outside_worktree(self):
+        outside = self.root / "outside"
+        outside.mkdir()
+        probe = self.root / "link-probe"
+        try:
+            probe.symlink_to(outside, target_is_directory=True)
+        except OSError:
+            self.skipTest("directory symlinks unavailable")
+        probe.unlink()
+        self.configure([{"cwd": "redirect", "code":
+                         "from pathlib import Path; Path('should-not-exist').touch()"}],
+                       setup=["from pathlib import Path; "
+                              f"Path('redirect').symlink_to({str(outside)!r}, target_is_directory=True)"])
+        result = check(self.repo, self.head, self.config, self.root / "runs")
+        self.assertEqual(result["steps"][0]["status"], "passed")
+        self.assertEqual(result["steps"][1]["status"], "failed")
+        self.assertIn("error", result["steps"][1])
+        self.assertFalse((outside / "should-not-exist").exists())
+
+    def test_artifact_example_retains_checked_input_after_worktree_cleanup(self):
+        import hashlib
+        git(self.repo, "config", "core.autocrlf", "false")
+        examples = Path(__file__).resolve().parents[1] / "examples/review"
+        target = self.repo / "examples/review"
+        target.mkdir(parents=True)
+        names = ["checks.toml", "subdirectory.toml"]
+        for name in names:
+            (target / name).write_bytes((examples / name).read_bytes())
+        revision = snapshot(self.repo, ["examples/review/" + name for name in names])
+        original = (target / "checks.toml").read_bytes()
+        (target / "checks.toml").write_text("later edit", encoding="utf-8")
+        result = check(self.repo, revision, target / "subdirectory.toml", self.root / "runs")
+        self.assertEqual(result["status"], "passed", result)
+        self.assertFalse(result["worktree_retained"])
+        artifacts = Path(result["run_dir"]) / "artifacts"
+        self.assertEqual((artifacts / "checks.toml").read_bytes(), original)
+        manifest = json.loads((artifacts / "manifest.json").read_text())
+        self.assertEqual(manifest["sha256"], hashlib.sha256(original).hexdigest())
+        record = json.loads((Path(result["run_dir"]) / "result.json").read_text())
+        self.assertEqual(record["snapshot"], revision)
+
+    def test_failed_check_retains_output_written_to_run_directory(self):
+        self.configure(["import os; from pathlib import Path; "
+                        "output = Path(os.environ['AWKIT_RUN_DIR']) / 'artifacts'; output.mkdir(); "
+                        "(output / 'failure.txt').write_text('diagnostic'); raise SystemExit(7)"])
+        result = check(self.repo, self.head, self.config, self.root / "runs")
+        self.assertEqual(result["status"], "failed")
+        self.assertFalse(result["worktree_retained"])
+        self.assertEqual((Path(result["run_dir"]) / "artifacts/failure.txt").read_text(), "diagnostic")
 
     def test_cli_failure_exit(self):
         self.configure(["raise SystemExit(9)"])

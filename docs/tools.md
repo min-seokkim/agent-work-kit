@@ -34,9 +34,20 @@ awkit review --repo . check $snap --config examples/review/checks.toml
 | `[[checks]]` | 검사 명령. 하나가 실패해도 나머지를 계속 실행합니다. |
 | `[env]` | 명령에 넘길 환경변수. 실행기를 부른 환경도 그대로 물려받습니다. |
 
-단계마다 서로 다른 `name`과 `argv`를 줍니다. `argv`는 실행 파일과 인자를 나눈 배열이고 셸을 거치지 않습니다. Node.js라면 `["node", "--test"]`, Go라면 `["go", "test", "./..."]`처럼 쓰면 됩니다. 이 두 줄은 형식을 보여 주는 예시이고, 해당 언어 프로젝트에서 실제로 돌려 본 결과는 아닙니다.
+단계마다 서로 다른 `name`과 `argv`를 줍니다. `cwd`는 해당 단계의 실행 폴더이며 생략하면 worktree 루트에서 실행합니다. `argv`는 실행 파일과 인자를 나눈 배열이고 셸을 거치지 않습니다. Node.js라면 `["node", "--test"]`, Go라면 `["go", "test", "./..."]`처럼 쓰면 됩니다. 이 두 줄은 형식을 보여 주는 예시이고, 해당 언어 프로젝트에서 실제로 돌려 본 결과는 아닙니다.
 
-인자와 환경변수 값에는 `{python}`, `{worktree}`, `{run_dir}`, `{run_id}`를 쓸 수 있습니다. 명령에는 `AWKIT_WORKTREE`, `AWKIT_RUN_DIR`, `AWKIT_RUN_ID` 환경변수도 들어갑니다. worktree를 나눈다고 DB와 포트까지 나뉘지는 않으므로, 검사에 DB나 포트가 필요하면 실행 ID로 프로젝트 명령이 직접 할당하세요. 실행기는 DB를 만들거나 지우지 않습니다.
+`cwd`에는 `packages/sdk`처럼 worktree 루트 기준 상대경로를 `/`로 구분해 적습니다. 루트는 `.`으로 표시합니다. 절대경로, `..`, `.git`과 빈 경로는 설정 오류로 거부합니다. 앞선 준비 단계가 만든 폴더도 사용할 수 있습니다. 실행 직전에 폴더가 있는지, 연결 경로가 worktree 밖으로 나가는지 확인합니다. 이 확인에 실패하면 해당 단계가 실패하며, 준비 단계 실패 때는 검사를 시작하지 않습니다. 검사 단계 실패 때는 나머지 검사를 계속합니다. 결과 JSON의 각 단계에는 실제 실행 폴더를 `cwd`로 남깁니다.
+
+```toml
+[[checks]]
+name = "sdk-tests"
+cwd = "packages/sdk"
+argv = ["python", "-m", "pytest", "-q"]
+```
+
+이 예시는 프로젝트 환경의 `python`을 PATH에서 찾습니다. `{python}`은 **awkit을 실행하는 인터프리터**이므로 대상 프로젝트의 런타임과 구분하세요. 가상환경을 공유한다면 해당 환경이 원래 작업 폴더 대신 검사할 worktree의 코드를 읽도록 설정해야 합니다.
+
+인자와 환경변수 값에는 `{python}`, `{worktree}`, `{run_dir}`, `{run_id}`를 쓸 수 있습니다. 명령에는 `AWKIT_WORKTREE`, `AWKIT_RUN_DIR`, `AWKIT_RUN_ID` 환경변수도 들어갑니다. worktree를 나눠도 DB, 포트, Unix 소켓과 장치는 공유될 수 있습니다. 실행 ID로 필요한 자원을 할당하고 준비 완료, 시나리오 완료와 정리 조건을 프로젝트 명령에 넣으세요. 계속 대기하는 프로그램은 시나리오 결과를 확인하고 프로세스를 정리하는 실행 명령으로 감싸야 합니다.
 
 결과 JSON의 `run_dir`에 `result.json`과 단계별 로그가 남습니다. 정상적으로 끝나면 실행기가 만든 worktree만 정리하고, `--keep`을 붙이면 남겨 둡니다. 기록 폴더의 위치는 `--runs-root`로 바꿀 수 있습니다.
 
@@ -49,6 +60,20 @@ awkit review --repo . check $snap --config examples/review/checks.toml
 시간이 초과되거나 중단되면 검사 명령과 그 명령이 띄운 하위 프로세스를 함께 종료하고, 결과를 `uncertain`으로 남깁니다. 이때 worktree는 지우지 않고 남겨 둡니다. 원격 서버나 다른 서비스에서 시작된 작업까지 멈추지는 못하니, 확인한 뒤 Git의 worktree 제거 절차로 정리하세요.
 
 이 실행기는 신뢰하지 않는 프로그램을 가두는 샌드박스가 아닙니다. 로그에는 실행한 프로그램의 출력이 그대로 들어가므로 자동으로 공개되는 곳에 두지 마세요.
+
+## 검사 후 결과물 보존하기
+
+명령이 만든 바이너리나 보고서를 보존하려면 `{run_dir}/artifacts`처럼 worktree 밖의 실행 기록 폴더에 저장하세요. 정상 종료 시 정리하는 worktree에는 필요한 결과물을 남겨 두지 않습니다. 실행 기록 폴더는 검사가 실패해도 남으며, `--keep`을 사용하면 worktree도 보존합니다.
+
+[하위 폴더 검사 예제](../examples/review/subdirectory.toml)는 `examples/review`에서 설정 파일을 검사하고, 검사한 파일과 SHA-256을 실행 기록 폴더의 `artifacts`에 저장합니다. 이 저장소의 예제 파일이 들어 있는 commit을 대상으로 실행하세요.
+
+```powershell
+awkit review check $snap --config examples/review/subdirectory.toml --runs-root .awkit/reviews
+```
+
+`result.json`의 `snapshot`과 `config_sha256`은 각각 검사한 소스 commit과 실행 설정을 식별합니다. 결과물의 목록과 해시는 예제의 검사 명령이 기록합니다. 프로젝트의 빌드 명령도 같은 방식으로 파일과 생성 설정을 남길 수 있습니다. 결과물 자동 수집은 수행하지 않습니다.
+
+기본 기록 위치는 운영체제의 임시 폴더입니다. 오래 보존할 결과는 `--runs-root`로 보관 위치를 지정하고 프로젝트의 보존 절차에 연결하세요. 기록에는 소스와 로그가 포함될 수 있으므로 공개할 파일은 따로 정합니다.
 
 ## 정적 문서 발행하기
 

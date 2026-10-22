@@ -14,11 +14,11 @@ The [Korean Writing Guide](kit/korean-writing.md) gives agents a process for wri
 
 ## Development and review
 
-You copy the kit into your project and fill in one page: how to build it, which checks prove a change works, and where task records go. The agent reads that page before it starts. Every task gets a short record of its goal, the files it may touch and the checks that will decide whether it is done.
+You copy the kit into your project and fill in one page: what it produces, who receives the result, which checks establish completion, and where task records go. A package, source submission, firmware image or document can each have its own delivery criteria. The agent reads that page before it starts. Every task gets a short record of its goal, the files it may touch and the checks that will decide whether it is done.
 
 When a change is ready, `awkit review snapshot` writes exactly the files you name into a Git commit object. Your branch, index and working tree stay as they were. `awkit review check` checks out that commit in a separate worktree, runs your project's own test commands there and keeps the logs. A second agent session reviews the same commit. Requests, replies and rebuttals go through `awkit channel`, and a reply can only answer a message the other side actually sent.
 
-For deployment verification, `awkit pipeline` calls five commands your project supplies (read the current version, back up, deploy, verify, roll back) and checks what is really running. A deploy command that exits 0 while the old version is still live counts as a failure. If a step times out and the target's state is uncertain, `reconcile` checks it before the next deploy.
+For targets whose running version is replaced, `awkit pipeline` calls five commands your project supplies (read the current version, back up, deploy, verify, roll back) and checks what is really running. A deploy command that exits 0 while the old version is still live counts as a failure. If a step times out and the target's state is uncertain, `reconcile` checks it before the next deploy.
 
 For delegated work, the kit defines five roles: scout, analyst, builder, verifier and writer. Its guide covers task risk, handoffs and review budgets. `awkit kit roles` generates role files for your agent environment, and `awkit usage` reports models and tokens from session logs.
 

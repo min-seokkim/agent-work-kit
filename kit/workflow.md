@@ -20,7 +20,9 @@ Follow the [delegation guide](delegation.md) for when to delegate, role and mode
 
 Use [Review Session Collaboration](review-session.md) when a separate session acts as reviewer. Include a code revision or immutable snapshot ID in each request. Review that target; changes made after the request belong to a later review. While review is running, the implementer may continue with work whose file ownership does not overlap.
 
-Run checks in a separate worktree. Separate DBs, ports and output directories by task as well to prevent interference. In a fresh environment, first check dependencies and required generation steps such as translations and static assets.
+When using Git snapshots, run checks in a separate worktree. For other source layouts, record a stable source identifier and the location of the checked files. Identify the build host, target runtime and toolchain separately from the runtime running the kit. Check dependencies, generated inputs and command working directories before execution. Installed packages or editable environments must load the code under review.
+
+Isolate shared resources used by the checks, such as DBs, ports, Unix sockets, devices and output directories. For multiprocess programs, define readiness, scenario completion and cleanup. Record ownership before stopping processes or removing resources. Keep artifacts and reports needed for review outside disposable worktrees, and connect them to the checked source and build settings.
 
 Each finding states its failure condition, impact, evidence location and corrective direction. The main agent accepts it or rebuts it with evidence, then records any remaining decision. Do not repeat a full review for stylistic preferences or an already verified fix. Recheck the affected scope when behavior or scope changes, important findings remain, evidence conflicts or relevant tests fail. Each side may rebut a disputed issue once; the main agent then records a judgment. If it cannot decide, record the decision needed. This limit does not excuse an unresolved defect or unmet acceptance criterion.
 
@@ -30,7 +32,15 @@ Channel closure and review completion are separate. Apply the final result and e
 
 Distinguish execution-environment problems, product defects and unknown causes. Preserve the initial failure even when a rerun passes. Explain its cause or leave it unresolved.
 
-Do not report partial checks as a full pass, or automated checks as human acceptance. Inspect actual rendering after UI changes. For deployment, verify the deployed revision and health, and check the rollback procedure. Restoring an earlier image and restoring database contents require separate verification.
+Distinguish focused checks, full-suite results and human acceptance. Inspect actual rendering after UI changes. For firmware, report host checks, target builds and device observations separately. A command's exit status must be interpreted against the task's expected result; a long-running process may need a scenario runner to determine completion and shut it down.
+
+## Deliver results
+
+Use the project profile to identify each deliverable, recipient and required completion stage. Record its source revision, artifact identifier or hash, production settings and verification evidence. Preserve the files and instructions the recipient needs to reproduce the result. A task may finish at build, test, install, submit, accept or verify-in-use; record only stages actually completed and apply the task's existing authorization rules.
+
+Check the delivered result in its intended context. For a source submission, verify the required files and submitted revision. For a package, check installation and use in the recipient's environment. For firmware, connect the tested binary to the device and test conditions. For published documents, check the content and entry point. For a running-version replacement, read the actual version and run behavior checks after applying it.
+
+Record what remains available after failure and how to retry or recover. Restoring a previous executable, restoring data and resubmitting an artifact are separate operations. Reuse existing project procedures and state which recovery steps have been verified.
 
 ## Publish documents and AI summaries
 

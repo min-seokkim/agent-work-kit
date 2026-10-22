@@ -156,6 +156,8 @@ awkit pipeline --config $config status
 
 ### 프로젝트에 연결하기
 
+`pipeline`은 실행 중인 버전을 교체하고 실제 적용 결과를 확인하는 작업에 연결합니다. 산출물 생성, 설치, 제출과 수락 등 프로젝트별 완료 조건은 [프로젝트 적용표](../kit/templates/project.md)에 기록하세요.
+
 [예제 설정](../examples/local-release/pipeline.toml)을 프로젝트로 복사해 그 프로젝트의 배포 도구에 맞게 고칩니다. 설정 파일이 실행할 프로그램을 정하므로 신뢰할 수 있는 사람이 관리하는 파일이어야 합니다.
 
 설정 맨 위에는 `schema_version = 1`을 둡니다. `[pipeline]`에는 다음 값을 넣습니다.

@@ -19,7 +19,8 @@ Give the receiving session enough information to verify the actual state and cho
 - Unchecked scope:
 - Unresolved findings:
 - Decisions needed:
-- Deployments or external operations already performed:
+- Deliverables retained, their identifiers and completed delivery stages:
+- External operations already performed and remaining receipt or acceptance checks:
 
 ## Resume
 

@@ -6,6 +6,8 @@ The main agent reads this guide before splitting work, delegating to subagents, 
 
 Reduce the credits required to complete the user's requested outcome while maintaining the quality gates. Call count, concurrency and model tier are not measures of success. Measure cost per completed task, including corrections and revalidation, rather than per call.
 
+The numbers in this guide are starting values, not measured optima. The handoff limits in section 5 come from 55 handoffs in one project; the concurrency, scouting and premium-call limits are unmeasured defaults. Change them in the project profile when your own records (section 8) disagree.
+
 ## 2. When to delegate
 
 Delegate only when one of these conditions holds:

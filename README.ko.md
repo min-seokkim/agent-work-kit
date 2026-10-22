@@ -28,15 +28,14 @@ Agent Work Kit은 코딩 에이전트와 함께 일할 때 쓰는 작업 지침,
 
 Windows나 Linux에서 Python 3.11 이상이 필요합니다. 개발하는 프로젝트의 언어는 상관없습니다.
 
-[릴리스](../../releases)에서 wheel을 내려받아 가상환경에 설치하세요.
+첫 공개 릴리스인 0.3.0부터 PyPI에 올립니다. [pipx](https://pipx.pypa.io)를 쓰면 `awkit` 명령이 별도 환경에 설치됩니다.
 
 ```powershell
-python -m venv .venv
-.venv\Scripts\pip install agent_work_kit-0.2.0-py3-none-any.whl
-.venv\Scripts\awkit --version
+pipx install agent-work-kit
+awkit --version
 ```
 
-Linux에서는 `.venv/bin/` 아래의 같은 실행 파일을 씁니다. 화면 캡처까지 쓰려면 wheel을 `[ui]` 옵션과 함께 설치하고 `python -m playwright install chromium`을 실행하세요. Markdown 키트만 필요하다면 같은 릴리스의 `agent-work-kit-0.2.0.zip`을 프로젝트에 풀면 되고, 이때는 Python이 없어도 됩니다.
+[릴리스](../../releases) 페이지에도 릴리스마다 wheel과 `agent-work-kit-<버전>.zip`을 올립니다. wheel은 가상환경에서 `pip install agent_work_kit-<버전>-py3-none-any.whl`로 설치하고, ZIP은 Markdown 키트만 들어 있어 Python 없이 프로젝트에 풀어 씁니다. 화면 캡처까지 쓰려면 `agent-work-kit[ui]`로 설치하고 `python -m playwright install chromium`을 실행하세요. 첫 릴리스 전에는 [CLI 사용법](docs/cli.md)대로 저장소에서 바로 실행합니다.
 
 ## 빠르게 써 보기
 
@@ -139,7 +138,7 @@ ruff check .                           # pip install ruff
 python scripts/build_release.py        # setuptools>=77, wheel 필요
 ```
 
-브라우저 검사는 Playwright를 설치하고 `AWKIT_UI_TEST=1`을 지정했을 때만 실행합니다. GitHub Actions가 Windows와 Linux, Python 3.11~3.13에서 전체 검사를 돌립니다. 패키지 버전과 같은 태그(예: `v0.2.0`)를 올리면 wheel과 키트 ZIP을 만들어 릴리스에 붙입니다.
+브라우저 검사는 Playwright를 설치하고 `AWKIT_UI_TEST=1`을 지정했을 때만 실행합니다. GitHub Actions가 Windows와 Linux, Python 3.11~3.13에서 전체 검사를 돌립니다. 패키지 버전과 같은 태그(예: `v0.3.0`)를 올리면 wheel과 키트 ZIP을 만들어 GitHub 릴리스에 붙이고 wheel을 PyPI에 올립니다. PyPI 최초 설정은 [CLI 사용법](docs/cli.md)에, 바뀐 내용은 [변경 기록](CHANGELOG.md)에 있습니다.
 
 ## 라이선스
 

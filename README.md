@@ -28,15 +28,14 @@ Each project defines its completion criteria and connects its build, test and de
 
 The `awkit` CLI needs Python 3.11 or later on Windows or Linux. The project you build with it can be in any language.
 
-Download the wheel from [Releases](../../releases) and install it into a virtual environment:
+From 0.3.0, the first public release, the package is on PyPI. [pipx](https://pipx.pypa.io) installs the `awkit` command in its own environment:
 
 ```sh
-python -m venv .venv
-.venv/bin/pip install agent_work_kit-0.2.0-py3-none-any.whl
-.venv/bin/awkit --version
+pipx install agent-work-kit
+awkit --version
 ```
 
-On Windows the scripts are under `.venv\Scripts\`. Screen capture needs Playwright: install the wheel with the `[ui]` extra and run `python -m playwright install chromium`. If you only want the Markdown kit, unzip `agent-work-kit-0.2.0.zip` from the same release into your project; no Python is needed.
+Each release on the [Releases](../../releases) page also carries the wheel, for `pip install agent_work_kit-<version>-py3-none-any.whl` inside a virtual environment, and `agent-work-kit-<version>.zip`, the Markdown kit alone, which needs no Python. Screen capture needs Playwright: install `agent-work-kit[ui]` and run `python -m playwright install chromium`. Before the first release, run the CLI from a clone as described in [docs/cli.md](docs/cli.md).
 
 ## Quick start
 
@@ -138,7 +137,7 @@ ruff check .                           # pip install ruff
 python scripts/build_release.py        # needs setuptools>=77 and wheel
 ```
 
-The browser test is skipped unless `AWKIT_UI_TEST=1` is set with Playwright installed. GitHub Actions runs the suite on Windows and Linux with Python 3.11 to 3.13. Pushing a tag that matches the package version, such as `v0.2.0`, builds the wheel and the kit ZIP and attaches them to a release.
+The browser test is skipped unless `AWKIT_UI_TEST=1` is set with Playwright installed. GitHub Actions runs the suite on Windows and Linux with Python 3.11 to 3.13. Pushing a tag that matches the package version, such as `v0.3.0`, builds the wheel and the kit ZIP, attaches them to a GitHub release and publishes the wheel on PyPI; [docs/cli.md](docs/cli.md) has the one-time PyPI setup. Changes are listed in the [changelog](CHANGELOG.md).
 
 ## License
 

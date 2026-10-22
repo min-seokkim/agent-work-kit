@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agent-work-kit"
-version = "0.2.0"
+version = "0.3.0"
 description = "Working instructions, a Korean writing guide, and verification tools for development with coding agents"
 requires-python = ">=3.11"
 dependencies = []

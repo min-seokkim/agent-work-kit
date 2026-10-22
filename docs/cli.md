@@ -8,16 +8,14 @@
 
 Windows나 Linux에서 Python 3.11 이상이 필요합니다. `review`는 Git, `ui`는 Playwright와 브라우저를 추가로 쓰고, 나머지 명령은 표준 라이브러리만으로 동작합니다. 개발하는 애플리케이션의 언어는 상관없습니다.
 
-릴리스에서 `agent_work_kit-<버전>-py3-none-any.whl`을 내려받아 가상환경에 설치합니다.
+0.3.0부터 PyPI에 올립니다. pipx로 설치하면 `awkit` 명령을 가상환경 활성화 없이 바로 부를 수 있습니다.
 
 ```powershell
-python -m venv .venv
-.venv\Scripts\pip install .\agent_work_kit-0.2.0-py3-none-any.whl
-.venv\Scripts\Activate.ps1
+pipx install agent-work-kit
 awkit --version
 ```
 
-`awkit 0.2.0`이 나오면 됩니다. Linux에서는 `.venv/bin/pip`으로 설치하고 `source .venv/bin/activate`로 활성화합니다. 이 문서의 예제는 가상환경을 활성화했다고 보고 `awkit`을 바로 부릅니다. 활성화하지 않았다면 실행 파일의 경로를 앞에 붙이세요.
+`awkit 0.3.0`이 나오면 됩니다. 가상환경에 넣으려면 `python -m venv .venv` 뒤 `.venv\Scripts\pip install agent-work-kit`(Linux는 `.venv/bin/pip`)을 실행하고 가상환경을 활성화합니다. 릴리스 페이지의 wheel 파일을 `pip install`로 설치해도 같습니다. 이 문서의 예제는 `awkit`을 바로 부를 수 있다고 봅니다.
 
 설치하지 않고 저장소에서 바로 실행할 수도 있습니다. `PYTHONPATH`에 저장소의 `src` 폴더를 넣고 `python -m awkit`으로 부르면 됩니다.
 
@@ -354,4 +352,11 @@ python -m pip install "setuptools>=77" wheel
 python scripts/build_release.py
 ```
 
-패키지 버전과 같은 태그(예: `v0.2.0`)를 올리면 GitHub Actions가 검사를 다시 돌린 뒤 같은 파일로 릴리스를 만듭니다. 검사 환경별 결과는 [검증 범위](validation.md)에 있습니다.
+패키지 버전과 같은 태그(예: `v0.3.0`)를 올리면 GitHub Actions가 검사를 다시 돌린 뒤 같은 파일로 GitHub 릴리스를 만들고, wheel을 PyPI에 올립니다. 버전 번호는 커밋마다 올리지 않습니다. 변경은 [변경 기록](../CHANGELOG.md)의 출시 전 절에 모아 두고, 릴리스할 때나 호환되지 않는 변경이 처음 들어갈 때만 `pyproject.toml`과 `src/awkit/__init__.py`의 번호를 함께 올립니다.
+
+PyPI 업로드는 비밀번호나 토큰 없이 trusted publisher로 합니다. 첫 태그를 올리기 전에 한 번만 설정합니다.
+
+1. GitHub 저장소의 Settings → Environments에서 `pypi` 환경을 만듭니다. 승인자를 지정하면 업로드 전에 사람이 확인합니다.
+2. PyPI에 로그인해 Publishing 설정에서 pending publisher를 추가합니다. 프로젝트 이름 `agent-work-kit`, 소유자와 저장소 이름, 워크플로 파일 `release.yml`, 환경 `pypi`를 적습니다.
+
+설정이 없으면 PyPI 작업만 실패하고 GitHub 릴리스는 그대로 만들어집니다. PyPI에 한 번 올린 버전 번호는 지워도 다시 쓸 수 없으므로, 태그는 CI가 녹색인 commit에만 붙입니다. 검사 환경별 결과는 [검증 범위](validation.md)에 있습니다.

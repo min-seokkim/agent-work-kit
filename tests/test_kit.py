@@ -16,6 +16,9 @@ LINK = re.compile(r"\]\(([^)\s]+)\)")
 
 # Folders that hold dependencies, build output or run records rather than managed documents.
 SKIP_DIRS = {"build", "dist", "node_modules", "site-packages", "__pycache__"}
+# Upper bound on the words an agent may be asked to read from the kit (licenses excluded).
+# Adding a rule means removing words elsewhere; see docs/scope.md.
+KIT_WORD_LIMIT = 12_200
 
 
 def managed_documents(folder: Path, include=None):
@@ -189,6 +192,13 @@ class DocumentationTests(unittest.TestCase):
         # The documents example ships one broken link on purpose; everything else must resolve.
         self.assertEqual(broken_links(ROOT, ("docs", "kit", "examples")),
                          ["examples/first-run/documents/docs/index.md -> config.md"])
+
+    def test_kit_instructions_stay_within_the_word_limit(self):
+        counts = {path.relative_to(ROOT / "kit").as_posix(): len(path.read_text(encoding="utf-8").split())
+                  for path in (ROOT / "kit").rglob("*.md") if path.name not in ("LICENSE.md", "THIRD_PARTY_NOTICES.md")}
+        total = sum(counts.values())
+        largest = ", ".join(f"{name} {words}" for name, words in sorted(counts.items(), key=lambda i: -i[1])[:5])
+        self.assertLessEqual(total, KIT_WORD_LIMIT, f"kit instructions have {total} words; largest: {largest}")
 
     def test_link_check_skips_dependency_folders_but_not_managed_documents(self):
         with tempfile.TemporaryDirectory() as temporary:

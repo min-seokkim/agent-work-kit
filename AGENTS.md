@@ -21,7 +21,7 @@ This file is for agents that change Agent Work Kit itself. Agents that use the k
 - Write the two READMEs for people and keep them short. Write everything else, including this file, the kit and the CHANGELOG, in English for agents. The kit's writing guides keep their Korean examples.
 - Follow [kit/writing.md](kit/writing.md) in everything you write; its pattern list is what the owner removes. Korean text also follows [kit/korean-writing.md](kit/korean-writing.md). This applies to replies to the owner as well.
 - Write agent-facing kit text as what to do, with the reason. A failure from [docs/failures.md](docs/failures.md) can be the reason; the catalogue itself is not shipped.
-- Keep the kit short. The instruction text in `kit/` (licenses and `reference.md` excluded) stays within the word limit in `tests/test_kit.py`. Before adding a rule, look for an existing rule that covers the same failure; if the limit is exceeded, shorten something else.
+- Keep the kit short. The files read every session and each situation file stay within the word limits in `tests/test_kit.py`, which come from Claude Code's guidance on CLAUDE.md and from what survives a context compaction. Before adding a rule, look for an existing rule that covers the same failure; if a limit is exceeded, shorten something else in that file.
 
 ## Checks before pushing
 

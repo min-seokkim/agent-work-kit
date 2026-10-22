@@ -16,10 +16,14 @@ LINK = re.compile(r"\]\(([^)\s]+)\)")
 
 # Folders that hold dependencies, build output or run records rather than managed documents.
 SKIP_DIRS = {"build", "dist", "node_modules", "site-packages", "__pycache__"}
-# Upper bounds on the kit's length; see docs/development.md. The instruction text excludes the licenses
-# and the command reference, which agents look up on demand and which has its own bound.
-KIT_WORD_LIMIT = 11_600
-REFERENCE_WORD_LIMIT = 2_400
+# Upper bounds on the kit's length by when a file is read; see docs/development.md. The files read at
+# the start of every session together stay within what Claude Code's documentation recommends for
+# CLAUDE.md (about 200 lines). Every other file is read when its situation arises and stays within what
+# survives a context compaction whole (5,000 tokens, about 3,500 English words).
+EVERY_SESSION = ("README.md", "templates/agent-instructions.md", "templates/project.md")
+EVERY_SESSION_WORD_LIMIT = 2_000
+SITUATION_FILE_WORD_LIMIT = 3_500
+LICENSES = ("LICENSE.md", "THIRD_PARTY_NOTICES.md")
 
 
 def managed_documents(folder: Path, include=None):
@@ -194,15 +198,14 @@ class DocumentationTests(unittest.TestCase):
         self.assertEqual(broken_links(ROOT, ("docs", "kit", "examples")),
                          ["examples/first-run/documents/docs/index.md -> config.md"])
 
-    def test_kit_instructions_stay_within_the_word_limit(self):
+    def test_kit_files_stay_within_the_word_limits(self):
         counts = {path.relative_to(ROOT / "kit").as_posix(): len(path.read_text(encoding="utf-8").split())
-                  for path in (ROOT / "kit").rglob("*.md")
-                  if path.name not in ("LICENSE.md", "THIRD_PARTY_NOTICES.md", "reference.md")}
-        total = sum(counts.values())
-        largest = ", ".join(f"{name} {words}" for name, words in sorted(counts.items(), key=lambda i: -i[1])[:5])
-        self.assertLessEqual(total, KIT_WORD_LIMIT, f"kit instructions have {total} words; largest: {largest}")
-        reference = len((ROOT / "kit" / "reference.md").read_text(encoding="utf-8").split())
-        self.assertLessEqual(reference, REFERENCE_WORD_LIMIT, f"kit/reference.md has {reference} words")
+                  for path in (ROOT / "kit").rglob("*.md") if path.name not in LICENSES}
+        every_session = sum(counts.pop(name) for name in EVERY_SESSION)
+        self.assertLessEqual(every_session, EVERY_SESSION_WORD_LIMIT,
+                             f"the files read every session have {every_session} words")
+        for name, words in counts.items():
+            self.assertLessEqual(words, SITUATION_FILE_WORD_LIMIT, f"kit/{name} has {words} words")
 
     def test_link_check_skips_dependency_folders_but_not_managed_documents(self):
         with tempfile.TemporaryDirectory() as temporary:

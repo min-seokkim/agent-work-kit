@@ -8,7 +8,7 @@ Decide these first, because text written for the wrong reader has to be rewritte
 
 - **The kind of document and its reader.** A resume, a status report for stakeholders and a README need different content even from the same facts.
 - **What the reader must understand, decide or do.** Include what serves that. Leave the rest out or link to it.
-- **What must be preserved.** Facts, decisions, conditions, numbers, dates, IDs, commands, quotations, links and heading anchors; who did what; and whether each item is planned, decided, implemented, verified or in use.
+- **What must be preserved.** Facts, decisions, numbers, dates, IDs, commands, quotations, links and heading anchors; conditions, negations and the direction of each cause and effect; who did what; and whether each item is planned, decided, implemented, verified or in use.
 
 Write from the reader's needs and use existing documents and the conversation only as sources of facts. A developer document reworded for stakeholders keeps the developer's structure, and the user's own words pasted in keep the conversation's framing. State decisions and their reasons directly instead of describing the conversation that produced them.
 
@@ -20,13 +20,15 @@ Readers recognize these patterns as generated text, so remove them: contrasts ag
 
 Shorten by removing repetition and wordy phrasing, never items on the preservation list. Dense text may run past one page.
 
+The pattern list is for the agent's own prose. Leave a listed pattern alone inside a quotation, a title, a passage that discusses the pattern, or a writing sample the user gave to match. Applying the list mechanically produces its own pattern, the same clipped skeleton in every text, which readers recognize just as well.
+
 Use paragraphs for connected explanation, lists for parallel items and steps, tables for items compared on the same criteria, and a figure or screenshot where it explains better than text.
 
 ## Preserve facts and judgments
 
 Keep plans, approved decisions, implementation, check results and actual operation distinct; completing implementation does not establish verification or use. Keep unverified figures marked as unverified. Do not merge work from different projects or people, and do not turn possibility into certainty or permission into obligation while shortening.
 
-When revising accepted text, keep its adopted wording, structure and design unless the task changes them, and compare the revision with the accepted version. A style edit must not imply fresh fact-checking. For numbers, prices and external capabilities, keep the source and the date it was checked. Check incoming links when changing heading anchors.
+When revising accepted text, keep its adopted wording, structure and design unless the task changes them, and compare the revision with the accepted version. A style edit must not imply fresh fact-checking. If a style edit changes more than about a third of the text, it has become a rewrite: stop and confirm the scope with the user before continuing. For numbers, prices and external capabilities, keep the source and the date it was checked. Check incoming links when changing heading anchors.
 
 ## Corrections
 

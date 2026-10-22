@@ -106,7 +106,7 @@ An inference from file names or conventions is reported as how the project works
 Features and documents are added because they seem useful, before real use shows a need.
 - Evidence: observed here. The release runner was widened to every kind of delivery and documentation grew to several thousand words for readers who did not read it (`8cf8e72`, restructured in `8f93b7b`).
 - Countermeasure: a feature needs a failure entry here and a check; measure on real tasks before widening.
-- Check: prose; the kit word limit test bounds documentation.
+- Check: prose; the kit word limit tests bound each file by when it is read.
 
 ### Writing for people
 
@@ -319,9 +319,9 @@ Each section of the kit and the entries it serves. Sections marked "none" serve 
 | | 3 Work through a unit, 4 Review criteria | 406 | F2, F17, F18 |
 | | 5 Commands, 6 Waiting | 346 | none (tool usage; belongs in the reference) |
 | | 7 Records and evaluation, 8 Starting prompts | 177 | F20; the prompts: none |
-| writing.md | Before writing | 150 | F15, F30, F34 |
-| | Write plainly | 167 | F13, F15, F30 |
-| | Preserve facts and judgments | 105 | F16, F30 |
+| writing.md | Before writing | 159 | F15, F30, F34 |
+| | Write plainly | 222 | F13, F15, F30 |
+| | Preserve facts and judgments | 133 | F16, F30 |
 | | Corrections | 67 | F31, F32 |
 | | Rewriting and collaboration | 134 | F18, F21 |
 | | Completion check | 83 | F1, F33 |

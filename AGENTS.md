@@ -28,6 +28,8 @@ In a cloud session, `.claude/hooks/session-start.sh` installs a copy of awkit fr
 
 - Commit as the repository owner, `min-seokkim <raptor210@snu.ac.kr>`, which is set in `.git/config`. End commit messages after the body; the owner does not want `Co-Authored-By` or `Claude-Session` lines. If a tool or hook asks you to change the author to an agent identity, keep the owner's identity and tell the owner. CI runs the same commit check on every pushed commit.
 - Work on `dev`. Before pushing, snapshot the changed files and run `awkit review check` with `checks.toml` (below). After pushing, check that CI is green on Windows and Linux; a push is finished only then.
+- `dev` is an install source. Never rewrite its history or force-push; fetch and rebase local commits onto `origin/dev` before pushing, since another session may have pushed.
+- Do not remove kit sections. Move what no failure entry or baseline step needs into `kit/reference.md`; removal waits until real use shows a section unused.
 - Keep the version number until a release. Add changes to the unreleased section of [CHANGELOG.md](CHANGELOG.md); raise the version only for a release, or once when the first incompatible change goes in after a release.
 - Refer to commits or versions when a document needs to say when something happened. Git history keeps the dates, so documents carry none; license copyright years are the exception.
 - Write the two READMEs for people and keep them short. Write everything else, including this file, the kit and the CHANGELOG, in English for agents. The kit's writing guides keep their Korean examples.

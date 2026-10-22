@@ -64,6 +64,7 @@ argv = ["python", "-m", "pytest", "-q"]
 - Placeholders in `argv` and `env` values: `{python}` (the interpreter running awkit, not necessarily the project's), `{worktree}`, `{run_dir}`, `{run_id}`. Steps also get `AWKIT_WORKTREE`, `AWKIT_RUN_DIR`, `AWKIT_RUN_ID`.
 - Artifact patterns are relative to the base folder and accept `*`, `?`, `**`. Matches are copied after all steps, even when checks failed. Links and paths outside the worktree are skipped and listed under `skipped_artifacts`. A `required_artifacts` pattern with no match turns a passing run into `failed`.
 - A timeout or interruption kills the step's whole process tree, records `uncertain` and keeps the worktree. Remote work the step started is not stopped.
+- A step passes when its command exits 0. The runner trusts that exit code: a test that was changed to pass (an assertion removed, a test skipped or deleted, an expected value edited) passes here too. Review the diff of test files separately; `check done` inherits the same limit.
 - Worktrees share DBs, ports, sockets and devices. Allocate them per `{run_id}` in the project's commands.
 
 Run folder (default `.awkit/reviews/` in the repository, which `review check` excludes from Git locally when nothing ignores it yet; `--runs-root` puts it elsewhere):

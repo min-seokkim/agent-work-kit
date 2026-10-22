@@ -108,7 +108,8 @@ class WritingTests(unittest.TestCase):
         self.assertEqual(check_text(text), [])
 
     def test_judgment_patterns_warn_without_failing(self):
-        report_text = "Here's what it does. It is not just fast, it is seamless.\n이에 있어서 중요합니다.\n"
+        report_text = ("Here's what it does. It is not just fast, it is seamless.\n이에 있어서 중요합니다.\n"
+                       "The question is whether it happens here is unclear.\n")  # mid-sentence: not a lead-in
         levels = {(f["pattern"], f["level"]) for f in check_text(report_text)}
         self.assertEqual(levels, {("lead-in", "warning"), ("contrast", "warning"), ("sales-word", "warning"),
                                   ("translationese", "warning")})

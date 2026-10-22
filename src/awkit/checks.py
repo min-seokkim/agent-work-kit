@@ -97,7 +97,8 @@ ERRORS = (
      "middle dot joining Korean words: say the relationship in a sentence or a list"),
 )
 WARNINGS = (
-    ("lead-in", re.compile(r"(?i)\bhere(?:'s|’s| is| are)\b"), "lead-in: start with the point"),
+    # Only at the start of a sentence: "whether it happens here is" is not a lead-in.
+    ("lead-in", re.compile(r"(?i)(?:^|[.!?:]\s+|^\s*[-*]\s+)here(?:'s|’s| is| are)\b"), "lead-in: start with the point"),
     ("contrast", re.compile(r"(?i)\b(?:not just|isn't just|isn’t just|is not about|isn't about)\b"),
      "contrast against a claim nobody made: state the point directly"),
     ("sales-word", re.compile(r"(?i)\b(?:seamless(?:ly)?|robust|leverag\w*|cutting-edge|game-chang\w*|unlock\w*"

@@ -594,7 +594,7 @@ def _unexclude(top):
     exclude = _exclude_file(top)
     if exclude is None or not exclude.is_file():
         return
-    lines = exclude.read_text(encoding="utf-8").splitlines(keepends=True)
-    kept = [line for line in lines if line.strip() != ".awkit/"]
+    lines = exclude.read_bytes().splitlines(keepends=True)
+    kept = [line for line in lines if line.strip() != b".awkit/"]
     if len(kept) != len(lines):
-        exclude.write_text("".join(kept), encoding="utf-8")
+        exclude.write_bytes(b"".join(kept))

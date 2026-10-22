@@ -190,6 +190,21 @@ class ProjectLayer(Isolated):
             connect.remove(root, keep_records=False)
         self.assertEqual(tree(root), before)
 
+    def test_the_exclude_file_keeps_its_bytes(self):
+        # Seen on Windows CI: the exclude line was added and removed in text mode, which rewrote every line of
+        # .git/info/exclude with CRLF. A CRLF file shows the same defect everywhere, as LF.
+        for newline in (b"\n", b"\r\n"):
+            root = self.repository(f"exclude{len(newline)}", {"README.md": "# P\n"})
+            exclude = root / ".git" / "info" / "exclude"
+            exclude.write_bytes(b"# mine" + newline + b"*.tmp" + newline)
+            before = exclude.read_bytes()
+            hooks = StandInHooks()
+            with mock.patch.object(connect, "run_kit_hooks", hooks):
+                connect.init(root)
+                self.assertEqual(exclude.read_bytes(), before + b".awkit/" + newline)
+                connect.remove(root, keep_records=False)
+            self.assertEqual(exclude.read_bytes(), before)
+
     def test_the_instruction_line_is_printed_not_written(self):
         root = self.repository("line", {"AGENTS.md": "# Agents\n"})
         before = (root / "AGENTS.md").read_bytes()

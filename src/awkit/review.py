@@ -284,8 +284,10 @@ def exclude_locally(top, pattern):
     exclude = Path(git(top, "rev-parse", "--git-path", "info/exclude"))
     exclude = exclude if exclude.is_absolute() else Path(top) / exclude
     exclude.parent.mkdir(parents=True, exist_ok=True)
-    text = exclude.read_text(encoding="utf-8") if exclude.is_file() else ""
-    exclude.write_text(text + ("" if not text or text.endswith("\n") else "\n") + pattern + "\n", encoding="utf-8")
+    # Bytes, so the file keeps its own line endings: text mode would rewrite every line with CRLF on Windows.
+    data = exclude.read_bytes() if exclude.is_file() else b""
+    newline = b"\r\n" if b"\r\n" in data else b"\n"
+    exclude.write_bytes(data + (b"" if not data or data.endswith(b"\n") else newline) + pattern.encode("utf-8") + newline)
 
 
 def accepted_root(repo):

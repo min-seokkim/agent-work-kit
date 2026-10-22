@@ -1,0 +1,16 @@
+# Checks for `awkit review check` in this repository: the same commands as CI's test and lint jobs,
+# run on a snapshot in a separate worktree with the snapshot's own source on PYTHONPATH.
+schema = 1
+timeout_seconds = 900
+
+[env]
+PYTHONPATH = "{worktree}/src"
+PYTHONUTF8 = "1"
+
+[[checks]]
+name = "ruff"
+argv = ["ruff", "check", "."]
+
+[[checks]]
+name = "unittest"
+argv = ["{python}", "-m", "unittest", "discover", "-s", "tests"]

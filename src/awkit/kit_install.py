@@ -245,7 +245,9 @@ def install_skills(project: Path, provider: str, kit: Path | None = None):
         if extra:
             body += " " + extra.format(kit=kit_path)
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(f"---\nname: {name}\ndescription: {description}\n---\n\n{body}\n", encoding="utf-8", newline="\n")
+        # A JSON string is a valid YAML double-quoted scalar; descriptions contain ": ", which plain YAML forbids.
+        path.write_text(f"---\nname: {name}\ndescription: {json.dumps(description)}\n---\n\n{body}\n",
+                        encoding="utf-8", newline="\n")
         written.append(path)
     return written, skipped
 

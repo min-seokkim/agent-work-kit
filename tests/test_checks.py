@@ -157,10 +157,12 @@ class DoneTests(Repository):
         # Editing after the check makes the passing run stale again; untracked files count too.
         (self.repo / "notes.md").write_text("new", encoding="utf-8")
         self.assertEqual(done(self.repo, runs, "s")["changed"], ["notes.md", "value.txt"])
-        # Run records under .awkit are not part of the state.
+        # Run records under .awkit are not part of the state, whether or not .awkit is ignored.
         (self.repo / "notes.md").unlink()
         (self.repo / ".awkit").mkdir(exist_ok=True)
         (self.repo / ".awkit" / "x.json").write_text("{}", encoding="utf-8")
+        self.assertTrue(done(self.repo, runs, "s")["ok"])
+        (self.repo / ".git" / "info" / "exclude").write_text(".awkit/\n", encoding="utf-8")
         self.assertTrue(done(self.repo, runs, "s")["ok"])
 
     def test_claude_code_hook_blocks_once_per_turn(self):
@@ -173,6 +175,11 @@ class DoneTests(Repository):
         blocked = run("check", "done", "--hook", cwd=self.repo, stdin=stop)
         self.assertEqual(blocked.returncode, 2)
         self.assertIn("value.txt", blocked.stderr)
+        # Compaction fires SessionStart again; the unchecked change must not be forgotten.
+        compacted = run("check", "done", "--hook", cwd=self.repo,
+                        stdin=json.dumps({"session_id": "abc", "hook_event_name": "SessionStart", "source": "compact"}))
+        self.assertEqual(compacted.returncode, 0, compacted.stderr)
+        self.assertEqual(run("check", "done", "--hook", cwd=self.repo, stdin=stop).returncode, 2)
         again = run("check", "done", "--hook", cwd=self.repo,
                     stdin=json.dumps({"session_id": "abc", "hook_event_name": "Stop", "stop_hook_active": True}))
         self.assertEqual(again.returncode, 0)

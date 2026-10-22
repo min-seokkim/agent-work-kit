@@ -1,3 +1,4 @@
+import json
 import re
 import subprocess
 import sys
@@ -190,7 +191,9 @@ class RoleTests(unittest.TestCase):
             self.assertEqual((len(written), skipped), (len(SITUATIONS), []))
             for name, guide, description, _ in SITUATIONS:
                 text = (self.project / folder / name / "SKILL.md").read_text(encoding="utf-8")
-                self.assertTrue(text.startswith(f"---\nname: {name}\ndescription: "), text)
+                self.assertTrue(text.startswith(f"---\nname: {name}\ndescription: \""), text)
+                quoted = text.split("\n")[2].removeprefix("description: ")
+                self.assertEqual(json.loads(quoted), description)  # valid YAML: a double-quoted scalar
                 self.assertLessEqual(len(description), 1024)
                 self.assertIn(f"`agent-work-kit/{guide}`", text)
                 self.assertTrue((target / guide).is_file(), guide)

@@ -199,7 +199,9 @@ def current_tree(top):
         env = os.environ.copy()
         env["GIT_INDEX_FILE"] = str(Path(temporary) / "index")
         git(top, "read-tree", "HEAD", env=env)
-        git(top, "add", "-A", "--", ".", ":(exclude).awkit", env=env)
+        # Naming .awkit in a pathspec fails when it is ignored, the usual case; drop it after adding.
+        git(top, "add", "-A", "--", ".", env=env)
+        git(top, "rm", "-r", "-q", "--cached", "--ignore-unmatch", "--", ".awkit", env=env)
         return git(top, "write-tree", env=env)
 
 
@@ -233,10 +235,12 @@ def passing_run(top, tree, runs_root=None, limit=500):
     return None
 
 
-def done(folder, runs_root=None, session=None, mark=False):
+def done(folder, runs_root=None, session=None, mark=False, replace=True):
     """Whether the current state may be reported as done.
 
-    `mark` records the current state as the session's starting point. Otherwise the state passes
+    `mark` records the current state as the session's starting point; with `replace` false an
+    existing starting point is kept, because a resumed or compacted session continues the same work.
+    Otherwise the state passes
     when nothing changed since that starting point (or, with none recorded, since HEAD), or when a
     passing `awkit review check` run checked exactly this state.
     """
@@ -244,6 +248,8 @@ def done(folder, runs_root=None, session=None, mark=False):
     tree = current_tree(top)
     baseline_path = _baseline_path(top, session)
     if mark:
+        if not replace and baseline_path.is_file():
+            return {"ok": True, "status": "kept", "tree": tree}
         baseline_path.parent.mkdir(parents=True, exist_ok=True)
         baseline_path.write_text(json.dumps({"tree": tree}), encoding="utf-8")
         return {"ok": True, "status": "marked", "tree": tree}
@@ -266,6 +272,8 @@ def done(folder, runs_root=None, session=None, mark=False):
 def render_done(report):
     if report["status"] == "marked":
         return "recorded the current state as this session's starting point"
+    if report["status"] == "kept":
+        return "kept the starting point recorded earlier in this session"
     if report["status"] == "unchanged":
         return f"nothing changed since {report['since']}"
     if report["status"] == "checked":

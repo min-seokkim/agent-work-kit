@@ -96,7 +96,7 @@ Checks meant to run without anyone choosing to: from a Git hook, a Claude Code h
 | `check writing PATH... [--json]` | Searches Markdown files, and folders recursively, for the patterns in the [Writing Guide](writing.md). Errors: em dashes, a middle dot joining Korean words, `-세요` and `-시오` endings in one document. Warnings: lead-ins, contrasts against a claim nobody made, sales words, Korean stock phrases. Code blocks, blockquotes, inline code, quoted spans and link targets are skipped. | 0 no errors, 1 errors |
 | `check done [--session ID] [--mark] [--runs-root DIR] [--hook]` | `--mark` records the current state (HEAD plus every working-tree change, untracked files included, `.awkit/` excluded) as the session's starting point in `.awkit/done/`. Without it: passes when nothing changed since that point (or since HEAD when none was recorded), or when a passing `review check` run checked exactly the current state; otherwise lists the changed files. Runs are looked up in `--runs-root`, `.awkit/reviews` and the system temp default. | 0 yes, 1 no |
 
-With `--hook`, `check done` reads the Claude Code hook input from stdin: SessionStart marks the starting point, Stop exits 2 with the reason on stderr so the agent continues, and a second stop in the same turn (`stop_hook_active`) passes, so the agent can report work it could not check and say why.
+With `--hook`, `check done` reads the Claude Code hook input from stdin: SessionStart marks the starting point (a resumed or compacted session keeps the one it has), Stop exits 2 with the reason on stderr so the agent continues, and a second stop in the same turn (`stop_hook_active`) passes, so the agent can report work it could not check and say why.
 
 ## channel
 

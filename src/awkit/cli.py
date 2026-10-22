@@ -231,7 +231,7 @@ def _run_check(args):
         report = checks.check_writing(args.paths)
         print(json.dumps(report, ensure_ascii=False, indent=2) if args.json else checks.render_writing(report))
         return 0 if report["ok"] else 1
-    session, event, repeated = args.session, None, False
+    session, event, repeated, source = args.session, None, False, None
     if args.hook:
         try:
             payload = json.loads(sys.stdin.read() or "{}")
@@ -240,9 +240,12 @@ def _run_check(args):
         session = session or payload.get("session_id")
         event = payload.get("hook_event_name")
         repeated = bool(payload.get("stop_hook_active"))
+        source = payload.get("source")
         if repeated:
             return 0
-    report = checks.done(args.repo, args.runs_root, session, mark=args.mark or event == "SessionStart")
+    # A resumed or compacted session keeps its starting point; a cleared one starts again.
+    report = checks.done(args.repo, args.runs_root, session, mark=args.mark or event == "SessionStart",
+                         replace=args.mark or source in (None, "startup", "clear"))
     message = checks.render_done(report)
     if args.hook:
         if not report["ok"]:

@@ -85,6 +85,13 @@ class UsageTests(unittest.TestCase):
             {**claude_turn("m2"), "timestamp": "2026-10-22T09:01:00.000Z"},
             {"type": "user", "timestamp": "2026-10-22T09:02:30.000Z",
              "message": {"role": "user", "content": [{"type": "text", "text": "no, the other one"}]}},
+            # Typed while the turn was running: Claude Code keeps it only as a queued_command attachment.
+            {"type": "attachment", "timestamp": "2026-10-22T09:02:40.000Z",
+             "attachment": {"type": "queued_command", "prompt": "and keep the old name", "commandMode": "prompt",
+                            "origin": {"kind": "human"}, "humanTurn": True}},
+            {"type": "attachment", "attachment": {"type": "queued_command", "prompt": "from a hook",
+                                                  "origin": {"kind": "hook"}}},
+            {"type": "attachment", "attachment": {"type": "task_reminder", "content": "x"}},
             {"type": "user", "isSidechain": True, "agentId": "a1",
              "message": {"role": "user", "content": "handoff prompt to a subagent"}},
             # Written by Claude Code, not typed: notices, command output, interruptions, hook feedback.
@@ -101,12 +108,12 @@ class UsageTests(unittest.TestCase):
         ])
         result = collect([session])
         threads = {row["thread"]: row for row in result["threads"]}
-        self.assertEqual((threads["main"]["user_messages"], threads["main"]["commands"]), (2, 2))
-        self.assertEqual(threads["main"]["minutes"], 2.5)
+        self.assertEqual((threads["main"]["user_messages"], threads["main"]["commands"]), (3, 2))
+        self.assertEqual(threads["main"]["minutes"], 2.7)  # the queued message at 09:02:40 is activity too
         self.assertEqual(threads["main"]["started_at"], "2026-10-22T09:00:00+00:00")
         self.assertEqual(threads["subagent a1"]["user_messages"], 0)
         self.assertEqual(threads["subagent a1"]["minutes"], 0.0)
-        self.assertEqual((result["total"]["user_messages"], result["total"]["commands"]), (2, 2))
+        self.assertEqual((result["total"]["user_messages"], result["total"]["commands"]), (3, 2))
         rollout = self.root / "codex" / "rollout.jsonl"
         write_jsonl(rollout, [
             {"type": "event_msg", "timestamp": "2026-10-22T10:00:00Z", "payload": {"type": "user_message", "message": "go"}},

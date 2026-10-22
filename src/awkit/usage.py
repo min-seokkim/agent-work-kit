@@ -125,6 +125,26 @@ def _person_wrote(record):
     return "message"
 
 
+def _queued(record):
+    """Classify a message the person typed while a turn was running. Claude Code records it only as a
+    `queued_command` attachment, never as a user record, so it is counted here or not at all."""
+    attachment = record.get("attachment")
+    if (record.get("type") != "attachment" or not isinstance(attachment, dict) or record.get("isSidechain")
+            or attachment.get("type") != "queued_command"):
+        return None
+    origin = attachment.get("origin")
+    if isinstance(origin, dict) and origin.get("kind") != "human":
+        return None
+    prompt = attachment.get("prompt")
+    if isinstance(prompt, list):
+        prompt = "\n".join(b.get("text", "") for b in prompt if isinstance(b, dict) and b.get("type") == "text")
+    if not isinstance(prompt, str) or not prompt.strip():
+        return None
+    if attachment.get("commandMode", "prompt") != "prompt" or prompt.lstrip().startswith("/"):
+        return "command"
+    return "message"
+
+
 def _add(thread, field, raw, present):
     if not present:
         thread["missing"][field] += 1
@@ -155,8 +175,8 @@ def _claude(path, problems):
     threads, seen = {}, set()
     for record in _records(path, problems):
         message = record.get("message")
-        if record.get("type") == "user":
-            kind = _person_wrote(record)
+        if record.get("type") in ("user", "attachment"):
+            kind = _person_wrote(record) if record.get("type") == "user" else _queued(record)
             if kind:
                 thread = threads.setdefault("main", _thread("claude", path, "main", "responses"))
                 thread["user_messages" if kind == "message" else "commands"] += 1

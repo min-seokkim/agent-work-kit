@@ -2,7 +2,7 @@ name: release
 
 # Push a tag such as v0.3.0 to publish the wheel and the skills ZIP as a GitHub release
 # and the wheel on PyPI. PyPI publishing uses a trusted publisher: register this repository,
-# this workflow file and the `pypi` environment on PyPI once before the first tag (docs/development.md#release).
+# this workflow file and the `pypi` environment on PyPI once before the first tag (docs/release.md#release).
 on:
   push:
     tags: ["v*"]

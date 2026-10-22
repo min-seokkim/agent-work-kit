@@ -28,6 +28,8 @@ Each task then follows the same steps:
 4. When you approve a result, it keeps that result as the accepted version and compares later versions with it.
 5. If you want a second review, another agent session reviews the same snapshot, and their messages refer to it.
 
+You can open separate implementation and review sessions, including sessions from different providers, and have them exchange requests and results through a shared local channel. The channel needs no server, and the base package has no Python runtime dependencies. See the [review session guide](kit/review-session.md) for setup.
+
 ## By kind of work
 
 | Task | What the agent does | What you can check afterwards | Checked by the tool, or left to the agent |
@@ -54,7 +56,7 @@ On macOS or Linux:
 curl -fsSL https://raw.githubusercontent.com/min-seokkim/agent-work-kit/dev/install.sh | sh
 ```
 
-With Python and Git already in place, `pipx install "git+https://github.com/min-seokkim/agent-work-kit@dev"` followed by `awkit kit skills` does the same. The first release will also offer the skills as a ZIP to unpack in your home folder, for writing and research work without Python.
+With Python, Git and pipx already installed, run `pipx install "git+https://github.com/min-seokkim/agent-work-kit@dev"`, then `awkit kit skills` and `awkit doctor`. The first release will also offer the skills as a ZIP to unpack in your home folder, for writing and research work without Python.
 
 In your project folder, run:
 
@@ -62,18 +64,18 @@ In your project folder, run:
 awkit kit init
 ```
 
-It writes `checks.toml` with the checks your project already runs and a `[kit]` table that says what done means here, installs the hooks, and keeps its own `.awkit/` folder out of Git. It commits nothing and leaves your instructions, skills, hooks and memory files as they are; it prints a line you can add to `AGENTS.md` or `CLAUDE.md` yourself. Only `checks.toml` and `rules.toml` are meant to be committed.
+It writes `checks.toml` with the checks your project already runs and a `[kit]` table that says what done means here. It adds awkit hooks alongside your existing hooks and keeps its own `.awkit/` folder out of Git. It commits nothing and leaves your instructions, skills and memory files as they are; it prints a line you can add to `AGENTS.md` or `CLAUDE.md` yourself. Only `checks.toml` and `rules.toml` are meant to be committed.
 
 Then tell your agent:
 
 > Connect Agent Work Kit to this project.
 
-To move to a newer version, update awkit and run `awkit kit skills` again. `awkit kit remove` takes the kit out of the project and `awkit kit remove --user` out of your user folder. An agent without skills reads a guide with `awkit kit guide workflow`.
+To update, rerun the installer above; it reinstalls awkit from `dev` and refreshes the skills. `awkit kit remove` takes the kit out of the project and `awkit kit remove --user` out of your user folder. An agent without skills reads a guide with `awkit kit guide workflow`.
 
 To try it on a sample first, tell your agent to run `awkit kit example data demo` and follow its README. The sample is a small data project with one wrong column name. The agent runs the check and sees it fail, fixes the input, runs the check again and shows you the files it kept.
 
 ## Status
 
-The project is in development. Commands and file locations may change before the first release. Changes are listed in [CHANGELOG.md](CHANGELOG.md), and development notes are in [docs/development.md](docs/development.md).
+The project is in development. Commands and file locations may change before the first release. We use awkit in this repository's own work and record what works and what fails in the [development notes](docs/evidence.md). Changes are listed in [CHANGELOG.md](CHANGELOG.md).
 
 MIT license. The writing guides are adapted in part from `im-not-ai`; its source and license are in the [third-party notices](kit/THIRD_PARTY_NOTICES.md).

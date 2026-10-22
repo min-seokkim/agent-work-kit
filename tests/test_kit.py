@@ -19,7 +19,7 @@ LINK = re.compile(r"\]\(([^)\s]+)\)")
 
 # Folders that hold dependencies, build output or run records rather than managed documents.
 SKIP_DIRS = {"build", "dist", "node_modules", "site-packages", "__pycache__"}
-# Upper bounds on the kit's length by when a file is read; see docs/development.md. The files read at
+# Upper bounds on the kit's length by when a file is read; see docs/design.md. The files read at
 # the start of every session together stay within what Claude Code's documentation recommends for
 # CLAUDE.md (about 200 lines). Every other file is read when its situation arises and stays within what
 # survives a context compaction whole (5,000 tokens, about 3,500 English words).

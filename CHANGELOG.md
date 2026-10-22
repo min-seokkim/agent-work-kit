@@ -4,7 +4,7 @@ Behavior changes per version. Items to check when moving from an earlier version
 
 ## 0.3.0 (unreleased)
 
-Planned as the first public release. 0.2.0 existed only as the version in the source and was never tagged or released. From 0.3.0 the package goes to PyPI and GitHub releases, once the release conditions in [docs/development.md](docs/development.md#release) are met. Changes until then are added here.
+Planned as the first public release. 0.2.0 existed only as the version in the source and was never tagged or released. From 0.3.0 the package goes to PyPI and GitHub releases, once the release conditions in [docs/release.md](docs/release.md#release) are met. Changes until then are added here.
 
 ### Incompatible changes
 
@@ -29,6 +29,8 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 - A `verify` hook rule on Stop blocks once per session instead of once per distinct output, and every block's reason ends with `(KIT/failures.md: ENTRIES)`.
 
 ### Added
+
+- Development documentation now has separate design, roadmap, task, evidence and release records. `docs/development.md` remains the starting point, with current state and links. Completed work moves out of the roadmap; old section anchors remain available through the document map.
 
 - `awkit hook EVENT`, the `prompt` condition for inject rules, and three default rules in `kit/rules-session.toml`: `writing-request` adds the writing guide's line on the first request for a prompt, instructions or a document; `writing-reply` blocks once a long Korean reply shaped like a document from a session that never read the guide (`awkit hook reply`); `kit-version` says once when `checks.toml` records another kit version (`awkit hook kit-version`). A project with `.awkit/` but no `rules.toml` gets one log line per session.
 - `awkit kit guide [NAME]` prints a kit guide or template from the installed package, with links turned into guide names, for agents without skills and for people; `profile` prints the long project profile form.
@@ -58,6 +60,8 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 - `awkit check commit`, `check writing` and `check done`: the author and trailers of a commit compared with the repository's history, the writing patterns from the kit's writing guides found in Markdown files, and a done check that requires a passing `review check` of the current state for files changed in the session. `awkit kit hooks` installs them as a Git `commit-msg` hook and as Claude Code SessionStart and Stop hooks.
 
 ### Fixed
+
+- Kit examples now show filled `[kit]` settings and distinguish automatic checks from review and delivery evidence. The role README gives explicit model mappings and generation commands for both Claude Code and Codex, alongside their existing generator defaults.
 
 - `kit hooks` now excludes only the hook settings it created, with exact root-relative rules in `.git/info/exclude`; existing settings and tracked changes retain their Git treatment. Reinstallation repairs missing exclusions from recorded installs. `check done` follows Git for user settings, including `.claude/settings.local.json` and `CLAUDE.local.md`, so the documented snapshot recipe needs no filename filters. Hook removal removes its settings rules even when check records remain, preserves later edits, and restores unchanged exclude bytes and line endings. `.awkit/kit-hooks.json` adds `settings_excluded` entries; `.awkit/installed.json` records an `excluded` object with hashes and a backup instead of a boolean, and removal still reads older records. User additions to a generated Git hook survive removal.
 - A rule message was measured after `{kit}` was filled in, so with awkit installed by pipx the kit's `korean-writing`, `research` and `delegation` rules exceeded 200 characters and were dropped as broken. The limit now applies to the text as written.

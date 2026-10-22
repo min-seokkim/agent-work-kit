@@ -28,6 +28,8 @@ Git 프로젝트에서 에이전트에게 일을 거듭 맡기고, 돌아온 결
 4. 사람이 결과를 승인하면 그 결과를 채택본으로 보관하고, 이후 버전은 채택본과 비교합니다.
 5. 다른 검토가 필요하면 다른 에이전트 세션이 같은 스냅샷을 검토하고, 주고받는 메시지에 그 스냅샷을 적습니다.
 
+구현 세션과 검토 세션을 따로 열어 같은 컴퓨터의 채널로 요청과 결과를 주고받을 수 있습니다. 서로 다른 공급자의 에이전트도 연결할 수 있습니다. 채널에는 별도 서버가 필요 없고, 기본 패키지는 추가 Python 라이브러리 없이 실행됩니다. 연결 방법은 [검토 세션 지침](kit/review-session.md)에 있습니다.
+
 ## 작업 종류별 절차
 
 | 작업 | 에이전트가 하는 일 | 끝난 뒤 확인할 수 있는 것 | 도구가 검사하는 것과 에이전트에게 맡기는 것 |
@@ -54,7 +56,7 @@ macOS나 Linux에서는 터미널에 입력하세요.
 curl -fsSL https://raw.githubusercontent.com/min-seokkim/agent-work-kit/dev/install.sh | sh
 ```
 
-Python과 Git이 이미 있다면 `pipx install "git+https://github.com/min-seokkim/agent-work-kit@dev"`로 설치하고 `awkit kit skills`를 실행해도 됩니다. 첫 릴리스에는 Python 없이 문서 작업이나 조사만 하는 사람을 위해 홈 폴더에 풀기만 하면 되는 스킬 ZIP도 함께 올립니다.
+Python, Git, pipx가 이미 설치돼 있다면 `pipx install "git+https://github.com/min-seokkim/agent-work-kit@dev"`로 설치한 뒤 `awkit kit skills`와 `awkit doctor`를 실행하세요. 첫 릴리스에는 Python 없이 문서 작업이나 조사만 하는 사람을 위해 홈 폴더에 풀기만 하면 되는 스킬 ZIP도 함께 올립니다.
 
 프로젝트 폴더에서 다음 명령을 실행하세요.
 
@@ -62,18 +64,18 @@ Python과 Git이 이미 있다면 `pipx install "git+https://github.com/min-seok
 awkit kit init
 ```
 
-이 명령은 프로젝트에서 이미 돌리는 검사로 `checks.toml`을 만들고, 이 프로젝트에서 무엇을 완료로 볼지 적는 `[kit]` 표를 넣습니다. 훅을 설치하고, awkit이 쓰는 `.awkit/` 폴더는 Git에서 뺍니다. 커밋은 하지 않습니다. 원래 있던 지시문과 스킬, 훅, 메모리 파일도 건드리지 않습니다. `AGENTS.md`나 `CLAUDE.md`에 붙일 한 줄은 화면에 보여 주기만 하니, 원하면 직접 붙이세요. 커밋할 파일은 `checks.toml`과 `rules.toml`뿐입니다.
+이 명령은 프로젝트에서 이미 돌리는 검사로 `checks.toml`을 만들고, 이 프로젝트에서 무엇을 완료로 볼지 적는 `[kit]` 표를 넣습니다. 기존 훅을 보존하면서 awkit 훅을 추가하고, awkit이 쓰는 `.awkit/` 폴더는 Git에서 뺍니다. 커밋은 하지 않습니다. 원래 있던 지시문과 스킬, 메모리 파일도 건드리지 않습니다. `AGENTS.md`나 `CLAUDE.md`에 붙일 한 줄은 화면에 보여 주기만 하니, 원하면 직접 붙이세요. 커밋할 파일은 `checks.toml`과 `rules.toml`뿐입니다.
 
 그리고 에이전트에게 이렇게 말하세요.
 
 > 이 프로젝트에 Agent Work Kit을 연결해 주세요.
 
-새 버전으로 바꿀 때는 awkit을 업데이트한 뒤 `awkit kit skills`를 다시 실행하세요. `awkit kit remove`는 프로젝트에서, `awkit kit remove --user`는 사용자 폴더에서 키트를 뺍니다. 스킬을 쓰지 못하는 에이전트는 `awkit kit guide workflow`로 가이드를 읽습니다.
+업데이트할 때는 위의 설치 스크립트를 다시 실행하세요. `dev` 브랜치에서 awkit을 다시 설치하고 스킬도 갱신합니다. `awkit kit remove`는 프로젝트에서, `awkit kit remove --user`는 사용자 폴더에서 키트를 뺍니다. 스킬을 쓰지 못하는 에이전트는 `awkit kit guide workflow`로 가이드를 읽습니다.
 
 예제로 먼저 써 보려면 에이전트에게 `awkit kit example data demo`를 실행하고 그 README대로 진행하라고 하세요. 예제는 열 이름 하나가 틀린 작은 데이터 프로젝트입니다. 에이전트가 검사를 돌려 실패를 확인하고, 입력을 고친 뒤 다시 검사하고, 보관한 파일을 보여 줍니다.
 
 ## 상태
 
-개발 중이며, 첫 릴리스 전까지 명령과 파일 위치가 바뀔 수 있습니다. 바뀐 내용은 [CHANGELOG.md](CHANGELOG.md)에, 개발 기록은 [docs/development.md](docs/development.md)에 있습니다.
+개발 중이며, 첫 릴리스 전까지 명령과 파일 위치가 바뀔 수 있습니다. 이 저장소의 작업에도 awkit을 직접 사용하고, 잘 작동한 점과 실패한 점을 [개발 기록](docs/evidence.md)에 남깁니다. 바뀐 내용은 [CHANGELOG.md](CHANGELOG.md)에 있습니다.
 
 MIT 라이선스로 배포합니다. 작성 지침의 일부는 `im-not-ai`의 자료를 고쳐 썼으며, 출처와 라이선스는 [외부 자료 고지](kit/THIRD_PARTY_NOTICES.md)에 있습니다.

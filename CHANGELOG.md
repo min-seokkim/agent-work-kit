@@ -61,6 +61,9 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Fixed
 
+- `doctor` now validates an existing `checks.toml` without executing its commands and warns about empty or invalid configuration. Its summary distinguishes available tools from warnings and unverified execution; exit codes and JSON finding fields remain unchanged. Repeated `kit init` retains the no-checks warning, and the connect guide establishes actual checks before running an empty draft.
+- `doctor` reports the loaded package path and installation commit when matching metadata records one. Source execution reports its own checkout and local changes; unrelated installed metadata is not used. Unknown provenance remains explicit, without printing source URLs or credentials.
+
 - Kit examples now show filled `[kit]` settings and distinguish automatic checks from review and delivery evidence. The role README gives explicit model mappings and generation commands for both Claude Code and Codex, alongside their existing generator defaults.
 
 - `kit hooks` now excludes only the hook settings it created, with exact root-relative rules in `.git/info/exclude`; existing settings and tracked changes retain their Git treatment. Reinstallation repairs missing exclusions from recorded installs. `check done` follows Git for user settings, including `.claude/settings.local.json` and `CLAUDE.local.md`, so the documented snapshot recipe needs no filename filters. Hook removal removes its settings rules even when check records remain, preserves later edits, and restores unchanged exclude bytes and line endings. `.awkit/kit-hooks.json` adds `settings_excluded` entries; `.awkit/installed.json` records an `excluded` object with hashes and a backup instead of a boolean, and removal still reads older records. User additions to a generated Git hook survive removal.

@@ -241,21 +241,24 @@ def write_checks(top, changes, found=None):
     if table is None:
         return "kept", [f"{path} does not parse as TOML, so it was left as it is; fix it and run kit init again"]
     text = read_exact(path)
+    checks = tomllib.loads(text).get("checks")
+    notes = [] if isinstance(checks, list) and checks else [
+        "checks.toml has no check commands; add the project's checks under [[checks]] before `awkit review check`"]
     if not table and "[kit]" not in text:
         new, sep = _append(text, _newlines(kit_block(values), text))
         changes.write(path, new, "appended", kit="table", sep=sep)
-        return "appended", []
+        return "appended", notes
     missing = [key for key in KIT_KEYS if key not in table]
     if not missing:
-        return "kept", []
+        return "kept", notes
     new = _fill_keys(text, missing, values)
     if new == text:
-        return "kept", [f"the [kit] table in {path} could not be found line by line; add {', '.join(missing)} by hand"]
+        return "kept", notes + [f"the [kit] table in {path} could not be found line by line; add {', '.join(missing)} by hand"]
     changes.write(path, new, "filled")
     entry = changes.data["files"][changes.key(path)]
     if entry.get("kit") != "table":  # a table init wrote goes whole; otherwise only the keys it added
         entry["kit_keys"] = sorted(set(entry.get("kit_keys", [])) | set(missing))
-    return "filled", []
+    return "filled", notes
 
 
 def providers(top):

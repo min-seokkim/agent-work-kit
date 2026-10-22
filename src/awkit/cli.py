@@ -115,7 +115,7 @@ def _parser():
     hook_cli.add(groups, kit_commands)
 
     doctor = groups.add_parser("doctor", help="check Python, Git, the Git identity and the project folder, and say how "
-                               "to fix each missing item; exit 0 ready, 1 something required is missing",
+                               "to fix each missing item; exit 0 no required tools missing, 1 something required is missing",
                                epilog=REFERENCE)
     doctor.add_argument("dir", nargs="?", type=Path, default=Path("."), help="project folder to look at (default: .)")
     doctor.add_argument("--json", action="store_true", help="print the findings as JSON")

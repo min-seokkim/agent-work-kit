@@ -106,6 +106,7 @@ Version bumps, release workflows or uploads set up while the interface is still 
 An inference from file names or conventions is reported as how the project works; a question from the user is recorded as a confirmation.
 - Evidence: observed in awkit's development. `kit scan` suggested pytest for any `tests` folder; this repository uses unittest (fixed in `6eb632c`). `kit scan` reported `"present": false` for the kit in this repository, which uses it through skills pointing at `kit/`, because it looked only for a folder named `agent-work-kit` (fixed in `006575b`). `awkit doctor` reported "kit: connected by awkit 0.3.0" in this repository because `.awkit/installed.json` existed, a record the session hook's `kit hooks --git` had written seconds earlier listing only the commit-msg hook; it now reads the `[kit]` table of `checks.toml` and the skills instead (fixed in the three-layer change). Owner's records: a component that was already installed was installed again; files were sorted by their names without opening them; the owner's question whether a tool was allowed was recorded as the owner confirming that it was ("I was asking whether it is okay").
 - Countermeasure: mark inferences; run a suggested command once before relying on it; check the current state before installing, sorting or reviewing; treat a question as a question.
+- Further evidence: the connection diagnostic trial at `4a7cb6a` reproduced doctor printing ready for empty or invalid check configuration, including after a repeated init that no longer warned about missing commands. Its validation now reuses review's configuration rules without claiming execution.
 - Check: Kind: guidance. the connect procedure runs the drafted checks once. Status: prose plus tool.
 
 #### F12. Scope grows before anything is measured.
@@ -272,6 +273,7 @@ A command returned 0, so the message is assumed delivered, the file transferred,
 Setup steps from documentation for a different edition, OS or account type.
 - Evidence: observed in awkit's development. Two cloud sessions in a row started on a checkout of `dev` older than a rewrite of its history (the second at `ce591c1`, while `origin/dev` was at `cc71b90`): the checkout had no `AGENTS.md`, `checks.toml` or session hook, so awkit was not installed and the first `awkit doctor` failed with command not found. A `git fetch` showed the forced update; the session reset to `origin/dev` and ran the hook by hand. No check caught it: the guard would have been the session hook, which the old checkout did not have.
 - Countermeasure: confirm version, OS and account type before following found instructions.
+- Further evidence: the connection diagnostic trial records installed code at `f85a1ec` and checkout code at `4a7cb6a` with the same 0.3.0 version but different file contents. Runtime diagnostics report the loaded code's origin; provenance metadata alone does not prove file integrity or freshness.
 - Check: Kind: guidance. prose.
 
 #### F26. Checks interfere through shared resources.
@@ -337,7 +339,7 @@ Generated from the guards' own declarations: each guide section ends with a "Pre
 | F8 The user's unrelated work is bundled in | workflow.md Define the task | `awkit kit init --commit and kit example (commit only what they wrote)` | none |
 | F9 The agent's own identity replaces the repository's convention | connect.md | `awkit check commit`, `awkit kit hooks`, `awkit kit init --commit and kit example (commit only what they wrote)`, `awkit doctor`, `awkit hook` | `commit-identity (block)` |
 | F10 Irreversible publication prepared before it is justified | none | none | none |
-| F11 A guess is presented as a finding | workflow.md Do the work; connect.md; checking.md The checked version | `awkit kit scan`, `awkit hook` | none |
+| F11 A guess is presented as a finding | workflow.md Do the work; connect.md; checking.md The checked version | `awkit doctor`, `awkit kit scan`, `awkit hook` | none |
 | F12 Scope grows before anything is measured | connect.md | `awkit kit scan`, `awkit kit init`, `awkit kit skills` | none |
 | F13 AI writing patterns in English | workflow.md Report; writing.md Write plainly | `awkit check writing`, `awkit hook` | `writing-check (verify)` |
 | F14 Korean that reads like a translation, including from an agent that wrote the rules | korean-writing.md Writing process; korean-writing.md Tone and terminology; korean-writing.md Revise sentences | `awkit check writing`, `awkit hook`, `awkit hook reply` | `writing-check (verify)`, `korean-writing (inject)`, `writing-request (inject)`, `writing-reply (verify)` |

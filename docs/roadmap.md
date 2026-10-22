@@ -20,6 +20,7 @@ Remaining work and its completion criteria. Item numbers retain the earlier deve
 
 ## Task plans
 
+- [Connection diagnostics](tasks/connection-diagnostics.md): reproduced configuration and runtime-origin gaps, implemented diagnostics, and unresolved writing-scope and sandbox-path questions.
 - [Document workflow](document-workflow-plan.md): the separately maintained plan for document creation, with presentations as its first application.
 - [Independent-session collaboration](tasks/independent-session-collaboration.md): requested outcome, validation order and conditional protocol extensions for item 11.
 - [Local collaboration trial](tasks/local-collaboration.md): installation results, hook findings and the assigned Python 3.14 support work.

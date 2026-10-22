@@ -396,13 +396,8 @@ def compare(repo, label="accepted", run_dir=None, diff=False):
     return report
 
 
-def check(repo, revision, config, runs_root=None, keep=False):
-    if revision != "HEAD" and not re.fullmatch(r"(?:[a-f0-9]{40}|[a-f0-9]{64})", revision):
-        raise ValueError("Give the full ID of the Git commit to check, or HEAD.")
-    repo, subdir = located(repo)
-    commit = git(repo, "rev-parse", "--verify", revision + "^{commit}")
-    raw = Path(config).read_bytes()
-    settings = tomllib.loads(raw.decode("utf-8"))
+def validate_settings(settings):
+    """Validate check configuration without executing commands or creating a worktree."""
     if type(settings.get("schema")) is not int or settings["schema"] != 1:
         raise ValueError("The check configuration needs schema = 1.")
     timeout = settings.get("timeout_seconds", 300)
@@ -426,6 +421,17 @@ def check(repo, revision, config, runs_root=None, keep=False):
     if not isinstance(custom_env, dict) or any(not isinstance(v, str) for v in custom_env.values()):
         raise ValueError("env values must be strings.")
     patterns, required = artifact_patterns(settings)
+    return timeout, checks, setup, custom_env, patterns, required
+
+
+def check(repo, revision, config, runs_root=None, keep=False):
+    if revision != "HEAD" and not re.fullmatch(r"(?:[a-f0-9]{40}|[a-f0-9]{64})", revision):
+        raise ValueError("Give the full ID of the Git commit to check, or HEAD.")
+    repo, subdir = located(repo)
+    commit = git(repo, "rev-parse", "--verify", revision + "^{commit}")
+    raw = Path(config).read_bytes()
+    settings = tomllib.loads(raw.decode("utf-8"))
+    timeout, checks, setup, custom_env, patterns, required = validate_settings(settings)
     if runs_root is None:
         # Run records belong to the project they checked; .awkit is excluded from Git locally.
         exclude_locally(repo, ".awkit/")

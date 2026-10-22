@@ -1,23 +1,26 @@
 """Check that this machine and project can run awkit, and say how to fix what is missing."""
 
+import json
 import platform
 import re
 import shutil
 import subprocess
 import sys
+import tomllib
+from importlib import metadata
 from pathlib import Path
 
 from . import __version__
 from .identity import author_problem, configured
 from .kit_install import SKILL_FOLDERS, read_version
-from .review import nested_repositories
+from .review import nested_repositories, validate_settings
 
 MIN_PYTHON = (3, 11)
 
 # The failure catalogue entries (kit/failures.md) this command guards against: an agent's commit
-# identity, a kit or skills made by another awkit version (F25), and guides or hooks that a session never
-# loads, so the way of working does not reach it (F29).
-PREVENTS = {"awkit doctor": ("F9", "F25", "F29")}
+# identity, readiness inferred without usable checks (F11), a kit or skills made by another awkit version
+# (F25), and guides or hooks that a session never loads, so the way of working does not reach it (F29).
+PREVENTS = {"awkit doctor": ("F9", "F11", "F25", "F29")}
 MIN_GIT = (2, 25)
 
 
@@ -41,6 +44,54 @@ def _install_hint(tool):
         system, "install Python 3.11 or later with the package manager, for example sudo apt install python3")
 
 
+def runtime_origin():
+    """Identify the loaded code, without attributing another installation's metadata to it."""
+    module = Path(__file__).resolve()
+    checkout = module.parents[2]
+    if module == checkout / "src" / "awkit" / "doctor.py" and (checkout / "pyproject.toml").is_file():
+        top = _git(checkout, "rev-parse", "--show-toplevel")
+        if top and Path(top).resolve() == checkout:
+            revision = _git(checkout, "rev-parse", "--verify", "HEAD")
+            if revision:
+                try:
+                    status = subprocess.run(["git", "status", "--porcelain", "--", "src/awkit", "kit", "pyproject.toml"],
+                                            cwd=checkout, capture_output=True, text=True, encoding="utf-8", errors="replace")
+                    state = "unknown" if status.returncode else "modified" if status.stdout else "clean"
+                except OSError:
+                    state = "unknown"
+                return f"checkout HEAD {revision}; source and kit worktree {state}"
+        return "source checkout; commit unavailable"
+    try:
+        dist = metadata.distribution("agent-work-kit")
+        if Path(dist.locate_file("awkit/doctor.py")).resolve() != module:
+            return "installation commit unavailable; distribution metadata belongs to other code"
+        raw = dist.read_text("direct_url.json")
+        if not raw:
+            return "installation commit unavailable; no direct URL metadata"
+        origin = json.loads(raw)
+        vcs = origin.get("vcs_info", {}) if isinstance(origin, dict) else {}
+        revision = vcs.get("commit_id") if isinstance(vcs, dict) else None
+        if isinstance(revision, str) and re.fullmatch(r"[a-fA-F0-9]{40}|[a-fA-F0-9]{64}", revision):
+            return f"installation commit {revision} (metadata; installed files not compared)"
+        return "installation commit unavailable; metadata records no full commit ID"
+    except (metadata.PackageNotFoundError, OSError, ValueError, TypeError):
+        return "installation commit unavailable; metadata missing or unreadable"
+
+
+def _checks(top, add):
+    path = top / "checks.toml"
+    if not path.exists():
+        return
+    try:
+        settings = tomllib.loads(path.read_text(encoding="utf-8"))
+        validate_settings(settings)
+    except (OSError, ValueError) as exc:
+        add("project checks", "warning", f"{path}: {exc}",
+            "configure at least one real project check in checks.toml, then run awkit review check HEAD --config checks.toml")
+    else:
+        add("project checks", "ok", f"{len(settings['checks'])} configured check(s); configuration valid, execution unverified")
+
+
 def diagnose(folder="."):
     """A list of findings: {item, status ("ok", "missing", "warning"), detail, fix}."""
     folder = Path(folder).resolve()
@@ -52,6 +103,8 @@ def diagnose(folder="."):
     version = sys.version_info[:3]
     add("python", "ok" if version >= MIN_PYTHON else "missing", ".".join(map(str, version)) + f" at {sys.executable}",
         "" if version >= MIN_PYTHON else _install_hint("python"))
+    add("awkit runtime", "ok", f"{__version__} at {Path(__file__).resolve().parent}")
+    add("awkit source", "ok", runtime_origin())
 
     if shutil.which("git") is None:
         add("git", "missing", "git was not found on PATH", _install_hint("git"))
@@ -73,6 +126,7 @@ def diagnose(folder="."):
     else:
         add("awkit on PATH", "ok", shutil.which("awkit"))
 
+    checks_folder = folder
     if folder.is_dir() and shutil.which("git") is not None:
         top = _git(folder, "rev-parse", "--show-toplevel")
         if not top:
@@ -80,6 +134,7 @@ def diagnose(folder="."):
                 "run git init and commit the files; the review commands need committed files")
         else:
             top = Path(top)
+            checks_folder = top
             has_commit = bool(_git(top, "rev-parse", "--verify", "-q", "HEAD"))
             add("project repository", "ok" if has_commit else "warning", str(top),
                 "" if has_commit else "commit the files before awkit review check")
@@ -110,6 +165,7 @@ def diagnose(folder="."):
             else:
                 _skills(top, add)
             _layers(top, add)
+    _checks(checks_folder, add)
     return findings
 
 
@@ -171,5 +227,11 @@ def render(findings):
             line += f"\n{'':<8} {'':<{width}}  fix: {finding['fix']}"
         lines.append(line)
     missing = sum(f["status"] == "missing" for f in findings)
-    lines.append("ready" if not missing else f"{missing} required item(s) missing")
+    warnings = sum(f["status"] == "warning" for f in findings)
+    if missing:
+        lines.append(f"{missing} required item(s) missing")
+    elif warnings:
+        lines.append(f"required tools available; review {warnings} warning(s) above")
+    else:
+        lines.append("required tools available; check results and automatic hook execution not verified")
     return "\n".join(lines)

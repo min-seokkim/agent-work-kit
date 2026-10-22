@@ -602,6 +602,35 @@ ASSIGNMENT = re.compile(r"[A-Za-z_][A-Za-z0-9_]*=")
 IDENT = re.compile(r"\s*(.*?)\s*<([^>]*)>\s*$")
 
 
+HEREDOC = re.compile(r"<<-?\s*['\"]?(\w+)['\"]?[^\n]*\n(.*?)\n[ \t]*\1[ \t]*(?:\n|$)", re.S)
+ASSIGNMENT = re.compile(r"[A-Za-z_][A-Za-z0-9_]*=")
+IDENT = re.compile(r"\s*(.*?)\s*<([^>]*)>\s*$")
+
+
+HEREDOC = re.compile(r"<<-?\s*(['\"]?)([A-Za-z_][A-Za-z0-9_]*)\1")
+
+
+def _without_heredocs(command):
+    """The command without the bodies of heredocs that feed a program, since their lines are its input,
+    not commands. A heredoc inside a quoted `$(...)`, as in `-m "$(cat <<'EOF' ... EOF)"`, stays: its text
+    is an argument, such as the commit message."""
+    lines = command.split("\n")
+    kept, index = [], 0
+    while index < len(lines):
+        line = lines[index]
+        kept.append(line)
+        index += 1
+        for match in HEREDOC.finditer(line):
+            before = line[:match.start()]
+            if before.count('"') % 2 or before.count("'") % 2:
+                continue
+            while index < len(lines) and lines[index].strip() != match.group(2):
+                index += 1
+            index += 1
+            break
+    return "\n".join(kept)
+
+
 def _simple_commands(command):
     lexer = shlex.shlex(command, posix=True, punctuation_chars=";&|()")
     lexer.whitespace_split = True
@@ -616,10 +645,16 @@ def _simple_commands(command):
 
 
 def git_commits(command):
-    """Each `git commit` in a shell command as (environment assignments, git options, commit arguments).
-    Raises ValueError when the command cannot be split, such as an unclosed quote."""
+    """Each `git commit` in a shell command as (environment assignments, git options, commit arguments,
+    folder), where folder is where earlier `cd` commands in the same command line moved to (None when
+    none did). Raises ValueError when the command cannot be split, such as an unclosed quote."""
     found = []
-    for words in _simple_commands(command):
+    folder = None
+    for words in _simple_commands(_without_heredocs(command)):
+        if len(words) >= 2 and words[0] == "cd":
+            target = os.path.expanduser(words[1])
+            folder = target if folder is None else os.path.join(folder, target)
+            continue
         env, index = {}, 0
         while index < len(words) and ASSIGNMENT.match(words[index]):
             key, value = words[index].split("=", 1)
@@ -643,7 +678,7 @@ def git_commits(command):
                 options.append((words[index], None))
                 index += 1
         if index < len(words) and words[index] == "commit":
-            found.append((env, options, words[index + 1:]))
+            found.append((env, options, words[index + 1:], folder))
     return found
 
 
@@ -727,8 +762,8 @@ def check_commit_command(payload):
     except ValueError:
         return []
     problems = []
-    for env, options, args in commits:
-        folder = cwd
+    for env, options, args, moved in commits:
+        folder = cwd / moved if moved else cwd
         for option, value in options:
             if option == "-C" and value:
                 folder = folder / value

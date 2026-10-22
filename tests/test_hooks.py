@@ -94,6 +94,34 @@ class CommitIdentityRule(Project):
         self.assertIsNone(self.bash('git commit -m "unclosed'))  # cannot be parsed: not judged
         self.assertEqual(self.log(), [])
 
+    def test_a_commit_after_cd_is_judged_by_that_repository(self):
+        # Seen in this repository: `cd` into another repository and committing there was refused with this
+        # repository's history. The other repository has another person's history, so their commit passes.
+        other = self.root.parent / "other"
+        other.mkdir()
+        git(other, "init", "-q")
+        git(other, "config", "user.name", "someone")
+        git(other, "config", "user.email", "someone@example.com")
+        (other / "a.txt").write_text("a", encoding="utf-8")
+        git(other, "add", "a.txt")
+        git(other, "commit", "-q", "-m", "First")
+        author = "GIT_AUTHOR_NAME=someone GIT_AUTHOR_EMAIL=someone@example.com"
+        self.assertIsNone(self.bash(f'cd "{other}" && {author} git commit -m "Next"'))
+        self.assertIsNone(self.bash(f'cd ../other && {author} git commit -m "Next"'))
+        self.assertIsNotNone(self.bash(f'{author} git commit -m "Next"'))  # here they have no history
+        # The same commit in this repository is still refused.
+        refused = self.bash('cd . && GIT_AUTHOR_NAME=Claude GIT_AUTHOR_EMAIL=noreply@anthropic.com git commit -m Fix')
+        self.assertEqual(refused["hookSpecificOutput"]["permissionDecision"], "deny")
+
+    def test_text_fed_to_a_program_is_not_a_command(self):
+        # Seen in this repository: a script passed to python on a heredoc held a test string with an agent's
+        # commit, and the script's triple quotes unbalanced the shell's, so the string read as a command.
+        script = ("python3 - <<'EOF'\nt = '\'\'\n"
+                  "run('cd . && GIT_AUTHOR_NAME=Claude GIT_AUTHOR_EMAIL=noreply@anthropic.com git commit -m Fix')\n"
+                  "'\'\'\nEOF\n")
+        self.assertIsNone(self.bash(script))
+        self.assertIsNone(self.bash("cat > notes.txt <<EOF\ngit commit -m x -m '" + AGENT_TRAILER + "'\nEOF"))
+
 
 class DoneCheckRule(Project):
     def test_stop_with_unchecked_changes_is_blocked_once(self):

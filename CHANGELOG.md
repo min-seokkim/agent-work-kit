@@ -41,6 +41,7 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Fixed
 
+- The `commit-identity` hook rule judged a commit made after `cd` into another repository by the session's repository, and read the body of a heredoc fed to a program (a Python script holding a `git commit` string) as commands. It follows `cd` and skips such heredoc bodies.
 - `awkit doctor` passed a coding agent's Git identity such as `Claude <noreply@anthropic.com>` as fine. It now checks the configured identity against the repository's history, and `kit init` and `kit example` commit into a repository with history only as an identity that fits it, skipping the commit with the reason otherwise.
 - The hooks from `awkit kit hooks` named the Python interpreter awkit was installed with and broke when that environment moved; they call `awkit` by name.
 - `awkit check done` counted `.claude/settings.local.json`, which `kit hooks --claude` writes, as unchecked work and blocked every turn. Files local to the machine are left out, and the file is excluded from Git locally.

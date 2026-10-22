@@ -135,7 +135,7 @@ command = ["{python}", "-m", "awkit", "check", "commit", "--hook"]
 
 `awkit hook report [DIR] [--json]` prints per session how often rules fired, blocked (`deny` and `block`), asked, injected and failed, with counts per rule, and any problems in `rules.toml`.
 
-`check commit --hook` is the command behind the example `commit-identity` rule. It reads the message from `-m`, `--message`, `-F` (a file, or `-` with a heredoc) and `$(cat <<'EOF' ...)` substitutions, and the author from `--author`, `GIT_AUTHOR_*` assignments before `git`, `-c user.*` or Git's configuration. A command it cannot split, such as one with an unclosed quote, passes.
+`check commit --hook` is the command behind the example `commit-identity` rule. It reads the message from `-m`, `--message`, `-F` (a file, or `-` with a heredoc) and `$(cat <<'EOF' ...)` substitutions, and the author from `--author`, `GIT_AUTHOR_*` assignments before `git`, `-c user.*` or Git's configuration. The repository is the event's `cwd` moved by `cd` commands earlier in the same command line and by `git -C`. The body of a heredoc that feeds a program, such as a script for `python3 - <<'EOF'`, is input and never read as commands. A command it cannot split, such as one with an unclosed quote, passes.
 
 ## channel
 

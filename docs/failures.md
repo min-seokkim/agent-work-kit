@@ -2,17 +2,13 @@
 
 Agents fail in recognizable situations, in recognizable ways. This catalogue lists those failures. It is a design document: it chooses the kit's situation guards (skills, hooks, `awkit` checks, situation guidance), measures whether they catch anything, and shows what to remove. It is not given to agents. Agents get the baseline workflow and the guards, written as what to do, with a failure as the reason where it helps. See Scope in [development.md](development.md).
 
-Entries observed while developing this repository cite commits on `dev`. Entries carried over from the existing kit were written from earlier sessions whose records were not kept; they are marked "needs evidence" until a real occurrence is recorded. Evidence marked "owner's records" comes from the repository owner's own record of the corrections they made while having agents write documents (project and operations documents, reports for non-developers, UI text and CLI output, resumes and application letters) and while using agents for research, explanations, troubleshooting and purchase decisions. The records stay outside this repository; occurrences are described here without names or dates. Evidence marked "external" comes from other users' public reports (Claude Code issues, the Cursor forum, papers) that the planning session read; the links are under Sources at the end, and an entry links a report directly where the planning session tied it to that entry.
+Entries observed while developing this repository cite commits on `dev`. Entries carried over from the existing kit were written from earlier sessions whose records were not kept; they are marked "needs evidence" until a real occurrence is recorded. Evidence marked "owner's records" comes from the repository owner's own record of the corrections they made while having agents write documents (project and operations documents, reports for non-developers, UI text and CLI output, resumes and application letters) and while using agents for research, explanations, troubleshooting and purchase decisions. The records stay outside this repository; occurrences are described here without names or dates.
 
 ## Rules for entries
 
 An entry needs four things: the situation that triggers it (so the countermeasure can be loaded only then), the failure as it shows in the output, at least one recorded occurrence, and a check that would have caught that occurrence. Prefer checks a machine runs (a test, an `awkit` command, a hook) over instructions; use instructions only where no check is possible, and say so. Remove an entry, and the kit text that serves it, when it has not been seen in real work for a long time.
 
 Record the failure that recurred, not the instruction that corrected it. A correction given for one document (one page, noun endings, no bullets, five revision passes) is that document's requirement and belongs in the project's profile. Before adding an entry, check whether an existing entry already describes the same failure, and add the occurrence there instead.
-
-## Instructions fade
-
-Instructions lose their effect within a session. Users report in Claude Code issues and on the Cursor forum that the agent forgets rules after a few turns, and the Cursor team's advice is to restate the core rules in every new conversation. The only measures reported to work are mechanical ones (hooks, linters); a style guide file roughly halved the problems it targeted ([report](https://github.com/anthropics/claude-code/issues/77136)). The kit's baseline workflow and situation guides fade the same way, so every guide section in the mapping table below says whether it can become a check, and the ones that can are listed as candidate checks in [development.md](development.md).
 
 Mechanism status: `enforced` means a check runs without the agent choosing to; `tool` means `awkit` records or verifies it when the agent uses it; `prose` means only an instruction exists; `planned` names the check to build.
 
@@ -24,9 +20,7 @@ Mechanism status: `enforced` means a check runs without the agent choosing to; `
 
 The agent reports success, but the checks ran on another state of the files, or did not run. For documents, the text was edited but the rendered output (line breaks, tables, page fit) was never looked at.
 - Evidence: owner's records. A documentation site was about to be committed with broken line breaks, which the owner found ("let's undo the commit and fix the line breaks"; "is there anything else to check before committing? I want to stop looking at this"). A table broke after IDs were replaced with long names.
-- Evidence, external: completion reported without the checks having run ([report](https://github.com/anthropics/claude-code/issues/97155)); tests written to pass without testing the behavior ([report](https://github.com/anthropics/claude-code/issues/95494)).
 - Countermeasure: check a frozen snapshot and report its run folder; for documents, inspect the rendered output before reporting.
-- Other tools: five public tools already enforce a check when an agent reports done, among them [kkamak](https://github.com/th-yoo/kkamak), [groundtruth](https://github.com/vnmoorthy/groundtruth) and [cngx](https://github.com/aadi-joshi/cngx). Their own reports show the limits: one ran thirteen times on its own repository, caught no defect and raised one false alarm; another counts a passing test without assertions as verification. awkit's check has the same limit, since it trusts exit codes, and gets no further work (see Decisions in development.md).
 - Check: `awkit check done`, as a Claude Code Stop hook from `awkit kit hooks --claude`: files changed in the session need a passing `review check` of exactly their current state. Status: enforced where the hook is installed, tool otherwise; rendered output is still prose. Test: `tests/test_checks.py` (changed after checking, untracked files, the hook blocking once per turn).
 
 #### F2. The first failure disappears.
@@ -42,27 +36,6 @@ Tests pass on one platform and the work is reported as working everywhere.
 - Evidence: observed here. Tests passed on Linux; the first Windows CI run on `dev` failed two tests (path ordering, 8.3 short names), fixed in `a5eec42`.
 - Countermeasure: name the environments a claim covers; run all of them before claiming.
 - Check: CI matrix for this repository. Status: enforced here, prose for user projects; planned: profile field for target environments that the done-check reads.
-
-#### F40. Actions reported in the past tense that were not done.
-
-The report says a file was added, a source checked or a comment answered, and it was not.
-- Evidence, external: a file reported as put in place that was never moved, and comment IDs given that do not exist ([report](https://github.com/anthropics/claude-code/issues/95319)). An online shop operator in Korea asked the agent to judge the stock status in wholesalers' replies; it checked only that replies existed and reported that it had checked ([report](https://github.com/anthropics/claude-code/issues/99761)).
-- Countermeasure: report each action with the observation that shows it happened (the path listed, the ID looked up); "checked" names what was compared with what.
-- Check: prose; a done check could ask for one observation per claimed action.
-
-#### F42. A correction answered with a true but misleading frame.
-
-Told that it overstepped or got something wrong, the agent answers with statements that are each true but leave a wrong impression of what it did.
-- Evidence, external: work beyond the requested scope, then a report framed to hide it ([report](https://github.com/anthropics/claude-code/issues/103836)).
-- Countermeasure: report what was not done and what went beyond the request before what was done.
-- Check: prose.
-
-#### F44. Errors hidden so the result looks like it works.
-
-The agent catches or suppresses an error and delivers code or a status that appears to work.
-- Evidence, external: a status board showing green while the work had not run ([report](https://github.com/anthropics/claude-code/issues/94886)).
-- Countermeasure: let errors surface; a fallback is reported as a fallback.
-- Check: prose; `review check` sees only exit codes, so it cannot tell.
 
 ### Describing behavior in documents and commit messages
 
@@ -92,7 +65,7 @@ A count from part of the data is stated as the whole, or a metric counts things 
 #### F7. A convenience changes state nobody asked to change.
 
 A read or check command creates, commits or deletes something.
-- Evidence: observed here. `review compare` in a folder without Git created a repository and committed every file, `.env` included (from `f475f9e`, fixed in `b5d78ba`). External: commits made without the user's permission ([report](https://github.com/anthropics/claude-code/issues/95494)).
+- Evidence: observed here. `review compare` in a folder without Git created a repository and committed every file, `.env` included (from `f475f9e`, fixed in `b5d78ba`).
 - Countermeasure: read commands never write; write commands touch only what was named.
 - Check: tests that read commands leave the folder unchanged. Status: enforced for `awkit`.
 
@@ -138,7 +111,7 @@ Features and documents are added because they seem useful, before real use shows
 #### F35. The user's guess becomes the requirement.
 
 The user, new to a field, proposes an approach; the agent builds on it and adjusts the plan to each new idea instead of evaluating it.
-- Evidence: owner's records. A server layout kept changing to follow the owner's ideas until the owner said to ignore what they had said and think it through, asked what the standard layout was, and said it was their first time and the agent should bring in industry practice. External: reported among the public issues the planning session read (Sources).
+- Evidence: owner's records. A server layout kept changing to follow the owner's ideas until the owner said to ignore what they had said and think it through, asked what the standard layout was, and said it was their first time and the agent should bring in industry practice.
 - Countermeasure: read each statement from the user as a hypothesis, a constraint or a decision. For a hypothesis, give the standard approach, the strengths and weaknesses, and the alternatives, and say when the conclusion changes and why. Disagreement names the premise or step that is wrong, not the user.
 - Check: prose.
 
@@ -175,7 +148,7 @@ Long human-oriented documents for a tool whose user is an agent, or agent detail
 #### F30. Facts, attribution or certainty change while writing.
 
 A rewrite drops a number, condition or exception, turns a possibility into a certainty or a permission into an obligation, or claims something was verified when only the wording changed. Shortening removes facts instead of repetition. A plan reads as what happened, or one person's or project's work is credited to another.
-- Evidence: owner's records. A purchase plan read as the purchase actually made, and had to be rewritten to say what was planned and what was bought. Asked to write a status document more compactly, the agent cut content; the owner corrected that it should say the same in fewer words, over more than one page if needed. In resumes: results from two projects merged, a problem someone else found written as the owner's discovery, integration work written as ownership of the system, a technology used once listed as a skill. External: language models summarizing research drop the conditions of a finding and state it more generally than the source ([study](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC12042776/)).
+- Evidence: owner's records. A purchase plan read as the purchase actually made, and had to be rewritten to say what was planned and what was bought. Asked to write a status document more compactly, the agent cut content; the owner corrected that it should say the same in fewer words, over more than one page if needed. In resumes: results from two projects merged, a problem someone else found written as the owner's discovery, integration work written as ownership of the system, a technology used once listed as a skill.
 - Countermeasure: list what must be preserved (facts, numbers, conditions, who did what, plan or done) before writing and check the text against the list; shorten by removing repetition and wordy phrasing.
 - Check: prose.
 
@@ -212,7 +185,7 @@ Conversational phrasing, the user's feelings or the conversation itself appear i
 #### F16. Approved work regresses during a later change.
 
 A revision passes its checks but loses what the user had accepted.
-- Evidence: needs evidence (carried over from `kit/work-types.md`). No external report found in three searches. awkit's own loop (accept and compare) guards it, so whether it occurs in real work is the main question of next work 5.
+- Evidence: needs evidence (carried over from `kit/work-types.md`). awkit's own loop (accept and compare) guards it, so whether it occurs in real work is a main question of next work 5.
 - Countermeasure: keep the accepted version; compare every revision with it.
 - Check: `awkit review accept` and `compare`. Status: tool.
 
@@ -221,7 +194,7 @@ A revision passes its checks but loses what the user had accepted.
 #### F17. The reviewed version is not the shipped version.
 
 The author keeps editing during review, or the reviewer has seen the author's reasoning.
-- Evidence: needs evidence. No external report found in three searches; like F16 it is guarded by awkit's own loop and measured in next work 5.
+- Evidence: needs evidence. Like F16 it is guarded by awkit's own loop and measured in next work 5.
 - Countermeasure: review a snapshot ID; use a fresh session that did not see the implementation.
 - Check: `awkit review snapshot`, `channel --snap`. Status: tool.
 
@@ -320,7 +293,7 @@ Asked what a feature does, the agent answers with warnings and a recommendation 
 #### F39. A workaround replaces the restoration the user asked for.
 
 A behavior that worked before a change is to be restored; the agent proposes alternatives that need extra steps each time, repeats proposals that already failed and ignores the change history and per-condition results the user supplied.
-- Evidence: owner's records. Remote access that had worked before a system reinstall was to be restored; the agent kept proposing a different procedure although the owner had reported what had and had not changed, the difference between shutdown and sleep, and the result per packet type. The fix was a network profile setting. External: failed proposals repeated, reported among the public issues the planning session read (Sources).
+- Evidence: owner's records. Remote access that had worked before a system reinstall was to be restored; the agent kept proposing a different procedure although the owner had reported what had and had not changed, the difference between shutdown and sleep, and the result per packet type. The fix was a network profile setting.
 - Countermeasure: keep the wanted end state fixed; a solution that needs extra steps is reported as an alternative, not as the fix. Use when it last worked, what changed and the results per condition; update the hypothesis after each failed attempt instead of repeating it.
 - Check: prose.
 
@@ -336,27 +309,13 @@ The agent does the work when the user wanted to learn or decide, or only advises
 #### F29. Context is lost between sessions.
 
 The user explains the project again, or an interrupted external operation is repeated.
-- Evidence: owner's records. Writing rules kept in one agent's memory did not reach another agent working on the same documents; the owner repeated the instructions and asked whether the second agent had read the first one's research. External: rules forgotten after a few turns, and the advice to restate them in every new conversation ([Cursor forum](https://forum.cursor.com/t/cursor-neglecting-strict-rules-on-a-regular-base/153788/3)).
+- Evidence: owner's records. Writing rules kept in one agent's memory did not reach another agent working on the same documents; the owner repeated the instructions and asked whether the second agent had read the first one's research.
 - Countermeasure: standing rules in a repository file every agent reads (`AGENTS.md`); project profile; checkpoint with the next action; verify actual state before resuming.
 - Check: prose plus templates.
 
-#### F41. A correction acknowledged, the behavior unchanged.
-
-The agent agrees it broke a rule and breaks it again in the next turn.
-- Evidence, external: one user restated a review procedure, which loads every turn, more than twenty times in one session, and the model answered that no wording would help ([report](https://github.com/anthropics/claude-code/issues/103532)); the same shape in [another report](https://github.com/anthropics/claude-code/issues/23407) and [a third](https://github.com/anthropics/claude-code/issues/15443). Six of the eight reports the planning session read had this shape.
-- Countermeasure: turn the rule into a check that runs without the agent choosing to (see Instructions fade); restating it does not work.
-- Check: hooks and `awkit check` where the rule can be checked.
-
-#### F43. Conflicting instructions resolved toward permission; rules invented.
-
-Where two instructions conflict, the agent follows the more permissive one; elsewhere it invents a rule the user never gave and enforces it.
-- Evidence, external: reported among the public issues the planning session read (Sources).
-- Countermeasure: name the conflict and ask, or follow the stricter instruction and say so; state where each rule applied came from.
-- Check: prose.
-
 ## Current kit mapped to entries
 
-Each section of the kit and the entries it serves. `workflow.md`, the kit README and the project profile are read every session; every other guide is read when its situation arises, as a skill where the agent supports skills. A section that serves no entry is either a step of the baseline workflow or moves to `kit/reference.md` or out of the kit.
+Each section of the kit, the entries it serves and whether it can become a check, since a check runs without the agent choosing to and an instruction does not (Rules for entries). `workflow.md`, the kit README and the project profile are read every session; every other guide is read when its situation arises, as a skill where the agent supports skills. A section that serves no entry is either a step of the baseline workflow or moves to `kit/reference.md` or out of the kit.
 
 | File | Section | Words | Entries | As a check |
 |---|---|---|---|---|
@@ -408,12 +367,4 @@ Each section of the kit and the entries it serves. `workflow.md`, the kit README
 | templates/task.md, review.md, decision.md, checkpoint.md | | 811 | F1, F12, F17, F29 | No: templates. |
 | templates/roles/README.md | | 316 | F20 | Partly: `kit roles` writes the role files. |
 
-F1, F4, F5, F9, F13, F14 and F32 have mechanical checks (see their Check fields); the other entries rely on kit text and are measured in next work 5. F40 to F44, from external reports, have no kit text yet. The checks marked "not built" above are the candidate checks in development.md.
-
-## Sources
-
-External reports the planning session read:
-
-- Claude Code issues: [done without checks](https://github.com/anthropics/claude-code/issues/97155), [fake tests and commits without permission](https://github.com/anthropics/claude-code/issues/95494), [actions described in the past tense that were not done](https://github.com/anthropics/claude-code/issues/95319), [the shop operator's stock check](https://github.com/anthropics/claude-code/issues/99761), [a green status board with nothing run](https://github.com/anthropics/claude-code/issues/94886), [scope exceeded and a misleading report](https://github.com/anthropics/claude-code/issues/103836), [twenty restatements in one session](https://github.com/anthropics/claude-code/issues/103532), [a procedure ignored after reminders](https://github.com/anthropics/claude-code/issues/23407), [a rule acknowledged then broken](https://github.com/anthropics/claude-code/issues/15443), [too many comments](https://github.com/anthropics/claude-code/issues/65961), [a style guide fading](https://github.com/anthropics/claude-code/issues/77136).
-- Tools that check done reports: [kkamak](https://github.com/th-yoo/kkamak), [groundtruth](https://github.com/vnmoorthy/groundtruth), [cngx](https://github.com/aadi-joshi/cngx).
-- [Cursor forum: rules neglected](https://forum.cursor.com/t/cursor-neglecting-strict-rules-on-a-regular-base/153788/3), [ASE 2026 paper](https://arxiv.org/pdf/2605.30777), [generalization bias in summaries](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC12042776/), [Columbia DAPLab: nine failure patterns of coding agents](https://daplab.cs.columbia.edu/general/2026/01/08/9-critical-failure-patterns-of-coding-agents.html).
+F1, F4, F5, F9, F13, F14 and F32 have mechanical checks (see their Check fields); the other entries rely on kit text and are measured in next work 5. The checks marked "not built" above are the candidate checks in development.md.

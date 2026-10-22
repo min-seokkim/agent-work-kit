@@ -137,6 +137,93 @@ class KitHooks(unittest.TestCase):
         self.awkit("--remove")
         self.assertEqual(tree(self.root), before)
 
+    def test_generated_settings_are_excluded_but_other_settings_are_candidates(self):
+        self.awkit()
+        self.assertEqual(git(self.root, "ls-files", "--others", "--exclude-standard"), "rules.toml")
+        for relative in (".claude/other.json", ".codex/config.toml", "nested/.codex/hooks.json"):
+            path = self.root / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("{}", encoding="utf-8")
+            self.assertIn(relative, git(self.root, "ls-files", "--others", "--exclude-standard").splitlines())
+
+    def test_preexisting_settings_keep_their_git_visibility(self):
+        for relative in kit_hooks.SETTINGS.values():
+            path = self.root / relative
+            path.parent.mkdir(parents=True)
+            path.write_bytes(b'{\r\n\t"model": "mine"\r\n}')
+        git(self.root, "add", ".codex/hooks.json")
+        git(self.root, "commit", "-q", "-m", "Track Codex settings")
+        before = tree(self.root)
+        self.awkit()
+        self.assertIn(".claude/settings.local.json", git(self.root, "ls-files", "--others", "--exclude-standard"))
+        self.assertIn(".codex/hooks.json", git(self.root, "diff", "--name-only", "HEAD"))
+        self.awkit("--remove")
+        self.assertEqual(tree(self.root), before)
+
+    def test_exclude_bytes_round_trip_and_later_edits_survive(self):
+        exclude = self.root / ".git/info/exclude"
+        for original in (None, b"", b"# mine\xff", b"# mine\n*.tmp\n", b"# mine\r\n*.tmp\r\n"):
+            with self.subTest(original=original):
+                exclude.unlink(missing_ok=True)
+                if original is not None:
+                    exclude.write_bytes(original)
+                self.awkit()
+                once = exclude.read_bytes()
+                self.awkit()
+                self.assertEqual(exclude.read_bytes(), once)
+                self.awkit("--remove")
+                self.assertEqual(exclude.read_bytes() if exclude.exists() else None, original)
+        exclude.write_bytes(b"# before\r\n*.mine\r\n")
+        self.awkit()
+        exclude.write_bytes(exclude.read_bytes() + b"# later\r\n*.later\r\n")
+        self.awkit("--remove")
+        self.assertEqual(exclude.read_bytes(), b"# before\r\n*.mine\r\n# later\r\n*.later\r\n")
+
+    def test_removal_with_retained_records_and_changed_settings(self):
+        self.awkit()
+        local = self.root / ".claude/settings.local.json"
+        data = json.loads(local.read_text(encoding="utf-8"))
+        data["model"] = "mine"
+        data["hooks"]["Stop"].append({"hooks": [USER_HANDLER]})
+        local.write_text(json.dumps(data), encoding="utf-8")
+        records = self.root / ".awkit/reviews/keep.txt"
+        records.parent.mkdir()
+        records.write_text("evidence", encoding="utf-8")
+        self.awkit("--remove")
+        self.assertEqual(json.loads(local.read_text(encoding="utf-8")),
+                         {"model": "mine", "hooks": {"Stop": [{"hooks": [USER_HANDLER]}]}})
+        self.assertIn(".claude/settings.local.json", git(self.root, "ls-files", "--others", "--exclude-standard"))
+        self.assertNotIn(".awkit/reviews/keep.txt", git(self.root, "ls-files", "--others", "--exclude-standard"))
+        self.assertEqual(records.read_text(encoding="utf-8"), "evidence")
+
+    def test_existing_ignores_and_later_exclude_edits_are_not_removed(self):
+        exclude = self.root / ".git/info/exclude"
+        original = b"/.codex/hooks.json\r\n"
+        exclude.write_bytes(original)
+        self.awkit()
+        # Editing the rule itself transfers its ownership to the user.
+        exclude.write_bytes(exclude.read_bytes().replace(b"/.claude/settings.local.json\r\n", b"/.claude/*.json\r\n"))
+        self.awkit("--remove")
+        self.assertEqual(exclude.read_bytes(), original + b"/.claude/*.json\r\n")
+
+    def test_an_older_install_repairs_its_missing_excludes(self):
+        self.awkit()
+        record = self.root / kit_hooks.RECORD
+        data = json.loads(record.read_text(encoding="utf-8"))
+        for entry in reversed(data.pop("settings_excluded")):
+            kit_hooks.restore_exclude(self.root, entry)
+        record.write_text(json.dumps(data), encoding="utf-8")
+        self.assertIn(".codex/hooks.json", git(self.root, "ls-files", "--others", "--exclude-standard"))
+        self.awkit()
+        self.assertEqual(git(self.root, "ls-files", "--others", "--exclude-standard"), "rules.toml")
+
+    def test_user_additions_to_a_generated_git_hook_survive_removal(self):
+        self.awkit()
+        hook = self.root / ".git/hooks/commit-msg"
+        hook.write_bytes(hook.read_bytes() + b"# later user addition\n")
+        self.awkit("--remove")
+        self.assertEqual(hook.read_bytes(), b"# later user addition\n")
+
     def test_a_changed_rules_file_is_deleted_only_when_the_person_agrees(self):
         self.awkit("--claude")
         rules = self.root / "rules.toml"

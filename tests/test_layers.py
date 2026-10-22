@@ -15,7 +15,6 @@ from pathlib import Path
 from unittest import mock
 
 from awkit import __version__, connect, environment
-from awkit.checks import LOCAL_ONLY
 from awkit.doctor import diagnose
 from awkit.kit_install import SITUATIONS, WORKFLOW, install_user_skills
 from awkit.review import git
@@ -98,7 +97,7 @@ class Isolated(unittest.TestCase):
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(text, encoding="utf-8", newline="\n")
         git(root, "add", "-A")
-        git(root, "commit", "-q", "-m", "First")
+        git(root, "commit", "-q", "--allow-empty", "-m", "First")
         return root
 
     def awkit(self, *args, cwd=None):
@@ -218,6 +217,21 @@ class ProjectLayer(Isolated):
         self.assertIn("nothing was committed", printed)
         self.assertEqual((root / "AGENTS.md").read_bytes(), before)
 
+    def test_real_hooks_and_init_restore_excludes_with_no_final_newline(self):
+        for original in (None, b"", b"# mine\xff", b"# mine\r\n*.tmp\r\n"):
+            with self.subTest(original=original):
+                root = self.repository(f"real-exclude-{len(original) if original is not None else 'missing'}",
+                                       {"README.md": "# P\n"})
+                exclude = root / ".git/info/exclude"
+                exclude.unlink(missing_ok=True)
+                if original is not None:
+                    exclude.write_bytes(original)
+                self.assertEqual(self.awkit("kit", "init", cwd=root).returncode, 0)
+                self.awkit("kit", "init", cwd=root)
+                result = self.awkit("kit", "remove", "--delete-records", cwd=root)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertEqual(exclude.read_bytes() if exclude.exists() else None, original)
+
 
 class UserRemoval(Isolated):
     def test_remove_user_restores_the_home_folder(self):
@@ -303,10 +317,25 @@ class WriteGuarantee(Isolated):
 
 class EndToEnd(Isolated):
     def test_empty_project_from_install_to_a_passing_done_check(self):
-        root = self.repository("first", {"README.md": "# First\n"})
-        for args in (("kit", "skills"), ("kit", "init")):
-            result = self.awkit(*args, cwd=root)
-            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.check_project("empty", {})
+
+    def test_existing_instructions_hooks_and_memory(self):
+        self.check_project("claude", KINDS["claude"])
+
+    def test_skill_bundle_and_completion_gate(self):
+        self.check_project("bundle", {**KINDS["bundle"], "gate.json": '{"check": "make test"}\n'})
+
+    def check_project(self, name, files):
+        root = self.repository(name, files)
+        result = self.awkit("kit", "init", cwd=root)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(candidates(root), ["checks.toml", "rules.toml"])
+        installed, state = tree(root), git_state(root)
+        self.awkit("kit", "init", cwd=root)
+        self.assertEqual(tree(root), installed)
+        self.assertEqual(git_state(root), state)
+        if name == "bundle":
+            self.assertIn("--skip done-check", (root / ".codex/hooks.json").read_text(encoding="utf-8"))
         # Connecting: the agent fills the [kit] table with the user and adds the project's check.
         text = (root / "checks.toml").read_text(encoding="utf-8")
         text = text.replace('done = ""', 'done = "README.md says what the project is"')
@@ -315,23 +344,14 @@ class EndToEnd(Isolated):
         (root / "checks.toml").write_text(text, encoding="utf-8")
         doctor = {f["item"]: f for f in diagnose(root)}
         self.assertEqual(doctor["kit version"]["status"], "ok")
-        self.assertEqual(doctor["claude user skills"]["status"], "ok")
         self.assertNotIn("hooks", doctor)
-        # Only the project layer is committed; the hooks stay in this clone.
         self.assertTrue((root / "rules.toml").is_file())
-        git(root, "add", "checks.toml", "rules.toml")
-        commit = subprocess.run(["git", "-C", str(root), "commit", "-q", "-m", "Add the completion conditions"],
-                                capture_output=True, text=True, encoding="utf-8")
-        self.assertEqual(commit.returncode, 0, commit.stderr)
         self.assertEqual(self.awkit("check", "done", "--mark", "--repo", str(root)).returncode, 0)
         (root / "README.md").write_text("# First\n\nA project.\n", encoding="utf-8")
         self.assertEqual(self.awkit("check", "done", "--repo", str(root)).returncode, 1)
-        # The snapshot names what Git shows as changed or new, as the kit's snapshot command does: the hook
-        # files kit hooks left untracked are part of the state the done check compares, except the files it
-        # treats as local to this clone.
-        changed = [path for path in git(root, "diff", "--name-only", "HEAD").splitlines()
-                   + git(root, "ls-files", "--others", "--exclude-standard").splitlines()
-                   if not path.startswith(LOCAL_ONLY)]
+        # Exactly the documented recipe, with no test-only path filters.
+        changed = (git(root, "diff", "--name-only", "--no-renames", "HEAD").splitlines()
+                   + git(root, "ls-files", "--others", "--exclude-standard").splitlines())
         self.assertIn("README.md", changed)
         snap = self.awkit("review", "--repo", str(root), "snapshot", *changed)
         self.assertEqual(snap.returncode, 0, snap.stderr)
@@ -340,6 +360,10 @@ class EndToEnd(Isolated):
         self.assertEqual(checked.returncode, 0, checked.stdout + checked.stderr)
         done = self.awkit("check", "done", "--repo", str(root))
         self.assertEqual(done.returncode, 0, done.stdout + done.stderr)
+        (root / "README.md").write_text("# Later edit\n", encoding="utf-8")
+        stale = self.awkit("check", "done", "--repo", str(root))
+        self.assertEqual(stale.returncode, 1, stale.stdout + stale.stderr)
+        self.assertIn("README.md", stale.stdout + stale.stderr)
 
 
 if __name__ == "__main__":

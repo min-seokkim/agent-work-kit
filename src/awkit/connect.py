@@ -147,13 +147,10 @@ class Changes:
         self.data.update(kit_source())
         self.path.parent.mkdir(parents=True, exist_ok=True)
         if self.exclude and (self.top / ".git").exists():
-            exclude = _exclude_file(self.top)
-            before = exclude.read_text(encoding="utf-8") if exclude and exclude.is_file() else ""
-            from .review import exclude_locally
-            exclude_locally(self.top, ".awkit/")
-            after = exclude.read_text(encoding="utf-8") if exclude and exclude.is_file() else ""
-            if after != before:
-                self.data["excluded"] = True
+            from .kit_hooks import exclude_local
+            entry = exclude_local(self.top, ".awkit/", BACKUP / "git-info-exclude")
+            if entry:
+                self.data["excluded"] = entry
                 self.excluded_now = True
         self.path.write_text(json.dumps(self.data, indent=2) + "\n", encoding="utf-8")
         return self.path
@@ -554,10 +551,10 @@ def remove(folder, keep_records=None, hooks=True):
                     leftover.unlink()
             report["awkit_folder"] = "kept"
         else:
+            if changes.data.get("excluded"):
+                _unexclude(top, changes.data["excluded"])
             shutil.rmtree(awkit)
             report["awkit_folder"] = "deleted"
-            if changes.data.get("excluded"):
-                _unexclude(top)
     else:
         report["awkit_folder"] = "absent"
     return report
@@ -590,7 +587,11 @@ def remove_user(home=None):
     return {"files": files, "dirs": dirs, "recorded": recorded}
 
 
-def _unexclude(top):
+def _unexclude(top, entry=None):
+    if isinstance(entry, dict):
+        from .kit_hooks import restore_exclude
+        restore_exclude(top, entry)
+        return
     exclude = _exclude_file(top)
     if exclude is None or not exclude.is_file():
         return

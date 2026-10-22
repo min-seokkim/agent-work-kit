@@ -125,39 +125,92 @@ class Record:
         return True
 
     def save(self):
+        if (self.top / ".git").exists():
+            if (self.changed or self.data["files"]) and not self.data.get("excluded"):
+                self._exclude()
+            self._exclude_settings()
         if not self.changed:
             return
         path = self.top / RECORD
         path.parent.mkdir(parents=True, exist_ok=True)
         if not self.had_awkit:
             self.data["created_awkit"] = True
-        if (self.top / ".git").exists() and not self.data.get("excluded"):
-            self._exclude()
         path.write_text(json.dumps(self.data, indent=2) + "\n", encoding="utf-8")
 
     def _exclude(self):
         """Keep .awkit/ out of Git through .git/info/exclude, unless something ignores it already, keeping the
         file's bytes and line endings so `--remove` can restore them."""
-        from .review import _probe
-        if not _probe(self.top, "check-ignore", "-q", "--no-index", ".awkit/x").returncode:
-            return
-        exclude = _exclude_file(self.top)
-        if exclude is None:
-            return
-        before = exclude.read_bytes() if exclude.is_file() else None
-        text = (before or b"").decode("utf-8", errors="surrogateescape")
-        newline = "\r\n" if "\r\n" in text else "\n"
-        text += ("" if not text or text.endswith("\n") else newline) + ".awkit/" + newline
-        after = text.encode("utf-8", errors="surrogateescape")
-        entry = {"before": _sha(before), "after": _sha(after)}
-        if before is not None:
-            backup = self.top / BACKUP / "git-info-exclude"
-            backup.parent.mkdir(parents=True, exist_ok=True)
-            backup.write_bytes(before)
-            entry["backup"] = backup.relative_to(self.top).as_posix()
-        exclude.parent.mkdir(parents=True, exist_ok=True)
-        exclude.write_bytes(after)
-        self.data["excluded"] = entry
+        entry = exclude_local(self.top, ".awkit/", BACKUP / "git-info-exclude")
+        if entry:
+            self.data["excluded"] = entry
+            self.changed = True
+
+    def _exclude_settings(self):
+        from .review import _probe, git
+        for relative in SETTINGS.values():
+            key = relative.as_posix()
+            entry = self.data["files"].get(key)
+            if not entry or entry.get("before") is not None or not (self.top / relative).is_file():
+                continue
+            # A file the user staged or committed remains part of the project, even after a staged deletion.
+            if git(self.top, "ls-files", "--", key):
+                continue
+            if _probe(self.top, "ls-tree", "--name-only", "HEAD", "--", key).stdout.strip():
+                continue
+            exclusions = self.data.setdefault("settings_excluded", [])
+            added = exclude_local(self.top, "/" + key, BACKUP / f"exclude-settings-{len(exclusions)}")
+            if added:
+                exclusions.append(added)
+                self.changed = True
+
+
+def exclude_local(top, pattern, backup):
+    """Append one local ignore rule and record the bytes needed to undo just that addition."""
+    from .review import _probe
+    target = pattern.lstrip("/") + ("x" if pattern.endswith("/") else "")
+    if not _probe(top, "check-ignore", "-q", "--no-index", target).returncode:
+        return None
+    exclude = _exclude_file(top)
+    if exclude is None:
+        return None
+    before = exclude.read_bytes() if exclude.is_file() else None
+    data = before or b""
+    newline = b"\r\n" if b"\r\n" in data else b"\n"
+    line = pattern.encode("utf-8") + newline
+    after = data + (b"" if not data or data.endswith(b"\n") else newline) + line
+    entry = {"pattern": pattern, "before": _sha(before), "after": _sha(after), "line": line.hex()}
+    if before is not None:
+        path = top / backup
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(before)
+        entry["backup"] = backup.as_posix()
+    exclude.parent.mkdir(parents=True, exist_ok=True)
+    exclude.write_bytes(after)
+    return entry
+
+
+def restore_exclude(top, entry):
+    """Restore unchanged bytes, or remove only the recorded rule while retaining later user edits."""
+    exclude = _exclude_file(top)
+    if not exclude or not exclude.is_file():
+        return
+    backup = top / entry["backup"] if entry.get("backup") else None
+    original = backup.read_bytes() if backup and backup.is_file() else None
+    current = exclude.read_bytes()
+    if _sha(current) == entry.get("after") and _sha(original) == entry.get("before"):
+        if original is None:
+            exclude.unlink()
+        else:
+            exclude.write_bytes(original)
+        return
+    lines = current.splitlines(keepends=True)
+    pattern = entry.get("pattern", ".awkit/").encode("utf-8")
+    own_line = bytes.fromhex(entry["line"]) if entry.get("line") else None
+    matches = [i for i, line in enumerate(lines) if line == own_line or (own_line is None and line.strip() == pattern)]
+    # Duplicate or edited rules cannot be attributed safely to awkit. Leave them for the user.
+    if len(matches) == 1:
+        del lines[matches[0]]
+        exclude.write_bytes(b"".join(lines))
 
 
 def _exclude_file(top):
@@ -308,13 +361,15 @@ def _strip_settings(path):
 
 
 def _strip_git_hook(path, created):
-    from .checks import GIT_MARK
+    from .checks import GIT_HOOK, GIT_MARK
     text = _read(path)
     if GIT_MARK not in text:
         return "unchanged"
     if created:
-        path.unlink()
-        return "deleted"
+        if text.startswith(GIT_HOOK):
+            path.write_bytes(text[len(GIT_HOOK):].encode("utf-8", errors="surrogateescape"))
+            return "stripped"
+        return "kept (changed since it was written)"
     rest = "".join(line for line in text.splitlines(keepends=True) if GIT_MARK not in line)
     path.write_bytes(rest.encode("utf-8", errors="surrogateescape"))
     return "stripped"
@@ -407,26 +462,15 @@ def remove(folder, ask=None):
 def _forget(top, record):
     """Delete the record and the copies, then .awkit/ when kit hooks created it and nothing else is left, and
     with it the exclude line, restored byte for byte while the exclude file is as kit hooks left it."""
-    excluded = record.data.get("excluded")
-    excluded = excluded if isinstance(excluded, dict) else {}
-    backup = top / excluded["backup"] if excluded.get("backup") else None
-    original = backup.read_bytes() if backup and backup.is_file() else None
+    for entry in reversed(record.data.get("settings_excluded", [])):
+        restore_exclude(top, entry)
     (top / RECORD).unlink(missing_ok=True)
-    shutil.rmtree(top / BACKUP, ignore_errors=True)
     folder = top / ".awkit"
-    if not (record.data.get("created_awkit") and folder.is_dir() and not any(folder.iterdir())):
-        return
-    folder.rmdir()
-    exclude = _exclude_file(top) if excluded else None
-    if not exclude or not exclude.is_file():
-        return
-    current = exclude.read_bytes()
-    if _sha(current) == excluded.get("after") and (original is not None or excluded.get("before") is None):
-        if original is None:
-            exclude.unlink()
-        else:
-            exclude.write_bytes(original)
-        return
-    lines = current.decode("utf-8", errors="surrogateescape").splitlines(keepends=True)
-    rest = "".join(line for line in lines if line.strip() != ".awkit/")
-    exclude.write_bytes(rest.encode("utf-8", errors="surrogateescape"))
+    removable = (record.data.get("created_awkit") and folder.is_dir()
+                 and all(path == top / BACKUP for path in folder.iterdir()))
+    excluded = record.data.get("excluded")
+    if removable and isinstance(excluded, dict):
+        restore_exclude(top, excluded)
+    shutil.rmtree(top / BACKUP, ignore_errors=True)
+    if removable:
+        folder.rmdir()

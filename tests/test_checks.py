@@ -232,6 +232,27 @@ class NestedRepositoryTests(Repository):
 
 
 class DoneTests(Repository):
+    def test_user_settings_are_checked_with_the_documented_snapshot_recipe(self):
+        self.commit("checks.toml", 'schema = 1\n[[checks]]\nname = "ok"\nargv = ["{python}", "-c", "pass"]\n')
+        names = (".claude/settings.local.json", ".codex/hooks.json", "CLAUDE.local.md")
+        for name in names:
+            path = self.repo / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("original\n", encoding="utf-8")
+        git(self.repo, "add", ".claude/settings.local.json")
+        git(self.repo, "commit", "-q", "-m", "Track local settings")
+        (self.repo / ".git/info/exclude").write_text(".claude/settings.local.json\n", encoding="utf-8")
+        (self.repo / names[0]).write_text("edited\n", encoding="utf-8")
+        paths = (git(self.repo, "diff", "--name-only", "--no-renames", "HEAD").splitlines()
+                 + git(self.repo, "ls-files", "--others", "--exclude-standard").splitlines())
+        self.assertEqual(set(paths), set(names))
+        frozen = snapshot(self.repo, paths)
+        runs = self.root / "runs"
+        self.assertEqual(check(self.repo, frozen, self.repo / "checks.toml", runs)["status"], "passed")
+        self.assertEqual(done(self.repo, runs)["status"], "checked")
+        (self.repo / names[0]).write_text("later\n", encoding="utf-8")
+        self.assertFalse(done(self.repo, runs)["ok"])
+
     def test_changed_files_need_a_passing_check_of_their_current_state(self):
         # F1: work reported as done while the checks ran on another state of the files, or not at all.
         self.commit("value.txt", "1\n", "First")
@@ -297,9 +318,10 @@ class DoneTests(Repository):
         # No rules.toml is written: the handlers pass --kit-rules, so the kit's rules apply until the project
         # has its own.
         self.assertFalse((self.repo / "rules.toml").exists())
-        # The local settings file never counts as unchecked work; the project's settings do.
+        # Pre-existing user settings count as unchecked work, including local settings.
         (self.repo / "value.txt").write_text("1\n", encoding="utf-8")
-        self.assertEqual(sorted(done(self.repo, self.root / "runs")["changed"]), [".claude/settings.json"])
+        self.assertEqual(sorted(done(self.repo, self.root / "runs")["changed"]),
+                         [".claude/settings.json", ".claude/settings.local.json"])
         self.assertEqual(install_hooks(self.repo, sys.executable, use_git=False, use_claude=True)["installed"], [])
         self.assertEqual(len(written), 2)
 

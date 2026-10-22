@@ -71,3 +71,36 @@ kind = "inject"
 events = ["PreToolUse"]
 tools = ["Agent"]
 message = "Settle shared decisions first and hand off goal, output, tools and evidence, scope. Read section 5 of {kit}/delegation.md before writing the prompt."
+
+# The rules that read the session (kit/rules-session.toml).
+
+# A request for text that leaves the conversation: a prompt for another session, a document, a report. The
+# user's words only add a line; they never refuse anything.
+[[rules]]
+name = "writing-request"
+prevents = ["F14"]
+kind = "inject"
+events = ["UserPromptSubmit"]
+prompt = '(?i)지시문|프롬프트|문서|보고서|작성|써\s*(줘|주세요|달라)|\b(write|draft)\b.{0,40}\b(prompt|instructions|document|report)'
+message = "Text that leaves the conversation follows the whole writing guide. Read the awkit-writing skill or {kit}/writing.md, and {kit}/korean-writing.md for Korean, first."
+
+# A long Korean reply shaped like a document (a heading, or a turn that asked for a document), written in a
+# session that never read the writing guide. Writing can end in the chat with no tool call, so this rule
+# reads the result instead of a tool call. `--hangul` is the number of Hangul syllables above which a reply
+# counts as long.
+[[rules]]
+name = "writing-reply"
+prevents = ["F14"]
+kind = "verify"
+events = ["Stop"]
+command = ["{python}", "-m", "awkit", "hook", "reply", "--hangul", "500"]
+message = "답글이 다른 곳에 쓰일 한국어 문서인데 작성 가이드를 읽지 않았다. 가이드의 과정대로 다시 쓰고 한국어만 따로 읽어라."
+
+# The kit version checks.toml records ([kit] version), against the awkit installed here. Without the key the
+# command prints nothing.
+[[rules]]
+name = "kit-version"
+prevents = ["F25"]
+kind = "inject"
+events = ["SessionStart"]
+command = ["{python}", "-m", "awkit", "hook", "kit-version"]

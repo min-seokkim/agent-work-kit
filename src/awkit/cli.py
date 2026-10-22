@@ -9,9 +9,9 @@ from pathlib import Path
 
 from . import __version__
 from .channel import KINDS, ROLES, Channel, render
-from .kit_install import EXAMPLES, install, install_example, install_roles
-from .pipeline import Pipeline, StepError
-from .publish import Publisher
+from .extras.pipeline import Pipeline, StepError
+from .extras.publish import Publisher
+from .kit_install import EXAMPLES, install, install_example, install_roles, install_skills
 from .review import accept, compare, snapshot, track
 from .review import check as run_checks
 from .review import verify as verify_run
@@ -28,7 +28,8 @@ def _parser():
     parser.add_argument("--version", action="version", version=f"awkit {__version__}")
     groups = parser.add_subparsers(dest="group", required=True, metavar="COMMAND")
 
-    kit = groups.add_parser("kit", help="add the kit to a project, create examples, scan a project, write role files",
+    kit = groups.add_parser("kit", help="add the kit to a project, create examples, scan a project, write role files, "
+                            "skills and hooks",
                             epilog=REFERENCE)
     kit_commands = kit.add_subparsers(dest="action", required=True, metavar="ACTION")
     init = kit_commands.add_parser("init", help="create the kit folder; an existing folder is never touched (exit 2)")
@@ -51,6 +52,12 @@ def _parser():
                        help="claude writes .claude/agents/*.md, codex writes .codex/agents/*.toml")
     roles.add_argument("--model", action="append", metavar="TIER=MODEL[:EFFORT]",
                        help="model for a tier (efficient, standard, judge, top); EFFORT is Codex only; repeatable")
+    skills = kit_commands.add_parser("skills", help="write one skill per situation guide for Claude Code or Codex; "
+                                     "existing skill files are kept")
+    skills.add_argument("dir", nargs="?", type=Path, default=Path("."), help="project folder (default: .)")
+    skills.add_argument("--provider", choices=("claude", "codex"), required=True,
+                        help="claude writes .claude/skills/awkit-*/SKILL.md, codex writes .agents/skills/awkit-*/SKILL.md")
+    skills.add_argument("--kit", type=Path, help="the kit folder inside the project (default: DIR/agent-work-kit)")
     hooks = kit_commands.add_parser("hooks", help="install the commit identity hook for Git and the done check for "
                                     "Claude Code; existing hooks are kept")
     hooks.add_argument("dir", nargs="?", type=Path, default=Path("."), help="folder in the Git repository (default: .)")
@@ -259,6 +266,13 @@ def main(argv=None):
             for path in kept:
                 print(f"kept existing hook: {path}")
             return 0
+        if args.group == "kit" and args.action == "skills":
+            written, skipped = install_skills(args.dir, args.provider, args.kit)
+            for path in written:
+                print(f"created: {path}")
+            for path in skipped:
+                print(f"kept existing file: {path}")
+            return 0 if written or not skipped else 2
         if args.group == "kit" and args.action == "roles":
             written, skipped, warnings = install_roles(args.dir, args.provider, args.model)
             for path in written:
@@ -328,7 +342,7 @@ def main(argv=None):
             print(json.dumps(result, ensure_ascii=False, indent=2))
             return 0
         if args.group == "ui":
-            from .ui import capture
+            from .extras.ui import capture
             result = capture(args.config, args.output, args.channel)
             print(json.dumps(result, ensure_ascii=False, indent=2))
             return 0 if result["status"] == "passed" else 1

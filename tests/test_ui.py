@@ -7,7 +7,7 @@ from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from awkit.ui import capture, load_config, sheet
+from awkit.extras.ui import capture, load_config, sheet
 
 
 class UITests(unittest.TestCase):

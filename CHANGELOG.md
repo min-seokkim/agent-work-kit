@@ -12,6 +12,8 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 - `awkit usage --json` uses result format 2: unmeasured token fields are `null` instead of `0`, and the result carries `format` and `total.complete`.
 - `awkit review` resolves file names, step `cwd` and `artifacts` patterns relative to the folder it runs in. Run from the repository root it behaves as before; from a subfolder, the same subfolder of the worktree is the base, recorded as `subdir` in results and manifests.
 - `awkit kit init` and `awkit kit example` commit the folder they create, creating the repository with `core.autocrlf=false` when there is none. Use `--no-git` to only copy.
+- The kit is a baseline workflow plus situation guides. `templates/agent-instructions.md` is gone: `workflow.md` is the baseline read every session, and the connect procedure, check setup and delivery have their own guides (`connect.md`, `checking.md`, `delivery.md`). Instructions that pointed agents at the old file should point at `agent-work-kit/README.md`.
+- The web extras moved to the `awkit.extras` package (`awkit.extras.pipeline`, `awkit.extras.publish`, `awkit.extras.ui`); the commands are unchanged.
 - People-facing documentation is now the two READMEs only. The command documentation moved to `kit/reference.md` (English, shipped with the kit), and the development documents under `docs/` were merged into `docs/development.md`.
 
 ### Added
@@ -26,6 +28,7 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 - Kit: work-type completion evidence (`work-types.md`), the "Connect the kit to a project" procedure in the agent instructions, and the command reference.
 - Kit: `writing.md`, a writing guide for any language covering the reader, the preservation list, plain style, corrections and the completion check. `korean-writing.md` keeps only what is specific to Korean and is used together with it. The project profile gains a field for per-document requirements.
 
+- `awkit kit skills --provider claude|codex`: one skill per situation guide, so a guide loads when its situation arises.
 - `awkit check commit`, `check writing` and `check done`: the author and trailers of a commit compared with the repository's history, the writing patterns from the kit's writing guides found in Markdown files, and a done check that requires a passing `review check` of the current state for files changed in the session. `awkit kit hooks` installs them as a Git `commit-msg` hook and as Claude Code SessionStart and Stop hooks.
 
 ### Fixed

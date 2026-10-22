@@ -315,59 +315,56 @@ The user explains the project again, or an interrupted external operation is rep
 
 ## Current kit mapped to entries
 
-Each section of the kit and the entries it serves. Sections marked "none" serve no entry; for each, decide whether the baseline workflow needs it, and otherwise move it to `kit/reference.md` or remove it.
+Each section of the kit and the entries it serves. `workflow.md`, the kit README and the project profile are read every session; every other guide is read when its situation arises, as a skill where the agent supports skills. A section that serves no entry is either a step of the baseline workflow or moves to `kit/reference.md` or out of the kit.
 
 | File | Section | Words | Entries |
 |---|---|---|---|
-| templates/agent-instructions.md | Connect the kit to a project | 291 | F11, F12, F29 |
-| | Start work | 41 | F8, F19 |
-| | Implement and verify | 71 | F1 |
-| | Report and resume | 52 | F14, F29 |
-| workflow.md | Define the task | 128 | F12, F18 |
-| | Delegate work | 84 | F19, F21 |
-| | Review independently | 280 | F17, F26 |
-| | Interpret check results | 76 | F2, F3 |
-| | Deliver results | 165 | F24 |
-| | Publish documents and AI summaries | 166 | F7, F14; the AI summary rules serve no entry yet |
-| | Continue across sessions | 41 | F29 |
-| protocol.md | A task record, States | 239 | F1 (session end is not done); the state table itself: none |
-| | Roles and file ownership | 72 | F19 |
-| | Check evidence | 96 | F1, F3 |
-| | Reviews and decisions | 73 | F18 |
-| | Resume after interruption | 65 | F29 |
-| | Connect optional tools | 95 | none (tool semantics; belongs in the reference) |
-| work-types.md | Common rules | 530 | F16, F22, F24, F28, F35, F36 |
+| workflow.md (every session) | Introduction, Define the task | 190 | F8, F19, F28, F35 |
+| | Do the work | 58 | F11 |
+| | Check a frozen version | 169 | F1, F2, F3, F17, F24 |
+| | Report | 97 | F1, F6, F13, F36 |
+| | Continue across sessions | 103 | F29 |
+| connect.md | all | 380 | F9, F11, F12, F29 |
+| checking.md | The checked version | 168 | F3, F11, F17 |
+| | Shared resources and processes | 129 | F26 |
+| | Interpreting results | 84 | F2 |
+| delivery.md | Identify what is delivered, Confirm it in its intended context | 181 | F7, F24 |
+| | Failure and recovery | 108 | F24 |
+| protocol.md | A task record, States | 243 | F1 (session end is not done) |
+| | Roles and file ownership | 76 | F19 |
+| | Reviews and decisions | 76 | F18 |
+| | Resume after interruption | 68 | F29 |
+| work-types.md | Common rules | 256 | F16, F22 |
 | | Research | 182 | F23, F37 |
 | | Writing | 167 | F16, F30 |
-| | Data preparation and analysis | 225 | F22 |
+| | Data preparation and analysis | 229 | F22 |
 | | Environment setup | 292 | F24, F25, F39 |
-| | Operating an application | 114 | F24 |
+| | Operating an application | 117 | F24 |
 | | Learning | 166 | F28, F38 |
-| | Automation | 77 | F27 |
-| delegation.md | 1 Objective | 85 | none (policy) |
-| | 2 When to delegate | 164 | F19, F21 |
-| | 3 Risk and premium calls | 241 | F18 |
-| | 4 Roles and execution paths | 376 | F19, F20; the path table: none |
-| | 5 Handoffs and results | 262 | F21 |
-| | 6 Failures and retries | 123 | F18 |
-| | 7 Model tiers | 151 | F20 |
-| | 8 Measurement | 208 | none (evaluation method; belongs with real-use measurement) |
-| review-session.md | 1 Purpose and cost, 2 Session setup | 208 | F17 |
-| | 3 Work through a unit, 4 Review criteria | 406 | F2, F17, F18 |
-| | 5 Commands, 6 Waiting | 346 | none (tool usage; belongs in the reference) |
-| | 7 Records and evaluation, 8 Starting prompts | 177 | F20; the prompts: none |
+| | Automation | 78 | F27 |
+| delegation.md | 1 Objective | 72 | F6 (the limits are starting values, not measurements) |
+| | 2 When to delegate | 168 | F19, F21 |
+| | 3 Risk and premium calls | 246 | F18 |
+| | 4 Roles and execution paths | 381 | F19, F20 |
+| | 5 Handoffs and results | 266 | F21 |
+| | 6 Failures and retries | 127 | F18 |
+| | 7 Model tiers, 8 Measurement | 217 | F20 |
+| review-session.md | 1 Purpose and cost, 2 Session setup | 215 | F17 |
+| | 3 Work through a unit, 4 Review criteria | 352 | F2, F17, F18 |
+| | 5 Commands, 6 Waiting | 303 | F17, F18 |
+| | 7 Records and evaluation, 8 Starting prompts | 184 | F17, F20 |
 | writing.md | Before writing | 159 | F15, F30, F34 |
 | | Write plainly | 222 | F13, F15, F30 |
 | | Preserve facts and judgments | 133 | F16, F30 |
 | | Corrections | 67 | F31, F32 |
 | | Rewriting and collaboration | 134 | F18, F21 |
 | | Completion check | 83 | F1, F33 |
-| korean-writing.md | all sections | 565 | F14, F31 |
-| templates/project.md | Start here | 59 | F11, F29 |
+| korean-writing.md | all | 565 | F14, F31 |
+| templates/project.md (every session) | Start here | 59 | F11, F29 |
 | | Deliverables and completion | 195 | F3, F24 |
 | | Delegation and models | 109 | F18, F19, F20 |
-| | Other sections | 439 | none directly (fields); review which fields any entry needs |
-| templates/task.md, review.md, decision.md, checkpoint.md | | 811 | F1, F17, F12, F29 |
+| | Other sections | 446 | fields; next work 5 shows which ones tasks use |
+| templates/task.md, review.md, decision.md, checkpoint.md | | 811 | F1, F12, F17, F29 |
 | templates/roles/README.md | | 316 | F20 |
 
-Sections marked "none" total roughly 1,700 words and are reviewed against the baseline workflow. Entries F4, F5 and F9 have no kit text at all, and F13, F14 and F30 to F34 have only kit text; they are the first candidates for checks (planned items above).
+F1, F4, F5, F9, F13, F14 and F32 have mechanical checks (see their Check fields); the other entries rely on kit text and are measured in next work 5.

@@ -1,6 +1,6 @@
 # Work Types and Completion Evidence
 
-Use this guide to decide what counts as done for work that is not a code change: research, writing, data preparation, environment setup, operating an application and learning. Development keeps the [workflow](workflow.md). Each section names the inputs to fix before starting, what to preserve, the evidence that establishes completion and the points at which to stop and ask. Record the choices for a task in the [task handoff](templates/task.md) and the project's standing choices in the [project profile](templates/project.md).
+Use this guide to decide what counts as done for work that is not a code change: research, writing, data preparation, environment setup, operating an application and learning. The baseline [workflow](workflow.md) still applies. Each section names the inputs to fix before starting, what to preserve, the evidence that establishes completion and the points at which to stop and ask. Record the choices for a task in the [task handoff](templates/task.md) and the project's standing choices in the [project profile](templates/project.md).
 
 ## Common rules
 
@@ -8,15 +8,7 @@ Fix the inputs by identifier and version before working, and confirm that everyo
 
 Separate what was produced, what was checked and what a person accepted. Within a result, keep observed values, computed values, the assumptions behind the computation and the interpretation apart, so a reader can tell which part would change if an assumption changed. Mark unverified values as `unverified`.
 
-A tool's success return is not the recipient's confirmation. A message counts as delivered when the recipient can see it; a file counts as transferred when it opens in the place it was sent to; a setting counts as applied when the program reports it. Record which of these was observed and which was inferred.
-
 Keep the result the user accepted. When revising a document, a design or a configuration that the user has approved, identify that version, list what it did well, and change only what the task names. Compare the revision with the accepted version before delivering it; a regression against an accepted version is a defect even when the new version passes its checks. With `awkit review`, keep the accepted run with `accept` and check later runs with `compare`.
-
-The form of help is part of the task. For some tasks the right result is that the agent did the work; for others it is that the user did it with the agent's hints; for others it is a briefing the user can act on. Settle this with the user before starting and record it in the handoff. Applying one level of autonomy to every task produces the wrong result for most of them. A user saying what they plan to do themselves, or asking whether something is acceptable, is not delegating it or confirming it.
-
-Read each statement from the user as a hypothesis, a constraint or a decision. A user new to a field often proposes an approach to have it evaluated: give the standard approach, the strengths and weaknesses of theirs, and the alternatives, and name the premise or step you disagree with. Building on every idea as a requirement produces a design that follows the conversation instead of the problem.
-
-Where the facts do not settle a question, do not stop at "unknown": separate what is established, the candidate explanations, the assumptions each needs and what is unknown, then give a provisional judgment with its assumptions and the observation that would change it. Put no numbers on it that the material does not support.
 
 Three kinds of record have different jobs and are not merged into one document: the current task record (what is being made and how far it has got), reusable knowledge (writing methods, design principles, lessons from failures that apply across tasks) and the sources and evidence those rest on. Each points to the others. After consolidating or summarising any of them, check that no important decision was dropped and no discarded rule came back.
 

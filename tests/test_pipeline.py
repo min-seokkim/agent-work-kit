@@ -7,7 +7,7 @@ import time
 import unittest
 from pathlib import Path
 
-from awkit.pipeline import Pipeline, StepError
+from awkit.extras.pipeline import Pipeline, StepError
 from support import child_env
 
 EXAMPLE = Path(__file__).resolve().parents[1] / "examples" / "local-release"

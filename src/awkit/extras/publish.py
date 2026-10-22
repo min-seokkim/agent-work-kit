@@ -11,7 +11,7 @@ from html.parser import HTMLParser
 from pathlib import Path, PurePosixPath
 from urllib.parse import unquote, urlsplit
 
-from .review import relative_file
+from ..review import relative_file
 
 
 def digest(data):

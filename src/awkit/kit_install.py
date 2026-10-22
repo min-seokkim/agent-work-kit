@@ -193,6 +193,63 @@ def install_roles(project: Path, provider: str, specs=None):
     return written, skipped, warnings
 
 
+# Situation guides and the skill each becomes: (skill name, guide file, description, extra instruction).
+# The description is what the agent sees before loading the skill, so it names the situation.
+SITUATIONS = (
+    ("awkit-connect", "connect.md",
+     "Connect Agent Work Kit to this project. Use when the agent-work-kit folder was just added or its project "
+     "profile is still empty.", ""),
+    ("awkit-writing", "writing.md",
+     "Write or revise text people read: documents, reports, READMEs, UI text, CLI output, notifications, handoffs, "
+     "commit and PR descriptions.", "For Korean text, also read `{kit}/korean-writing.md`."),
+    ("awkit-work-types", "work-types.md",
+     "Decide inputs and completion evidence for work that is not a code change: research, writing, data "
+     "preparation and analysis, environment setup and troubleshooting, operating an application, learning, "
+     "automation.", ""),
+    ("awkit-checking", "checking.md",
+     "Set up or interpret project checks: check configuration, isolated worktrees, databases, ports and devices "
+     "shared by checks, multiprocess programs, and failures that pass on a rerun.", ""),
+    ("awkit-delivery", "delivery.md",
+     "Hand over, submit, publish or deploy a result, or replace a running version, and confirm it arrived.", ""),
+    ("awkit-delegation", "delegation.md",
+     "Split work across subagents, choose roles and models, or write a handoff for another agent.", ""),
+    ("awkit-review-session", "review-session.md",
+     "Work with a separate review session through awkit channel, as the main session or as the reviewer.", ""),
+    ("awkit-records", "protocol.md",
+     "Keep task records and states, write review or decision records, or resume work another session left.", ""),
+)
+SKILL_FOLDERS = {"claude": Path(".claude") / "skills", "codex": Path(".agents") / "skills"}
+
+
+def install_skills(project: Path, provider: str, kit: Path | None = None):
+    """Write one skill per situation guide. Each skill points to the guide in the project's kit folder, so
+    the kit stays the single source. Existing skill files are never overwritten."""
+    if provider not in SKILL_FOLDERS:
+        raise ValueError("The provider must be claude or codex.")
+    project = Path(project).resolve()
+    kit = (project / "agent-work-kit") if kit is None else Path(kit).resolve()
+    if not (kit / "workflow.md").is_file():
+        raise ValueError(f"No kit folder with workflow.md at {kit}. Run `awkit kit init` first or pass --kit.")
+    try:
+        kit_path = kit.relative_to(project).as_posix()
+    except ValueError as exc:
+        raise ValueError("The kit folder must be inside the project folder.") from exc
+    written, skipped = [], []
+    for name, guide, description, extra in SITUATIONS:
+        path = project / SKILL_FOLDERS[provider] / name / "SKILL.md"
+        if path.exists():
+            skipped.append(path)
+            continue
+        body = (f"Read `{kit_path}/{guide}` and follow it. It is a situation guide of Agent Work Kit; the baseline "
+                f"workflow in `{kit_path}/workflow.md` still applies.")
+        if extra:
+            body += " " + extra.format(kit=kit_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(f"---\nname: {name}\ndescription: {description}\n---\n\n{body}\n", encoding="utf-8", newline="\n")
+        written.append(path)
+    return written, skipped
+
+
 def install(parent: Path, name="agent-work-kit"):
     """Create parent/name with the kit. Never overwrites: existing records stay untouched.
 

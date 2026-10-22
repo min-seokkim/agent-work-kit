@@ -1,22 +1,23 @@
 # Agent Work Kit
 
-Instructions and templates for an agent working in this project. Start with [Agent Instructions](templates/agent-instructions.md); it says what to read for each task. If the [project profile](templates/project.md) is still empty, follow its "Connect the kit to a project" section first.
+Instructions and templates for an agent working in this project. The project's own instructions and the user's current request take precedence over this kit. Nothing here authorizes data access, agent calls, publication or deployment.
 
-| File | Read when |
-|---|---|
-| [templates/agent-instructions.md](templates/agent-instructions.md) | Every session |
-| [templates/project.md](templates/project.md) | Every session, once filled in |
-| [workflow.md](workflow.md), [protocol.md](protocol.md) | Doing development work or keeping task records |
-| [work-types.md](work-types.md) | Research, writing, data, environment setup, operating an application, learning, automation |
-| [writing.md](writing.md) | Writing or revising text people read, including UI text and CLI output |
-| [korean-writing.md](korean-writing.md) | Writing Korean text for people, with writing.md |
-| [delegation.md](delegation.md), [templates/roles/](templates/roles/README.md) | Splitting work across subagents |
-| [review-session.md](review-session.md) | A separate session reviews the work |
-| [reference.md](reference.md) | Running an `awkit` command and needing its formats, rules or exit codes |
-| [examples/project-profiles.md](examples/project-profiles.md) | Filling the profile for a kind of project you have not set up before |
-| templates/task.md, review.md, decision.md, checkpoint.md | Copy into the project's record location when the task needs that record |
+Every session, read [workflow.md](workflow.md), the baseline way of working, and the [project profile](templates/project.md). If the profile is still empty, [connect the kit](connect.md) first.
 
-The project's own rules and the user's current instructions take precedence over this kit. Nothing here authorizes data access, agent calls, publication or deployment.
+Read a situation guide when its situation arises. `awkit kit skills --provider claude` or `--provider codex` writes each one as a skill, so the agent loads it on its own.
+
+| Guide | Situation | Skill |
+|---|---|---|
+| [connect.md](connect.md) | The kit was just added or the project profile is still empty | `awkit-connect` |
+| [writing.md](writing.md), [korean-writing.md](korean-writing.md) | Writing or revising text people read, including UI text, CLI output and commit messages | `awkit-writing` |
+| [work-types.md](work-types.md) | Work that is not a code change: research, data, environment setup and troubleshooting, operating an application, learning, automation | `awkit-work-types` |
+| [checking.md](checking.md) | Setting up checks, shared resources such as databases and devices, results that are hard to interpret | `awkit-checking` |
+| [delivery.md](delivery.md) | Handing over, submitting, publishing or deploying a result | `awkit-delivery` |
+| [delegation.md](delegation.md), [templates/roles/](templates/roles/README.md) | Splitting work across subagents, choosing models, writing handoffs | `awkit-delegation` |
+| [review-session.md](review-session.md) | A separate session reviews the work | `awkit-review-session` |
+| [protocol.md](protocol.md) | Task records, states, review and decision records, resuming another session's work | `awkit-records` |
+
+Look up commands, formats and exit codes in [reference.md](reference.md). Copy the record templates (templates/task.md, review.md, decision.md, checkpoint.md) into the project's record location when a task needs them. [Example profiles](examples/project-profiles.md) show filled profiles for several kinds of project.
 
 To update the kit, never overwrite this folder: it holds the filled-in profile and task records. Install the new version beside it with `awkit kit init --name agent-work-kit-new`, compare, and carry over only the changes needed.
 

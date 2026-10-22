@@ -18,6 +18,7 @@ Requirements: Python 3.11+, Git for `kit init`, `kit example` and `review`, Play
 | `kit example documents\|data\|analysis DIR [--no-git]` | Creates a small project with one deliberate defect and a README that walks through fail, fix, re-check, verify, accept. | 0, or 2 if `DIR` exists |
 | `kit scan [DIR] [--checks]` | Reports manifests, languages, check commands, CI run lines, docs folders, Git state and kit state, plus `suggested_checks_toml`. `--checks` prints only the TOML draft. | 0 |
 | `kit roles [DIR] --provider claude\|codex [--model TIER=MODEL[:EFFORT]]...` | Writes role files from the [role templates](templates/roles/README.md). Existing files are kept. | 0, or 2 if every file already existed |
+| `kit skills [DIR] --provider claude\|codex [--kit PATH]` | Writes one skill per situation guide: `.claude/skills/awkit-*/SKILL.md` for Claude Code, `.agents/skills/awkit-*/SKILL.md` for Codex. Each holds the guide's situation as its description and tells the agent to read the guide in the kit folder (`--kit`, default `DIR/agent-work-kit`). Existing files are kept. | 0, or 2 if every file already existed |
 | `kit hooks [DIR] [--git] [--claude]` | `--git` writes the repository's `commit-msg` hook running `check commit`. `--claude` adds SessionStart and Stop hooks running `check done --hook` to `.claude/settings.local.json`. Both name this machine's Python, so neither is committed. Existing hooks are kept. | 0 |
 
 `kit scan` reads file names and manifests only. Its commands come in this order: check steps that GitHub Actions already runs (no shell syntax, install steps dropped), then package.json scripts, ruff and mypy settings, pytest when pytest is configured (`[tool.pytest]`, `pytest.ini`, `conftest.py`), Makefile targets, Go and Rust defaults. Equivalent commands appear once. Run the draft with `awkit review check HEAD --config checks.toml` and keep only what works.
@@ -130,7 +131,7 @@ Exit codes: 0 found, 1 timed out, 2 usage or storage error, 3 the reviewer recei
 
 ### pipeline
 
-`awkit pipeline --config FILE plan|deploy RELEASE|rollback|status|reconcile|history [--allow-unhealthy-current] [--json]` runs the project's delivery commands in a fixed order and verifies the target's actual state. Release IDs are 7 to 64 lowercase hex characters; use full commit or artifact hashes.
+`awkit pipeline --config FILE plan|deploy RELEASE|rollback|status|reconcile|history [--allow-unhealthy-current] [--json]` runs the project's delivery commands in a fixed order and verifies the target's actual state. Its statuses (`passed`, `failed-restored` and the rest) describe one run, not the state of a task. Release IDs are 7 to 64 lowercase hex characters; use full commit or artifact hashes.
 
 ```toml
 schema_version = 1

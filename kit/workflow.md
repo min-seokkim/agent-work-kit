@@ -1,57 +1,37 @@
-# Development Workflow
+# Workflow
 
-Follow the project's existing requirements and permissions first. Scale this workflow to the task; it does not add approval steps automatically. On first adoption, follow the kit's getting-started guide. Record state and evidence using the [task protocol](protocol.md). The workflow is independent of programming language and agent product.
+Read this every session. It is the default way of working for any task in this project: define it, do it, check a frozen version, report with evidence. The project's own instructions and the user's current request come first. Situation guides add what a specific kind of work needs; [README.md](README.md) lists them, and `awkit kit skills` makes them load on their own where the agent supports skills. Look up commands, formats and exit codes in the [command reference](reference.md).
+
+If the [project profile](templates/project.md) is still empty, follow [Connect the kit to a project](connect.md) before the first task.
 
 ## Define the task
 
-Write one sentence for the intended outcome and one for how to verify it. Check the base revision and existing changes, then identify the evidence to use and files to edit. Settle ownership before editing a file another contributor is working on. For research, writing, data preparation, environment setup, application operation and learning, take the inputs, preserved items and completion evidence from [Work Types](work-types.md).
+Write one sentence for the intended outcome and one for how it will be checked. Check the base revision and the changes already in progress, then name the files to change and the material to read. Settle ownership before editing a file someone else is working on. Judge risk by what a failure would affect, not by the number of files: permissions, data changes, deployment and publication need an impact assessment.
 
-Judge risk by the impact of failure rather than file count. Wording changes are often straightforward; permissions, data changes, deployment and publication require an impact assessment. For high-risk work, choose design judgment before implementation or independent review afterward. Do not repeat both by default. Reuse an independent review that covers the same revision, scope and acceptance criteria. Another equivalent review needs a new reason.
+Settle the form of help: the agent does the work, the user does it with hints, or the agent prepares a briefing the user acts on. A user saying what they plan to do themselves, or asking whether something is acceptable, is not delegating it or confirming it.
 
-## Delegate work
+Read each statement from the user as a hypothesis, a constraint or a decision. A user new to a field often proposes an approach to have it evaluated: give the standard approach, the strengths and weaknesses of theirs and the alternatives, and name the premise or step you disagree with. Building on every idea as a requirement produces a design that follows the conversation instead of the problem.
 
-The main agent handles work directly when it has already read the evidence and can readily verify the result. Delegate independent investigation or implementation with non-overlapping file ownership. Fill in the goal, output, evidence and scope in the [task handoff](templates/task.md).
+## Do the work
 
-Include only the necessary document locations and decisions. Do not repeatedly pass the full conversation or repository. Separately confirm authorization to send material to another provider or subagent.
+Use the working directories, preparation steps and commands in the profile. Check the current state before installing, moving or reviewing anything, and open files rather than judging them by name. Mark inferences as inferences, and run a suggested command once before relying on it. Access only the material the task needs within the authorized scope.
 
-Follow the [delegation guide](delegation.md) for when to delegate, role and model selection, premium-call budgets and retries.
+## Check a frozen version
 
-## Review independently
+Check the version that will be delivered, not the working files while they change. Name the changed files to `awkit review snapshot`, run `awkit review check` on the snapshot, and keep its run folder: the folder ties the result to the exact files and command. Later edits need a later check. Reuse a passing run only when its inputs are unchanged.
 
-Use [Review Session Collaboration](review-session.md) when a separate session acts as reviewer. Include a code revision or immutable snapshot ID in each request. Review that target; changes made after the request belong to a later review. While review is running, the implementer may continue with work whose file ownership does not overlap.
+Keep every run. When a check fails and a rerun passes, explain the first failure or report it as unresolved. Separate environment problems, product defects and unknown causes, and separate focused checks, full runs and a person's acceptance. Name the environments a claim covers and run all of them before claiming support. [Checking](checking.md) covers check configuration, shared resources and multiprocess programs.
 
-When using Git snapshots, run checks in a separate worktree. For other source layouts, record a stable source identifier and the location of the checked files. Identify the build host, target runtime and toolchain separately from the runtime running the kit. Check dependencies, generated inputs and command working directories before execution. Installed packages or editable environments must load the code under review.
+A tool's success is not the result. A message counts as delivered when the recipient can see it, a setting as applied when the program reports it, a release as live when its running version answers. Record which was observed and which inferred.
 
-Isolate shared resources used by the checks, such as DBs, ports, Unix sockets, devices and output directories. For multiprocess programs, define readiness, scenario completion and cleanup. Record ownership before stopping processes or removing resources. Keep artifacts and reports needed for review outside disposable worktrees, and connect them to the checked source and build settings.
+## Report
 
-Each finding states its failure condition, impact, evidence location and corrective direction. The main agent accepts it or rebuts it with evidence, then records any remaining decision. Do not repeat a full review for stylistic preferences or an already verified fix. Recheck the affected scope when behavior or scope changes, important findings remain, evidence conflicts or relevant tests fail. Each side may rebut a disputed issue once; the main agent then records a judgment. If it cannot decide, record the decision needed. This limit does not excuse an unresolved defect or unmet acceptance criterion.
+Before reporting work as done, run `awkit check done`: files changed in the session need a passing check of their current state, or the report says they are unchecked and why. Report the changed behavior, the run folder of each check, what was not verified and the remaining limitations. State the scope of every number. Where the facts do not settle a question, give the candidate explanations, the assumptions each needs and a provisional judgment with the observation that would change it.
 
-Channel closure and review completion are separate. Apply the final result and explain remaining findings before finishing the task.
-
-## Interpret check results
-
-Distinguish execution-environment problems, product defects and unknown causes. Preserve the initial failure even when a rerun passes. Explain its cause or leave it unresolved.
-
-Distinguish focused checks, full-suite results and human acceptance. Inspect actual rendering after UI changes. For firmware, report host checks, target builds and device observations separately. A command's exit status must be interpreted against the task's expected result; a long-running process may need a scenario runner to determine completion and shut it down.
-
-## Deliver results
-
-Use the project profile to identify each deliverable, recipient and required completion stage. Record its source revision, artifact identifier or hash, production settings and verification evidence. Preserve the files and instructions the recipient needs to reproduce the result. A task may finish at build, test, install, submit, accept or verify-in-use; record only stages actually completed and apply the task's existing authorization rules.
-
-Check the delivered result in its intended context. For a source submission, verify the required files and submitted revision. For a package, check installation and use in the recipient's environment. For firmware, connect the tested binary to the device and test conditions. For published documents, check the content and entry point. For a running-version replacement, read the actual version and run behavior checks after applying it.
-
-Record what remains available after failure and how to retry or recover. Restoring a previous executable, restoring data and resubmitting an artifact are separate operations. Reuse existing project procedures and state which recovery steps have been verified.
-
-## Publish documents and AI summaries
-
-For text people read, follow the [Writing Guide](writing.md), and for Korean text also the [Korean Writing Guide](korean-writing.md). Keep project-specific terminology in the project profile.
-
-Attach a reference revision to both the source and its summary. Restrict AI summaries to the designated inputs and check the response format, evidence references and excluded data. A valid evidence ID does not prove the explanation is true; a person checks important judgments against the source.
-
-Decide whether document rendering must wait for the AI summary. If they run separately, show when the summary is missing or stale. Check revisions and execution order so an older job cannot replace a newer result. Validate the new output before switching the entry point; retain the last successful output on failure.
-
-Publish only allowlisted files. Presence in a working directory is not permission to publish. Distinguish uncommitted previews from official publications, and verify the project and revision when restoring. Apply the project's authorization rules to external transfer and publication.
+Text people read follows the [Writing Guide](writing.md); run `awkit check writing` on changed Markdown.
 
 ## Continue across sessions
 
-Link [review results](templates/review.md) and [important decisions](templates/decision.md) from the current task record. On interruption or a change of session, leave changed files, completed checks, running work and the next action in a [checkpoint](templates/checkpoint.md). The receiving session verifies the actual state before continuing.
+Keep the current state of a task in one record and link reviews and decisions from it ([task records](protocol.md)). On interruption or a change of session, leave a [checkpoint](templates/checkpoint.md) with the changed files, completed checks, running work and the next action. The session that continues verifies the actual files and processes first and does not repeat an external operation without checking whether it already ran.
+
+These instructions do not authorize data access, agent calls, message transmission, publication or deployment. Ask before touching credentials, remote targets or settings outside the project folder, and make routine decisions within the scope already authorized.

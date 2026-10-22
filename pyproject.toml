@@ -27,7 +27,7 @@ awkit = "awkit.cli:main"
 [tool.setuptools]
 # The kit lives at the repository root so it can be browsed and copied as-is;
 # the wheel ships it as awkit/kit so `awkit kit init` works after installation.
-packages = ["awkit", "awkit.kit", "awkit.kit.templates", "awkit.kit.templates.roles", "awkit.kit.examples",
+packages = ["awkit", "awkit.extras", "awkit.kit", "awkit.kit.templates", "awkit.kit.templates.roles", "awkit.kit.examples",
             "awkit.examples", "awkit.examples.documents", "awkit.examples.data", "awkit.examples.analysis"]
 
 [tool.setuptools.package-dir]

@@ -14,8 +14,8 @@ import tomllib
 from contextlib import contextmanager
 from pathlib import Path, PurePosixPath
 
-from .pipeline import LABEL, atomic_json, stamp
 from .process import run_to_files
+from .records import LABEL, atomic_json, stamp
 
 
 def git(repo, *args, env=None):

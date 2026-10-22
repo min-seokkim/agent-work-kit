@@ -6,7 +6,7 @@ import tomllib
 import unittest
 from pathlib import Path
 
-from awkit.kit_install import install, install_roles, load_roles
+from awkit.kit_install import SITUATIONS, install, install_roles, install_skills, load_roles
 from awkit.review import track
 from support import child_env
 
@@ -20,7 +20,7 @@ SKIP_DIRS = {"build", "dist", "node_modules", "site-packages", "__pycache__"}
 # the start of every session together stay within what Claude Code's documentation recommends for
 # CLAUDE.md (about 200 lines). Every other file is read when its situation arises and stays within what
 # survives a context compaction whole (5,000 tokens, about 3,500 English words).
-EVERY_SESSION = ("README.md", "templates/agent-instructions.md", "templates/project.md")
+EVERY_SESSION = ("README.md", "workflow.md", "templates/project.md")
 EVERY_SESSION_WORD_LIMIT = 2_000
 SITUATION_FILE_WORD_LIMIT = 3_500
 LICENSES = ("LICENSE.md", "THIRD_PARTY_NOTICES.md")
@@ -181,6 +181,29 @@ class RoleTests(unittest.TestCase):
         for spec in ("judge", "best=opus", "judge=", 'judge=a"b'):
             with self.subTest(spec=spec), self.assertRaises(ValueError):
                 install_roles(self.project, "codex", [spec])
+
+    def test_skills_point_to_every_situation_guide(self):
+        target, _ = install(self.project)
+        readme = (target / "README.md").read_text(encoding="utf-8")
+        for provider, folder in (("claude", ".claude/skills"), ("codex", ".agents/skills")):
+            written, skipped = install_skills(self.project, provider)
+            self.assertEqual((len(written), skipped), (len(SITUATIONS), []))
+            for name, guide, description, _ in SITUATIONS:
+                text = (self.project / folder / name / "SKILL.md").read_text(encoding="utf-8")
+                self.assertTrue(text.startswith(f"---\nname: {name}\ndescription: "), text)
+                self.assertLessEqual(len(description), 1024)
+                self.assertIn(f"`agent-work-kit/{guide}`", text)
+                self.assertTrue((target / guide).is_file(), guide)
+                self.assertIn(f"]({guide})", readme)
+                self.assertIn(f"`{name}`", readme)
+            self.assertEqual(install_skills(self.project, provider)[0], [])
+        self.assertIn("korean-writing.md", (self.project / ".claude/skills/awkit-writing/SKILL.md").read_text("utf-8"))
+        (self.project / "elsewhere").mkdir()
+        with self.assertRaisesRegex(ValueError, "No kit folder"):
+            install_skills(self.project / "elsewhere", "claude")
+        command = [sys.executable, "-m", "awkit", "kit", "skills", str(self.project), "--provider", "codex"]
+        again = subprocess.run(command, capture_output=True, text=True, encoding="utf-8", env=child_env())
+        self.assertEqual(again.returncode, 2)
 
     def test_cli_roles(self):
         command = [sys.executable, "-m", "awkit", "kit", "roles", str(self.project), "--provider", "codex"]

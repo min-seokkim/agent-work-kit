@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from awkit.publish import Publisher
+from awkit.extras.publish import Publisher
 
 
 class PublishTests(unittest.TestCase):
@@ -67,7 +67,7 @@ class PublishTests(unittest.TestCase):
         self.publisher.publish(self.source, self.files)
         before = (self.output / "index.html").read_bytes()
         self.index.write_text("<h1>New</h1>", encoding="utf-8")
-        with patch("awkit.publish.os.replace", side_effect=OSError("simulated switch failure")), self.assertRaises(OSError):
+        with patch("awkit.extras.publish.os.replace", side_effect=OSError("simulated switch failure")), self.assertRaises(OSError):
             self.publisher.publish(self.source, self.files)
         self.assertEqual((self.output / "index.html").read_bytes(), before)
         self.assertFalse(list(self.output.glob(".entry-*")))

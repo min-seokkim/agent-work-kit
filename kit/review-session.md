@@ -33,10 +33,7 @@ The main session closes Minor findings and small issues by checking the diff; th
 
 Separate the response into verdict, findings, execution results and unverified scope. Each finding includes severity (High, Major, Minor), file and line, failure scenario and corrective direction. State both what to add and what to remove. Execution results identify the snapshot, commands, pass and failure counts, and cause classification for each failure. Avoid reassurance without evidence.
 
-Two cases have additional requirements:
-
-- **Concurrency and locking.** A new or changed lock requires a real-database test with two concurrent executions before the work is considered complete. Test both the changed operations against each other and against existing operations that lock the same rows. Without these tests, list the concurrency risk under unverified scope.
-- **A failure observed once.** Keep it unresolved until its cause is explained, even if a rerun passes. Use a fresh worktree so first-run failures are not overlooked.
+Locks and failures seen once follow [Checking](checking.md): a concurrent test against a real database, and a fresh worktree for the rerun.
 
 ## 5. Commands
 
@@ -48,16 +45,7 @@ $snap = awkit review snapshot apps/events/operations.py tests/test_roles.py
 awkit channel --db $db post main reviewer review --snap $snap --body-file request.md
 ```
 
-| Kind | Sender | Meaning |
-|---|---|---|
-| `review`, `final`, `test` | Main | Judgment or checks against the specified snapshot |
-| `scout`, `draft`, `question` | Main | Locate evidence, draft assigned files, or judge design within approved policy |
-| `re` | Either | Respond or accept; the recipient does not reply again |
-| `rebut` | Either | Rebut; the other side must respond |
-| `notice` | Either | Inform without requiring a reply |
-| `close` | Main | End the unit and stop the reviewer's wait |
-
-When user judgment is needed, reply to the original request with `re` and start the body with `decision-needed:`. Exclude credentials, actual personal data, private source material and variable values from error traces. See the [command reference](reference.md) for command details.
+The main session sends requests (`review`, `final`, `test`, `scout`, `draft`, `question`) and `close`; either side answers with `re` (no further reply) or `rebut` (the other side must answer), or informs with `notice`. Use one channel file per review; the channel knows only the roles `main` and `reviewer`. When user judgment is needed, reply to the original request with `re` and start the body with `decision-needed:`. Exclude credentials, actual personal data, private source material and variable values from error traces. See the [command reference](reference.md) for command details.
 
 ## 6. Waiting
 

@@ -4,7 +4,7 @@ The main agent reads this guide before splitting work, delegating to subagents, 
 
 ## 1. Objective
 
-Reduce the credits required to complete the user's requested outcome while maintaining the quality gates. Call count, concurrency and model tier are not measures of success. Measure cost per completed task, including corrections and revalidation, rather than per call.
+Delegate to finish the user's outcome with fewer credits at the same quality gates, counting corrections and revalidation in the cost of a task.
 
 The numbers in this guide are starting values, not measured optima. The handoff limits in section 5 come from 55 handoffs in one project; the concurrency, scouting and premium-call limits are unmeasured defaults. Change them in the project profile when your own records (section 8) disagree.
 
@@ -112,14 +112,4 @@ Confirm the actual model from execution logs rather than a subagent's self-repor
 
 ## 8. Measurement
 
-Record the following per task in the session record. Mark unavailable values as `unverified`.
-
-- Risk and `premium_slot`; the reason for a second premium call.
-- Roles invoked, actual models and reasoning effort, calls and retries.
-- Fresh input, cache-write, cache-read and output tokens; credits when available.
-- Wall-clock minutes and the number of messages the user had to send after the first instruction (`awkit usage` reports both per thread).
-- High and Major findings, who found each one and at which stage, and defects found after acceptance.
-
-Evaluate delegation against main-agent-only execution on comparable tasks. Alternate similar tasks between the approaches rather than doing the same work twice. Keep any claimed advantage `unverified` until there are at least three tasks per approach. Compare quality in this order: the proportion of tasks with High or Major findings, the proportion with significant defects discovered after acceptance, and corrections per task. Improvement in a later measure does not offset deterioration in an earlier one. If a defect appears later, reopen the measurement and include its correction cost.
-
-Keep this guide and the role files short. Put examples, measurement history and prices in session records. Before adding a rule for a recurring failure, check whether an existing rule already covers it.
+Record per task the risk, the roles called, the actual models, calls, tokens and minutes (`awkit usage` reads them from the logs), and who found each High or Major finding. Keep any claimed advantage of delegation `unverified` until at least three comparable tasks were done each way, and compare the share of tasks with High or Major findings before anything else.

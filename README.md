@@ -16,7 +16,7 @@ Agents often report work as finished without evidence you could use to confirm i
 
 ## How it works
 
-After `awkit kit init`, ask your agent to connect the kit. The agent reads the project, asks you what counts as done and who receives the result, fills a short project profile in the instructions it already reads, and sets up checks from commands the project already has.
+After `awkit kit init`, ask your agent to connect the kit. The agent reads the project, asks you what counts as done and who receives the result, writes both into `checks.toml`, and sets up checks from commands the project already has.
 
 Each task then follows the same steps:
 
@@ -38,7 +38,7 @@ Each task then follows the same steps:
 
 ## Get started
 
-awkit needs Python 3.11 or later and Git, and has no release yet. The installer adds Git and Python when they are missing (winget on Windows, Homebrew on macOS; on Linux it names the package to install), installs awkit from the development branch with [pipx](https://pipx.pypa.io), and runs `awkit doctor`, which says how to fix anything still missing.
+awkit needs Python 3.11 or later and Git, and has no release yet. The installer adds Git and Python when they are missing (winget on Windows, Homebrew on macOS; on Linux it names the package to install), installs awkit from the development branch with [pipx](https://pipx.pypa.io), writes the kit's guides as skills in your user folder, and runs `awkit doctor`, which says how to fix anything still missing. The guides are your way of working, so they live on your computer once, for every project.
 
 On Windows, in PowerShell:
 
@@ -52,7 +52,7 @@ On macOS or Linux:
 curl -fsSL https://raw.githubusercontent.com/min-seokkim/agent-work-kit/dev/install.sh | sh
 ```
 
-With Python and Git already in place, `pipx install "git+https://github.com/min-seokkim/agent-work-kit@dev"` does the same.
+With Python and Git already in place, `pipx install "git+https://github.com/min-seokkim/agent-work-kit@dev"` followed by `awkit kit skills` does the same. The first release will also offer the skills as a ZIP to unpack in your home folder, for writing and research work without Python.
 
 In your project folder, run:
 
@@ -60,13 +60,13 @@ In your project folder, run:
 awkit kit init
 ```
 
-It adds a short Agent Work Kit section to the end of your `CLAUDE.md` or `AGENTS.md`, creating `AGENTS.md` only when you have neither, and writes the kit's guides as skills your agent loads when a situation calls for one. It copies no folder, leaves your own instructions, hooks and memory files as they are, and prints how many words it adds to what your agent reads every session. `awkit kit scan` shows the same count before you run it.
+It writes `checks.toml` with the checks your project already runs and a `[kit]` table that says what done means here, installs the hooks, and keeps its own `.awkit/` folder out of Git. It commits nothing and leaves your instructions, skills, hooks and memory files as they are; it prints a line you can add to `AGENTS.md` or `CLAUDE.md` yourself. Only `checks.toml` and `rules.toml` are meant to be committed.
 
 Then tell your agent:
 
 > Connect Agent Work Kit to this project.
 
-To move to a newer version, update awkit and run `awkit kit skills --provider claude` (or `codex`) again. `awkit kit remove` takes out everything the kit added.
+To move to a newer version, update awkit and run `awkit kit skills` again. `awkit kit remove` takes the kit out of the project and `awkit kit remove --user` out of your user folder. An agent without skills reads a guide with `awkit kit guide workflow`.
 
 To try it on a sample first, tell your agent to run `awkit kit example data demo` and follow its README. The sample is a small data project with one wrong column name. The agent runs the check and sees it fail, fixes the input, runs the check again and shows you the files it kept.
 

@@ -16,7 +16,7 @@ Agent Work Kit은 Claude Code, Codex 같은 코딩 에이전트가 쓰는 작업
 
 ## 동작 방식
 
-`awkit kit init`으로 키트를 넣은 뒤 에이전트에게 키트를 연결하라고 하면 됩니다. 에이전트는 프로젝트를 살펴보고, 무엇을 완료로 볼지와 결과를 누가 받는지 묻습니다. 그 답으로 에이전트가 이미 읽는 지시문에 짧은 프로젝트 적용표를 채우고, 프로젝트에 이미 있는 명령으로 검사를 설정합니다.
+`awkit kit init`으로 키트를 넣은 뒤 에이전트에게 키트를 연결하라고 하면 됩니다. 에이전트는 프로젝트를 살펴보고, 무엇을 완료로 볼지와 결과를 누가 받는지 묻습니다. 에이전트는 그 답을 `checks.toml`에 적고, 프로젝트에 이미 있는 명령으로 검사를 설정합니다.
 
 그 뒤로 작업은 모두 같은 순서로 진행합니다.
 
@@ -38,7 +38,7 @@ Agent Work Kit은 Claude Code, Codex 같은 코딩 에이전트가 쓰는 작업
 
 ## 시작하기
 
-awkit을 쓰려면 Python 3.11 이상과 Git이 필요하고, 아직 릴리스한 버전은 없습니다. 설치 스크립트는 Git이나 Python이 없으면 먼저 설치합니다. Windows는 winget, macOS는 Homebrew를 쓰고, Linux에서는 설치할 패키지를 알려 줍니다. 그다음 [pipx](https://pipx.pypa.io)로 개발 브랜치의 awkit을 설치하고 `awkit doctor`를 실행합니다. 빠진 것이 남아 있으면 이 명령이 고치는 방법을 알려 줍니다.
+awkit을 쓰려면 Python 3.11 이상과 Git이 필요하고, 아직 릴리스한 버전은 없습니다. 설치 스크립트는 Git이나 Python이 없으면 먼저 설치합니다. Windows는 winget, macOS는 Homebrew를 쓰고, Linux에서는 설치할 패키지를 알려 줍니다. 그다음 [pipx](https://pipx.pypa.io)로 개발 브랜치의 awkit을 설치하고, 키트의 가이드를 사용자 폴더에 스킬로 넣은 뒤 `awkit doctor`를 실행합니다. 빠진 것이 남아 있으면 이 명령이 고치는 방법을 알려 줍니다. 가이드는 일하는 사람의 방식이라서 프로젝트마다 넣지 않고 컴퓨터에 한 번만 둡니다.
 
 Windows에서는 PowerShell에 입력하세요.
 
@@ -52,7 +52,7 @@ macOS나 Linux에서는 터미널에 입력하세요.
 curl -fsSL https://raw.githubusercontent.com/min-seokkim/agent-work-kit/dev/install.sh | sh
 ```
 
-Python과 Git이 이미 있다면 `pipx install "git+https://github.com/min-seokkim/agent-work-kit@dev"`로 설치해도 됩니다.
+Python과 Git이 이미 있다면 `pipx install "git+https://github.com/min-seokkim/agent-work-kit@dev"`로 설치하고 `awkit kit skills`를 실행해도 됩니다. 첫 릴리스에는 Python 없이 문서 작업이나 조사만 하는 사람을 위해 홈 폴더에 풀기만 하면 되는 스킬 ZIP도 함께 올립니다.
 
 프로젝트 폴더에서 다음 명령을 실행하세요.
 
@@ -60,13 +60,13 @@ Python과 Git이 이미 있다면 `pipx install "git+https://github.com/min-seok
 awkit kit init
 ```
 
-이 명령은 `CLAUDE.md`나 `AGENTS.md` 끝에 Agent Work Kit 절을 짧게 붙이고, 키트의 가이드를 에이전트가 필요할 때 불러 쓰는 스킬로 만듭니다. 두 파일이 모두 없을 때만 `AGENTS.md`를 새로 만듭니다. 폴더를 복사하지 않고, 프로젝트에 원래 있던 지시문과 훅, 메모리 파일은 건드리지 않습니다. 에이전트가 세션마다 읽는 분량이 몇 단어 늘어나는지도 알려 줍니다. 실행하기 전에 `awkit kit scan`으로 같은 숫자를 볼 수 있습니다.
+이 명령은 프로젝트에서 이미 돌리는 검사로 `checks.toml`을 만들고, 이 프로젝트에서 무엇을 완료로 볼지 적는 `[kit]` 표를 넣습니다. 훅을 설치하고, awkit이 쓰는 `.awkit/` 폴더는 Git에서 뺍니다. 커밋은 하지 않습니다. 원래 있던 지시문과 스킬, 훅, 메모리 파일도 건드리지 않습니다. `AGENTS.md`나 `CLAUDE.md`에 붙일 한 줄은 화면에 보여 주기만 하니, 원하면 직접 붙이세요. 커밋할 파일은 `checks.toml`과 `rules.toml`뿐입니다.
 
 그리고 에이전트에게 이렇게 말하세요.
 
 > 이 프로젝트에 Agent Work Kit을 연결해 주세요.
 
-새 버전으로 바꿀 때는 awkit을 업데이트한 뒤 `awkit kit skills --provider claude`(Codex는 `codex`)를 다시 실행하세요. `awkit kit remove`를 실행하면 키트가 넣은 것을 모두 뺍니다.
+새 버전으로 바꿀 때는 awkit을 업데이트한 뒤 `awkit kit skills`를 다시 실행하세요. `awkit kit remove`는 프로젝트에서, `awkit kit remove --user`는 사용자 폴더에서 키트를 뺍니다. 스킬을 쓰지 못하는 에이전트는 `awkit kit guide workflow`로 가이드를 읽습니다.
 
 예제로 먼저 써 보려면 에이전트에게 `awkit kit example data demo`를 실행하고 그 README대로 진행하라고 하세요. 예제는 열 이름 하나가 틀린 작은 데이터 프로젝트입니다. 에이전트가 검사를 돌려 실패를 확인하고, 입력을 고친 뒤 다시 검사하고, 보관한 파일을 보여 줍니다.
 

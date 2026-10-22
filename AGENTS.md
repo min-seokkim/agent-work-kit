@@ -1,6 +1,6 @@
 # Instructions for agents developing this repository
 
-This file is for agents that change Agent Work Kit itself. Agents that use the kit in another project read the skills `awkit kit init` writes there, or a copied `agent-work-kit/` folder, starting with [kit/README.md](kit/README.md).
+This file is for agents that change Agent Work Kit itself. Agents that use the kit in another project read the skills `awkit kit skills` writes in the user folder, `awkit kit guide NAME`, or a copied `agent-work-kit/` folder, starting with [kit/README.md](kit/README.md).
 
 ## What each document is for
 
@@ -14,7 +14,7 @@ This file is for agents that change Agent Work Kit itself. Agents that use the k
 
 ## The kit applied to this repository
 
-This repository is developed with its own kit. Follow [kit/workflow.md](kit/workflow.md) as the baseline; the situation guides in `kit/` load as skills from `.claude/skills/` and `.agents/skills/` (written by `awkit kit skills --kit kit`). The project profile's "Start here" fields:
+This repository is developed with its own kit. Follow [kit/workflow.md](kit/workflow.md) as the baseline; the situation guides in `kit/` load as skills from `.claude/skills/` and `.agents/skills/` (written by `awkit kit skills --project --kit kit`). The project profile's "Start here" fields:
 
 - Desired result: the next work in [docs/development.md](docs/development.md); the owner decides what to build before it is built.
 - Source material and its version: `kit/`, `src/awkit/`, `docs/` on `dev`.

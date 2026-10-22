@@ -6,7 +6,7 @@ Use this when a task needs a record that another session or person will read: ta
 
 Assign each task a stable ID, owner, base revision, change scope, acceptance criteria and next action. Maintain current state in one task record and link related reviews and decisions. Do not copy entire conversations into multiple documents.
 
-That one place is where the project already keeps state: its issue tracker, Beads, a `.planning` folder, `MEMORY.md` or its own task documents (`awkit kit scan` lists what it finds). Use the kit's task, review, decision and checkpoint templates only when the project has none, or for the fields its own records lack. A second record in the kit's format splits the state in two, and the next session reads the one that went stale.
+That one place is where the project already keeps state: its issue tracker, Beads, a `.planning` folder, `MEMORY.md` or its own task documents (`awkit kit scan` lists what it finds, and `records` in the `[kit]` table of `checks.toml` names it). The kit's task, review, decision and checkpoint templates are the fallback for a project that has none, or for the fields its own records lack; `awkit kit guide task` and the other template names print them. A second record in the kit's format splits the state in two, and the next session reads the one that went stale.
 
 Prevents: F1, F29.
 

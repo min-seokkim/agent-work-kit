@@ -50,6 +50,57 @@ What awkit writes: `.awkit/`, the skill files it generated (marked `<!-- awkit:g
 
 `kit init`, `kit skills` and `kit hooks` record every file they write in `.awkit/installed.json`, with a hash of the content before and after and a copy of the original under `.awkit/backup/`. `kit remove` goes through the record: a file still as awkit left it is restored from the copy, or deleted when awkit created it; a file edited since loses only awkit's part (the marked section, the handlers whose command starts with `awkit hook`, the marked Git hook line). Folders awkit created are removed when empty. Without the record, as in another clone, it finds the same parts by their markers. `.awkit/` is deleted, or kept without the record and copies when it holds check runs, accepted versions, the review channel or the hook log: `--keep-records` and `--delete-records` decide, otherwise the command asks, and keeps it without a terminal. The commit `kit init` made stays in the history; commit the removal.
 
+### Three layers
+
+From the three-layer change on, `kit init`, `kit skills` and `kit remove` work as the sections below say; where the table rows above, Connecting or Removing say otherwise (a section in the instruction files, project skills by default, a commit by `init`), these sections apply. The person's computer holds awkit, the guides inside the package and the skills in the user folder. A project commits only `checks.toml`, with its `[kit]` table, and `rules.toml`. The hooks and `.awkit/` stay in the clone, because hooks run code.
+
+### init
+
+`kit init [DIR] [--no-git]` installs the project layer and commits nothing.
+
+- `checks.toml`: with none, init writes the draft `kit scan` suggests and the `[kit]` table. An existing file is never rewritten: init appends the table when there is none, or adds the keys the table lacks right after its `[kit]` line. It prints `created`, `added the [kit] table to`, `filled the [kit] table in` or `kept`. A file that does not parse as TOML is left as it is, with a note.
+- `[kit]` holds four optional keys; `schema` stays 1 and `review check` ignores the table. `version` is the awkit that wrote it, which `doctor` compares with the installed one. `done` is one sentence saying what finishing means in this project, `recipient` who or what receives the result, `records` where the project keeps its state; init fills `records` from the memory and record locations the scan found and leaves `done` and `recipient` empty for the connect procedure.
+- Hooks: init runs `awkit kit hooks DIR --git` with `--claude` (for `CLAUDE.md` or `.claude/`) and `--codex` (for `AGENTS.md`, `.codex/` or `.agents/`), both when the project has neither. It prints `running: awkit kit hooks ...` and then that command's own output. A failure becomes a note and init goes on.
+- `.awkit/` goes into `.git/info/exclude`. Everything init writes is recorded in `.awkit/installed.json`.
+- The project's instruction files get nothing. init prints a line the user can add to `AGENTS.md` or `CLAUDE.md` themselves.
+- Outside a Git repository init writes `checks.toml` and the record, skips the hooks and the exclude line, and says to run `git init`. `--no-git` skips the hooks and the exclude line in a repository too.
+- Exit 0, or 2 when `checks.toml` already had everything and `.awkit/` was already excluded.
+
+### guide
+
+`kit guide [NAME]` prints a kit file from the installed package on stdout, for an agent without skills and for people. The names are the kit's file names without `.md` (`workflow`, `connect`, `writing`, `korean-writing`, `work-types`, `checking`, `delivery`, `delegation`, `review-session`, `protocol`, `reference`, `failures`, `readme`, `license`, `third-party-notices`), plus `profile` (the long project profile form, `templates/project.md`), `profiles` (the example profiles) and `task`, `review`, `decision` and `checkpoint` (the record templates). Links between kit files are printed as `awkit kit guide NAME`. Without a name it lists the names. An unknown name exits 2 with the list.
+
+### skills
+
+`kit skills [--provider claude|codex] [--without NAMES] [--project] [DIR] [--kit PATH]` writes `awkit-workflow` and one skill per situation guide, for both agents unless `--provider` names one.
+
+- By default the skills go into the user folders, which the agent reads in every project: `~/.claude/skills/awkit-*/SKILL.md` for Claude Code and `~/.agents/skills/awkit-*/SKILL.md` for Codex. Codex reads `$HOME/.agents/skills` as its user scope and still reads the older `$CODEX_HOME/skills`; this is from the Codex source (`codex-rs/ext/skills/src/host_roots.rs` in openai/codex at `2f3fb11`), since its documentation page could not be fetched when this was written.
+- Each skill holds its guide and needs nothing outside its folder. Its front matter has only `name` (lowercase letters, digits and hyphens, at most 64 characters, as both agents require) and a one-line `description`. Its first line after the front matter says which awkit made it and how to update it: ``<!-- awkit:generated by awkit VERSION (kit commit C) from GUIDE. Update with `awkit kit skills`. -->``.
+- All eight are written by default. `--without delegation,review-session` leaves the named skills out (with or without the `awkit-` prefix, repeatable) and deletes the file awkit wrote for them earlier. Method bundles are not looked for in the user folder.
+- Files awkit wrote earlier are regenerated; any other file with the same name is kept. What was written is recorded in `~/.awkit/installed.json`, which `kit remove --user` reads.
+- `--project` writes into `DIR/.claude/skills` and `DIR/.agents/skills` instead, leaving out the planning, review and delegation skills when the project has a method bundle. `--kit PATH` implies `--project` and points the skills at a kit folder inside the project; this repository uses `--project --kit kit`.
+- Exit 0, or 2 if every file already existed and was not awkit's.
+
+### remove
+
+`kit remove [DIR] [--user] [--project] [--keep-records|--delete-records]` takes out what the kit added.
+
+- `--project`, the default when `--user` is not given, first runs `awkit kit hooks DIR --remove`, which takes out the hooks and `rules.toml`. When that command fails, awkit's hook entries recorded in `.awkit/installed.json` or found by their markers are taken out instead, and a note says so.
+- Then every file in the record is restored as Removing describes. A `checks.toml` that init created is deleted when it is unchanged; edited since, it loses only the `[kit]` table, or only the keys init added to an existing table. Without the record, as in another clone, a `[kit]` table under the `# Agent Work Kit:` comment is taken out and the checks stay.
+- The exclude line goes when `.awkit/` is deleted; it stays while `.awkit/` is kept for its records.
+- `--user` deletes awkit's skills from the user folders, from `~/.awkit/installed.json` (restoring any file that was there before) or by their marker without it, then the record and the folders it emptied. With both flags it does both.
+- Exit 0.
+
+### What awkit writes
+
+awkit writes only to these places, and `WRITES` in `src/awkit/connect.py` lists them:
+
+- in the project: `.awkit/`; the `checks.toml` it created, or the `[kit]` table or keys it added to one; the `.awkit/` line in `.git/info/exclude`;
+- through `kit hooks`: `rules.toml`, its handlers in `.claude/settings.json`, `.claude/settings.local.json` and `.codex/hooks.json`, and its line or hook in Git's hooks folder;
+- in the user's home folder: `~/.claude/skills/awkit-*/`, `~/.agents/skills/awkit-*/` and `~/.awkit/`.
+
+Memory and record files (`MEMORY.md`, `.beads/`, `.planning/`, Claude Code's automatic memory) and the project's instruction files and own skills are only read. `tests/test_layers.py` runs `kit skills`, `kit init` and `kit remove` with the real `kit hooks` and fails when anything else changes, including the modification time of a read-only file, or when the project and home folder differ from before after removal.
+
 ## review
 
 ### snapshot

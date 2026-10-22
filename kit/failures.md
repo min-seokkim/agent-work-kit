@@ -74,7 +74,7 @@ A count from part of the data is stated as the whole, or a metric counts things 
 A read or check command creates, commits or deletes something, or a setup command changes more of the project's own files than it adds.
 - Evidence: observed in awkit's development. `review compare` in a folder without Git created a repository and committed every file, `.env` included (from `f475f9e`, fixed in `b5d78ba`). `kit hooks` rewrote a project's `.claude/settings.json` with two-space indentation and `\u` escapes for non-ASCII text, so every line changed to add one handler; with a commit-msg hook already present it left the identity check out while reporting the hook as kept; with husky it would have written into `.husky/_`, which husky regenerates (found while connecting the kit to existing setups, fixed in `006575b`).
 - Countermeasure: read commands never write; write commands touch only what was named, add beside what the project has, and record what they add so it can be taken out.
-- Check: Kind: verify. tests that read commands leave the folder unchanged, and that `kit init`, `kit hooks` and `kit remove` change only awkit's own places and restore the tree (`tests/test_connect.py`). Status: enforced for `awkit`.
+- Check: Kind: verify. tests that read commands leave the folder unchanged, and that `kit init`, `kit skills`, `kit hooks` and `kit remove` change only the places in `WRITES`, leave memory and instruction files untouched and restore the project and home folders (`tests/test_connect.py`, `tests/test_layers.py`). Status: enforced for `awkit`.
 
 #### F8. The user's unrelated work is bundled in.
 
@@ -104,7 +104,7 @@ Version bumps, release workflows or uploads set up while the interface is still 
 #### F11. A guess is presented as a finding.
 
 An inference from file names or conventions is reported as how the project works; a question from the user is recorded as a confirmation.
-- Evidence: observed in awkit's development. `kit scan` suggested pytest for any `tests` folder; this repository uses unittest (fixed in `6eb632c`). `kit scan` reported `"present": false` for the kit in this repository, which uses it through skills pointing at `kit/`, because it looked only for a folder named `agent-work-kit` (fixed in `006575b`). Owner's records: a component that was already installed was installed again; files were sorted by their names without opening them; the owner's question whether a tool was allowed was recorded as the owner confirming that it was ("I was asking whether it is okay").
+- Evidence: observed in awkit's development. `kit scan` suggested pytest for any `tests` folder; this repository uses unittest (fixed in `6eb632c`). `kit scan` reported `"present": false` for the kit in this repository, which uses it through skills pointing at `kit/`, because it looked only for a folder named `agent-work-kit` (fixed in `006575b`). `awkit doctor` reported "kit: connected by awkit 0.3.0" in this repository because `.awkit/installed.json` existed, a record the session hook's `kit hooks --git` had written seconds earlier listing only the commit-msg hook; it now reads the `[kit]` table of `checks.toml` and the skills instead (fixed in the three-layer change). Owner's records: a component that was already installed was installed again; files were sorted by their names without opening them; the owner's question whether a tool was allowed was recorded as the owner confirming that it was ("I was asking whether it is okay").
 - Countermeasure: mark inferences; run a suggested command once before relying on it; check the current state before installing, sorting or reviewing; treat a question as a question.
 - Check: Kind: guidance. the connect procedure runs the drafted checks once. Status: prose plus tool.
 
@@ -270,7 +270,7 @@ A command returned 0, so the message is assumed delivered, the file transferred,
 #### F25. Instructions for another version are applied.
 
 Setup steps from documentation for a different edition, OS or account type.
-- Evidence: needs evidence.
+- Evidence: observed in awkit's development. Two cloud sessions in a row started on a checkout of `dev` older than a rewrite of its history (the second at `ce591c1`, while `origin/dev` was at `cc71b90`): the checkout had no `AGENTS.md`, `checks.toml` or session hook, so awkit was not installed and the first `awkit doctor` failed with command not found. A `git fetch` showed the forced update; the session reset to `origin/dev` and ran the hook by hand. No check caught it: the guard would have been the session hook, which the old checkout did not have.
 - Countermeasure: confirm version, OS and account type before following found instructions.
 - Check: Kind: guidance. prose.
 
@@ -317,8 +317,8 @@ The agent does the work when the user wanted to learn or decide, or only advises
 
 The user explains the project again, or an interrupted external operation is repeated.
 - Evidence: owner's records. Writing rules kept in one agent's memory did not reach another agent working on the same documents; the owner repeated the instructions and asked whether the second agent had read the first one's research. Observed in awkit's development: `kit init` copied the kit and `kit skills` pointed skills at the situation guides, but nothing a session reads at its start pointed at `workflow.md` or the profile, so the baseline reached an agent only where someone had written that into the project's instructions by hand, as this repository's `AGENTS.md` did (`6482bc7`; fixed in `006575b`).
-- Countermeasure: standing rules in a repository file every agent reads (`AGENTS.md`); the profile as a section of that file; state kept where the project already keeps it; checkpoint with the next action; verify actual state before resuming.
-- Check: Kind: guidance. prose plus templates; `kit init` writes the section into the file agents load, and `kit scan` lists where the project keeps state.
+- Countermeasure: standing rules in a repository file every agent reads (`AGENTS.md`); the way of working installed once per computer, as skills in the user folders every session reads; what done means in the project's `checks.toml`; state kept where the project already keeps it; checkpoint with the next action; verify actual state before resuming.
+- Check: Kind: guidance. prose plus templates; `kit skills` puts the workflow and guides in the user folders and `kit guide` prints them for agents without skills, `awkit doctor` warns when no skills or no hook reaches sessions, and `kit scan` lists where the project keeps state.
 
 ## What guards each entry
 

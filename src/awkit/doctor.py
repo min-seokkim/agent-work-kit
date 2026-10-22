@@ -7,7 +7,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-from .kit_install import SITUATIONS, SKILL_FOLDERS
+from . import __version__
+from .kit_install import SITUATIONS, SKILL_FOLDERS, read_version
 from .review import nested_repositories
 
 MIN_PYTHON = (3, 11)
@@ -82,7 +83,15 @@ def diagnose(folder="."):
                     f"move {entry['path']} outside the project, or add {entry['path']}/ to .gitignore")
             kit = folder / "agent-work-kit"
             if (kit / "workflow.md").is_file():
-                add("kit folder", "ok", str(kit))
+                recorded = read_version(kit).get("awkit")
+                if recorded is None:
+                    add("kit folder", "warning", f"{kit} records no version",
+                        "it was copied by an awkit before 0.3.0; compare it with awkit kit init --name agent-work-kit-new")
+                elif recorded != __version__:
+                    add("kit folder", "warning", f"{kit} was copied by awkit {recorded}; awkit {__version__} is installed",
+                        "install the new kit beside it with awkit kit init --name agent-work-kit-new and compare")
+                else:
+                    add("kit folder", "ok", f"{kit} (awkit {recorded})")
                 for provider, path in SKILL_FOLDERS.items():
                     present = sum((top / path / name / "SKILL.md").is_file() for name, *_ in SITUATIONS)
                     if present:

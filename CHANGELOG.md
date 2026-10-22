@@ -31,6 +31,7 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 - `install.ps1` and `install.sh`: install Git and Python when missing (winget, Homebrew), then awkit with pipx, then run `awkit doctor`.
 - `awkit doctor`: checks Python, Git, the Git identity, PATH and the project folder, and prints how to fix each missing item.
 - Another Git repository inside the project, such as a clone of awkit, is reported by `awkit doctor` and `awkit kit scan` and fails `awkit check done` with how to fix it; such repositories are not supported. `awkit check writing` reads only the Markdown files Git tracks or would track.
+- `awkit kit init` writes `VERSION.txt` into the kit folder: the awkit version, and for a kit copied from a source checkout its commit and whether `kit/` had uncommitted changes. `awkit doctor` warns when it differs from the installed awkit.
 - `awkit kit skills --provider claude|codex`: one skill per situation guide, so a guide loads when its situation arises.
 - `awkit check commit`, `check writing` and `check done`: the author and trailers of a commit compared with the repository's history, the writing patterns from the kit's writing guides found in Markdown files, and a done check that requires a passing `review check` of the current state for files changed in the session. `awkit kit hooks` installs them as a Git `commit-msg` hook and as Claude Code SessionStart and Stop hooks.
 

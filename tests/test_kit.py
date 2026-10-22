@@ -7,7 +7,8 @@ import tomllib
 import unittest
 from pathlib import Path
 
-from awkit.kit_install import SITUATIONS, install, install_roles, install_skills, load_roles
+from awkit import __version__
+from awkit.kit_install import SITUATIONS, install, install_roles, install_skills, load_roles, read_version
 from awkit.review import track
 from support import child_env
 
@@ -72,8 +73,13 @@ class KitTests(unittest.TestCase):
     def test_init_copies_kit_with_working_links_and_never_overwrites(self):
         target, copied = install(self.project)
         self.assertEqual(target, (self.project / "agent-work-kit").resolve())
-        for name in ("README.md", "protocol.md", "templates/project.md", "templates/task.md"):
+        for name in ("README.md", "protocol.md", "templates/project.md", "templates/task.md", "VERSION.txt"):
             self.assertIn(name, copied)
+        # Which kit this is: run from the source checkout, the record names its commit.
+        record = read_version(target)
+        self.assertEqual((record["awkit"], record["source"]), (__version__, "checkout"))
+        self.assertRegex(record.get("commit", ""), r"^[0-9a-f]{40}$")
+        self.assertIn(record["uncommitted kit changes"], ("yes", "no"))
         self.assertEqual(broken_links(target), [])
         (target / "templates" / "project.md").write_text("작성한 적용표", encoding="utf-8")
         with self.assertRaises(ValueError):

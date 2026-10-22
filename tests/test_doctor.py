@@ -47,6 +47,14 @@ class DoctorTests(unittest.TestCase):
             findings = {f["item"]: f for f in diagnose(project)}
             self.assertEqual(findings["project repository"]["status"], "ok")
             self.assertEqual(findings["kit folder"]["status"], "ok")
+            # A kit copied by another awkit version is pointed out, and so is one with no record.
+            version = project / "agent-work-kit" / "VERSION.txt"
+            version.write_text("awkit: 0.0.1\n", encoding="utf-8")
+            older = {f["item"]: f for f in diagnose(project)}["kit folder"]
+            self.assertEqual(older["status"], "warning")
+            self.assertIn("awkit 0.0.1", older["detail"])
+            version.unlink()
+            self.assertIn("records no version", {f["item"]: f for f in diagnose(project)}["kit folder"]["detail"])
             self.assertTrue(findings["claude skills"]["detail"].startswith(f"{len(SITUATIONS)} of {len(SITUATIONS)}"))
             self.assertIn("project repository", render(list(findings.values())))
 

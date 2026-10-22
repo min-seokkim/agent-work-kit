@@ -19,7 +19,7 @@ Requirements: Python 3.11+, Git for `kit init`, `kit example` and `review`, Play
 
 | Command | Effect | Exit |
 |---|---|---|
-| `kit init [DIR] [--name NAME] [--no-git]` | Creates `DIR/NAME` (default `agent-work-kit`) with the kit. Never touches an existing folder. | 0, or 2 if the folder exists |
+| `kit init [DIR] [--name NAME] [--no-git]` | Creates `DIR/NAME` (default `agent-work-kit`) with the kit and `VERSION.txt`: the awkit version, and when copied from a source checkout its commit and whether `kit/` had uncommitted changes (copied as they were). Never touches an existing folder. | 0, or 2 if the folder exists |
 | `kit example documents\|data\|analysis DIR [--no-git]` | Creates a small project with one deliberate defect and a README that walks through fail, fix, re-check, verify, accept. | 0, or 2 if `DIR` exists |
 | `kit scan [DIR] [--checks]` | Reports manifests, languages, check commands, CI run lines, docs folders, Git state and kit state, plus `suggested_checks_toml`. `--checks` prints only the TOML draft. | 0 |
 | `kit roles [DIR] --provider claude\|codex [--model TIER=MODEL[:EFFORT]]...` | Writes role files from the [role templates](templates/roles/README.md). Existing files are kept. | 0, or 2 if every file already existed |

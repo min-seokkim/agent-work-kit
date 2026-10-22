@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import shutil
+import subprocess
 import uuid
 from pathlib import Path
 
@@ -251,6 +252,41 @@ def install_skills(project: Path, provider: str, kit: Path | None = None):
     return written, skipped
 
 
+VERSION_FILE = "VERSION.txt"
+
+
+def kit_source():
+    """Which version of the kit `install` copies: the awkit version, and for a source checkout its commit
+    and whether kit/ had uncommitted changes, which are copied as they are."""
+    from . import __version__
+    record = {"awkit": __version__, "source": "package"}
+    checkout = Path(__file__).resolve().parents[2]
+    try:
+        from_checkout = Path(str(kit_root())).resolve() == (checkout / "kit").resolve()
+    except ValueError:
+        from_checkout = False
+    if from_checkout:
+        record["source"] = "checkout"
+
+        def run(*args):
+            return subprocess.run(["git", "-C", str(checkout), *args], capture_output=True, text=True,
+                                  encoding="utf-8", errors="replace")
+        head = run("rev-parse", "--verify", "-q", "HEAD")
+        if head.returncode == 0:
+            record["commit"] = head.stdout.strip()
+            record["uncommitted kit changes"] = "yes" if run("status", "--porcelain", "--", "kit").stdout.strip() else "no"
+    return record
+
+
+def read_version(kit: Path):
+    """The record `install` wrote into a kit folder, or {} for a kit copied before it did."""
+    try:
+        lines = (Path(kit) / VERSION_FILE).read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return {}
+    return dict(line.split(": ", 1) for line in lines if ": " in line)
+
+
 def install(parent: Path, name="agent-work-kit"):
     """Create parent/name with the kit. Never overwrites: existing records stay untouched.
 
@@ -269,6 +305,11 @@ def install(parent: Path, name="agent-work-kit"):
     copied: list[str] = []
     try:
         _copy(kit_root(), staging, copied)
+        record = kit_source()
+        (staging / VERSION_FILE).write_text(
+            "Written by awkit kit init. Compare it with a newer kit's before carrying changes over.\n"
+            + "".join(f"{key}: {value}\n" for key, value in record.items()), encoding="utf-8", newline="\n")
+        copied.append(VERSION_FILE)
         staging.rename(target)
     finally:
         if staging.exists():

@@ -25,17 +25,58 @@ def kit_root():
     raise ValueError("The installed kit files were not found.")
 
 
-def _copy(node, destination: Path, copied: list[str], prefix=""):
+def _copy(node, destination: Path, copied: list[str], prefix="", suffixes=(".md",)):
+    """Copy the files under `node` whose names end with one of `suffixes` (every file when None)."""
     for child in sorted(node.iterdir(), key=lambda item: item.name):
-        if child.name in SKIP:
+        if child.name in SKIP or child.name.endswith((".pyc", ".pyo")):
             continue
         relative = f"{prefix}{child.name}"
         if child.is_dir():
             (destination / child.name).mkdir()
-            _copy(child, destination / child.name, copied, relative + "/")
-        elif child.name.endswith(".md"):
+            _copy(child, destination / child.name, copied, relative + "/", suffixes)
+        elif suffixes is None or child.name.endswith(tuple(suffixes)):
             (destination / child.name).write_bytes(child.read_bytes())
             copied.append(relative)
+
+
+EXAMPLES = ("documents", "data")
+
+
+def example_root(kind):
+    """The first-run example installed with the wheel, or the repository's examples/first-run folder."""
+    if kind not in EXAMPLES:
+        raise ValueError("The example kind must be one of: " + ", ".join(EXAMPLES))
+    try:
+        from importlib.resources import files
+        root = files("awkit.examples").joinpath(kind)
+        if root.joinpath("README.md").is_file():
+            return root
+    except ModuleNotFoundError:
+        pass
+    source = Path(__file__).resolve().parents[2] / "examples" / "first-run" / kind
+    if (source / "README.md").is_file():
+        return source
+    raise ValueError(f"The installed example files were not found: {kind}")
+
+
+def install_example(kind, target: Path):
+    """Create `target` with the example's files. The folder must not exist yet."""
+    source = example_root(kind)
+    target = Path(target).absolute()
+    if target.exists():
+        raise ValueError(f"{target} already exists. Choose a new folder for the example.")
+    if not target.parent.is_dir():
+        raise ValueError(f"The parent folder does not exist: {target.parent}")
+    staging = target.parent / f".{target.name}.{uuid.uuid4().hex}.tmp"
+    staging.mkdir()
+    copied: list[str] = []
+    try:
+        _copy(source, staging, copied, suffixes=None)
+        staging.rename(target)
+    finally:
+        if staging.exists():
+            shutil.rmtree(staging)
+    return target, copied
 
 
 TIERS = ("efficient", "standard", "judge", "top")

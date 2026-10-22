@@ -1,0 +1,14 @@
+schema = 1
+timeout_seconds = 60
+
+# Keep the input and the produced summary with their hashes in the run folder.
+artifacts = ["input/orders.csv", "output/summary.csv"]
+required_artifacts = ["output/summary.csv"]
+
+[[setup]]
+name = "process"
+argv = ["{python}", "process.py", "input/orders.csv", "output/summary.csv"]
+
+[[checks]]
+name = "check-summary"
+argv = ["{python}", "check_output.py", "input/orders.csv", "output/summary.csv"]

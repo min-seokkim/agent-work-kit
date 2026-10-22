@@ -3,13 +3,12 @@
 import hashlib
 import json
 import os
-import shutil
-from pathlib import Path, PurePosixPath
 import re
 import subprocess
 import sys
 import tempfile
 import tomllib
+from pathlib import Path, PurePosixPath
 
 from .pipeline import atomic_json
 from .process import run_to_files

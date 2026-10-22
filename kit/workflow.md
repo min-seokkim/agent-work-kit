@@ -4,7 +4,7 @@ Follow the project's existing requirements and permissions first. Scale this wor
 
 ## Define the task
 
-Write one sentence for the intended outcome and one for how to verify it. Check the base revision and existing changes, then identify the evidence to use and files to edit. Settle ownership before editing a file another contributor is working on.
+Write one sentence for the intended outcome and one for how to verify it. Check the base revision and existing changes, then identify the evidence to use and files to edit. Settle ownership before editing a file another contributor is working on. For research, writing, data preparation, environment setup, application operation and learning, take the inputs, preserved items and completion evidence from [Work Types](work-types.md).
 
 Judge risk by the impact of failure rather than file count. Wording changes are often straightforward; permissions, data changes, deployment and publication require an impact assessment. For high-risk work, choose design judgment before implementation or independent review afterward. Do not repeat both by default. Reuse an independent review that covers the same revision, scope and acceptance criteria. Another equivalent review needs a new reason.
 

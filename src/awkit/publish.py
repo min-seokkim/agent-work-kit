@@ -1,14 +1,14 @@
 """Validate a trusted static build and atomically select an immutable version."""
 
 import hashlib
-from html.parser import HTMLParser
 import json
 import os
-from pathlib import Path, PurePosixPath
 import re
 import shutil
 import sqlite3
 import tempfile
+from html.parser import HTMLParser
+from pathlib import Path, PurePosixPath
 from urllib.parse import unquote, urlsplit
 
 from .review import relative_file

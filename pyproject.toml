@@ -27,14 +27,28 @@ awkit = "awkit.cli:main"
 [tool.setuptools]
 # The kit lives at the repository root so it can be browsed and copied as-is;
 # the wheel ships it as awkit/kit so `awkit kit init` works after installation.
-packages = ["awkit", "awkit.kit", "awkit.kit.templates", "awkit.kit.templates.roles", "awkit.kit.examples"]
+packages = ["awkit", "awkit.kit", "awkit.kit.templates", "awkit.kit.templates.roles", "awkit.kit.examples",
+            "awkit.examples", "awkit.examples.documents", "awkit.examples.data"]
 
 [tool.setuptools.package-dir]
 "" = "src"
 "awkit.kit" = "kit"
+"awkit.examples" = "examples/first-run"
 
 [tool.setuptools.package-data]
 "awkit.kit" = ["*.md"]
 "awkit.kit.templates" = ["*.md"]
 "awkit.kit.templates.roles" = ["*.md"]
 "awkit.kit.examples" = ["*.md"]
+"awkit.examples.documents" = ["*.md", "*.toml", "docs/*.md"]
+"awkit.examples.data" = ["*.md", "*.toml", "input/*.csv"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+src = ["src", "tests", "scripts", "examples"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+# Long lines are tolerated for now; the first pass covers errors, imports and modern syntax.
+ignore = ["E501"]

@@ -13,7 +13,7 @@ Fill the four sections below for each assignment. For a short task, one sentence
 ## Goal
 
 - Requested outcome:
-- Acceptance criteria:
+- Acceptance criteria, using [Work Types](../work-types.md) for non-code work:
 - Behavior affected if the task fails:
 
 ## Output

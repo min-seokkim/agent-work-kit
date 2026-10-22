@@ -2,6 +2,16 @@
 
 Copy this template into a project, fill the relevant fields and remove unused ones. Completing the profile does not establish that implementation or approval is complete.
 
+## Start here
+
+Fill these five fields first. They are enough for an agent to begin a task; add the later sections when a task needs delegation, delivery or deployment settings.
+
+- Desired result:
+- Source material and its version:
+- Files to change and conditions to preserve:
+- How completion is checked (command or inspection):
+- Where results and records go:
+
 ## Purpose and evidence
 
 - Project name:

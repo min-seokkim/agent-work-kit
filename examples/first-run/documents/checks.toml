@@ -1,0 +1,10 @@
+schema = 1
+timeout_seconds = 60
+
+# Keep the checked documents with their hashes in the run folder.
+artifacts = ["docs/*.md"]
+required_artifacts = ["docs/index.md"]
+
+[[checks]]
+name = "links-and-titles"
+argv = ["{python}", "check_docs.py", "docs"]

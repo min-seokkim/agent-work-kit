@@ -6,6 +6,17 @@ on:
   pull_request:
 
 jobs:
+  lint:
+    name: Ruff
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install ruff
+      - run: ruff check .
+
   test:
     name: ${{ matrix.os }} / Python ${{ matrix.python }}
     runs-on: ${{ matrix.os }}
@@ -53,6 +64,18 @@ jobs:
           & $awkit pipeline --config "$project\pipeline.toml" deploy aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
           if ($LASTEXITCODE -ne 0) { exit 1 }
           & $awkit pipeline --config "$project\pipeline.toml" status
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          $example = "$env:RUNNER_TEMP\data-example"
+          & $awkit kit example data $example
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          git -C $example init
+          git -C $example -c user.name=ci -c user.email=ci@localhost add -A
+          git -C $example -c user.name=ci -c user.email=ci@localhost commit -m start
+          & $awkit review --repo $example check (git -C $example rev-parse HEAD) --config "$example\checks.toml"
+          if ($LASTEXITCODE -ne 1) { Write-Error "the unfixed example must fail"; exit 1 }
+          (Get-Content "$example\input\orders.csv") -replace '^date,item,qty,', 'date,item,quantity,' | Set-Content "$example\input\orders.csv"
+          $snap = & $awkit review --repo $example snapshot input/orders.csv
+          & $awkit review --repo $example check $snap --config "$example\checks.toml"
           if ($LASTEXITCODE -ne 0) { exit 1 }
       - uses: actions/upload-artifact@v4
         with:

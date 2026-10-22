@@ -4,14 +4,17 @@ import argparse
 import json
 import sqlite3
 import sys
+from datetime import UTC
 from pathlib import Path
 
 from . import __version__
-from .channel import Channel, KINDS, ROLES, render
-from .kit_install import install, install_roles
+from .channel import KINDS, ROLES, Channel, render
+from .kit_install import EXAMPLES, install, install_example, install_roles
 from .pipeline import Pipeline, StepError
 from .publish import Publisher
-from .review import snapshot, check as run_checks, verify as verify_run
+from .review import check as run_checks
+from .review import snapshot
+from .review import verify as verify_run
 
 
 def _parser():
@@ -24,6 +27,9 @@ def _parser():
     init = kit_commands.add_parser("init", help="Create the kit folder. An existing folder is never overwritten.")
     init.add_argument("dir", nargs="?", type=Path, default=Path("."), help="project folder that receives the kit")
     init.add_argument("--name", default="agent-work-kit", help="name of the folder to create (default: agent-work-kit)")
+    example = kit_commands.add_parser("example", help="Create a folder with a runnable first-run example.")
+    example.add_argument("kind", choices=EXAMPLES, help="documents: a small Korean document set; data: a CSV to summarise")
+    example.add_argument("dir", type=Path, help="new folder to create")
     roles = kit_commands.add_parser("roles", help="Generate Claude Code or Codex role files from the role templates. Existing files are kept.")
     roles.add_argument("dir", nargs="?", type=Path, default=Path("."), help="project folder that receives the role files")
     roles.add_argument("--provider", choices=("claude", "codex"), required=True)
@@ -125,13 +131,20 @@ def main(argv=None):
                 print(f"note: {warning}", file=sys.stderr)
             return 0 if written or not skipped else 2
         if args.group == "usage":
-            from datetime import datetime, timezone
-            from .usage import collect, render as render_usage
+            from datetime import datetime
+
+            from .usage import collect
+            from .usage import render as render_usage
             since = None
             if args.since:
-                since = datetime.strptime(args.since, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+                since = datetime.strptime(args.since, "%Y-%m-%d").replace(tzinfo=UTC)
             result = collect(args.paths, since)
             print(json.dumps(result, ensure_ascii=False, indent=2) if args.json else render_usage(result))
+            return 0
+        if args.group == "kit" and args.action == "example":
+            target, copied = install_example(args.kind, args.dir)
+            print(f"created the {args.kind} example: {target}\ncopied {len(copied)} files")
+            print(f"next: read {target / 'README.md'} and run the commands there")
             return 0
         if args.group == "kit":
             target, copied = install(args.dir, args.name)

@@ -2,9 +2,9 @@ import json
 import os
 import sqlite3
 import subprocess
-import time
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 

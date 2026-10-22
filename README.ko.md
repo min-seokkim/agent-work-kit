@@ -2,9 +2,9 @@
 
 [English](README.md) | 한국어
 
-Agent Work Kit은 에이전트와 개발하기 위한 작업 지침, 한국어 문서 작성 가이드, 검증 도구를 담은 키트입니다.
+Agent Work Kit은 코딩 에이전트와 함께 일할 때 쓰는 작업 지침, 한국어 문서 작성 가이드, 검증 도구를 담은 키트입니다. 개발뿐 아니라 문서 작성, 자료 조사, 데이터 정리와 환경 설정에도 같은 절차를 씁니다.
 
-Markdown 키트로 작업과 인계 방법을 정하고 문서를 작성합니다. `awkit` CLI를 더하면 검토 스냅샷을 만들고, 프로젝트 검사를 실행하며, 검토 메시지를 주고받고 배포 결과를 확인할 수 있습니다.
+실행 가능한 예제로 시작한 뒤 Markdown 키트를 프로젝트에 넣어 작업과 인계 방법을 정합니다. `awkit` CLI는 검토할 파일을 고정하고, 그 버전에 프로젝트의 검사를 실행하며, 검사한 결과물을 해시와 함께 보존하고, 세션 사이에 검토 메시지를 전달하며, 배포 결과를 기록합니다.
 
 에이전트 지침과 작업 양식은 영어로, 사용 안내는 한국어로 제공합니다.
 
@@ -40,13 +40,20 @@ Linux에서는 `.venv/bin/` 아래의 같은 실행 파일을 씁니다. 화면 
 
 ## 빠르게 써 보기
 
+예제 하나를 끝까지 돌려 보세요. 각 예제는 일부러 결함을 하나 넣은 작은 프로젝트를 만들고, 그 README가 검사 실패 확인, 입력 수정, 스냅샷 재검사, 보존한 결과 확인까지 안내합니다.
+
+```powershell
+awkit kit example documents my-docs    # 깨진 링크가 든 한국어 문서 묶음
+awkit kit example data my-data         # 열 이름이 맞지 않는 CSV
+```
+
 프로젝트에 키트를 넣습니다.
 
 ```powershell
 awkit kit init C:\work\my-project
 ```
 
-`agent-work-kit/` 폴더가 생깁니다. 같은 이름의 폴더가 이미 있으면 아무것도 건드리지 않고 멈춥니다. `agent-work-kit/templates/project.md`를 채운 뒤 에이전트에게 이렇게 시작을 부탁하세요.
+`agent-work-kit/` 폴더가 생깁니다. 같은 이름의 폴더가 이미 있으면 아무것도 건드리지 않고 멈춥니다. `agent-work-kit/templates/project.md`의 "Start here" 다섯 항목을 채운 뒤 에이전트에게 이렇게 시작을 부탁하세요.
 
 > Before you start, read `agent-work-kit/templates/agent-instructions.md` and the filled-in `agent-work-kit/templates/project.md`. The project's existing rules take precedence.
 
@@ -82,9 +89,10 @@ awkit pipeline --config examples/local-release/pipeline.toml deploy ffffffffffff
 | 명령 | 하는 일 | 추가로 필요한 것 |
 |---|---|---|
 | `awkit kit init` | 프로젝트의 새 폴더에 Markdown 키트를 복사합니다. | |
+| `awkit kit example` | 결함을 하나 넣은 문서 또는 데이터 예제를 만들어 찾고 고치는 과정을 연습하게 합니다. | |
 | `awkit kit roles` | 기존 파일을 보존하면서 다섯 역할의 지침과 등급별 모델 설정을 파일로 만듭니다. | |
 | `awkit usage` | Claude Code와 Codex 실행 기록을 읽어 스레드별 실제 모델, 호출, 토큰을 모읍니다. | |
-| `awkit review` | 고른 변경을 Git commit으로 고정하고, 별도 worktree에서 프로젝트의 검사 명령을 실행합니다. | Git |
+| `awkit review` | 고른 변경을 Git commit으로 고정하고, 별도 worktree에서 프로젝트의 검사 명령을 실행합니다. 지정한 결과 파일을 해시와 함께 보존하고 나중에 대조합니다. | Git |
 | `awkit channel` | 같은 PC의 두 세션이 SQLite 파일로 검토 요청, 응답, 반박을 주고받습니다. | |
 | `awkit publish` | 정적 문서 빌드 결과의 링크를 검사하고 진입 페이지를 원자적으로 바꿉니다. 이전 버전으로 되돌릴 수 있습니다. | |
 | `awkit ui` | 지정한 화면을 여러 폭으로 캡처해 검토 시트 한 장에 모읍니다. | Playwright와 브라우저 |
@@ -111,10 +119,11 @@ awkit pipeline --config examples/local-release/pipeline.toml deploy ffffffffffff
 
 - [공통 키트 사용법](kit/README.md): 키트를 프로젝트에 적용하고 첫 작업을 진행하는 순서
 - [한국어 작성 가이드](kit/korean-writing.md): 한국어 개발 문서의 작성과 검토 지침
+- [작업 유형별 완료 근거](kit/work-types.md): 조사, 작성, 데이터, 환경 설정, 앱 조작 작업에서 고정할 입력과 완료 근거
 - [위임 지침](kit/delegation.md): 언제 맡길지, 역할, 위험도, 강한 호출 예산, 재시도, 측정
 - [검토 세션 협업](kit/review-session.md): 메인 세션 옆에 독립 검토 세션을 붙여 일하는 방법
 - [CLI 사용법](docs/cli.md): 설치, 역할 파일, 사용량 집계, 검토 채널, 배포 실행기
-- [추가 도구](docs/tools.md): 변경본 고정, 격리 검사, 문서 발행, 화면 캡처
+- [추가 도구](docs/tools.md): 변경본 고정, 격리 검사, 결과물 보존, 문서 발행, 화면 캡처
 - [역할과 범위](docs/scope.md): 제품이 맡는 기능과 확장 기준
 - [검증 범위](docs/validation.md): 자동 검사가 다루는 동작과 아직 확인하지 못한 범위
 - [개발 계획](docs/roadmap.md): 현재 기능과 다음 구현 순서
@@ -124,6 +133,7 @@ awkit pipeline --config examples/local-release/pipeline.toml deploy ffffffffffff
 ```powershell
 $env:PYTHONPATH = "$PWD\src"
 python -m unittest discover -s tests -v
+ruff check .                           # pip install ruff
 python scripts/build_release.py        # setuptools>=77, wheel 필요
 ```
 

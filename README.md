@@ -2,9 +2,9 @@
 
 English | [한국어](README.ko.md)
 
-Agent Work Kit provides working instructions, a Korean writing guide, and verification tools for development with coding agents.
+Agent Work Kit provides working instructions, a Korean writing guide, and verification tools for work done with coding agents: development, document writing, research, data preparation and environment setup.
 
-Start with the Markdown kit for task instructions, handoffs and document writing. Add the `awkit` CLI to create review snapshots, run project checks, exchange review messages, and record release results.
+Start with a runnable example, then copy the Markdown kit into your project for task instructions, handoffs and document writing. The `awkit` CLI freezes the files under review, runs your project's checks on that exact revision, retains the checked results with hashes, exchanges review messages between sessions and records release results.
 
 Agent instructions and templates are in English. The kit setup guide and the guides under `docs/` are in Korean.
 
@@ -40,13 +40,20 @@ On Windows the scripts are under `.venv\Scripts\`. Screen capture needs Playwrig
 
 ## Quick start
 
+Run one example from start to finish. Each example creates a small project with one deliberate defect, and its README walks through seeing the check fail, fixing the input, re-running the check against a snapshot and verifying the retained result:
+
+```sh
+awkit kit example documents my-docs    # a Korean document set with a broken link
+awkit kit example data my-data         # a CSV whose column names do not match
+```
+
 Add the kit to a project:
 
 ```sh
 awkit kit init path/to/project
 ```
 
-This creates `agent-work-kit/` and stops without touching anything if that folder already exists. Fill in `agent-work-kit/templates/project.md`, then start your agent with something like:
+This creates `agent-work-kit/` and stops without touching anything if that folder already exists. Fill in the five "Start here" fields of `agent-work-kit/templates/project.md`, then start your agent with something like:
 
 > Before you start, read `agent-work-kit/templates/agent-instructions.md` and the filled-in `agent-work-kit/templates/project.md`. The project's existing rules take precedence.
 
@@ -82,9 +89,10 @@ The second release is built to fail its health check. The runner rolls back to t
 | Command | What it does | Extra requirement |
 |---|---|---|
 | `awkit kit init` | Copies the Markdown kit into a new project folder. | |
+| `awkit kit example` | Creates a runnable documents or data example with one deliberate defect to find and fix. | |
 | `awkit kit roles` | Writes five subagent role files with a model per tier, preserving existing files. | |
 | `awkit usage` | Reads Claude Code and Codex session logs and totals the real model, calls and tokens per thread. | |
-| `awkit review` | Freezes selected changes as a Git commit and runs the project's checks against it in a separate worktree. | Git |
+| `awkit review` | Freezes selected changes as a Git commit, runs the project's checks against it in a separate worktree, retains the listed result files with hashes and verifies them later. | Git |
 | `awkit channel` | Passes review requests, replies and rebuttals between two local sessions through a SQLite file. | |
 | `awkit publish` | Checks the links in a static site build, switches the entry page atomically and can restore an earlier version. | |
 | `awkit ui` | Captures chosen pages at several widths and collects them on one review sheet. | Playwright and a browser |
@@ -111,10 +119,11 @@ The release, review and publishing commands have been checked against mock proje
 
 - [kit/README.md](kit/README.md): applying the kit to a project
 - [kit/korean-writing.md](kit/korean-writing.md): instructions for writing and reviewing Korean development documents
+- [kit/work-types.md](kit/work-types.md): inputs, preserved items and completion evidence for research, writing, data, environment and application work
 - [kit/delegation.md](kit/delegation.md): when to delegate, roles, risk levels, the strong-call budget, retries and measurement
 - [kit/review-session.md](kit/review-session.md): running a separate review session alongside the main one
 - [docs/cli.md](docs/cli.md): installation, role files, usage totals, the review channel and the release runner
-- [docs/tools.md](docs/tools.md): change snapshots, isolated checks, publishing and screen capture
+- [docs/tools.md](docs/tools.md): change snapshots, isolated checks, retained artifacts, publishing and screen capture
 - [docs/scope.md](docs/scope.md): the product's role, responsibilities and extension criteria
 - [docs/validation.md](docs/validation.md): what the tests cover and what remains unverified
 - [docs/roadmap.md](docs/roadmap.md): current features and implementation priorities
@@ -123,6 +132,7 @@ The release, review and publishing commands have been checked against mock proje
 
 ```sh
 PYTHONPATH=src python -m unittest discover -s tests -v
+ruff check .                           # pip install ruff
 python scripts/build_release.py        # needs setuptools>=77 and wheel
 ```
 

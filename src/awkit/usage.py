@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import json
 from collections import Counter
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 FORMAT = 2
@@ -31,7 +31,7 @@ def _files(paths, since=None):
         for item in candidates:
             if not item.is_file():
                 raise ValueError(f"Session log file not found: {item}")
-            if since and datetime.fromtimestamp(item.stat().st_mtime, timezone.utc) < since:
+            if since and datetime.fromtimestamp(item.stat().st_mtime, UTC) < since:
                 continue
             yield item
 

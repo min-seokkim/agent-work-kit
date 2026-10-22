@@ -8,7 +8,7 @@ import re
 import sqlite3
 import time
 from contextlib import contextmanager
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 ROLES = ("main", "reviewer")
@@ -102,7 +102,7 @@ class Channel:
                 "INSERT INTO messages(id,sender,receiver,kind,reply_to,snap,at,body) "
                 "VALUES (?,?,?,?,?,?,?,?)",
                 (message_id, sender, receiver, kind, reply_to, snap,
-                 datetime.now(timezone.utc).isoformat(), body),
+                 datetime.now(UTC).isoformat(), body),
             )
             return message_id
 

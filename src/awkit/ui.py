@@ -1,10 +1,9 @@
 """Capture explicit page routes at several widths; Playwright is optional."""
 
-from html import escape
 import json
+from html import escape
 from pathlib import Path
 from urllib.parse import urljoin, urlsplit
-
 
 CHECKS = """() => {
   const issues = [];
@@ -67,7 +66,7 @@ def sheet(rows):
 def capture(config_path, output, channel=None):
     config, widths, pages = load_config(config_path)
     try:
-        from playwright.sync_api import sync_playwright, Error
+        from playwright.sync_api import Error, sync_playwright
     except ImportError as exc:
         raise ValueError("Screen capture needs the optional dependency agent-work-kit[ui].") from exc
     output = Path(output).resolve()
@@ -89,7 +88,7 @@ def capture(config_path, output, channel=None):
                     rows.append(row)
                     context = browser.new_context(viewport={"width": width, "height": 900},
                                                   service_workers="block", accept_downloads=False)
-                    def restrict(route):
+                    def restrict(route, row=row):
                         url = urlsplit(route.request.url)
                         if (url.scheme, url.netloc) == (origin.scheme, origin.netloc) and route.request.method in ("GET", "HEAD"):
                             route.continue_()

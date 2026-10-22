@@ -13,7 +13,7 @@ import time
 import tomllib
 import uuid
 from contextlib import contextmanager
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from .process import run_to_files
@@ -33,7 +33,7 @@ class StepError(RuntimeError):
 
 
 def stamp():
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 def atomic_json(path, value):

@@ -3,10 +3,9 @@ import re
 import subprocess
 import sys
 import tempfile
+import tomllib
 import unittest
 from pathlib import Path
-
-import tomllib
 
 from awkit.kit_install import install, install_roles, load_roles
 
@@ -162,7 +161,9 @@ class RoleTests(unittest.TestCase):
 
 class DocumentationTests(unittest.TestCase):
     def test_repository_links_resolve(self):
-        self.assertEqual(broken_links(ROOT, ("docs", "kit", "examples")), [])
+        # The documents example ships one broken link on purpose; everything else must resolve.
+        self.assertEqual(broken_links(ROOT, ("docs", "kit", "examples")),
+                         ["examples/first-run/documents/docs/index.md -> config.md"])
 
     def test_link_check_skips_dependency_folders_but_not_managed_documents(self):
         with tempfile.TemporaryDirectory() as temporary:

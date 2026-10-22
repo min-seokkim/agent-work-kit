@@ -1,26 +1,19 @@
 schema = 1
 timeout_seconds = 120
 
-# Validate a configuration in a subdirectory and retain its checked bytes.
+# Validate a configuration file from a subdirectory, then retain the checked bytes.
 # Run against an Agent Work Kit snapshot containing examples/review/.
+artifacts = ["examples/review/checks.toml"]
+required_artifacts = ["examples/review/checks.toml"]
+
 [[checks]]
-name = "validate-and-retain-config"
+name = "validate-config"
 cwd = "examples/review"
 argv = ["{python}", "-c", """
-import hashlib
-import json
-import os
-from pathlib import Path
 import tomllib
+from pathlib import Path
 
-source = Path("checks.toml")
-raw = source.read_bytes()
-config = tomllib.loads(raw.decode("utf-8"))
+config = tomllib.loads(Path("checks.toml").read_text(encoding="utf-8"))
 assert config["schema"] == 1 and config["checks"]
-output = Path(os.environ["AWKIT_RUN_DIR"]) / "artifacts"
-output.mkdir(exist_ok=True)
-(output / source.name).write_bytes(raw)
-manifest = {"file": source.name, "sha256": hashlib.sha256(raw).hexdigest()}
-(output / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\\n", encoding="utf-8")
-print("Validated configuration and retained it in", output)
+print("checks.toml is valid; the runner retains it under artifacts/")
 """]

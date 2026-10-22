@@ -33,6 +33,7 @@ awkit review --repo . check $snap --config examples/review/checks.toml
 | `[[setup]]` | 준비 명령. 하나라도 실패하면 검사 명령은 실행하지 않습니다. |
 | `[[checks]]` | 검사 명령. 하나가 실패해도 나머지를 계속 실행합니다. |
 | `[env]` | 명령에 넘길 환경변수. 실행기를 부른 환경도 그대로 물려받습니다. |
+| `artifacts`, `required_artifacts` | 검사 뒤 실행 기록 폴더에 보존할 파일 패턴. 아래 [결과물 보존](#검사한-결과물-보존하기)을 보세요. |
 
 단계마다 서로 다른 `name`과 `argv`를 줍니다. `cwd`는 해당 단계의 실행 폴더이며 생략하면 worktree 루트에서 실행합니다. `argv`는 실행 파일과 인자를 나눈 배열이고 셸을 거치지 않습니다. Node.js라면 `["node", "--test"]`, Go라면 `["go", "test", "./..."]`처럼 쓰면 됩니다. 이 두 줄은 형식을 보여 주는 예시이고, 해당 언어 프로젝트에서 실제로 돌려 본 결과는 아닙니다.
 
@@ -61,19 +62,42 @@ argv = ["python", "-m", "pytest", "-q"]
 
 이 실행기는 신뢰하지 않는 프로그램을 가두는 샌드박스가 아닙니다. 로그에는 실행한 프로그램의 출력이 그대로 들어가므로 자동으로 공개되는 곳에 두지 마세요.
 
-## 검사 후 결과물 보존하기
+## 검사한 결과물 보존하기
 
-명령이 만든 바이너리나 보고서를 보존하려면 `{run_dir}/artifacts`처럼 worktree 밖의 실행 기록 폴더에 저장하세요. 정상 종료 시 정리하는 worktree에는 필요한 결과물을 남겨 두지 않습니다. 실행 기록 폴더는 검사가 실패해도 남으며, `--keep`을 사용하면 worktree도 보존합니다.
+검사 설정에 `artifacts`를 적으면 실행기가 모든 단계를 마친 뒤 worktree에서 해당 파일을 실행 기록 폴더의 `artifacts/`로 복사하고 크기와 SHA-256을 기록합니다. `required_artifacts`에 적은 패턴에 맞는 파일이 하나도 없으면, 검사 명령이 모두 통과했어도 결과는 `failed`입니다. 명령이 `0`으로 끝났지만 약속한 파일을 만들지 않은 경우를 잡기 위한 것입니다.
 
-[하위 폴더 검사 예제](../examples/review/subdirectory.toml)는 `examples/review`에서 설정 파일을 검사하고, 검사한 파일과 SHA-256을 실행 기록 폴더의 `artifacts`에 저장합니다. 이 저장소의 예제 파일이 들어 있는 commit을 대상으로 실행하세요.
+```toml
+schema = 1
+artifacts = ["dist/*.whl", "reports/**/*.html"]
+required_artifacts = ["dist/*.whl"]
+```
+
+패턴은 worktree 루트 기준의 상대경로이며 `*`, `?`, `**`를 쓸 수 있습니다. 절대경로, `..`, `.git` 아래 경로는 설정 오류로 거부합니다. 연결 파일과 worktree 밖을 가리키는 파일은 복사하지 않고 `skipped_artifacts`에 적습니다. 검사가 실패한 실행에서도 패턴에 맞는 파일은 보존하므로, 실패 진단 파일을 같은 방식으로 남길 수 있습니다.
+
+실행 기록 폴더에는 다음이 남습니다.
+
+| 파일 | 내용 |
+|---|---|
+| `result.json` | 검사한 commit, 설정 해시, 단계별 결과, 보존한 파일의 크기와 해시, 빠진 필수 결과물 |
+| `config.toml` | 실행에 사용한 검사 설정 원본 |
+| `NN.log` | 단계별 출력 |
+| `artifacts/` | 보존한 파일과 `manifest.json` |
+
+`manifest.json`은 검사한 commit, 설정 해시, 실행 ID와 파일별 크기·해시를 담습니다. 나중에 보존한 파일이 그대로인지 확인하려면 실행 기록 폴더를 `verify`에 넘깁니다.
+
+```powershell
+awkit review verify .awkit/reviews/review-abc123
+```
+
+`verify`는 manifest의 각 파일을 다시 읽어 `ok`, `changed`, `missing`으로 보고하고, manifest에 없는 파일은 `unexpected`에 적습니다. `result.json`이 아직 `running`이면 중단된 실행으로 보고 `interrupted`를 `true`로 표시합니다. 모든 파일이 `ok`이고 중단이나 추가 파일이 없을 때만 `verified`가 `true`이고 종료 코드가 `0`입니다. 해시 일치는 파일이 검사 당시와 같은 바이트라는 뜻이며, 내용이 옳은지는 검토 기록이 말해 줍니다.
+
+[하위 폴더 검사 예제](../examples/review/subdirectory.toml)는 `examples/review`에서 설정 파일을 검사하고 그 파일을 보존합니다. 이 저장소의 예제 파일이 들어 있는 commit을 대상으로 실행하세요.
 
 ```powershell
 awkit review check $snap --config examples/review/subdirectory.toml --runs-root .awkit/reviews
 ```
 
-`result.json`의 `snapshot`과 `config_sha256`은 각각 검사한 소스 commit과 실행 설정을 식별합니다. 결과물의 목록과 해시는 예제의 검사 명령이 기록합니다. 프로젝트의 빌드 명령도 같은 방식으로 파일과 생성 설정을 남길 수 있습니다. 결과물 자동 수집은 수행하지 않습니다.
-
-기본 기록 위치는 운영체제의 임시 폴더입니다. 오래 보존할 결과는 `--runs-root`로 보관 위치를 지정하고 프로젝트의 보존 절차에 연결하세요. 기록에는 소스와 로그가 포함될 수 있으므로 공개할 파일은 따로 정합니다.
+기본 기록 위치는 운영체제의 임시 폴더입니다. 오래 보존할 결과는 `--runs-root`로 보관 위치를 지정하세요. 기록에는 소스와 로그가 포함될 수 있으므로 공개할 파일은 따로 정합니다.
 
 ## 정적 문서 발행하기
 

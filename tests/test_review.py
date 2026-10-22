@@ -6,7 +6,7 @@ import sys
 import tempfile
 import unittest
 
-from awkit.review import check, git, snapshot
+from awkit.review import check, git, snapshot, verify
 
 
 class ReviewTests(unittest.TestCase):
@@ -26,8 +26,12 @@ class ReviewTests(unittest.TestCase):
         self.head = git(self.repo, "rev-parse", "HEAD")
         self.config = self.root / "checks.toml"
 
-    def configure(self, checks, setup=(), timeout=10):
+    def configure(self, checks, setup=(), timeout=10, artifacts=(), required=()):
         text = f"schema = 1\ntimeout_seconds = {timeout}\n"
+        if artifacts:
+            text += "artifacts = " + json.dumps(list(artifacts)) + "\n"
+        if required:
+            text += "required_artifacts = " + json.dumps(list(required)) + "\n"
         for phase, steps in (("setup", setup), ("checks", checks)):
             for i, item in enumerate(steps):
                 code = item["code"] if isinstance(item, dict) else item
@@ -205,9 +209,11 @@ class ReviewTests(unittest.TestCase):
         self.assertEqual(result["status"], "passed", result)
         self.assertFalse(result["worktree_retained"])
         artifacts = Path(result["run_dir"]) / "artifacts"
-        self.assertEqual((artifacts / "checks.toml").read_bytes(), original)
+        self.assertEqual((artifacts / "examples/review/checks.toml").read_bytes(), original)
         manifest = json.loads((artifacts / "manifest.json").read_text())
-        self.assertEqual(manifest["sha256"], hashlib.sha256(original).hexdigest())
+        self.assertEqual(manifest["files"]["examples/review/checks.toml"]["sha256"],
+                         hashlib.sha256(original).hexdigest())
+        self.assertTrue(verify(result["run_dir"])["verified"])
         record = json.loads((Path(result["run_dir"]) / "result.json").read_text())
         self.assertEqual(record["snapshot"], revision)
 
@@ -219,6 +225,97 @@ class ReviewTests(unittest.TestCase):
         self.assertEqual(result["status"], "failed")
         self.assertFalse(result["worktree_retained"])
         self.assertEqual((Path(result["run_dir"]) / "artifacts/failure.txt").read_text(), "diagnostic")
+
+    def test_artifacts_are_retained_hashed_and_verifiable_after_cleanup(self):
+        import hashlib
+        self.configure(["from pathlib import Path; Path('out').mkdir(); Path('out/report.txt').write_text('built'); "
+                        "Path('out/scratch.tmp').write_text('x')"],
+                       artifacts=["out/*.txt", "code.txt"], required=["out/report.txt"])
+        result = check(self.repo, self.head, self.config, self.root / "runs")
+        self.assertEqual(result["status"], "passed", result)
+        self.assertFalse(result["worktree_retained"])
+        run = Path(result["run_dir"])
+        self.assertEqual(set(result["artifacts"]), {"out/report.txt", "code.txt"})
+        self.assertEqual(result["artifacts"]["out/report.txt"],
+                         {"size": 5, "sha256": hashlib.sha256(b"built").hexdigest()})
+        self.assertEqual(result["missing_artifacts"], [])
+        self.assertEqual((run / "artifacts/out/report.txt").read_text(), "built")
+        self.assertFalse((run / "artifacts/out/scratch.tmp").exists())
+        self.assertEqual((run / "config.toml").read_bytes(), self.config.read_bytes())
+        manifest = json.loads((run / "artifacts/manifest.json").read_text(encoding="utf-8"))
+        self.assertEqual((manifest["snapshot"], set(manifest["files"])), (self.head, {"out/report.txt", "code.txt"}))
+        report = verify(run)
+        self.assertTrue(report["verified"], report)
+        self.assertEqual({item["path"]: item["status"] for item in report["artifacts"]},
+                         {"out/report.txt": "ok", "code.txt": "ok"})
+        (run / "artifacts/out/report.txt").write_text("edited")
+        (run / "artifacts/code.txt").unlink()
+        (run / "artifacts/extra.txt").write_text("added later")
+        report = verify(run)
+        self.assertFalse(report["verified"])
+        self.assertEqual({item["path"]: item["status"] for item in report["artifacts"]},
+                         {"out/report.txt": "changed", "code.txt": "missing"})
+        self.assertEqual(report["unexpected"], ["extra.txt"])
+
+    def test_missing_required_artifact_fails_a_passing_check(self):
+        self.configure(["print('checks passed but produced nothing')"],
+                       required=["dist/*.whl"], artifacts=["code.txt"])
+        result = check(self.repo, self.head, self.config, self.root / "runs")
+        self.assertEqual(result["status"], "failed")
+        self.assertEqual(result["missing_artifacts"], ["dist/*.whl"])
+        self.assertEqual(result["steps"][0]["status"], "passed")
+        self.assertIn("code.txt", result["artifacts"])
+        self.assertFalse(result["worktree_retained"])
+
+    def test_artifacts_from_a_failed_check_are_retained_and_links_are_skipped(self):
+        probe = self.root / "link-probe"
+        try:
+            probe.symlink_to(self.root / "outside.txt")
+        except OSError:
+            self.skipTest("symlinks unavailable")
+        probe.unlink()
+        (self.root / "outside.txt").write_text("secret")
+        self.configure(["from pathlib import Path; Path('diag.log').write_text('why it failed'); "
+                        f"Path('leak.txt').symlink_to({str(self.root / 'outside.txt')!r}); raise SystemExit(3)"],
+                       artifacts=["*.log", "leak.txt"])
+        result = check(self.repo, self.head, self.config, self.root / "runs")
+        self.assertEqual(result["status"], "failed")
+        self.assertEqual(list(result["artifacts"]), ["diag.log"])
+        self.assertEqual(result["skipped_artifacts"], ["leak.txt"])
+        self.assertEqual((Path(result["run_dir"]) / "artifacts/diag.log").read_text(), "why it failed")
+
+    def test_invalid_artifact_patterns_are_rejected_before_execution(self):
+        for pattern in ("../x", "/abs", "a\\b", ".git/*", 5):
+            with self.subTest(pattern=pattern):
+                self.config.write_text('schema = 1\nartifacts = [' + json.dumps(pattern) + ']\n'
+                                       '[[checks]]\nname = "c"\nargv = ["x"]\n', encoding="utf-8")
+                with self.assertRaises(ValueError):
+                    check(self.repo, self.head, self.config, self.root / "runs")
+                self.assertFalse((self.root / "runs").exists())
+
+    def test_verify_reports_an_interrupted_run_and_rejects_foreign_manifests(self):
+        run = self.root / "runs" / "review-x"
+        (run / "artifacts").mkdir(parents=True)
+        (run / "result.json").write_text(json.dumps({"snapshot": self.head, "status": "running"}), encoding="utf-8")
+        self.assertFalse(verify(run)["verified"])
+        self.assertTrue(verify(run)["interrupted"])
+        (run / "artifacts/manifest.json").write_text(json.dumps({"schema": 1, "snapshot": "f" * 40, "files": {}}))
+        with self.assertRaises(ValueError):
+            verify(run)
+        with self.assertRaises(ValueError):
+            verify(self.root / "nowhere")
+
+    def test_cli_verify_exit_codes(self):
+        self.configure(["from pathlib import Path; Path('a.txt').write_text('a')"], artifacts=["a.txt"])
+        result = check(self.repo, self.head, self.config, self.root / "runs")
+        command = [sys.executable, "-m", "awkit", "review", "verify", result["run_dir"]]
+        env = {**os.environ, "PYTHONUTF8": "1"}
+        ok = subprocess.run(command, capture_output=True, text=True, encoding="utf-8", env=env)
+        self.assertEqual(ok.returncode, 0, ok.stderr)
+        self.assertTrue(json.loads(ok.stdout)["verified"])
+        (Path(result["run_dir"]) / "artifacts/a.txt").write_text("b")
+        changed = subprocess.run(command, capture_output=True, text=True, encoding="utf-8", env=env)
+        self.assertEqual(changed.returncode, 1)
 
     def test_cli_failure_exit(self):
         self.configure(["raise SystemExit(9)"])

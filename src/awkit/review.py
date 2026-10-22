@@ -3,6 +3,7 @@
 import hashlib
 import json
 import os
+import shutil
 from pathlib import Path, PurePosixPath
 import re
 import subprocess
@@ -63,6 +64,93 @@ def snapshot(repo, paths):
         return git(repo, "commit-tree", tree, "-p", parent, "-m", "Review snapshot", env=env)
 
 
+def artifact_patterns(settings):
+    """Validate `artifacts` and `required_artifacts`: glob patterns relative to the worktree."""
+    patterns = {}
+    for key in ("artifacts", "required_artifacts"):
+        values = settings.get(key, [])
+        if not isinstance(values, list) or any(not isinstance(v, str) for v in values):
+            raise ValueError(f"{key} must be an array of relative glob patterns.")
+        for value in values:
+            relative_file(value.replace("*", "x").replace("?", "x").replace("[", "x").replace("]", "x"))
+        patterns[key] = values
+    return patterns["artifacts"], patterns["required_artifacts"]
+
+
+def collect_artifacts(worktree, run, patterns, required):
+    """Copy the files matching `patterns` from the worktree into run/artifacts and hash them.
+
+    Returns (files, missing): files maps each retained relative path to its size and SHA-256;
+    missing lists the required patterns that matched nothing. Links and anything resolving
+    outside the worktree are skipped and reported under `skipped`.
+    """
+    worktree = worktree.resolve()
+    destination = run / "artifacts"
+    files, missing, skipped = {}, [], []
+    for pattern in dict.fromkeys(patterns + required):
+        matched = False
+        for path in sorted(worktree.glob(pattern)):
+            relative = path.relative_to(worktree).as_posix()
+            if ".git" in path.relative_to(worktree).parts:
+                continue
+            if any(p.is_symlink() for p in [path, *path.parents] if p != worktree.parent) \
+                    or not path.resolve().is_relative_to(worktree) or not path.is_file():
+                if path.is_file() or path.is_symlink():
+                    skipped.append(relative)
+                continue
+            matched = True
+            if relative in files:
+                continue
+            target = destination / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            data = path.read_bytes()
+            target.write_bytes(data)
+            files[relative] = {"size": len(data), "sha256": hashlib.sha256(data).hexdigest()}
+        if not matched and pattern in required:
+            missing.append(pattern)
+    return files, missing, skipped
+
+
+def verify(run_dir):
+    """Compare the artifacts retained by `check` with the manifest written at that time."""
+    run = Path(run_dir).resolve()
+    record_path = run / "result.json"
+    if not record_path.is_file():
+        raise ValueError(f"No result.json in the run folder: {run}")
+    record = json.loads(record_path.read_text(encoding="utf-8"))
+    report = {"run_dir": str(run), "snapshot": record.get("snapshot"),
+              "config_sha256": record.get("config_sha256"), "check_status": record.get("status"),
+              "interrupted": record.get("status") == "running", "artifacts": [], "unexpected": []}
+    manifest_path = run / "artifacts" / "manifest.json"
+    expected = {}
+    if manifest_path.is_file():
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        if manifest.get("schema") != 1 or not isinstance(manifest.get("files"), dict):
+            raise ValueError("The artifact manifest is not in a known format.")
+        if manifest.get("snapshot") != record.get("snapshot"):
+            raise ValueError("The artifact manifest belongs to a different snapshot than result.json.")
+        expected = manifest["files"]
+    for relative, entry in sorted(expected.items()):
+        path = run / "artifacts" / PurePosixPath(relative)
+        item = {"path": relative, "status": "ok"}
+        if path.is_symlink() or not path.is_file():
+            item["status"] = "missing"
+        else:
+            data = path.read_bytes()
+            if len(data) != entry.get("size") or hashlib.sha256(data).hexdigest() != entry.get("sha256"):
+                item["status"] = "changed"
+        report["artifacts"].append(item)
+    folder = run / "artifacts"
+    if folder.is_dir():
+        for path in sorted(folder.rglob("*")):
+            relative = path.relative_to(folder).as_posix()
+            if path.is_file() and relative != "manifest.json" and relative not in expected:
+                report["unexpected"].append(relative)
+    report["verified"] = (not report["interrupted"] and not report["unexpected"]
+                          and all(item["status"] == "ok" for item in report["artifacts"]))
+    return report
+
+
 def check(repo, revision, config, runs_root=None, keep=False):
     if not re.fullmatch(r"(?:[a-f0-9]{40}|[a-f0-9]{64})", revision):
         raise ValueError("Give the full ID of the Git commit to check.")
@@ -92,6 +180,7 @@ def check(repo, revision, config, runs_root=None, keep=False):
     custom_env = settings.get("env", {})
     if not isinstance(custom_env, dict) or any(not isinstance(v, str) for v in custom_env.values()):
         raise ValueError("env values must be strings.")
+    patterns, required = artifact_patterns(settings)
     root = Path(runs_root or Path(tempfile.gettempdir()) / "agent-work-kit-reviews").resolve()
     root.mkdir(parents=True, exist_ok=True)
     run = Path(tempfile.mkdtemp(prefix="review-", dir=root))
@@ -111,6 +200,7 @@ def check(repo, revision, config, runs_root=None, keep=False):
     env.update(AWKIT_WORKTREE=str(worktree), AWKIT_RUN_DIR=str(run), AWKIT_RUN_ID=run.name)
     added = False
     preserve = keep
+    (run / "config.toml").write_bytes(raw)
     save()
     try:
         git(repo, "worktree", "add", "--detach", str(worktree), commit)
@@ -145,6 +235,17 @@ def check(repo, revision, config, runs_root=None, keep=False):
             and all(s["status"] == "passed" for s in result["steps"])) else "failed"
         if any(s["status"] == "timeout" for s in result["steps"]):
             result["status"] = "uncertain"
+        if patterns or required:
+            files, missing, skipped = collect_artifacts(worktree, run, patterns, required)
+            result["artifacts"] = files
+            result["missing_artifacts"] = missing
+            if skipped:
+                result["skipped_artifacts"] = skipped
+            manifest = {"schema": 1, "snapshot": commit, "config_sha256": result["config_sha256"],
+                        "run_id": run.name, "files": files}
+            atomic_json(run / "artifacts" / "manifest.json", manifest)
+            if missing and result["status"] == "passed":
+                result["status"] = "failed"
     except BaseException:
         preserve = True
         result["status"] = "uncertain"

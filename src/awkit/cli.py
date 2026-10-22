@@ -11,7 +11,7 @@ from .channel import Channel, KINDS, ROLES, render
 from .kit_install import install, install_roles
 from .pipeline import Pipeline, StepError
 from .publish import Publisher
-from .review import snapshot, check as run_checks
+from .review import snapshot, check as run_checks, verify as verify_run
 
 
 def _parser():
@@ -74,6 +74,8 @@ def _parser():
     isolated.add_argument("--config", type=Path, required=True)
     isolated.add_argument("--runs-root", type=Path)
     isolated.add_argument("--keep", action="store_true")
+    compare = review_commands.add_parser("verify", help="Compare a run folder's retained artifacts with its manifest.")
+    compare.add_argument("run_dir", type=Path)
 
     publish = groups.add_parser("publish", help="Validate a static document build and publish it locally")
     publish.add_argument("--output", type=Path, required=True)
@@ -140,6 +142,10 @@ def main(argv=None):
             if args.action == "snapshot":
                 print(snapshot(args.repo, args.files))
                 return 0
+            if args.action == "verify":
+                report = verify_run(args.run_dir)
+                print(json.dumps(report, ensure_ascii=False, indent=2))
+                return 0 if report["verified"] else 1
             result = run_checks(args.repo, args.snapshot, args.config, args.runs_root, args.keep)
             print(json.dumps(result, ensure_ascii=False, indent=2))
             return 0 if result["status"] == "passed" else 1

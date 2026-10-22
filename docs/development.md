@@ -1,6 +1,6 @@
 # Development
 
-The single record for developing Agent Work Kit: scope, decisions, current state, next work, release, and what has been verified. Agents working on this repository read and update it; people read the README. Command behavior is documented for agents in [kit/reference.md](../kit/reference.md), which ships with the kit.
+The single record for developing Agent Work Kit: scope, decisions, current state, next work, release, and what has been verified. The failures the kit prevents are listed in [failures.md](failures.md). Agents working on this repository read and update it; people read the README. Command behavior is documented for agents in [kit/reference.md](../kit/reference.md), which ships with the kit.
 
 ## Rules for working in this repository
 
@@ -13,20 +13,23 @@ The single record for developing Agent Work Kit: scope, decisions, current state
 
 ## Scope
 
-Agent Work Kit gives agents working instructions, a Korean writing guide and verification tools for development, writing, research, data preparation and environment setup. The core loop: fix the input, run the project's checks on it, retain the evidence, compare later results with what was accepted. A feature belongs in the CLI when it fits that loop and comes with a runnable example; otherwise it is guidance in the kit.
+Agent Work Kit is a public project. It prevents specific, recurring agent failures instead of prescribing a whole way of working; methodology packs such as superpowers or spec-kit already cover that, and the kit should work alongside them. Each failure is an entry in [failures.md](failures.md) with the situation it occurs in, a recorded occurrence and a check. Where possible the check is mechanical (an `awkit` command, a hook, a test), and kit text is loaded only in the situation it serves.
+
+The tool's core loop supports those checks: fix the input, run the project's checks on it, retain the evidence, compare later results with what was accepted.
 
 The project environment keeps running agents, builds, tests, services, deployment and hosting. awkit connects to the project's existing commands and records identifiers and evidence: which revision was checked, with which command, with what result.
 
-A new feature needs: a real task whose result and completion it serves, a reason the existing commands cannot be extended, a way to see the target version, the result and the cause of failure, and tests for its important failure paths. Measure effect by time to finish, rework, usage and defects found after acceptance, never by the number of features or roles.
+A new feature or piece of kit text needs a failure entry it prevents, with a recorded occurrence, and a check that would have caught that occurrence. It also needs a reason the existing commands cannot be extended, a way to see the target version, the result and the cause of failure, and tests for its important failure paths. Kit text that prevents no listed failure is removed or moved to the reference. Measure effect by time to finish, rework, usage and defects found after acceptance, never by the number of features or roles.
 
 ## Decisions
 
 | Decision | Detail |
 |---|---|
 | Git is required | The review commands work on Git-tracked files. Non-developers get an easy install path instead of a Git-free mode (see next work: `doctor`, install scripts). |
-| Web-only tools are extras | `pipeline`, `publish` and `ui` are useful mainly for web projects. They move to `src/awkit/extras/` with their command names unchanged and are left out of both entry points. If real use does not need them, they leave the package. |
-| One repository, one package | The kit splits into `core`, `dev` and `work`, chosen with `kit init --profile dev\|work\|all`. The review commands and basic templates are shared. |
-| Restrain the kit's length | One word limit for now; per-profile limits when the kit is split (starting proposal: core 1,500, dev 4,000, work 2,500 words). |
+| Web-only tools are extras | `pipeline`, `publish` and `ui` are useful mainly for web projects. They move to `src/awkit/extras/` with their command names unchanged and are not mentioned in the READMEs. If real use does not need them, they leave the package. |
+| Public project, failure-driven | The kit is organized around the failure catalogue. Countermeasures are delivered by situation: a small always-read core, guidance loaded when its situation arises (skills where the agent supports them), and hooks or `awkit` checks for what a machine can verify. This replaces the earlier plan to split the kit into `dev` and `work` profiles chosen at install time. |
+| One repository, one package | Unchanged. |
+| Restrain the kit's length | One word limit for now; separate limits for the always-read core and for each situation's guidance once the kit is restructured. |
 | Agents are the readers | See the documentation rule above. |
 | Hold the first release | Until the release conditions below are met. |
 
@@ -46,14 +49,16 @@ A new feature needs: a real task whose result and completion it serves, a reason
 
 | Order | Work | Done when |
 |---|---|---|
-| 1 | Split the kit | `core`, `dev`, `work` folders; `kit init --profile`; extras moved to `src/awkit/extras/`; per-profile word limits tested; both READMEs point to the right profile. |
-| 2 | Easy setup for non-developers | `awkit doctor` checks Python, Git and Git user name and email (without them awkit's commits fail) and says how to fix each; `install.ps1` and `install.sh` install missing Git or Python with winget or brew, then awkit with pipx. |
-| 3 | Run three real tasks with the kit | One document, one data and one code task finished end to end. Record minutes, tokens, user messages (`awkit usage`) and defects found after acceptance in the task template. Features that do not reduce these are fixed or removed. Also connect one existing project with `kit scan` and record how many drafted commands were right. |
-| 4 | Check usage against current logs | Compare format 2 values with what Claude Code and Codex show, using current log files; mismatched fields must surface as `missing` or `invalid`. |
-| 5 | One-shot automation example | A mock example whose trigger and stop condition live in a config file, recording setup and the actual firing separately, using the existing check runner and artifacts. |
-| 6 | Task start lookup | After 3 settles the record format: extend `kit scan` to read runs, accepted versions and checkpoints and summarize state and the next action. |
-| 7 | Channel receipts | Only if 3 shows several sessions reading as one role, or a need to separate "read" from "handled": per-consumer positions and explicit acknowledgement. |
-| 8 | Hand-off to another environment | Export and import of request ID, base revision, retained artifacts and replies, with repeated-input and version-mismatch checks. Remote transport after two real environments are chosen. |
+| 1 | Complete the failure catalogue | The owner's collected writing patterns merged; every "needs evidence" entry either gets a recorded occurrence or is marked for removal. |
+| 2 | First mechanical checks | For entries with no kit text and clear evidence: run documented commands in CI (F4, F5); a commit identity check (F9); a writing check for the listed English and Korean patterns (F13, F14); a done-report check that requires a passing run for the current snapshot (F1). Each check comes with the occurrence it would have caught as a test. |
+| 3 | Restructure the kit by situation | Always-read core within its own word limit; situation guidance loaded on trigger, generated as skills for agents that support them (confirm Codex support first); sections mapped to no entry in `failures.md` removed or moved to the reference; extras moved to `src/awkit/extras/`. |
+| 4 | Easy setup for non-developers | `awkit doctor` checks Python, Git and Git user name and email (without them awkit's commits fail) and says how to fix each; `install.ps1` and `install.sh` install missing Git or Python with winget or brew, then awkit with pipx. |
+| 5 | Run real tasks and compare | One document, one data and one code task, each also done without the kit and with a methodology pack alone where practical. Record minutes, tokens, user messages (`awkit usage`), defects found after acceptance and which catalogue failures occurred or were caught. Checks that catch nothing are fixed or removed. Also connect one existing project with `kit scan` and record how many drafted commands were right. |
+| 6 | Check usage against current logs | Compare format 2 values with what Claude Code and Codex show, using current log files; mismatched fields must surface as `missing` or `invalid`. |
+| 7 | One-shot automation example | A mock example whose trigger and stop condition live in a config file, recording setup and the actual firing separately, using the existing check runner and artifacts. |
+| 8 | Task start lookup | After 5 settles the record format: extend `kit scan` to read runs, accepted versions and checkpoints and summarize state and the next action. |
+| 9 | Channel receipts | Only if 5 shows several sessions reading as one role, or a need to separate "read" from "handled": per-consumer positions and explicit acknowledgement. |
+| 10 | Hand-off to another environment | Export and import of request ID, base revision, retained artifacts and replies, with repeated-input and version-mismatch checks. Remote transport after two real environments are chosen. |
 
 Small items: the example folders have no `.gitignore`, so `.awkit/` run folders show up as untracked files (the wheel's package data must include the dot file). Work that does not fit the fix-check-retain-compare loop, such as presentations or speaking practice, stays guidance in `work-types.md`.
 
@@ -61,8 +66,8 @@ Small items: the example folders have no `.gitignore`, so `.awkit/` run folders 
 
 Release conditions, all required before the first tag:
 
-1. The kit split and the extras move are done, and no further change to command names or file locations is planned.
-2. Three real tasks (next work 3) have been run and their findings applied.
+1. The kit is restructured by situation, the extras are moved, and no further change to command names or file locations is planned.
+2. The real tasks (next work 5) have been run and their findings applied.
 3. No change is planned to formats other tools read: check configuration, `result.json`, artifact manifests, usage results.
 
 Until then users install from `dev`: `pipx install "git+https://github.com/min-seokkim/agent-work-kit@dev"`.

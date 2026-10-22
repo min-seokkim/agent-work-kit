@@ -83,6 +83,7 @@ One row per task, as next work 5 defines. "Repeated" counts the user's messages 
 |---|---|---|---|---|
 | Planning session: install and connect the kit in this repository | from the start | not yet reported | not yet reported | four installation defects found (fixed in `23649e0`); entries not yet assigned |
 | Implementation session that built next work 1 to 4 and applied the kit (`0dd1ce0` to `23649e0`) | from `6482bc7`, about two thirds of the way in | 56 (not yet counted) | 2,866; 1,985,203; 196,386,031; 554,592 | not yet assigned |
+| Implementation session that built the hook runner (`f57e8f2` to `533c5b6`) | from the start | 2 (0) | 438; 456,743; 16,993,399; 106,765, up to the push, across a model switch | F9 occurred: the session's harness asked for agent trailers and the fresh clone had no owner identity; `AGENTS.md` prevented the commit, and the new `commit-identity` rule refuses the same command (replayed on this repository) |
 
 ## Release
 

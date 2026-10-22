@@ -14,7 +14,7 @@ This file is for agents that change Agent Work Kit itself. Agents that use the k
 
 ## The kit applied to this repository
 
-This repository is developed with its own kit. Follow [kit/workflow.md](kit/workflow.md) as the baseline; the situation guides in `kit/` load as skills from `.claude/skills/` and `.agents/skills/` (written by `awkit kit skills --kit kit`, without the connect skill, since `kit/` is the source here). The project profile's "Start here" fields:
+This repository is developed with its own kit. Follow [kit/workflow.md](kit/workflow.md) as the baseline; the situation guides in `kit/` load as skills from `.claude/skills/` and `.agents/skills/` (written by `awkit kit skills --kit kit`). The project profile's "Start here" fields:
 
 - Desired result: the next work in [docs/development.md](docs/development.md); the owner decides what to build before it is built.
 - Source material and its version: `kit/`, `src/awkit/`, `docs/` on `dev`.
@@ -38,7 +38,7 @@ In a cloud session, `.claude/hooks/session-start.sh` installs awkit from this ch
 ## Checks before pushing
 
 ```sh
-snap=$(awkit review snapshot <changed files>)
+snap=$(awkit review snapshot $(git diff --name-only --no-renames HEAD; git ls-files --others --exclude-standard))
 awkit review check "$snap" --config checks.toml --runs-root .awkit/reviews
 ```
 

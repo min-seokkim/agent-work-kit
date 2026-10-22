@@ -66,7 +66,8 @@ say "Installing awkit from $SOURCE..."
 $PIPX install --force "$SOURCE"
 $PIPX ensurepath >/dev/null 2>&1 || true
 
-AWKIT="$HOME/.local/bin/awkit"
+BIN="$($PIPX environment --value PIPX_BIN_DIR 2>/dev/null || true)"
+AWKIT="$BIN/awkit"
 [ -x "$AWKIT" ] || AWKIT="awkit"
 say ""
 "$AWKIT" --version

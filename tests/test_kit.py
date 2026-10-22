@@ -200,6 +200,7 @@ class RoleTests(unittest.TestCase):
                 self.assertIn(f"]({guide})", readme)
                 self.assertIn(f"`{name}`", readme)
             self.assertEqual(install_skills(self.project, provider)[0], [])
+            self.assertFalse((self.project / folder / "awkit-connect").exists())  # workflow.md points there
         self.assertIn("korean-writing.md", (self.project / ".claude/skills/awkit-writing/SKILL.md").read_text("utf-8"))
         (self.project / "elsewhere").mkdir()
         with self.assertRaisesRegex(ValueError, "No kit folder"):

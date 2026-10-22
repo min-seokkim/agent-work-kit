@@ -66,8 +66,9 @@ function Install-Awkit {
     & $pyExe @pyArgs -m pipx ensurepath *> $null
     Update-SessionPath
 
-    $awkit = Join-Path $env:USERPROFILE '.local\bin\awkit.exe'
-    if (-not (Test-Path $awkit)) { $awkit = 'awkit' }
+    $bin = & $pyExe @pyArgs -m pipx environment --value PIPX_BIN_DIR 2>$null
+    $awkit = if ($bin) { Join-Path "$bin".Trim() 'awkit.exe' } else { '' }
+    if (-not $awkit -or -not (Test-Path $awkit)) { $awkit = 'awkit' }
     Write-Host ''
     & $awkit --version
     & $awkit doctor

@@ -194,11 +194,10 @@ def install_roles(project: Path, provider: str, specs=None):
 
 
 # Situation guides and the skill each becomes: (skill name, guide file, description, extra instruction).
-# The description is what the agent sees before loading the skill, so it names the situation.
+# The description is what the agent sees before loading the skill, so it names the situation. connect.md has
+# no skill: workflow.md, read every session, already sends an agent there while the profile is empty, and
+# a connected project would carry the skill's description in every session for nothing.
 SITUATIONS = (
-    ("awkit-connect", "connect.md",
-     "Connect Agent Work Kit to this project. Use when the agent-work-kit folder was just added or its project "
-     "profile is still empty.", ""),
     ("awkit-writing", "writing.md",
      "Write or revise text people read: documents, reports, READMEs, UI text, CLI output, notifications, handoffs, "
      "commit and PR descriptions.", "For Korean text, also read `{kit}/korean-writing.md`."),

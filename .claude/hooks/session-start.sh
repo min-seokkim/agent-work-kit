@@ -12,8 +12,8 @@ if [ "${CLAUDE_CODE_REMOTE:-}" = "true" ]; then
     if [ -n "${CLAUDE_ENV_FILE:-}" ]; then
         echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$CLAUDE_ENV_FILE"
     fi
-    python3 -m pip install --quiet --user --editable . >&2
-    command -v ruff >/dev/null 2>&1 || python3 -m pip install --quiet --user ruff >&2
+    python3 -m pip install --quiet --root-user-action=ignore --user --editable . >&2
+    command -v ruff >/dev/null 2>&1 || python3 -m pip install --quiet --root-user-action=ignore --user ruff >&2
     awkit kit hooks --git >&2
 fi
 

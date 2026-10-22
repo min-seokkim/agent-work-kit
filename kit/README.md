@@ -8,7 +8,7 @@ Read a situation guide when its situation arises. `awkit kit skills --provider c
 
 | Guide | Situation | Skill |
 |---|---|---|
-| [connect.md](connect.md) | The kit was just added or the project profile is still empty | `awkit-connect` |
+| [connect.md](connect.md) | The kit was just added or the project profile is still empty | none; workflow.md points here |
 | [writing.md](writing.md), [korean-writing.md](korean-writing.md) | Writing or revising text people read, including UI text, CLI output and commit messages | `awkit-writing` |
 | [work-types.md](work-types.md) | Work that is not a code change: research, data, environment setup and troubleshooting, operating an application, learning, automation | `awkit-work-types` |
 | [checking.md](checking.md) | Setting up checks, shared resources such as databases and devices, results that are hard to interpret | `awkit-checking` |

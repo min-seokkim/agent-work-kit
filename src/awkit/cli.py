@@ -9,12 +9,15 @@ from pathlib import Path
 
 from . import __version__
 from .channel import KINDS, ROLES, Channel, render
-from .extras.pipeline import Pipeline, StepError
-from .extras.publish import Publisher
 from .kit_install import EXAMPLES, install, install_example, install_roles, install_skills
-from .review import accept, compare, snapshot, track
-from .review import check as run_checks
-from .review import verify as verify_run
+
+
+def _step_error():
+    """The release runner's error class once it is loaded, else nothing to catch. The web extras are
+    imported only by their commands, so `awkit hook`, which runs on every tool call, starts faster."""
+    module = sys.modules.get("awkit.extras.pipeline")
+    return module.StepError if module else ()
+
 
 REFERENCE = ("Formats, rules and exit codes are in agent-work-kit/reference.md "
              "(kit/reference.md in the awkit repository).")
@@ -348,6 +351,11 @@ def main(argv=None):
             report = scan_project(args.dir)
             print(report["suggested_checks_toml"] if args.checks else json.dumps(report, ensure_ascii=False, indent=2))
             return 0
+        if args.group in ("kit", "review"):
+            # Imported here, not at the top, so `awkit hook` does not load them on every tool call.
+            from .review import accept, compare, snapshot, track
+            from .review import check as run_checks
+            from .review import verify as verify_run
         if args.group == "kit" and args.action == "example":
             target, copied = install_example(args.kind, args.dir)
             print(f"created the {args.kind} example: {target}\ncopied {len(copied)} files")
@@ -381,6 +389,7 @@ def main(argv=None):
             print(json.dumps(result, ensure_ascii=False, indent=2))
             return 0 if result["status"] == "passed" else 1
         if args.group == "publish":
+            from .extras.publish import Publisher
             publisher = Publisher(args.output, args.project)
             if args.action == "restore":
                 result = publisher.restore(args.version)
@@ -415,6 +424,7 @@ def main(argv=None):
             parser.error("a release is required for deploy and not accepted by other actions")
         if args.allow_unhealthy_current and args.action != "deploy":
             parser.error("--allow-unhealthy-current applies to deploy only")
+        from .extras.pipeline import Pipeline
         runner = Pipeline(args.config)
         if args.action == "plan":
             result = {"target": runner.target, "state_dir": str(runner.state),
@@ -452,7 +462,7 @@ def main(argv=None):
             if result.get("run_id"):
                 print(f"run record: {runner.state / 'runs' / result['run_id']}")
         return 0 if success else 1
-    except StepError as exc:
+    except _step_error() as exc:
         print(f"verification failed: {exc}", file=sys.stderr)
         return exc.code if 1 <= exc.code <= 125 else 1
     except (ValueError, KeyError, TypeError, OSError, sqlite3.Error) as exc:

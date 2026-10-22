@@ -26,7 +26,6 @@ import shlex
 import subprocess
 import sys
 import tomllib
-from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -52,20 +51,14 @@ PATCH_PATH = re.compile(r"^\*\*\* (?:(?:Add|Update|Delete) File|Move to): (.+?)\
 # Rules
 
 
-@dataclass
 class Rule:
-    name: str
-    kind: str
-    events: list
-    tools: list | None = None
-    shell: re.Pattern | None = None
-    paths: list | None = None
-    text: re.Pattern | None = None
-    command: list | None = None
-    message: str = ""
-    decision: str = "deny"
-    timeout: float = TIMEOUT
-    prevents: tuple = ()
+    """One rule from rules.toml. Plain classes, not dataclasses: importing dataclasses costs more than
+    the rest of a silent hook call."""
+
+    def __init__(self, name, kind, events, timeout=TIMEOUT):
+        self.name, self.kind, self.events, self.timeout = name, kind, events, timeout
+        self.tools = self.paths = self.shell = self.text = self.command = None
+        self.message, self.decision, self.prevents = "", "deny", ()
 
     @property
     def label(self):
@@ -187,17 +180,12 @@ def load_rules(path):
 # Events
 
 
-@dataclass
 class Call:
-    event: str
-    session: str
-    payload: dict
-    cwd: Path
-    tool: str = ""
-    tool_names: tuple = ()
-    shell: str = ""
-    paths: list = field(default_factory=list)
-    text: str = ""
+    """The parts of a hook event the rules look at."""
+
+    def __init__(self, event, session, payload, cwd):
+        self.event, self.session, self.payload, self.cwd = event, session, payload, cwd
+        self.tool, self.tool_names, self.shell, self.paths, self.text = "", (), "", [], ""
 
 
 def _event_name(value):
@@ -280,11 +268,9 @@ def matches(rule, call):
 # Running rules
 
 
-@dataclass
 class Firing:
-    rule: str
-    decision: str  # deny, ask, block or context
-    text: str
+    def __init__(self, rule, decision, text):
+        self.rule, self.decision, self.text = rule, decision, text  # decision: deny, ask, block or context
 
 
 def _trim(text, limit=OUTPUT_LIMIT):

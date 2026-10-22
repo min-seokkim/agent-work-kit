@@ -40,7 +40,9 @@ def _git(folder):
     if top is None:
         return {"repository": None}
     status = run("status", "--porcelain")
-    return {"repository": top, "head": run("rev-parse", "--verify", "-q", "HEAD^{commit}"),
+    from .review import nested_repositories
+    return {"repository": top, "nested_repositories": nested_repositories(top),
+            "head": run("rev-parse", "--verify", "-q", "HEAD^{commit}"),
             "branch": run("rev-parse", "--abbrev-ref", "HEAD"),
             "uncommitted_files": len(status.splitlines()) if status else 0,
             "remote": run("remote", "get-url", "origin")}

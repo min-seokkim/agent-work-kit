@@ -28,6 +28,7 @@ A new situation guard needs a failure entry it prevents, with a recorded occurre
 
 | Decision | Detail |
 |---|---|
+| Another repository inside a project is not supported | A clone of awkit, or any other repository, inside a user's project would need submodule handling and checks across several repositories. awkit warns instead (`doctor`, `kit scan`, `check done`) and tells the user to move or ignore it. |
 | Git is required | The review commands work on Git-tracked files. Non-developers get an easy install path instead of a Git-free mode (see next work: `doctor`, install scripts). |
 | Web-only tools are extras | `pipeline`, `publish` and `ui` are useful mainly for web projects. They live in `src/awkit/extras/` with their command names unchanged and are not mentioned in the READMEs. If real use does not need them, they leave the package. |
 | Public project; baseline workflow plus failure guards | See Scope. The failure catalogue chooses and measures the guards; agents receive the baseline workflow and the guards, written as what to do. This replaces the earlier plan to split the kit into `dev` and `work` profiles chosen at install time. |
@@ -99,4 +100,4 @@ Tests use only the standard library, need Git and no network. `tests/support.py`
 | Windows, Python 3.12.14, Playwright 1.64.0 with Edge | snapshot, publish and capture | 320 px and 1440 px captures of local pages; normal pages, overflow and blocked requests told apart. |
 | Real Claude Code logs | `usage` | 376 lines grouped into 156 calls; a later log gave 13 typed messages and 1 command, excluding notices, command output, interruptions and hook feedback. |
 
-Not verified: Codex parsing against a current log; `release.yml` (never run); real server deployment, real devices, external submission; any database or external agent call. Known limits: worktrees do not isolate DBs, ports or devices; a timeout stops local processes but not remote work; snapshots do not filter secrets; `publish` trusts its HTML and its lock is local only; `ui` judges only overflow and off-screen controls.
+Not verified: Codex parsing against a current log; `release.yml` (never run); real server deployment, real devices, external submission; any database or external agent call. Known limits: a change of a submodule's commit cannot be snapshotted, because snapshots refuse folders; worktrees do not isolate DBs, ports or devices; a timeout stops local processes but not remote work; snapshots do not filter secrets; `publish` trusts its HTML and its lock is local only; `ui` judges only overflow and off-screen controls.

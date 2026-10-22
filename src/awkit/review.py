@@ -53,6 +53,28 @@ def toplevel(folder):
     return top
 
 
+def nested_repositories(top):
+    """Untracked folders in the repository that are Git repositories of their own, such as a clone of
+    awkit placed inside the project. awkit does not support them: a snapshot cannot hold a folder, so
+    changes there can never be checked. Ignored folders and submodules are not listed."""
+    top = Path(top)
+    probe = _probe(top, "ls-files", "--others", "--exclude-standard", "-z")
+    found = []
+    for entry in probe.stdout.split("\0"):
+        # Git does not descend into another repository; it lists it as one "path/" entry.
+        if entry.endswith("/") and (top / entry / ".git").exists():
+            path = entry.rstrip("/")
+            found.append({"path": path, "awkit": (top / path / "src" / "awkit" / "__init__.py").is_file()})
+    return found
+
+
+def nested_warning(entry):
+    what = "a clone of awkit" if entry["awkit"] else "a separate Git repository"
+    return (f"{entry['path']} is {what} inside this project. awkit does not support that: changes in it can "
+            "never be checked, and `git add -A` would add it as an embedded repository. Move it outside the "
+            "project, or add it to .gitignore.")
+
+
 def located(folder):
     """The repository top level and the folder's path inside it, "" at the root.
 

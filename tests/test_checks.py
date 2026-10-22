@@ -135,6 +135,45 @@ class WritingTests(unittest.TestCase):
         self.assertEqual(errors, [])
 
 
+class NestedRepositoryTests(Repository):
+    """A clone inside the project is not supported; every command that meets one says so."""
+
+    def setUp(self):
+        super().setUp()
+        self.commit("app.py", "print(1)\n", "First")
+        clone = self.repo / "awkit-src"
+        (clone / "src" / "awkit").mkdir(parents=True)
+        (clone / "src" / "awkit" / "__init__.py").write_text("", encoding="utf-8")
+        (clone / "README.md").write_text("a — b\n", encoding="utf-8")
+        git(clone, "init", "-q")
+
+    def test_done_explains_why_it_can_never_pass(self):
+        # The clone has no commit, so Git could not even add it; the check must still explain itself.
+        report = done(self.repo, self.root / "runs")
+        self.assertEqual((report["ok"], report["status"]), (False, "nested-repository"))
+        self.assertEqual(report["nested"], [{"path": "awkit-src", "awkit": True}])
+        result = run("check", "done", cwd=self.repo)
+        self.assertIn("awkit-src is a clone of awkit inside this project", result.stderr)
+        (self.repo / ".gitignore").write_text("awkit-src/\n", encoding="utf-8")
+        git(self.repo, "add", ".gitignore")
+        git(self.repo, "commit", "-q", "-m", "Ignore the clone")
+        self.assertTrue(done(self.repo, self.root / "runs")["ok"])
+
+    def test_writing_doctor_and_scan(self):
+        (self.repo / "guide.md").write_text("plain\n", encoding="utf-8")
+        (self.repo / "build").mkdir()
+        (self.repo / "build" / "out.md").write_text("a — b\n", encoding="utf-8")
+        (self.repo / ".gitignore").write_text("build/\n", encoding="utf-8")
+        report = check_writing([self.repo])
+        self.assertEqual((report["files"], report["errors"]), (1, 0))  # not the clone, not the ignored build
+        from awkit.doctor import diagnose
+        from awkit.scan import scan
+        nested = [f for f in diagnose(self.repo) if f["item"] == "nested repository"]
+        self.assertEqual(len(nested), 1)
+        self.assertIn("a clone of awkit", nested[0]["detail"])
+        self.assertEqual(scan(self.repo)["git"]["nested_repositories"], [{"path": "awkit-src", "awkit": True}])
+
+
 class DoneTests(Repository):
     def test_changed_files_need_a_passing_check_of_their_current_state(self):
         # F1: work reported as done while the checks ran on another state of the files, or not at all.

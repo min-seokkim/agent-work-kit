@@ -6,12 +6,13 @@ Requirements: Python 3.11+, Git for `kit init`, `kit example` and `review`, Play
 
 ## doctor
 
-`awkit doctor [DIR] [--json]` checks Python (3.11 or later), Git (2.25 or later), Git `user.name` and `user.email` (commits fail without them), whether `awkit` is on PATH, and in DIR whether there is a repository with a commit, a kit folder and skills. Each item is `ok`, `missing` or `warning`, with the command that fixes it. Exit 0 when nothing required is missing, 1 otherwise.
+`awkit doctor [DIR] [--json]` checks Python (3.11 or later), Git (2.25 or later), Git `user.name` and `user.email` (commits fail without them), whether `awkit` is on PATH, and in DIR whether there is a repository with a commit, a kit folder, skills, and another Git repository inside it (see Git tracking). Each item is `ok`, `missing` or `warning`, with the command that fixes it. Exit 0 when nothing required is missing, 1 otherwise.
 
 ## Git tracking
 
 - `review` commands check files that Git tracks. They never create a repository or a commit. In a folder that is not a repository, or a repository with no commit, they exit 2 and say so; commit the files first.
 - `kit init` and `kit example` commit only the folder they created. They create the repository when there is none and set `core.autocrlf=false` in it, so committed bytes equal checked bytes. When the index already has staged changes they skip the commit and say so on stderr, so the user's work is never bundled in. `--no-git` copies without tracking.
+- Another Git repository inside the project, such as a clone of awkit, is not supported: a snapshot cannot hold a folder, so changes there can never be checked. `doctor` and `kit scan` list such folders, and `check done` fails while one is present. Move it outside the project or add it to `.gitignore`; ignored folders and submodules are not affected.
 - `review` resolves file names, step `cwd` and `artifacts` patterns relative to the folder it runs in (`--repo`, default the current folder), in the same subfolder of the checked worktree. The run records that subfolder as `subdir`.
 
 ## kit
@@ -93,7 +94,7 @@ Checks meant to run without anyone choosing to: from a Git hook, a Claude Code h
 | Command | Effect | Exit |
 |---|---|---|
 | `check commit --message FILE \| --rev REV [--history N]` | Compares the author and the trailer keys (`Key: value` lines Git recognizes at the end of the message) with the last N commits (default 50). An author whose email is not among them, or a trailer key none of them use, is reported with how to fix it. A repository without earlier commits passes. Allow a new contributor with `git config --add awkit.allowAuthor EMAIL` and a trailer with `git config --add awkit.allowTrailer KEY`. | 0 consistent, 1 not |
-| `check writing PATH... [--json]` | Searches Markdown files, and folders recursively, for the patterns in the [Writing Guide](writing.md). Errors: em dashes, a middle dot joining Korean words, `-세요` and `-시오` endings in one document. Warnings: lead-ins, contrasts against a claim nobody made, sales words, Korean stock phrases. Code blocks, blockquotes, inline code, quoted spans and link targets are skipped. | 0 no errors, 1 errors |
+| `check writing PATH... [--json]` | Searches Markdown files, and folders recursively, for the patterns in the [Writing Guide](writing.md). Errors: em dashes, a middle dot joining Korean words, `-세요` and `-시오` endings in one document. Warnings: lead-ins, contrasts against a claim nobody made, sales words, Korean stock phrases. Code blocks, blockquotes, inline code, quoted spans and link targets are skipped. Inside a repository a folder means the Markdown files Git tracks or would track there, so ignored folders and other repositories are left out. | 0 no errors, 1 errors |
 | `check done [--session ID] [--mark] [--runs-root DIR] [--hook]` | `--mark` records the current state (HEAD plus every working-tree change, untracked files included, `.awkit/` excluded) as the session's starting point in `.awkit/done/`. Without it: passes when nothing changed since that point (or since HEAD when none was recorded), or when a passing `review check` run checked exactly the current state; otherwise lists the changed files. Runs are looked up in `--runs-root`, `.awkit/reviews` and the system temp default. | 0 yes, 1 no |
 
 With `--hook`, `check done` reads the Claude Code hook input from stdin: SessionStart marks the starting point (a resumed or compacted session keeps the one it has), Stop exits 2 with the reason on stderr so the agent continues, and a second stop in the same turn (`stop_hook_active`) passes, so the agent can report work it could not check and say why.

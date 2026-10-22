@@ -13,7 +13,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-from .review import _probe, git, toplevel
+from .review import _probe, git, nested_repositories, nested_warning, toplevel
 
 HISTORY = 50
 
@@ -138,10 +138,23 @@ def _prose_lines(text):
         yield number, line
 
 
+def _tracked_markdown(folder):
+    """Markdown files Git tracks or would track under `folder`, or None outside a repository. Git skips
+    ignored folders and does not descend into another repository, such as a clone inside the project."""
+    probe = _probe(folder, "ls-files", "--cached", "--others", "--exclude-standard", "-z", "--", ".")
+    if probe.returncode:
+        return None
+    names = {name for name in probe.stdout.split("\0") if name.endswith(".md")}
+    return [folder / name for name in sorted(names) if (folder / name).is_file()]
+
+
 def writing_files(paths):
     files = []
     for path in map(Path, paths):
-        if path.is_dir():
+        listed = _tracked_markdown(path) if path.is_dir() else None
+        if listed is not None:
+            files.extend(listed)
+        elif path.is_dir():
             for found in sorted(path.rglob("*.md")):
                 parts = found.relative_to(path).parts[:-1]
                 if not any(part.startswith(".") or part in SKIP_DIRS for part in parts):
@@ -192,15 +205,15 @@ def render_writing(report):
     return "\n".join(lines)
 
 
-def current_tree(top):
+def current_tree(top, exclude=()):
     """The tree of HEAD plus every change in the working tree, untracked files included and `.awkit`
-    excluded, written without touching the real index."""
+    and the `exclude` paths left out, written without touching the real index."""
     with tempfile.TemporaryDirectory(prefix="awkit-index-") as temporary:
         env = os.environ.copy()
         env["GIT_INDEX_FILE"] = str(Path(temporary) / "index")
         git(top, "read-tree", "HEAD", env=env)
         # Naming .awkit in a pathspec fails when it is ignored, the usual case; drop it after adding.
-        git(top, "add", "-A", "--", ".", env=env)
+        git(top, "add", "-A", "--", ".", *(f":(exclude){path}" for path in exclude), env=env)
         git(top, "rm", "-r", "-q", "--cached", "--ignore-unmatch", "--", ".awkit", env=env)
         return git(top, "write-tree", env=env)
 
@@ -245,7 +258,10 @@ def done(folder, runs_root=None, session=None, mark=False, replace=True):
     passing `awkit review check` run checked exactly this state.
     """
     top = toplevel(folder)
-    tree = current_tree(top)
+    # Another repository inside the project is not supported. Git cannot add one that has no commit,
+    # so it stays out of the state, and its presence alone fails the check with the reason.
+    nested = nested_repositories(top)
+    tree = current_tree(top, [entry["path"] for entry in nested])
     baseline_path = _baseline_path(top, session)
     if mark:
         if not replace and baseline_path.is_file():
@@ -260,6 +276,8 @@ def done(folder, runs_root=None, session=None, mark=False, replace=True):
         base = git(top, "rev-parse", "HEAD^{tree}")
         since = "the last commit"
     report = {"tree": tree, "since": since}
+    if nested:
+        return {**report, "ok": False, "status": "nested-repository", "nested": nested, "changed": []}
     if tree == base:
         return {**report, "ok": True, "status": "unchanged"}
     run = passing_run(top, tree, runs_root)
@@ -278,6 +296,8 @@ def render_done(report):
         return f"nothing changed since {report['since']}"
     if report["status"] == "checked":
         return f"the current state passed its checks: {report['run_dir']}"
+    if report["status"] == "nested-repository":
+        return "\n".join(nested_warning(entry) for entry in report["nested"])
     shown = ", ".join(report["changed"][:20]) + (" ..." if len(report["changed"]) > 20 else "")
     return (f"Files changed since {report['since']} have no passing check of their current state: {shown}. "
             "Snapshot them and run `awkit review check` before reporting the work as done, or say in the report "

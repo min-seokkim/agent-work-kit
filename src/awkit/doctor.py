@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 from .kit_install import SITUATIONS, SKILL_FOLDERS
+from .review import nested_repositories
 
 MIN_PYTHON = (3, 11)
 MIN_GIT = (2, 25)
@@ -75,6 +76,10 @@ def diagnose(folder="."):
             has_commit = bool(_git(top, "rev-parse", "--verify", "-q", "HEAD"))
             add("project repository", "ok" if has_commit else "warning", str(top),
                 "" if has_commit else "commit the files before awkit review check")
+            for entry in nested_repositories(top):
+                what = "a clone of awkit" if entry["awkit"] else "a separate Git repository"
+                add("nested repository", "warning", f"{entry['path']} is {what}; awkit cannot check changes in it",
+                    f"move {entry['path']} outside the project, or add {entry['path']}/ to .gitignore")
             kit = folder / "agent-work-kit"
             if (kit / "workflow.md").is_file():
                 add("kit folder", "ok", str(kit))

@@ -265,7 +265,7 @@ class RecoveryTests(unittest.TestCase):
         self.fault(unhealthy=[B])
         status = self.cli("status")
         self.assertEqual(status.returncode, 1)
-        self.assertIn("service: 실패", status.stdout)
+        self.assertIn("service: failed", status.stdout)
         self.assertEqual(self.cli("rollback", "--allow-unhealthy-current").returncode, 2)
 
 

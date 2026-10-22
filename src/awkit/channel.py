@@ -50,7 +50,7 @@ class Channel:
                 raise
             version = conn.execute("PRAGMA user_version").fetchone()[0]
         if version != 1:
-            raise ValueError("지원하지 않는 채널 형식입니다.")
+            raise ValueError("Unsupported channel database version.")
         self._ready = True
 
     @contextmanager
@@ -74,26 +74,26 @@ class Channel:
 
     def post(self, sender, receiver, kind, body, *, reply_to=None, snap=None):
         if not isinstance(body, str) or not body.strip():
-            raise ValueError("메시지 본문이 비어 있습니다.")
+            raise ValueError("The message body is empty.")
         if sender not in ROLES or receiver not in ROLES or sender == receiver:
-            raise ValueError("main과 reviewer 사이의 메시지만 보낼 수 있습니다.")
+            raise ValueError("Messages go between main and reviewer only.")
         if kind not in KINDS or (kind == "close" and sender != "main"):
-            raise ValueError("메시지 종류 또는 종료 권한을 확인하세요.")
+            raise ValueError("Unknown message kind, or close was not sent by main.")
         if (kind in ("re", "rebut")) != bool(reply_to):
-            raise ValueError("re와 rebut에는 --reply-to가 필요합니다.")
+            raise ValueError("re and rebut require --reply-to; other kinds do not take it.")
         if reply_to and not ID.fullmatch(reply_to):
-            raise ValueError("응답 대상 ID가 잘못됐습니다.")
+            raise ValueError("Invalid reply target ID.")
         if snap and not re.fullmatch(r"[0-9a-f]{7,64}", snap):
-            raise ValueError("스냅샷에는 7~64자리 소문자 16진 식별자를 사용하세요.")
+            raise ValueError("A snapshot ID is 7 to 64 lowercase hex characters.")
         with self.transaction() as conn:
             if conn.execute("SELECT 1 FROM messages WHERE kind='close'").fetchone():
-                raise ValueError("종료한 채널입니다. 새 작업에는 다른 DB 경로를 사용하세요.")
+                raise ValueError("This channel is closed. Use another database path for new work.")
             if reply_to:
                 parent = conn.execute(
                     "SELECT * FROM messages WHERE id=?", (reply_to,)
                 ).fetchone()
                 if not parent or parent["sender"] != receiver or parent["receiver"] != sender:
-                    raise ValueError("상대방이 보낸 메시지에만 응답할 수 있습니다.")
+                    raise ValueError("A reply must answer a message the other side sent.")
             count = conn.execute(
                 "SELECT COUNT(*) FROM messages WHERE sender=?", (sender,)
             ).fetchone()[0]
@@ -108,11 +108,11 @@ class Channel:
 
     def find(self, role, mode, target=None):
         if role not in ROLES or mode not in ("request", "new", "reply"):
-            raise ValueError("역할과 기다림 모드를 확인하세요.")
+            raise ValueError("Unknown role or wait mode.")
         if mode == "reply" and (not target or not ID.fullmatch(target)):
-            raise ValueError("reply 모드에는 메시지 ID가 필요합니다.")
+            raise ValueError("reply mode requires a message ID.")
         if mode != "reply" and target:
-            raise ValueError("메시지 ID는 reply 모드에만 지정하세요.")
+            raise ValueError("A message ID is accepted in reply mode only.")
         if mode == "new":
             # Check under a read lock first so idle waiters never queue for the write lock.
             with self.transaction(write=False) as conn:
@@ -147,7 +147,7 @@ class Channel:
 
     def wait(self, role, mode, target=None, *, seconds=120, poll=0.25):
         if not math.isfinite(seconds) or not math.isfinite(poll) or seconds < 0 or poll <= 0:
-            raise ValueError("대기 시간은 0 이상, 확인 간격은 0보다 커야 합니다.")
+            raise ValueError("The wait must be 0 or more seconds and the poll interval positive.")
         deadline = time.monotonic() + seconds
         while True:
             code, rows = self.find(role, mode, target)

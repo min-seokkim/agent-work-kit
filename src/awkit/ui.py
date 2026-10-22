@@ -24,28 +24,28 @@ CHECKS = """() => {
 def load_config(path):
     config = json.loads(Path(path).read_text(encoding="utf-8"))
     if not isinstance(config, dict) or not isinstance(config.get("base_url"), str):
-        raise ValueError("설정 객체에 base_url 문자열을 지정하세요.")
+        raise ValueError("The configuration must be an object with a base_url string.")
     base = urlsplit(config.get("base_url", ""))
     if (base.scheme not in ("http", "https") or not base.hostname or base.username or base.password
             or base.query or base.fragment or base.path not in ("", "/")):
-        raise ValueError("base_url에는 인증값 없는 HTTP 또는 HTTPS 원점을 지정하세요.")
+        raise ValueError("base_url must be an HTTP or HTTPS origin without credentials, path, query or fragment.")
     widths, pages = config.get("widths", [320, 1440]), config.get("pages")
     if (not isinstance(widths, list) or not 1 <= len(widths) <= 6 or
             any(type(w) is not int or not 240 <= w <= 3840 for w in widths) or len(set(widths)) != len(widths)):
-        raise ValueError("widths에는 240~3840 범위의 서로 다른 폭을 1~6개 지정하세요.")
+        raise ValueError("widths must list 1 to 6 distinct integers between 240 and 3840.")
     if not isinstance(pages, list) or not 1 <= len(pages) <= 20:
-        raise ValueError("pages에는 캡처할 화면을 1~20개 지정하세요.")
+        raise ValueError("pages must list 1 to 20 pages.")
     for page in pages:
         if not isinstance(page, dict):
-            raise ValueError("각 화면에 name과 path를 지정하세요.")
+            raise ValueError("Each page needs name and path.")
         route = page.get("path", "")
         if not isinstance(route, str) or not route.startswith("/") or route.startswith("//") or "\\" in route:
-            raise ValueError("화면 path는 /로 시작하는 같은 서버의 경로여야 합니다.")
+            raise ValueError("A page path starts with / and stays on the same server.")
         if not isinstance(page.get("name"), str) or not page["name"]:
-            raise ValueError("각 화면에 이름을 지정하세요.")
+            raise ValueError("Each page needs a name.")
     timeout = config.get("timeout_ms", 15000)
     if type(timeout) is not int or not 1 <= timeout <= 120000:
-        raise ValueError("timeout_ms는 1~120000 범위의 정수여야 합니다.")
+        raise ValueError("timeout_ms must be an integer between 1 and 120000.")
     return config, widths, pages
 
 
@@ -69,11 +69,11 @@ def capture(config_path, output, channel=None):
     try:
         from playwright.sync_api import sync_playwright, Error
     except ImportError as exc:
-        raise ValueError("화면 캡처에는 선택 의존성 agent-work-kit[ui]가 필요합니다.") from exc
+        raise ValueError("Screen capture needs the optional dependency agent-work-kit[ui].") from exc
     output = Path(output).resolve()
     output.mkdir(parents=True, exist_ok=True)
     if any(output.iterdir()):
-        raise ValueError("캡처 결과는 빈 폴더에 저장하세요.")
+        raise ValueError("The output folder must be empty.")
     base = config["base_url"]
     origin = urlsplit(base)
     rows = []
@@ -81,7 +81,7 @@ def capture(config_path, output, channel=None):
         try:
             browser = playwright.chromium.launch(**({"channel": channel} if channel else {}))
         except Error as exc:
-            raise ValueError("캡처용 브라우저를 시작하지 못했습니다. 설치 상태와 channel을 확인하세요.") from exc
+            raise ValueError("Could not start the browser. Check the installation and the channel option.") from exc
         try:
             for number, item in enumerate(pages, 1):
                 for width in widths:

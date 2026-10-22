@@ -15,77 +15,77 @@ from .review import snapshot, check as run_checks
 
 
 def _parser():
-    parser = argparse.ArgumentParser(prog="awkit", description="Agent Work Kit: 작업 지침, 한국어 작성 가이드와 검증 도구")
+    parser = argparse.ArgumentParser(prog="awkit", description="Agent Work Kit: working instructions, a Korean writing guide and verification tools")
     parser.add_argument("--version", action="version", version=f"awkit {__version__}")
     groups = parser.add_subparsers(dest="group", required=True)
 
-    kit = groups.add_parser("kit", help="공통 개발 키트를 프로젝트에 복사")
+    kit = groups.add_parser("kit", help="Copy the Markdown kit into a project")
     kit_commands = kit.add_subparsers(dest="action", required=True)
-    init = kit_commands.add_parser("init", help="키트 폴더를 새로 만듭니다. 기존 폴더는 덮어쓰지 않습니다.")
-    init.add_argument("dir", nargs="?", type=Path, default=Path("."), help="키트를 둘 프로젝트 폴더")
-    init.add_argument("--name", default="agent-work-kit", help="만들 폴더 이름 (기본값: agent-work-kit)")
-    roles = kit_commands.add_parser("roles", help="역할 양식으로 Claude Code나 Codex의 역할 파일을 만듭니다. 기존 파일은 덮어쓰지 않습니다.")
-    roles.add_argument("dir", nargs="?", type=Path, default=Path("."), help="역할 파일을 둘 프로젝트 폴더")
+    init = kit_commands.add_parser("init", help="Create the kit folder. An existing folder is never overwritten.")
+    init.add_argument("dir", nargs="?", type=Path, default=Path("."), help="project folder that receives the kit")
+    init.add_argument("--name", default="agent-work-kit", help="name of the folder to create (default: agent-work-kit)")
+    roles = kit_commands.add_parser("roles", help="Generate Claude Code or Codex role files from the role templates. Existing files are kept.")
+    roles.add_argument("dir", nargs="?", type=Path, default=Path("."), help="project folder that receives the role files")
     roles.add_argument("--provider", choices=("claude", "codex"), required=True)
-    roles.add_argument("--model", action="append", metavar="등급=모델[:추론수준]",
-                       help="등급(efficient, standard, judge, top)별 모델. 여러 번 지정할 수 있습니다.")
+    roles.add_argument("--model", action="append", metavar="TIER=MODEL[:EFFORT]",
+                       help="model for a tier (efficient, standard, judge, top); may be repeated")
 
-    usage = groups.add_parser("usage", help="Claude Code와 Codex 실행 기록에서 실제 모델과 토큰을 모읍니다.")
-    usage.add_argument("paths", nargs="+", type=Path, help="실행 기록 파일(.jsonl)이나 폴더")
-    usage.add_argument("--since", help="이 날짜(YYYY-MM-DD, UTC) 이후에 바뀐 파일만 읽습니다.")
+    usage = groups.add_parser("usage", help="Collect actual models and tokens from Claude Code and Codex session logs")
+    usage.add_argument("paths", nargs="+", type=Path, help="session log files (.jsonl) or folders")
+    usage.add_argument("--since", help="read only files modified on or after this date (YYYY-MM-DD, UTC)")
     usage.add_argument("--json", action="store_true")
 
-    channel = groups.add_parser("channel", help="로컬 에이전트 검토 채널")
+    channel = groups.add_parser("channel", help="Local review channel between two agent sessions")
     channel.add_argument("--db", type=Path, default=Path(".awkit/channel.sqlite3"))
     commands = channel.add_subparsers(dest="action", required=True)
-    post = commands.add_parser("post", help="메시지를 기록합니다. 본문은 표준 입력, --body나 --body-file로 받습니다.")
+    post = commands.add_parser("post", help="Record a message. The body comes from stdin, --body or --body-file.")
     post.add_argument("sender", choices=ROLES)
     post.add_argument("receiver", choices=ROLES)
     post.add_argument("kind", choices=KINDS)
     post.add_argument("--reply-to")
     post.add_argument("--snap")
     body = post.add_mutually_exclusive_group()
-    body.add_argument("--body", help="본문 문자열")
-    body.add_argument("--body-file", type=Path, help="UTF-8 본문 파일")
-    wait = commands.add_parser("wait", help="메시지를 기다립니다.")
+    body.add_argument("--body", help="body text")
+    body.add_argument("--body-file", type=Path, help="UTF-8 file with the body")
+    wait = commands.add_parser("wait", help="Wait for messages.")
     wait.add_argument("role", choices=ROLES)
     wait.add_argument("mode", choices=("request", "new", "reply"))
     wait.add_argument("target", nargs="?")
     wait.add_argument("--max", type=float, default=120)
     wait.add_argument("--json", action="store_true")
-    export = commands.add_parser("export", help="전체 채널을 출력합니다.")
+    export = commands.add_parser("export", help="Print the whole channel.")
     export.add_argument("--json", action="store_true")
 
-    pipeline = groups.add_parser("pipeline", help="프로젝트 명령으로 배포하고 결과를 확인")
+    pipeline = groups.add_parser("pipeline", help="Replace a running version with project commands and verify the result")
     pipeline.add_argument("--config", type=Path, required=True)
     pipeline.add_argument("action", choices=("plan", "deploy", "rollback", "status", "reconcile", "history"))
     pipeline.add_argument("release", nargs="?")
     pipeline.add_argument("--allow-unhealthy-current", action="store_true",
-                          help="현재 버전의 검사가 실패한 상태에서도 배포합니다. 고친 버전을 올릴 때 사용합니다.")
+                          help="deploy even though the current version fails its checks; use it to ship a fix")
     pipeline.add_argument("--json", action="store_true")
 
-    review = groups.add_parser("review", help="고정된 변경본을 만들고 별도 작업 폴더에서 검사")
+    review = groups.add_parser("review", help="Freeze selected changes and check them in a separate worktree")
     review.add_argument("--repo", type=Path, default=Path.cwd())
     review_commands = review.add_subparsers(dest="action", required=True)
-    freeze = review_commands.add_parser("snapshot", help="선택한 파일의 변경을 담은 Git 객체를 만듭니다.")
+    freeze = review_commands.add_parser("snapshot", help="Write the named files' changes into a Git commit object.")
     freeze.add_argument("files", nargs="+")
-    isolated = review_commands.add_parser("check", help="고정된 버전을 별도 worktree에서 검사합니다.")
+    isolated = review_commands.add_parser("check", help="Run the project's checks on a frozen revision in a separate worktree.")
     isolated.add_argument("snapshot")
     isolated.add_argument("--config", type=Path, required=True)
     isolated.add_argument("--runs-root", type=Path)
     isolated.add_argument("--keep", action="store_true")
 
-    publish = groups.add_parser("publish", help="정적 문서 결과물을 검사한 뒤 로컬 발행")
+    publish = groups.add_parser("publish", help="Validate a static document build and publish it locally")
     publish.add_argument("--output", type=Path, required=True)
     publish.add_argument("--project", required=True)
     publications = publish.add_subparsers(dest="action", required=True)
     build = publications.add_parser("build")
     build.add_argument("--source", type=Path, required=True)
-    build.add_argument("--files", type=Path, required=True, help="발행할 상대 파일 경로의 JSON 배열")
+    build.add_argument("--files", type=Path, required=True, help="JSON array of relative file paths to publish")
     restore = publications.add_parser("restore")
     restore.add_argument("version")
 
-    ui = groups.add_parser("ui", help="지정한 화면을 여러 폭으로 캡처")
+    ui = groups.add_parser("ui", help="Capture the listed pages at several widths")
     ui.add_argument("--config", type=Path, required=True)
     ui.add_argument("--output", type=Path, required=True)
     ui.add_argument("--channel", choices=("chrome", "msedge", "chromium"))
@@ -101,9 +101,9 @@ def _read_body(args):
 
 
 def _print_report(report):
-    print(f"대상: {report['target']}\n배포 버전: {report['release']}")
+    print(f"target: {report['target']}\nrelease: {report['release']}")
     for check in report["checks"]:
-        print(f"{check['name']}: {'통과' if check['ok'] else '실패'}")
+        print(f"{check['name']}: {'passed' if check['ok'] else 'failed'}")
 
 
 def main(argv=None):
@@ -116,11 +116,11 @@ def main(argv=None):
         if args.group == "kit" and args.action == "roles":
             written, skipped, warnings = install_roles(args.dir, args.provider, args.model)
             for path in written:
-                print(f"만들었습니다: {path}")
+                print(f"created: {path}")
             for path in skipped:
-                print(f"이미 있어 건너뛰었습니다: {path}")
+                print(f"kept existing file: {path}")
             for warning in warnings:
-                print(f"주의: {warning}", file=sys.stderr)
+                print(f"note: {warning}", file=sys.stderr)
             return 0 if written or not skipped else 2
         if args.group == "usage":
             from datetime import datetime, timezone
@@ -133,8 +133,8 @@ def main(argv=None):
             return 0
         if args.group == "kit":
             target, copied = install(args.dir, args.name)
-            print(f"키트를 만들었습니다: {target}\n복사한 파일 {len(copied)}개")
-            print(f"다음 단계: {target / 'README.md'}를 열어 적용표부터 채우세요.")
+            print(f"created the kit: {target}\ncopied {len(copied)} files")
+            print(f"next: open {target / 'README.md'} and fill in the project profile")
             return 0
         if args.group == "review":
             if args.action == "snapshot":
@@ -150,7 +150,7 @@ def main(argv=None):
             else:
                 files = json.loads(args.files.read_text(encoding="utf-8"))
                 if not isinstance(files, list) or any(not isinstance(name, str) for name in files):
-                    raise ValueError("허용 파일 목록은 문자열의 JSON 배열이어야 합니다.")
+                    raise ValueError("The file list must be a JSON array of strings.")
                 result = publisher.publish(args.source, files)
             print(json.dumps(result, ensure_ascii=False, indent=2))
             return 0
@@ -172,12 +172,12 @@ def main(argv=None):
             if rows:
                 print(render(rows, args.json))
             elif code == 3:
-                print("메인이 작업 종료를 알렸습니다.")
+                print("main closed the channel.")
             return code
         if (args.action == "deploy") != bool(args.release):
-            parser.error("deploy에만 고정된 버전을 지정하세요.")
+            parser.error("a release is required for deploy and not accepted by other actions")
         if args.allow_unhealthy_current and args.action != "deploy":
-            parser.error("--allow-unhealthy-current는 deploy에만 사용할 수 있습니다.")
+            parser.error("--allow-unhealthy-current applies to deploy only")
         runner = Pipeline(args.config)
         if args.action == "plan":
             result = {"target": runner.target, "state_dir": str(runner.state),
@@ -203,24 +203,24 @@ def main(argv=None):
         elif args.action == "history":
             releases = result["releases"]
             if not releases:
-                print("검사를 통과한 배포 이력이 없습니다.")
+                print("No release has passed verification on this target.")
             for index, release in enumerate(reversed(releases)):
-                print(f"{release}{'  (가장 최근)' if index == 0 else ''}")
+                print(f"{release}{'  (latest)' if index == 0 else ''}")
         else:
-            print(f"실행 결과: {result.get('status')}")
+            print(f"status: {result.get('status')}")
             failure = result.get("failure")
             if failure:
                 detail = ", ".join(failure.get("failed_checks", []))
-                print(f"실패 단계: {failure['phase']}" + (f" ({detail})" if detail else ""))
+                print(f"failed phase: {failure['phase']}" + (f" ({detail})" if detail else ""))
             if result.get("run_id"):
-                print(f"기록: {runner.state / 'runs' / result['run_id']}")
+                print(f"run record: {runner.state / 'runs' / result['run_id']}")
         return 0 if success else 1
     except StepError as exc:
-        print(f"확인 실패: {exc}", file=sys.stderr)
+        print(f"verification failed: {exc}", file=sys.stderr)
         return exc.code if 1 <= exc.code <= 125 else 1
     except (ValueError, KeyError, TypeError, OSError, sqlite3.Error) as exc:
-        print(f"실행할 수 없습니다: {exc}", file=sys.stderr)
+        print(f"cannot run: {exc}", file=sys.stderr)
         return 2
     except KeyboardInterrupt:
-        print("중단했습니다. 실행 기록과 대상 상태를 확인하세요.", file=sys.stderr)
+        print("Interrupted. Check the run record and the target's actual state.", file=sys.stderr)
         return 130

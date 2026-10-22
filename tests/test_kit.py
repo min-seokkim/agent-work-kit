@@ -134,7 +134,7 @@ class RoleTests(unittest.TestCase):
         env = {**os.environ, "PYTHONUTF8": "1"}
         first = subprocess.run(command, capture_output=True, text=True, encoding="utf-8", env=env)
         self.assertEqual(first.returncode, 0, first.stderr)
-        self.assertIn("물려받는 역할", first.stderr)
+        self.assertIn("inherit the [agents] default", first.stderr)
         again = subprocess.run(command, capture_output=True, text=True, encoding="utf-8", env=env)
         self.assertEqual(again.returncode, 2)
 

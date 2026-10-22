@@ -22,7 +22,7 @@ def kit_root():
     source = Path(__file__).resolve().parents[2] / "kit"
     if (source / "README.md").is_file():
         return source
-    raise ValueError("설치된 키트 파일을 찾지 못했습니다.")
+    raise ValueError("The installed kit files were not found.")
 
 
 def _copy(node, destination: Path, copied: list[str], prefix=""):
@@ -52,14 +52,14 @@ def load_roles():
             continue
         text = item.read_text(encoding="utf-8").replace("\r\n", "\n")
         if not text.startswith("---\n") or "\n---\n" not in text[4:]:
-            raise ValueError(f"역할 양식의 머리말을 읽지 못했습니다: {item.name}")
+            raise ValueError(f"Cannot read the front matter of the role template: {item.name}")
         head, body = text[4:].split("\n---\n", 1)
         meta = {}
         for line in head.splitlines():
             key, _, value = line.partition(":")
             meta[key.strip()] = value.strip()
         if meta.get("tier") not in TIERS or meta.get("access") not in ("read-only", "write") or not meta.get("name"):
-            raise ValueError(f"역할 양식의 name, tier, access를 확인하세요: {item.name}")
+            raise ValueError(f"The role template needs valid name, tier and access fields: {item.name}")
         roles.append({**meta, "instructions": body.strip() + "\n"})
     return roles
 
@@ -71,9 +71,9 @@ def parse_models(specs):
         tier, sep, value = spec.partition("=")
         model, _, effort = value.partition(":")
         if not sep or tier not in TIERS or not model.strip():
-            raise ValueError(f"--model은 등급=모델 또는 등급=모델:추론수준 형식이어야 합니다: {spec}")
+            raise ValueError(f"--model takes TIER=MODEL or TIER=MODEL:EFFORT: {spec}")
         if any(ch in model + effort for ch in "\n\"'\\"):
-            raise ValueError(f"모델 이름에 쓸 수 없는 문자가 있습니다: {spec}")
+            raise ValueError(f"The model name contains characters that cannot be written: {spec}")
         models[tier] = (model.strip(), effort.strip() or None)
     return models
 
@@ -98,7 +98,7 @@ def _codex_file(role, name, model):
             lines.append(f"model_reasoning_effort = {_toml_string(model[1])}")
     instructions = role["instructions"]
     if "'''" in instructions:
-        raise ValueError(f"역할 지침에 ''' 를 쓸 수 없습니다: {role['name']}")
+        raise ValueError(f"Role instructions cannot contain ''': {role['name']}")
     lines.append(f"developer_instructions = '''\n{instructions}'''")
     return "\n".join(lines) + "\n"
 
@@ -107,15 +107,15 @@ def install_roles(project: Path, provider: str, specs=None):
     """Write provider role files under the project. Existing files are never overwritten."""
     project = Path(project).resolve()
     if not project.is_dir():
-        raise ValueError(f"대상 폴더가 없습니다: {project}")
+        raise ValueError(f"The target folder does not exist: {project}")
     models = parse_models(specs)
     roles = load_roles()
     planned, warnings = [], []
     if provider == "claude":
         if any(effort for _, effort in models.values()):
-            raise ValueError("Claude Code 역할 파일에는 추론 수준을 지정하지 않습니다. 모델만 적으세요.")
+            raise ValueError("Claude Code role files take a model only, without a reasoning effort.")
         if "top" in models:
-            warnings.append("Claude Code는 호출할 때 지정한 모델이 역할 파일보다 우선하므로 최상위 등급은 파일에 넣지 않았습니다.")
+            warnings.append("The top tier was not written: in Claude Code the model given at call time overrides the role file.")
         mapping = {**CLAUDE_DEFAULTS, **{tier: model for tier, (model, _) in models.items() if tier != "top"}}
         folder = project / ".claude" / "agents"
         for role in roles:
@@ -134,10 +134,10 @@ def install_roles(project: Path, provider: str, specs=None):
                             _codex_file({**analyst, "description": analyst["description"] + " Judgment role pinned to the top-tier model."},
                                         "analyst_top", models["top"])))
         if inherited:
-            warnings.append("모델을 지정하지 않아 [agents] 기본값이나 부모 세션 모델을 물려받는 역할: "
+            warnings.append("roles without a model inherit the [agents] default or the parent session's model: "
                             + ", ".join(inherited))
     else:
-        raise ValueError("provider는 claude 또는 codex여야 합니다.")
+        raise ValueError("provider must be claude or codex.")
     written, skipped = [], []
     for path, content in planned:
         if path.exists():
@@ -153,14 +153,14 @@ def install_roles(project: Path, provider: str, specs=None):
 def install(parent: Path, name="agent-work-kit"):
     """Create parent/name with the kit. Never overwrites: existing records stay untouched."""
     if not name or Path(name).name != name or name in (".", ".."):
-        raise ValueError("폴더 이름에는 경로 구분자를 넣지 마세요.")
+        raise ValueError("The folder name cannot contain path separators.")
     parent = Path(parent).resolve()
     if not parent.is_dir():
-        raise ValueError(f"대상 폴더가 없습니다: {parent}")
+        raise ValueError(f"The target folder does not exist: {parent}")
     target = parent / name
     if target.exists():
-        raise ValueError(f"{target}이(가) 이미 있습니다. 작성한 기록을 보존하려면 "
-                         "--name으로 다른 폴더에 설치한 뒤 비교해 반영하세요.")
+        raise ValueError(f"{target} already exists. To keep the records written there, "
+                         "install into another folder with --name and compare.")
     staging = parent / f".{name}.{uuid.uuid4().hex}.tmp"
     staging.mkdir()
     copied: list[str] = []

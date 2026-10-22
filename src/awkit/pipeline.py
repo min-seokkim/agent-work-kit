@@ -58,29 +58,29 @@ class Pipeline:
             config = tomllib.load(handle)
         settings = config["pipeline"]
         if config.get("schema_version") != 1:
-            raise ValueError("설정에 schema_version=1이 필요합니다.")
+            raise ValueError("The configuration needs schema_version = 1.")
         self.project = self.config_path.parent
         self.target = settings["target"]
         if not isinstance(self.target, str) or not LABEL.fullmatch(self.target):
-            raise ValueError("target에는 영문, 숫자, 점, 밑줄과 하이픈만 사용하세요.")
+            raise ValueError("target may contain letters, digits, dots, underscores and hyphens only.")
         self.timeout = settings.get("timeout_seconds", 120)
         if type(self.timeout) not in (int, float) or not 0 < self.timeout <= 86400:
-            raise ValueError("timeout_seconds는 0 초과, 86400 이하여야 합니다.")
+            raise ValueError("timeout_seconds must be above 0 and at most 86400.")
         self.auto_rollback = settings.get("auto_rollback", False)
         if type(self.auto_rollback) is not bool:
-            raise ValueError("auto_rollback은 true 또는 false여야 합니다.")
+            raise ValueError("auto_rollback must be true or false.")
         self.required_checks = settings["required_checks"]
         if (not isinstance(self.required_checks, list) or not self.required_checks
                 or not all(isinstance(name, str) and LABEL.fullmatch(name)
                            for name in self.required_checks)
                 or len(set(self.required_checks)) != len(self.required_checks)):
-            raise ValueError("required_checks에는 서로 다른 검사 이름을 지정하세요.")
+            raise ValueError("required_checks must list distinct check names.")
         self.state = (self.project / settings.get("state_dir", ".awkit/releases")).resolve()
         self.commands = config["commands"]
         for phase in PHASES:
             argv = self.commands.get(phase)
             if not isinstance(argv, list) or not argv or not all(isinstance(v, str) and v for v in argv):
-                raise ValueError(f"{phase} 명령은 비어 있지 않은 문자열 배열이어야 합니다.")
+                raise ValueError(f"The {phase} command must be a non-empty array of strings.")
             for arg in argv:
                 self.expand(arg, "a" * 40, "b" * 40, Path("run"))
 
@@ -90,7 +90,7 @@ class Pipeline:
         # Only named, literal placeholders; arbitrary braces remain valid argv characters.
         for token in re.findall(r"\{([a-z_]+)\}", arg):
             if token not in values:
-                raise ValueError(f"알 수 없는 명령 자리표시자: {token}")
+                raise ValueError(f"Unknown command placeholder: {token}")
         return re.sub(r"\{([a-z_]+)\}", lambda match: values[match[1]], arg)
 
     @contextmanager
@@ -101,7 +101,7 @@ class Pipeline:
             try:
                 conn.execute("BEGIN IMMEDIATE")
             except sqlite3.OperationalError as exc:
-                raise ValueError("같은 상태 폴더에서 다른 배포가 실행 중입니다.") from exc
+                raise ValueError("Another run holds the lock on this state folder.") from exc
             yield
         finally:
             conn.rollback()
@@ -139,13 +139,13 @@ class Pipeline:
                 event["stdout"] = str(out_path.relative_to(run_dir))
                 event["stderr"] = str(err_path.relative_to(run_dir))
             if returncode:
-                raise StepError(phase, "명령이 실패했습니다", returncode)
+                raise StepError(phase, "command failed", returncode)
             return stdout
         except subprocess.TimeoutExpired:
             event["timeout"] = True
-            raise StepError(phase, "제한 시간이 지났습니다", uncertain=True) from None
+            raise StepError(phase, "timed out", uncertain=True) from None
         except OSError:
-            raise StepError(phase, "명령을 시작하지 못했습니다") from None
+            raise StepError(phase, "command could not start") from None
         finally:
             event["seconds"] = round(time.monotonic() - started, 3)
             if events is not None:
@@ -166,7 +166,7 @@ class Pipeline:
                 raise ValueError()
             return current
         except (ValueError, KeyError, TypeError):
-            raise StepError("preflight", "대상 또는 현재 버전을 확인하지 못했습니다") from None
+            raise StepError("preflight", "could not read the target or its current release") from None
 
     def inspect(self, expected=None, phase="verify", **kwargs):
         """Return the verifier's report, healthy or not. Malformed reports raise StepError."""
@@ -193,7 +193,7 @@ class Pipeline:
             if not set(self.required_checks).issubset(names):
                 raise ValueError()
         except (ValueError, KeyError, TypeError):
-            raise StepError(phase, "대상, 배포 버전 또는 검사 결과가 일치하지 않습니다") from None
+            raise StepError(phase, "target, release or check report does not match") from None
         failed = [check["name"] for check in clean if not check["ok"]]
         return {"target": self.target, "release": release, "checks": clean,
                 "healthy": not failed, "failed_checks": failed}
@@ -201,7 +201,7 @@ class Pipeline:
     def verify(self, expected=None, phase="verify", **kwargs):
         report = self.inspect(expected, phase=phase, **kwargs)
         if not report["healthy"]:
-            raise StepError(phase, "검사가 실패했습니다: " + ", ".join(report["failed_checks"]),
+            raise StepError(phase, "checks failed: " + ", ".join(report["failed_checks"]),
                             report=report)
         return report
 
@@ -213,7 +213,7 @@ class Pipeline:
             return None
         data = json.loads(path.read_text(encoding="utf-8"))
         if not isinstance(data, dict) or "status" not in data:
-            raise ValueError("마지막 실행 기록을 확인하세요.")
+            raise ValueError("The last-run record is unreadable.")
         return data
 
     def history(self):
@@ -224,7 +224,7 @@ class Pipeline:
             releases = data.get("releases") if isinstance(data, dict) else None
             if (not isinstance(releases, list)
                     or not all(isinstance(r, str) and RELEASE.fullmatch(r) for r in releases)):
-                raise ValueError("배포 이력 파일을 확인하세요.")
+                raise ValueError("The release history file is unreadable.")
             return releases
         # State written by 0.1.0 has no history file; recover what the last run knew.
         last = self.last()
@@ -263,7 +263,7 @@ class Pipeline:
             events = []
             current = self.preflight(run_dir=run_dir, events=events)
             if not current:
-                raise ValueError("현재 버전이 없어 자동으로 확인을 마칠 수 없습니다.")
+                raise ValueError("The target has no current release, so reconcile cannot confirm it.")
             report = self.inspect(current, run_dir=run_dir, events=events)
             record = {"run_id": run_id, "action": "reconcile",
                       "status": "reconciled" if report["healthy"] else "reconciled-unhealthy",
@@ -280,18 +280,18 @@ class Pipeline:
 
     def run(self, action, release=None, allow_unhealthy_current=False):
         if action not in ("deploy", "rollback"):
-            raise ValueError("지원하지 않는 실행입니다.")
+            raise ValueError("Unsupported action.")
         if action == "deploy" and (not isinstance(release, str) or not RELEASE.fullmatch(release)):
-            raise ValueError("deploy에는 고정된 7~64자리 소문자 16진 버전이 필요합니다.")
+            raise ValueError("deploy needs a release ID of 7 to 64 lowercase hex characters.")
         if action == "rollback" and release:
-            raise ValueError("rollback에는 버전을 직접 지정하지 않습니다.")
+            raise ValueError("rollback does not take a release.")
         with self.locked():
             last = self.last()
             if last and last["status"] in BLOCKING:
-                raise ValueError("이전 실행의 상태 확인이 필요합니다. 대상을 확인한 뒤 reconcile을 실행하세요.")
+                raise ValueError("The previous run left the target unconfirmed. Inspect the target, then run reconcile.")
             releases = self.history()
             if action == "rollback" and not releases:
-                raise ValueError("복귀할 이전 정상 버전이 없습니다.")
+                raise ValueError("No earlier healthy release to roll back to.")
             run_id = uuid.uuid4().hex
             run_dir = self.state / "runs" / run_id
             run_dir.mkdir(parents=True)
@@ -313,10 +313,10 @@ class Pipeline:
                     release = self._rollback_target(releases, current)
                     record["release"] = release
                     if not release:
-                        raise StepError("preflight", "현재 버전보다 앞선 정상 버전이 이력에 없습니다")
+                        raise StepError("preflight", "no healthy release before the current one in the history")
                 elif current_healthy is False and not allow_unhealthy_current:
-                    raise StepError("verify-current", "현재 버전의 검사가 실패했습니다. "
-                                    "고친 버전을 배포하려면 --allow-unhealthy-current를 지정하세요")
+                    raise StepError("verify-current", "the current release fails its checks; "
+                                    "pass --allow-unhealthy-current to deploy a fix")
                 if current == release and current_healthy is not False:
                     record["outcome"] = "already-current"
                 else:

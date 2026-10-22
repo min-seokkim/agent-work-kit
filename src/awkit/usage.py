@@ -22,7 +22,7 @@ def _files(paths, since=None):
         candidates = sorted(path.rglob("*.jsonl")) if path.is_dir() else [path]
         for item in candidates:
             if not item.is_file():
-                raise ValueError(f"실행 기록 파일이 없습니다: {item}")
+                raise ValueError(f"Session log file not found: {item}")
             if since and datetime.fromtimestamp(item.stat().st_mtime, timezone.utc) < since:
                 continue
             yield item

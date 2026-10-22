@@ -22,7 +22,7 @@ This repository is developed with its own kit. Follow [kit/workflow.md](kit/work
 - How completion is checked: `awkit review check <snapshot> --config checks.toml` (Ruff and the test suite in a separate worktree), then CI green on Windows and Linux after pushing.
 - Where results and records go: commits on `dev`; decisions and the verification record in `docs/development.md`.
 
-In a cloud session, `.claude/hooks/session-start.sh` installs awkit from this checkout and the commit identity hook. The Stop hook runs `awkit check done`: files changed in the session need a passing check of their current state before the turn ends. Elsewhere, install awkit (README) and run `awkit kit hooks --git` once per clone.
+In a cloud session, `.claude/hooks/session-start.sh` installs a copy of awkit from the session's starting commit, so the hooks and the check runner do not run code that is being changed, and the commit identity hook. To try a changed command before the next session, run it with `PYTHONPATH=src python -m awkit`. The Stop hook runs `awkit check done`: files changed in the session need a passing check of their current state before the turn ends. Elsewhere, install awkit (README) and run `awkit kit hooks --git` once per clone.
 
 ## Working rules
 

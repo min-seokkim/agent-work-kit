@@ -95,9 +95,11 @@ class KitHooks(unittest.TestCase):
         ran = self.base / "husky-ran"
         husky = self.root / ".husky"
         (husky / "_").mkdir(parents=True)
+        # Shell scripts keep LF on Windows too, as Git checks them out.
         (husky / "_" / "commit-msg").write_text('#!/bin/sh\nexec sh "$(dirname "$0")/../commit-msg" "$@"\n',
-                                                encoding="utf-8")
-        (husky / "commit-msg").write_text(f'#!/bin/sh\necho ran >> "{ran.as_posix()}"\n', encoding="utf-8")
+                                                encoding="utf-8", newline="\n")
+        (husky / "commit-msg").write_text(f'#!/bin/sh\necho ran >> "{ran.as_posix()}"\n', encoding="utf-8",
+                                          newline="\n")
         for path in (husky / "_" / "commit-msg", husky / "commit-msg"):
             path.chmod(0o755)
         git(self.root, "config", "core.hooksPath", ".husky/_")

@@ -132,13 +132,32 @@ class Record:
         if not self.had_awkit:
             self.data["created_awkit"] = True
         if (self.top / ".git").exists() and not self.data.get("excluded"):
-            from .review import exclude_locally
-            exclude = _exclude_file(self.top)
-            before = exclude.read_text(encoding="utf-8") if exclude and exclude.is_file() else ""
-            exclude_locally(self.top, ".awkit/")
-            after = exclude.read_text(encoding="utf-8") if exclude and exclude.is_file() else ""
-            self.data["excluded"] = after != before
+            self._exclude()
         path.write_text(json.dumps(self.data, indent=2) + "\n", encoding="utf-8")
+
+    def _exclude(self):
+        """Keep .awkit/ out of Git through .git/info/exclude, unless something ignores it already, keeping the
+        file's bytes and line endings so `--remove` can restore them."""
+        from .review import _probe
+        if not _probe(self.top, "check-ignore", "-q", "--no-index", ".awkit/x").returncode:
+            return
+        exclude = _exclude_file(self.top)
+        if exclude is None:
+            return
+        before = exclude.read_bytes() if exclude.is_file() else None
+        text = (before or b"").decode("utf-8", errors="surrogateescape")
+        newline = "\r\n" if "\r\n" in text else "\n"
+        text += ("" if not text or text.endswith("\n") else newline) + ".awkit/" + newline
+        after = text.encode("utf-8", errors="surrogateescape")
+        entry = {"before": _sha(before), "after": _sha(after)}
+        if before is not None:
+            backup = self.top / BACKUP / "git-info-exclude"
+            backup.parent.mkdir(parents=True, exist_ok=True)
+            backup.write_bytes(before)
+            entry["backup"] = backup.relative_to(self.top).as_posix()
+        exclude.parent.mkdir(parents=True, exist_ok=True)
+        exclude.write_bytes(after)
+        self.data["excluded"] = entry
 
 
 def _exclude_file(top):
@@ -303,7 +322,8 @@ def _strip_git_hook(path, created):
 
 def _ask_delete(path):
     import sys
-    if not sys.stdin or not sys.stdin.isatty():
+    # Windows reports the null device as a terminal, so both ends must be one.
+    if not (sys.stdin and sys.stdin.isatty() and sys.stdout and sys.stdout.isatty()):
         return False
     try:
         answer = input(f"{path} was changed after `awkit kit hooks` wrote it. Delete it anyway? [y/N] ")
@@ -385,14 +405,28 @@ def remove(folder, ask=None):
 
 
 def _forget(top, record):
-    """Delete the record and the copies, then .awkit/ when kit hooks created it and nothing else is left."""
+    """Delete the record and the copies, then .awkit/ when kit hooks created it and nothing else is left, and
+    with it the exclude line, restored byte for byte while the exclude file is as kit hooks left it."""
+    excluded = record.data.get("excluded")
+    excluded = excluded if isinstance(excluded, dict) else {}
+    backup = top / excluded["backup"] if excluded.get("backup") else None
+    original = backup.read_bytes() if backup and backup.is_file() else None
     (top / RECORD).unlink(missing_ok=True)
     shutil.rmtree(top / BACKUP, ignore_errors=True)
     folder = top / ".awkit"
-    if record.data.get("created_awkit") and folder.is_dir() and not any(folder.iterdir()):
-        folder.rmdir()
-        if record.data.get("excluded"):
-            exclude = _exclude_file(top)
-            if exclude and exclude.is_file():
-                lines = exclude.read_text(encoding="utf-8").splitlines(keepends=True)
-                exclude.write_text("".join(line for line in lines if line.strip() != ".awkit/"), encoding="utf-8")
+    if not (record.data.get("created_awkit") and folder.is_dir() and not any(folder.iterdir())):
+        return
+    folder.rmdir()
+    exclude = _exclude_file(top) if excluded else None
+    if not exclude or not exclude.is_file():
+        return
+    current = exclude.read_bytes()
+    if _sha(current) == excluded.get("after") and (original is not None or excluded.get("before") is None):
+        if original is None:
+            exclude.unlink()
+        else:
+            exclude.write_bytes(original)
+        return
+    lines = current.decode("utf-8", errors="surrogateescape").splitlines(keepends=True)
+    rest = "".join(line for line in lines if line.strip() != ".awkit/")
+    exclude.write_bytes(rest.encode("utf-8", errors="surrogateescape"))

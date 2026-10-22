@@ -2,7 +2,7 @@
 
 Look things up here when you run `awkit`; you do not need to read it before every task. `awkit <command> --help` lists the options of each command. Commands print JSON on stdout unless noted, and diagnostics on stderr.
 
-Requirements: Python 3.11+, Git for `kit init` (unless `--no-git`), `kit example`, `kit hooks --git` and `review`, Playwright for `ui`. The project under work can be in any language.
+Requirements: Python 3.11+, Git for the hooks `kit init` installs and for its `--commit`, `kit example`, `kit hooks --git` and `review`, Playwright for `ui`. The project under work can be in any language.
 
 ## doctor
 
@@ -11,7 +11,7 @@ Requirements: Python 3.11+, Git for `kit init` (unless `--no-git`), `kit example
 ## Git tracking
 
 - `review` commands check files that Git tracks. They never create a repository or a commit. In a folder that is not a repository, or a repository with no commit, they exit 2 and say so; commit the files first.
-- `kit init` commits only the files it wrote (its section of the instruction files and the skills), and `kit init --copy` and `kit example` only the folder they created. `kit init` commits nothing when an instruction file it appends to had uncommitted changes, and says so. They create the repository when there is none and set `core.autocrlf=false` in it, so committed bytes equal checked bytes. When the index already has staged changes they skip the commit and say so on stderr, so the user's work is never bundled in. In a repository that only awkit has committed to they commit as `Agent Work Kit <awkit@localhost>`, which `check commit` does not count as history; in one with history they commit as the configured identity, and skip the commit with the reason when it looks like a coding agent's (`Claude`, an `anthropic.com` or `openai.com` address) or has not committed there before. `--no-git` writes without tracking.
+- `kit init` and `kit init --copy` write files and print what they wrote; they commit nothing and never create a repository, and outside one they say so. With `--commit`, in an existing repository, `kit init` commits `checks.toml` and `rules.toml` when it wrote them, and nothing when either had uncommitted changes before it ran; `kit init --copy --commit` commits only the folder it created. `kit example` commits the folder it created, creating the repository when there is none with `core.autocrlf=false`, so committed bytes equal checked bytes; `--no-git` only copies. When the index already has staged changes these commits are skipped with a note on stderr, so the user's work is never bundled in. In a repository that only awkit has committed to they are made as `Agent Work Kit <awkit@localhost>`, which `check commit` does not count as history; in one with history as the configured identity, skipped with the reason when it looks like a coding agent's (`Claude`, an `anthropic.com` or `openai.com` address) or has not committed there before.
 - Another Git repository inside the project, such as a clone of awkit, is not supported: a snapshot cannot hold a folder, so changes there can never be checked. `doctor` and `kit scan` list such folders, and `check done` fails while one is present. Move it outside the project or add it to `.gitignore`; ignored folders and submodules are not affected.
 - `review` resolves file names, step `cwd` and `artifacts` patterns relative to the folder it runs in (`--repo`, default the current folder), in the same subfolder of the checked worktree. The run records that subfolder as `subdir`.
 
@@ -19,8 +19,8 @@ Requirements: Python 3.11+, Git for `kit init` (unless `--no-git`), `kit example
 
 | Command | Effect | Exit |
 |---|---|---|
-| `kit init [DIR] [--no-git]` | Connects the kit without copying it (see Connecting below): appends the Agent Work Kit section to the instruction files agents already read, writes the self-contained skills for each agent the project uses, and records both in `.awkit/installed.json`. Prints the words added to every session. A section already there is kept, including a filled profile. | 0, or 2 if nothing was added |
-| `kit init --copy [DIR] [--name NAME] [--no-git]` | Creates `DIR/NAME` (default `agent-work-kit`) with the whole kit and `VERSION.txt`: the awkit version, and when copied from a source checkout its commit and whether `kit/` had uncommitted changes (copied as they were). Never touches an existing folder. | 0, or 2 if the folder exists |
+| `kit init [DIR] [--commit] [--no-git]` | Connects the kit without copying it (see Connecting below): appends the Agent Work Kit section to the instruction files agents already read, writes the self-contained skills for each agent the project uses, and records both in `.awkit/installed.json`. Prints the words added to every session. A section already there is kept, including a filled profile. | 0, or 2 if nothing was added |
+| `kit init --copy [DIR] [--name NAME] [--commit]` | Creates `DIR/NAME` (default `agent-work-kit`) with the whole kit and `VERSION.txt`: the awkit version, and when copied from a source checkout its commit and whether `kit/` had uncommitted changes (copied as they were). Never touches an existing folder. | 0, or 2 if the folder exists |
 | `kit remove [DIR] [--keep-records\|--delete-records]` | Takes out what `init`, `skills` and `hooks` added (see Removing below). | 0 |
 | `kit example documents\|data\|analysis DIR [--no-git]` | Creates a small project with one deliberate defect and a README that walks through fail, fix, re-check, verify, accept. | 0, or 2 if `DIR` exists |
 | `kit scan [DIR] [--checks]` | Reports first `session_words`, the words the kit adds (or would add) to every Claude Code and Codex session, also as the first line on stderr; then manifests, languages, check commands, CI run lines, docs folders, Git state, what the project has for its agents (`instructions`, `skills`, `plugins`, `bundles`, `hooks`, `memory`, `gates`) and kit state, plus `suggested_checks_toml`. `--checks` prints only the TOML draft. | 0 |
@@ -56,7 +56,7 @@ From the three-layer change on, `kit init`, `kit skills` and `kit remove` work a
 
 ### init
 
-`kit init [DIR] [--no-git]` installs the project layer and commits nothing.
+`kit init [DIR] [--commit] [--no-git]` installs the project layer and commits nothing unless given `--commit` (see Git tracking).
 
 - `checks.toml`: with none, init writes the draft `kit scan` suggests and the `[kit]` table. An existing file is never rewritten: init appends the table when there is none, or adds the keys the table lacks right after its `[kit]` line. It prints `created`, `added the [kit] table to`, `filled the [kit] table in` or `kept`. A file that does not parse as TOML is left as it is, with a note.
 - `[kit]` holds four optional keys; `schema` stays 1 and `review check` ignores the table. `version` is the awkit that wrote it, which `doctor` compares with the installed one. `done` is one sentence saying what finishing means in this project, `recipient` who or what receives the result, `records` where the project keeps its state; init fills `records` from the memory and record locations the scan found and leaves `done` and `recipient` empty for the connect procedure.

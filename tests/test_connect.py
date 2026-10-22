@@ -333,6 +333,34 @@ class Command(unittest.TestCase):
             self.assertEqual(git(root, "rev-list", "--count", "HEAD"), "1")
             self.assertEqual((root / "CLAUDE.md").read_text(encoding="utf-8"), "# Rules\n\nunsaved\n")
 
+    def test_init_commits_only_with_commit_and_creates_no_repository(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "repository"
+            root.mkdir()
+            git(root, "init", "-q")
+            git(root, "config", "user.name", "owner")
+            git(root, "config", "user.email", "owner@example.com")
+            git(root, "commit", "-q", "--allow-empty", "-m", "First")
+            copied = self.run_awkit("kit", "init", str(root), "--copy", "--name", "k")
+            self.assertEqual(copied.returncode, 0, copied.stderr)
+            self.assertEqual(git(root, "rev-list", "--count", "HEAD"), "1")
+            init = self.run_awkit("kit", "init", str(root), "--commit")
+            self.assertEqual(init.returncode, 0, init.stderr)
+            # Only the files a project commits; the copied folder and .awkit/ stay uncommitted.
+            self.assertEqual(git(root, "show", "--name-only", "--format=", "HEAD").splitlines(),
+                             ["checks.toml", "rules.toml"])
+            self.assertIn("?? k/", git(root, "status", "--porcelain").splitlines())
+            # Outside a repository, --copy and --commit write their files, say so and create no repository.
+            plain = Path(temporary).resolve() / "plain"
+            plain.mkdir()
+            for args in (("--copy",), ("--copy", "--commit"), ("--commit",)):
+                result = self.run_awkit("kit", "init", str(plain), *args, "--name", "k" + str(len(args)))
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertIn("not", result.stderr + result.stdout)
+                self.assertNotIn("committed checks.toml", result.stdout)
+            self.assertFalse((plain / ".git").exists())
+            self.assertTrue((plain / "checks.toml").is_file())
+
     def test_remove_without_the_record_finds_awkits_markers(self):
         # Another clone has the committed section and skills but not .awkit/installed.json.
         with tempfile.TemporaryDirectory() as temporary:

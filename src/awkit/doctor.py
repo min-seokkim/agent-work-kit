@@ -77,7 +77,7 @@ def diagnose(folder="."):
         top = _git(folder, "rev-parse", "--show-toplevel")
         if not top:
             add("project repository", "warning", f"{folder} is not in a Git repository",
-                "awkit kit init creates one; the review commands need committed files")
+                "run git init and commit the files; the review commands need committed files")
         else:
             top = Path(top)
             has_commit = bool(_git(top, "rev-parse", "--verify", "-q", "HEAD"))

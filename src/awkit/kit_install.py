@@ -540,7 +540,7 @@ def read_version(kit: Path):
 def install(parent: Path, name="agent-work-kit"):
     """Create parent/name with the kit. Never overwrites: existing records stay untouched.
 
-    The CLI commits the new folder afterwards with `review.track`; this function only copies."""
+    With `--commit`, the CLI commits the new folder afterwards with `review.track`; this function only copies."""
     if not name or Path(name).name != name or name in (".", ".."):
         raise ValueError("The folder name cannot contain path separators.")
     parent = Path(parent).resolve()

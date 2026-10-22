@@ -72,7 +72,7 @@ A count from part of the data is stated as the whole, or a metric counts things 
 #### F7. A convenience changes state nobody asked to change.
 
 A read or check command creates, commits or deletes something, or a setup command changes more of the project's own files than it adds.
-- Evidence: observed in awkit's development. `review compare` in a folder without Git created a repository and committed every file, `.env` included (from `f475f9e`, fixed in `b5d78ba`). `kit hooks` rewrote a project's `.claude/settings.json` with two-space indentation and `\u` escapes for non-ASCII text, so every line changed to add one handler; with a commit-msg hook already present it left the identity check out while reporting the hook as kept; with husky it would have written into `.husky/_`, which husky regenerates (found while connecting the kit to existing setups, fixed in `006575b`).
+- Evidence: observed in awkit's development. `review compare` in a folder without Git created a repository and committed every file, `.env` included (from `f475f9e`, fixed in `b5d78ba`). `kit hooks` rewrote a project's `.claude/settings.json` with two-space indentation and `\u` escapes for non-ASCII text, so every line changed to add one handler; with a commit-msg hook already present it left the identity check out while reporting the hook as kept; with husky it would have written into `.husky/_`, which husky regenerates (found while connecting the kit to existing setups, fixed in `006575b`). `kit init` committed what it wrote, and `kit init --copy` created a repository and set `core.autocrlf` where there was none, though the user had asked only for setup (pointed out by an external review; both now commit only with `--commit`).
 - Countermeasure: read commands never write; write commands touch only what was named, add beside what the project has, and record what they add so it can be taken out.
 - Check: Kind: verify. tests that read commands leave the folder unchanged, and that `kit init`, `kit skills`, `kit hooks` and `kit remove` change only the places in `WRITES`, leave memory and instruction files untouched and restore the project and home folders (`tests/test_connect.py`, `tests/test_layers.py`). Status: enforced for `awkit`.
 
@@ -81,7 +81,7 @@ A read or check command creates, commits or deletes something, or a setup comman
 A commit or snapshot includes changes the user had staged or made elsewhere.
 - Evidence: found while fixing F7; not observed in use.
 - Countermeasure: commit only named paths; skip when the index has staged changes.
-- Check: Kind: verify. enforced in `kit init` and `kit example`; snapshots include only named files.
+- Check: Kind: verify. enforced in `kit init --commit` and `kit example`; snapshots include only named files.
 
 ### Committing and publishing
 
@@ -334,8 +334,8 @@ Generated from the guards' own declarations: each guide section ends with a "Pre
 | F5 Documents point at things that do not exist | none | `awkit publish` | none |
 | F6 Numbers reported beyond what was measured | workflow.md Report; delegation.md 1. Objective | `awkit usage` | none |
 | F7 A convenience changes state nobody asked to change | connect.md; delivery.md Confirm it in its intended context | `awkit kit hooks`, `awkit kit init`, `awkit kit remove` | none |
-| F8 The user's unrelated work is bundled in | workflow.md Define the task | `awkit kit init and kit example (commit only the new folder)` | none |
-| F9 The agent's own identity replaces the repository's convention | connect.md | `awkit check commit`, `awkit kit hooks`, `awkit kit init and kit example (commit only the new folder)`, `awkit doctor`, `awkit hook` | `commit-identity (block)` |
+| F8 The user's unrelated work is bundled in | workflow.md Define the task | `awkit kit init --commit and kit example (commit only what they wrote)` | none |
+| F9 The agent's own identity replaces the repository's convention | connect.md | `awkit check commit`, `awkit kit hooks`, `awkit kit init --commit and kit example (commit only what they wrote)`, `awkit doctor`, `awkit hook` | `commit-identity (block)` |
 | F10 Irreversible publication prepared before it is justified | none | none | none |
 | F11 A guess is presented as a finding | workflow.md Do the work; connect.md; checking.md The checked version | `awkit kit scan` | none |
 | F12 Scope grows before anything is measured | connect.md | `awkit kit scan`, `awkit kit init`, `awkit kit skills` | none |

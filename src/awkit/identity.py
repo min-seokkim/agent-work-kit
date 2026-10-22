@@ -1,8 +1,9 @@
-"""Whether a commit author fits a repository: the rule shared by `check commit`, `doctor` and `kit init`.
+"""Whether a commit author fits a repository: the rule shared by `check commit`, `doctor` and
+the commits `kit example` and `kit init --commit` make.
 
 An author fits when they have committed to the repository before and their identity is not a coding
 agent's. awkit's own identities, used for commits awkit makes in a repository with no history, do not
-count as history, so the owner's first commit after `kit init` is not reported.
+count as history, so the owner's first commit after `kit example` is not reported.
 """
 
 import os

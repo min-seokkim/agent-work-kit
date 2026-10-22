@@ -31,7 +31,7 @@ IDENTITY = ("-c", "user.name=Agent Work Kit", "-c", "user.email=awkit@localhost"
 # The failure catalogue entries (kit/failures.md) each command guards against.
 PREVENTS = {"awkit review snapshot": ("F17",), "awkit review check": ("F2", "F17"),
             "awkit review accept": ("F16",), "awkit review compare": ("F16",),
-            "awkit kit init and kit example (commit only the new folder)": ("F8", "F9")}
+            "awkit kit init --commit and kit example (commit only what they wrote)": ("F8", "F9")}
 
 
 def _probe(folder, *args):

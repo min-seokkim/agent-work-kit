@@ -125,10 +125,10 @@ class KitTests(unittest.TestCase):
     def test_init_without_tracking_leaves_the_folder_untracked(self):
         install(self.project)
         self.assertEqual([p.name for p in self.project.iterdir() if p.name.startswith(".")], [])
-        plain = subprocess.run([sys.executable, "-m", "awkit", "kit", "init", str(self.project), "--copy", "--name", "k",
-                                "--no-git"],
+        plain = subprocess.run([sys.executable, "-m", "awkit", "kit", "init", str(self.project), "--copy", "--name", "k"],
                                capture_output=True, text=True, encoding="utf-8", env=child_env())
         self.assertEqual(plain.returncode, 0, plain.stderr)
+        self.assertIn("is not in a Git repository; nothing was committed", plain.stderr)
         self.assertEqual([p.name for p in self.project.iterdir() if p.name.startswith(".")], [])
 
     def test_init_preserves_project_and_third_party_license_notices(self):

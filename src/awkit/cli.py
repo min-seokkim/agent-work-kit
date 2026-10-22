@@ -42,8 +42,10 @@ def _parser():
                       help="copy the whole kit folder instead, as earlier versions did; an existing folder is never "
                            "touched (exit 2)")
     init.add_argument("--name", default="agent-work-kit", help="with --copy, the folder to create (default: agent-work-kit)")
-    init.add_argument("--no-git", action="store_true",
-                      help="leave Git alone: no hooks and no exclude line; with --copy, do not commit the folder")
+    init.add_argument("--commit", action="store_true",
+                      help="also commit what it wrote, in an existing repository: checks.toml and rules.toml, or with "
+                           "--copy the new folder; by default nothing is committed")
+    init.add_argument("--no-git", action="store_true", help="leave Git alone: no hooks, no exclude line and no commit")
     remove = kit_commands.add_parser("remove", help="take out what init, skills and hooks added, leaving the project "
                                      "or the user folder as it was before")
     remove.add_argument("dir", nargs="?", type=Path, default=Path("."), help="project folder (default: .)")
@@ -285,7 +287,29 @@ def _session_line(words):
             "(the descriptions of awkit's skills; the project's instruction files get nothing)")
 
 
-def _report_init(report):
+# What a project commits after `kit init`; `--commit` commits those of them init wrote.
+COMMITTED = ("checks.toml", "rules.toml")
+
+
+def _git_status(top, names):
+    from .review import _probe
+    probe = _probe(top, "status", "--porcelain", "--", *names)
+    return None if probe.returncode else [line[3:] for line in probe.stdout.splitlines()]
+
+
+def _commit_init(top, dirty):
+    """Commit the files of COMMITTED that `kit init` wrote, unless one already had the user's changes."""
+    from .review import track
+    if dirty:
+        print("note: nothing was committed: " + ", ".join(dirty) + " had uncommitted changes, which a commit would "
+              "bundle in; commit the kit's files yourself", file=sys.stderr)
+        return
+    written = _git_status(top, COMMITTED)
+    if written:
+        _report_tracking(track(top, [top / name for name in written], "Add Agent Work Kit"), " and ".join(written))
+
+
+def _report_init(report, commit=False, dirty=()):
     from .connect import CHECKS, INSTRUCTION_LINE
     top = Path(report["top"])
     what = {"created": "created", "appended": "added the [kit] table to", "filled": "filled the [kit] table in",
@@ -304,8 +328,12 @@ def _report_init(report):
         print(f"note: {note}")
     print("optional: to point agents at the kit from the project's instructions, add this line to AGENTS.md or "
           f"CLAUDE.md yourself:\n  {INSTRUCTION_LINE}")
-    print("next: tell your agent to connect Agent Work Kit to this project (`awkit kit guide connect`), then commit "
-          "checks.toml and rules.toml; nothing was committed")
+    if commit and _git_status(top, COMMITTED) is not None:
+        _commit_init(top, dirty)
+        print("next: tell your agent to connect Agent Work Kit to this project (`awkit kit guide connect`)")
+    else:
+        print("next: tell your agent to connect Agent Work Kit to this project (`awkit kit guide connect`), then commit "
+              "checks.toml and rules.toml; nothing was committed")
     return 2 if report["checks"] == "kept" and not report["excluded"] else 0
 
 
@@ -474,13 +502,18 @@ def main(argv=None):
         if args.group == "kit" and args.copy:
             target, copied = install(args.dir, args.name)
             print(f"created the kit: {target}\ncopied {len(copied)} files")
-            if not args.no_git:
+            if _git_status(args.dir, ()) is None:
+                print(f"note: {args.dir.resolve()} is not in a Git repository; nothing was committed", file=sys.stderr)
+            elif args.commit and not args.no_git:
                 _report_tracking(track(args.dir, [target], f"Add {args.name}"))
             print(f"next: tell your agent to read {target / 'README.md'} and connect the kit to this project")
             return 0
         if args.group == "kit":
             from .connect import init as connect
-            return _report_init(connect(args.dir, git=not args.no_git))
+            from .connect import project_top
+            commit = args.commit and not args.no_git
+            dirty = (_git_status(project_top(args.dir), COMMITTED) or []) if commit else []
+            return _report_init(connect(args.dir, git=not args.no_git), commit, dirty)
         if args.group == "review":
             if args.action == "snapshot":
                 print(snapshot(args.repo, args.files))

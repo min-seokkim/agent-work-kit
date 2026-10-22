@@ -1,6 +1,6 @@
 # Korean Writing Guide
 
-Use this guide with the [Writing Guide](writing.md) when writing or reviewing Korean text for people: documents, UI text, CLI output, notifications, handoffs, and commit and PR descriptions. The Writing Guide covers the reader, the preservation list, plain style, corrections and the completion check; this guide adds what is specific to Korean. Preserve code identifiers and machine-readable formats. The instructions are in English; Korean wording examples remain in Korean.
+Use this guide with the [Writing Guide](writing.md) when writing or reviewing Korean text for people: documents, UI text, CLI output, notifications, handoffs, and commit and PR descriptions. The Writing Guide covers the reader, the preservation list, plain style, corrections and the completion check; this guide adds what is specific to Korean. Preserve code identifiers and machine-readable formats. The instructions are in English; Korean wording examples remain in Korean. The two grades in the Writing Guide apply: a reply that stays in the conversation keeps the endings, the pattern list and Describe actions and is read once before sending; Korean that leaves the conversation follows the whole writing process below.
 
 ## Writing process
 
@@ -23,7 +23,7 @@ Prevents: F14.
 
 Make one claim per sentence and let the next develop it.
 
-**Describe actions.** Say what is displayed, stored, sent or checked, and by whom, instead of repeating vague verbs such as `제공한다` or `보여준다`.
+**Describe actions.** Say what is displayed, stored, sent or checked, and by whom, instead of repeating vague verbs such as `제공한다` or `보여준다`. Give a program its actual operation, not a person's action: a hook does not `침묵한다`, `말한다` or `울린다`; it `출력하지 않는다`, `거부한다`, `한 줄을 넣는다` or `기록한다`.
 
 **Separate distinct subjects.** Do not bundle subjects with different states under an `A와 B` label, and do not replace it with a slash, a middle dot or a uniform four-character name. State each result, or name what each category holds.
 

@@ -2,6 +2,8 @@
 
 Use this guide when writing or revising text people read: documents, reports, UI text, CLI output, notifications, handoffs, and commit and PR descriptions. For Korean text, also follow the [Korean Writing Guide](korean-writing.md). Current user instructions and established project terminology take precedence. Record a project's audiences, terms and per-document requirements (length, endings, layout) in the [project profile](templates/project.md); a requirement given for one document does not apply to every document.
 
+Text comes in two grades. A reply that stays in the conversation keeps one ending style, the pattern list under Write plainly and the rule on verbs (name who does what; in Korean, give a program its actual operation), and is read once before sending. Text that leaves the conversation, because it is saved to a file, pasted into another session or read later by someone else, goes through this whole guide, from Before writing to the completion check. What the text is used for sets the grade, not where it is written: an instruction for another session written in the chat leaves the conversation.
+
 ## Before writing
 
 Decide these first, because text written for the wrong reader has to be rewritten rather than edited:

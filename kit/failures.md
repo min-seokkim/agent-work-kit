@@ -141,9 +141,9 @@ Contrasts against claims nobody made, lead-ins, closing lines that repeat the pa
 #### F14. Korean that reads like a translation, including from an agent that wrote the rules.
 
 Translationese, mixed sentence endings, noun chains; the agent's own Korean guide not applied to its own output.
-- Evidence: observed in awkit's development. The Korean README and replies before the owner pointed it out. Owner's records: Korean still unnatural after an English draft and translation; `-세요` turning into `-시오` within one guide, then the same mix left in other documents; words Korean readers do not use in that sense (`정제`, `권위 순서`, `경계`, `흐름`); middle dots joining words; italics in Korean reports.
+- Evidence: observed in awkit's development. The Korean README and replies before the owner pointed it out. Owner's records: Korean still unnatural after an English draft and translation; `-세요` turning into `-시오` within one guide, then the same mix left in other documents; words Korean readers do not use in that sense (`정제`, `권위 순서`, `경계`, `흐름`); middle dots joining words; italics in Korean reports. Observed in awkit's development: the planning session for the hook runner had the writing skill and the `AGENTS.md` rule that replies follow the guide, wrote a long Korean instruction for another session in the chat without calling the skill, and fixed it only after the owner pointed it out twice; no tool call was made, so no hook ran (guarded from `d99a439` by `writing-reply`). With awkit installed by pipx, `{kit}` expanded to an 85-character path, and the kit's `korean-writing`, `research` and `delegation` rules passed the 200-character message limit and were dropped as broken (fixed in `d99a439`).
 - Countermeasure: `korean-writing.md` with `writing.md`, applied to every Korean text, including the agent's replies.
-- Check: Kind: verify, inject. `awkit check writing`: middle dots joining Korean words and `-세요` mixed with `-시오` fail; Korean stock phrases warn. Natural Korean remains a reader's judgment.
+- Check: Kind: verify, inject. `awkit check writing`: middle dots joining Korean words and `-세요` mixed with `-시오` fail; Korean stock phrases warn. Natural Korean remains a reader's judgment. The `writing-request` rule adds the guide's line on a request for a document, and `writing-reply` blocks once when the final reply is a long Korean document from a session that never read the guide. Test: `tests/test_hook_rules.py`.
 
 #### F15. Writing for the wrong reader.
 
@@ -263,7 +263,7 @@ The question was about what people experience; the sources collected are officia
 #### F24. A tool's success is taken as the result.
 
 A command returned 0, so the message is assumed delivered, the file transferred, the setting applied or the release live.
-- Evidence: needs evidence (the release runner was built for the deploy case).
+- Evidence: needs evidence (the release runner was built for the deploy case). A defect of its guard, not an occurrence: the `delivery` rule's line was added when a heredoc that wrote a document mentioning `git push` went to `cat`, because the shell condition read the heredoc body as commands (fixed in `d99a439`).
 - Countermeasure: observe the end state where the recipient sees it.
 - Check: Kind: inject. `awkit pipeline` verifies the running release. Status: tool for releases, prose otherwise.
 

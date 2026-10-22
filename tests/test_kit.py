@@ -14,20 +14,41 @@ ROOT = Path(__file__).resolve().parents[1]
 LINK = re.compile(r"\]\(([^)\s]+)\)")
 
 
-def broken_links(folder: Path):
-    broken = []
-    for document in folder.rglob("*.md"):
-        if ".git" in document.parts or "build" in document.parts:
+# Folders that hold dependencies, build output or run records rather than managed documents.
+SKIP_DIRS = {"build", "dist", "node_modules", "site-packages", "__pycache__"}
+
+
+def managed_documents(folder: Path, include=None):
+    """Markdown files to check: the root files plus `include` folders, or every folder
+    except hidden ones and the dependency folders in SKIP_DIRS."""
+    folder = folder.resolve()
+    if include is not None:
+        documents = list(folder.glob("*.md"))
+        for name in include:
+            documents.extend((folder / name).rglob("*.md"))
+        return sorted(documents)
+    documents = []
+    for document in sorted(folder.rglob("*.md")):
+        parts = document.relative_to(folder).parts[:-1]
+        if any(part.startswith(".") or part in SKIP_DIRS for part in parts):
             continue
+        documents.append(document)
+    return documents
+
+
+def broken_links(folder: Path, include=None):
+    folder = folder.resolve()
+    broken = []
+    for document in managed_documents(folder, include):
         for target in LINK.findall(document.read_text(encoding="utf-8")):
             if re.match(r"[a-z]+:", target) or target.startswith("#"):
                 continue
             path = target.split("#", 1)[0]
             resolved = (document.parent / path).resolve()
-            if not resolved.is_relative_to(folder.resolve()):
+            if not resolved.is_relative_to(folder):
                 continue  # GitHub-relative links such as ../../releases point outside the tree
             if path and not resolved.exists():
-                broken.append(f"{document.relative_to(folder)} -> {target}")
+                broken.append(f"{document.relative_to(folder).as_posix()} -> {target}")
     return broken
 
 
@@ -141,7 +162,18 @@ class RoleTests(unittest.TestCase):
 
 class DocumentationTests(unittest.TestCase):
     def test_repository_links_resolve(self):
-        self.assertEqual(broken_links(ROOT), [])
+        self.assertEqual(broken_links(ROOT, ("docs", "kit", "examples")), [])
+
+    def test_link_check_skips_dependency_folders_but_not_managed_documents(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            for folder in (".venv/lib/site-packages/pkg", ".awkit/runs", "node_modules/x", "docs"):
+                (root / folder).mkdir(parents=True)
+                (root / folder / "page.md").write_text("[gone](missing.md)", encoding="utf-8")
+            (root / "README.md").write_text("[docs](docs/page.md) [gone](nowhere.md)", encoding="utf-8")
+            self.assertEqual(broken_links(root), ["README.md -> nowhere.md", "docs/page.md -> missing.md"])
+            self.assertEqual(broken_links(root, ("docs",)), ["README.md -> nowhere.md", "docs/page.md -> missing.md"])
+            self.assertEqual(broken_links(root, ()), ["README.md -> nowhere.md"])
 
 
 if __name__ == "__main__":

@@ -74,6 +74,54 @@ class UsageTests(unittest.TestCase):
         self.assertEqual((first["fresh_input"], first["cache_read"], first["output"]), (300, 900, 40))
         self.assertEqual((second["models"], second["effort"], second["fresh_input"]), ({"gpt-sol": 1}, "high", 50))
 
+    def test_missing_and_invalid_token_fields_are_not_reported_as_zero(self):
+        session = self.root / "claude" / "session.jsonl"
+        write_jsonl(session, [
+            claude_turn("m1", usage={"input_tokens": 5, "output_tokens": 7}),  # no cache fields
+            claude_turn("m2", usage={"input_tokens": 5, "cache_creation_input_tokens": 1,
+                                     "cache_read_input_tokens": 2, "output_tokens": "many"}),
+            {"type": "assistant", "message": {"id": "m3", "model": "claude-sonnet"}},  # no usage at all
+        ])
+        result = collect([session])
+        (thread,) = result["threads"]
+        self.assertEqual(thread["calls"], 3)
+        self.assertEqual(thread["counted"], "responses")
+        self.assertIsNone(thread["fresh_input"])  # m3 carried no usage at all
+        self.assertIsNone(thread["cache_write"])
+        self.assertIsNone(thread["cache_read"])
+        self.assertIsNone(thread["output"])
+        self.assertEqual(thread["missing"], {"fresh_input": 1, "cache_write": 2, "cache_read": 2, "output": 1})
+        self.assertEqual(thread["invalid"], {"output": 1})
+        self.assertEqual(result["total"]["complete"], False)
+        self.assertEqual(result["total"]["incomplete_threads"], 1)
+        self.assertEqual(result["format"], 2)
+
+    def test_codex_without_token_counts_reports_unmeasured_tokens(self):
+        rollout = self.root / "codex" / "rollout.jsonl"
+        write_jsonl(rollout, [{"type": "turn_context", "payload": {"model": "gpt-luna"}}])
+        (thread,) = collect([rollout])["threads"]
+        self.assertEqual((thread["models"], thread["calls"], thread["counted"]), ({"gpt-luna": 1}, 1, "turns"))
+        self.assertEqual([thread[f] for f in ("fresh_input", "cache_write", "cache_read", "output")], [None] * 4)
+        partial = self.root / "codex" / "partial.jsonl"
+        write_jsonl(partial, [
+            {"type": "turn_context", "payload": {"model": "gpt-luna"}},
+            {"type": "token_count", "payload": {"info": {"total_token_usage": {"input_tokens": 40, "output_tokens": 3}}}},
+        ])
+        (thread,) = collect([partial])["threads"]
+        self.assertEqual((thread["output"], thread["fresh_input"], thread["cache_read"]), (3, None, None))
+        self.assertEqual(thread["missing"], {"fresh_input": 1, "cache_read": 1, "cache_write": 1})
+
+    def test_damaged_and_partial_lines_are_counted_separately(self):
+        session = self.root / "session.jsonl"
+        write_jsonl(session, [claude_turn("m1")], tail="{broken json}\n" + '{"type": "assistant", "mess')
+        result = collect([session])
+        self.assertEqual(result["skipped_lines"], {str(session): {"damaged_lines": 1, "partial_line": True}})
+        self.assertEqual(result["threads"][0]["calls"], 1)
+        self.assertFalse(result["total"]["complete"])
+        clean = self.root / "clean.jsonl"
+        write_jsonl(clean, [claude_turn("m1")])
+        self.assertTrue(collect([clean])["total"]["complete"])
+
     def test_unknown_files_are_reported_and_missing_paths_fail(self):
         write_jsonl(self.root / "other.jsonl", [{"hello": "world"}])
         self.assertEqual(len(collect([self.root])["unrecognized_files"]), 1)
@@ -87,12 +135,19 @@ class UsageTests(unittest.TestCase):
         table = subprocess.run(command, capture_output=True, text=True, encoding="utf-8", env=env)
         self.assertEqual(table.returncode, 0, table.stderr)
         self.assertIn("claude-sonnet", table.stdout)
+        self.assertIn("total", table.stdout)
+        self.assertNotIn("?", table.stdout)
         data = json.loads(subprocess.run(command + ["--json"], capture_output=True, text=True,
                                          encoding="utf-8", env=env).stdout)
         self.assertEqual(data["total"]["cache_write"], 100)
         future = subprocess.run(command + ["--since", "2999-01-01", "--json"], capture_output=True,
                                 text=True, encoding="utf-8", env=env)
         self.assertEqual(json.loads(future.stdout)["threads"], [])
+        write_jsonl(self.root / "gap.jsonl", [claude_turn("m2", usage={"input_tokens": 1})])
+        table = subprocess.run(command, capture_output=True, text=True, encoding="utf-8", env=env)
+        self.assertIn("?", table.stdout)
+        self.assertIn("known", table.stdout)
+        self.assertIn("unmeasured", table.stdout)
 
 
 if __name__ == "__main__":

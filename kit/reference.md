@@ -207,6 +207,8 @@ Transcripts, as the two agents document and write them: Claude Code passes `tran
 
 `rules.toml` at the project root declares the rules. The kit's default rules are `rules.toml` and `rules-session.toml` in the kit; the second holds only `[[rules]]` tables, and `kit hooks` writes both into one file.
 
+The sample below uses the unmarked legacy/custom command contract.
+
 ```toml
 schema = 1
 kit = "agent-work-kit"        # {kit} in messages and commands
@@ -223,6 +225,8 @@ command = ["{python}", "-m", "awkit", "check", "commit", "--hook"]
 # also: paths = ["*.md"], text = '[가-힣]', prompt = '문서', message = "...", decision = "ask", timeout = 10
 ```
 
+For unmarked commands, failure below means a nonzero exit. Opted-in commands fire only on a finding under [Bundled command results](#bundled-command-results); execution errors allow the call.
+
 | Kind | Events (default first) | Fires | Output |
 |---|---|---|---|
 | `block` | PreToolUse, UserPromptSubmit, PostToolUse, Stop, SubagentStop | The conditions match and, with `command`, the command fails | PreToolUse: `permissionDecision` `deny` (or `ask` with `decision = "ask"`) and the reason; other events: `decision: block` |
@@ -230,7 +234,7 @@ command = ["{python}", "-m", "awkit", "check", "commit", "--hook"]
 | `inject` | PreToolUse, PostToolUse, UserPromptSubmit, SessionStart | The conditions match and, with `command`, the command fails; once per session | `additionalContext` |
 
 - Conditions: every condition given must match. `events` and `tools` name the event and the tool; `tools` also matches Codex's `apply_patch` as `Edit` and `Write`, `spawn_agent` and Claude Code's `Task` as `Agent`. `shell` is a regular expression searched in `tool_input.command`, leaving out the body of a heredoc fed to a program (a file being written is not a command). `paths` are globs for the edited files (`file_path`, `notebook_path`, or the file headers of an `apply_patch` patch); a pattern without `/` matches the file name in any folder. `text` searches the text being written (`content`, `new_string`, `edits`, `new_source`, added patch lines). `prompt` searches the user's message on UserPromptSubmit, without pasted material marked `<pasted_content>`, and only `inject` rules may use it: the situation is judged from tool calls, and the user's words only add a line.
-- `command`: for a rule these conditions cannot express. An argument array, never a shell, run in the project root with the event JSON on stdin. Placeholders: `{python}` (the interpreter running awkit), `{kit}`, `{root}`, and an element `{paths}` that becomes the matching edited files that exist (the rule is skipped when none does). Exit 0 with no output is no opinion; exit 0 with a JSON object `{"decision": "deny"|"ask"|"block"|"allow", "reason": TEXT, "context": TEXT}` is that decision; any other exit fires the rule with the output (stdout and stderr, first 1,000 characters).
+- `command`: for a rule these conditions cannot express. An argument array, never a shell, run in the project root with the event JSON on stdin. Placeholders: `{python}` (the interpreter running awkit), `{kit}`, `{root}`, and an element `{paths}` that becomes the matching edited files that exist (the rule is skipped when none does). For unmarked rules, exit 0 with no output is no opinion; exit 0 with a JSON object `{"decision": "deny"|"ask"|"block"|"allow", "reason": TEXT, "context": TEXT}` is that decision; any other exit fires the rule with the output (stdout and stderr, first 1,000 characters). Opted-in rules use [Bundled command results](#bundled-command-results) instead.
 
 The default rules, each with the entries it guards:
 
@@ -252,6 +256,16 @@ The default rules, each with the entries it guards:
 Supported pairs are Claude `tool_use.id` / `tool_result.tool_use_id`, and Codex call/output `call_id` within the same provider. Recognized operations are Read, Skill loading `awkit-writing`, single `cat`/`Get-Content` reads and `awkit kit guide writing`. Claude results use the `is_error` convention; Codex child JSON needs integer `exit_code=0` and returned `output`. The observed `exec` wrapper is supported only as `text(await tools.exec_command(JSON));`, parsed as JSON without evaluating JavaScript. Its completion banner never supplies the child's exit status. Other relevant wrappers remain unknown.
 
 Successful content must contain the main guide's title, Before writing and Completion check sections. Heading case, spacing, level and Read line numbers may vary. This small heuristic establishes returned content, not comprehension, authenticity or writing quality. Missing, interleaved incorrectly, reused or conflicting identities/results, malformed or partial transcripts, truncation, partial reads, pointer-only skill output and unfamiliar guide shapes remain unknown. The Korean supplement alone also remains unknown. A fresh successful retry can establish access while failed evidence is retained. Echo/search/comment and simple literal-print mentions do not establish access; an explicitly failed supported read remains absent. Generic command-error handling and hook approval settings are unchanged.
+
+### Bundled command results
+
+The default command rules opt in with `command_protocol = "awkit-v1"` and use the `"-m", "awkit.rule_command"` entry point with the existing check arguments. The adapter accepts only `check commit --hook`, `check writing`, `check done --hook`, `hook reply` and `hook kit-version`. It reuses the checks before the ordinary CLI's error conversion. Required hook input must be a JSON object with a supported event name and valid supplied field types.
+
+A completed process must exit 0 and print exactly one object with these fields: `{"protocol":"awkit-v1","status":"pass|finding|error","message":"..."}`. `status` is one of the three separate values; `message` is text of at most 1,000 characters. `pass` means the existing check completed or intentionally made no judgment, including unknown guide evidence. It does not establish comprehensive protection. `finding` follows the existing firing and once-per-session rules. An error, invalid/missing envelope, wrong version, unsuccessful process or contaminated output is logged as `decision=error` and allowed before reported/stopped/injected state changes. Spawn errors and timeouts retain that behavior.
+
+Rules without the selector retain their exit-code and decision-JSON semantics. Do not infer participation from command spelling or JSON-like output. Other projects' existing `rules.toml` copies are preserved. To opt in a bundled rule, first upgrade its actual hook interpreter and run `<hook-python> -m awkit.rule_command --capabilities`; require protocol `awkit-v1` and the intended action. Then add the selector and replace the command's `"-m", "awkit"` entry point with `"-m", "awkit.rule_command"`, preserving its arguments and matching conditions. Custom commands need their own declared contract and are not adapter actions.
+
+An older runner rejects the new selector; a newer runner with an older child receives no valid envelope. Both mean protection is unavailable, rather than a passing check. Inspect `awkit hook report` and retained error logs. A matching package version alone does not establish capability. Continue manual identity/frozen checks until the exact installed code is verified. No automatic migration of other project rules, trust/settings change or repair of native hook startup is implied.
 
 ## kit hooks
 

@@ -22,6 +22,18 @@ The [proposal trial](workflow-review.md) subsequently reproduced the burden duri
 
 No path-resolution replacement is justified yet. The reported standalone Python comparison narrows the condition to a sandbox, but does not identify the responsible implementation. The shell used for executable probes here required execution permission, so it does not reproduce that sandbox condition. Preserve link resolution and containment checks until a minimal reproducer establishes a safe correction. The exclude-file permission denial is not treated as a product failure.
 
+### Proposed first comparison unit
+
+The [planning trial](planning-implementation.md) recommends a comparison report before changing enforcement. Its benefit is to show which findings need investigation after an edit; it does not yet remove the burden of existing errors. The candidate's full-file findings and current exit policy remain authoritative.
+
+Use an explicitly selected frozen baseline and candidate. Record both trees and the checker revision, and evaluate both versions with the same checker. A session start, user edit, failed run or successful partial review must not silently advance the baseline. Calling a finding existing means it was also present in that baseline; it does not mean accepted or resolved.
+
+Classify reliable matches as existing and reliable new findings as introduced. Keep ambiguous correspondence unclassified, with the reason. Shifted line numbers alone do not make an error new. Duplicate passages, uncertain rename mappings and whole-document findings require conservative treatment. Removed code fences must expose newly checked prose even when its text was not added. Preserve the original finding fields and the full current report; any machine-readable extension needs a documented compatibility contract.
+
+The first handoff should return a comparison contract and fixture results for the scenarios above, including repeated edits against an unchanged baseline and a checker-version change. It must explain how each classification follows from the retained inputs. Only then implement the bounded report. Changing what blocks a task is a later decision supported by actual use, not a side effect of classification.
+
+The planning trial adds nine fixed-text cases in `.awkit/handoffs/planning-implementation/writing-comparison-cases.json`, evaluated by the current full-file checker at `c0f0801`. Two results constrain the design: changing a contributing Korean-ending passage can leave the whole-document finding object identical, and two errors on one line can have identical line, pattern and excerpt fields. Comparing serialized finding objects alone therefore loses evidence and can collapse occurrences. Retain full inputs and occurrence correspondence; these cases are proposed requirements, not results from an implemented classifier.
+
 ## Automatic hook import investigation
 
 The later proposal trial includes a reported Stop-hook `ImportError` for `awkit.checks`. Installed source and kit contents matched their recorded commit; an approved shell imported the module successfully while the restricted shell could not launch the base interpreter. These are different execution conditions and do not explain the automatic failure. Keep this separate from the earlier path-resolution report.

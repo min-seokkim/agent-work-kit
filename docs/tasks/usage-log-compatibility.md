@@ -1,6 +1,6 @@
 # Usage log compatibility
 
-Status: planned. Owner: the implementing session assigned to roadmap item 6. Evidence base: `89549b7`, with the observed parser at `0f41f0b`. Scope: Codex message and turn counting, measurement completeness and regression fixtures. This plan selects no new schema or implementation; the owner chooses the next assignment.
+Status: local implementation accepted; delivery pending. Owner: the implementation session in the [planning trial](planning-implementation.md), with contract and acceptance owned by its planner. Evidence base: `89549b7`, extended by discovery at `12d402a`. Scope: Codex human-input accounting, measurement completeness and regression fixtures. The owner delegated bounded implementation selection to the planner for this trial; the approved first unit is below.
 
 ## Reproduced gap and limits
 
@@ -21,8 +21,24 @@ Inspect `src/awkit/usage.py`, its CLI consumers and `tests/test_usage.py` before
 | Complete token fields but uncertain human-message coverage | Report token completeness separately from interaction-count coverage; table and JSON output must communicate the same limits. |
 | Resumed sessions, cumulative counter resets and a task spanning two logs | Derive task usage only from bounded records with verified counter semantics. Otherwise retain whole-session totals under that label and mark task usage unverified. |
 
-Choose whether to preserve existing fields with clearer labels or change the result format after inspecting consumers. Any schema or behavioral change needs a CHANGELOG entry and compatibility tests; the plan does not silently reinterpret format 2. This is a prerequisite to using counts for a premium-call cap or productivity comparison.
+Any schema or behavioral change needs a CHANGELOG entry and compatibility tests. The approved migration below replaces format 2 explicitly. Reliable interaction accounting remains a prerequisite to using counts for a premium-call cap or productivity comparison; the first unit does not establish API-call measurement.
+
+## Approved first implementation unit
+
+Discovery at `12d402a` reproduced the earlier modern-message zero and a message-only log whose entire thread was omitted when no model or token record existed. A bounded sample from the implementing IDE session contains both modern and legacy representations of one visible input. Timestamp and text match, but no shared message or turn identity establishes correspondence. The metadata-only evidence is retained under `.awkit/handoffs/planning-implementation/u1/`; original private records stay in their source location. This sample establishes one IDE shape, not coverage of every client.
+
+The planner approved a default migration to result format 3. There is no parallel legacy-format mode in this unit. Targeted source inspection found the CLI and tests as result consumers; the hook also imports the Claude classification helper, which remains stable. External consumers are unknown, so the CHANGELOG, CLI help and reference must identify the changed nullable input count and counted units. The package version remains unchanged while unreleased.
+
+The implementation retains supported human observations by representation and reports an exact input count only where established. Ambiguous overlap, unknown origin and conflicting identity remain explicit; text or timestamp equality does not authorize deduplication. Distinct modern IDs with identical text remain distinct. Replayed IDs require consistent identity and content, and deduplication stays within one file. The single marked modern fixture must expose its human observation even when its identity coverage is limited.
+
+Token completeness remains separate from interaction coverage in JSON and the table. A thread with human observations survives missing model and token records, with unmeasured tokens shown as missing. Unknown thread counts must not become an unqualified exact aggregate. Codex `calls` and model totals keep their numerical computation and are labeled as model-bearing context rows. Claude accounting and the existing token algorithms stay intact. Resumed logs, cross-file correspondence and cumulative-counter resets remain outside this correction.
+
+Acceptance requires the original reproducer, the discovery fixture matrix, malformed and incomplete records, identity conflicts, separate files reusing IDs, table/JSON agreement and existing Claude/token regressions. The current IDE sample must report its observed representations and ambiguity correctly. No exact count for that mixed stream, new live Desktop coverage or API-call metric is promised. Frozen checks and platform delivery remain required for executable changes.
 
 ## Completion and next action
 
-Accept a fix after the modern-message reproducer, overlap/exclusion cases and existing token/Claude tests pass on a frozen snapshot, and supported client logs agree with a manually classified sample. Record client versions and sample boundaries without publishing private messages. Follow repository Windows/Linux validation and installation-provenance requirements when delivering executable changes. Unsupported formats remain visible. Next: assemble the fixture matrix and propose counting and completeness semantics before editing the parser.
+The planner accepted snapshot `438ed17884bd407d2956bf72bd77be042e7b952d` after inspecting the diff, regression cases, retained output and full check record. Local commit `7977b35` has exactly that tree. `.awkit/reviews/review-_ajws8tj` passed Ruff and ran 248 tests on Windows/Python 3.14.7: 244 passed and four were skipped. The first focused run failed on an implementation indentation error; the corrected run and final 20-test usage run are retained. An incorrect local Ruff path was an invocation error, corrected without installation.
+
+The original modern fixture now displays one supported observation and an unknown exact count because its message ID is absent. The bounded IDE sample reports one legacy and one modern observation with ambiguous correspondence. Previously retained token, model, call, effort, elapsed-time and command fields match the base for that sample. The planner read both CLI outputs and inspected rendered reference and CHANGELOG sections from the accepted snapshot at 1200 px; no clipping or horizontal overflow was observed. This is informed planner review, not an independent review.
+
+The five-file product snapshot excludes concurrent planning documents. Combined verification, Windows/Linux CI and exact-commit installation remain pending. Record further client versions and sample boundaries without publishing private messages. Fresh live Desktop and Claude samples, cross-file correspondence, logical/API-call units and reset-aware task usage remain unresolved. Next: deliver the accepted unit under the repository procedure, then select further accounting work only when evidence can settle those meanings.

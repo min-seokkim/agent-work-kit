@@ -26,6 +26,8 @@ At closure, confirm the delivered tree equals the checked tree and obtain the re
 
 Measure active work and waiting separately, using the [usage compatibility plan](usage-log-compatibility.md) where counts are uncertain. Compare the burden of a scoped correction and a larger task before adding acknowledgements, services or routine full reviews. These observations justify validation scenarios, not a larger channel schema.
 
+The [planning and implementation trial](planning-implementation.md) exposed a separate usage issue: polling only `request` recovered unfinished assignments but omitted `notice` messages by design. The implementer repeated an installation comparison before reading a notice containing reusable evidence. Both roles should inspect `new` between work portions for notices and replies, and use `request` to recover unanswered work. Advancing a read position still does not establish handling or completion. This observed duplicate work supports a guidance correction, without changing channel storage or adding an acknowledgement protocol.
+
 ## Conditional extensions
 
 External designs are references for specific problems, not adoption candidates under this decision. The research inspected public documentation and selected source/CI files; no external tool was installed or tested here. Recheck upstream behavior before using a design.

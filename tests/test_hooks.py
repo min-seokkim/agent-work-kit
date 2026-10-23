@@ -91,8 +91,10 @@ class CommitIdentityRule(Project):
     def test_the_owners_commit_and_other_commands_pass_silently(self):
         self.assertIsNone(self.bash('git commit -m "Fix the parser" -m "Body text."'))
         self.assertIsNone(self.bash("git status && git log --oneline -3"))
-        self.assertIsNone(self.bash('git commit -m "unclosed'))  # cannot be parsed: not judged
         self.assertEqual(self.log(), [])
+        self.assertIsNone(self.bash('git commit -m "unclosed'))  # allowed, with unavailable-check evidence
+        self.assertEqual(self.log()[-1]["decision"], "error")
+        self.assertIn("No closing quotation", self.log()[-1]["reason"])
 
     def test_a_commit_after_cd_is_judged_by_that_repository(self):
         # Seen in this repository: `cd` into another repository and committing there was refused with this

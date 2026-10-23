@@ -15,7 +15,8 @@ kind = "block"
 events = ["PreToolUse"]
 tools = ["Bash"]
 shell = '\bgit\b[^\n]*\bcommit\b'
-command = ["{python}", "-m", "awkit", "check", "commit", "--hook"]
+command_protocol = "awkit-v1"
+command = ["{python}", "-m", "awkit.rule_command", "check", "commit", "--hook"]
 
 # Work reported as done while changed files have no passing check of their current state. The same
 # command records the session's starting point on SessionStart.
@@ -24,7 +25,8 @@ name = "done-check"
 prevents = ["F1"]
 kind = "verify"
 events = ["SessionStart", "Stop"]
-command = ["{python}", "-m", "awkit", "check", "done", "--hook"]
+command_protocol = "awkit-v1"
+command = ["{python}", "-m", "awkit.rule_command", "check", "done", "--hook"]
 
 # Writing patterns readers recognize as generated, in the Markdown file just edited.
 [[rules]]
@@ -34,7 +36,8 @@ kind = "verify"
 events = ["PostToolUse"]
 tools = ["Edit", "Write", "MultiEdit"]
 paths = ["*.md"]
-command = ["{python}", "-m", "awkit", "check", "writing", "{paths}"]
+command_protocol = "awkit-v1"
+command = ["{python}", "-m", "awkit.rule_command", "check", "writing", "{paths}"]
 message = "The edited Markdown has writing errors. Fix them before continuing."
 
 [[rules]]
@@ -93,7 +96,8 @@ name = "writing-reply"
 prevents = ["F14"]
 kind = "verify"
 events = ["Stop"]
-command = ["{python}", "-m", "awkit", "hook", "reply", "--hangul", "500"]
+command_protocol = "awkit-v1"
+command = ["{python}", "-m", "awkit.rule_command", "hook", "reply", "--hangul", "500"]
 message = "답글이 다른 곳에 쓰일 한국어 문서인데 작성 가이드를 읽지 않았다. 가이드의 과정대로 다시 쓰고 한국어만 따로 읽어라."
 
 # The kit version checks.toml records ([kit] version), against the awkit installed here. Without the key the
@@ -103,4 +107,5 @@ name = "kit-version"
 prevents = ["F25"]
 kind = "inject"
 events = ["SessionStart"]
-command = ["{python}", "-m", "awkit", "hook", "kit-version"]
+command_protocol = "awkit-v1"
+command = ["{python}", "-m", "awkit.rule_command", "hook", "kit-version"]

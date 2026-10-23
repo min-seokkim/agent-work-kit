@@ -43,7 +43,7 @@ CAN_BLOCK = {"UserPromptSubmit", "PreToolUse", "PostToolUse", "Stop", "SubagentS
 CAN_CONTEXT = {"SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse"}
 DEFAULT_EVENTS = {"block": ["PreToolUse"], "verify": ["Stop"], "inject": ["PreToolUse"]}
 FIELDS = {"name", "kind", "events", "tools", "shell", "paths", "text", "prompt", "command", "message", "decision",
-          "timeout", "prevents"}
+          "timeout", "prevents", "command_protocol"}
 MESSAGE_LIMIT = 200
 OUTPUT_LIMIT = 1000
 TIMEOUT = 20
@@ -72,6 +72,7 @@ class Rule:
         self.name, self.kind, self.events, self.timeout, self.kit = name, kind, events, timeout, kit
         self.tools = self.paths = self.shell = self.text = self.prompt = self.command = None
         self.message, self.decision, self.prevents = "", "deny", ()
+        self.command_protocol = None
 
     @property
     def label(self):
@@ -136,6 +137,10 @@ def _rule(raw, variables, timeout):
         rule.prompt = _regex(raw["prompt"], "prompt")
     if "command" in raw:
         rule.command = [_expand(part, variables) for part in _strings(raw["command"], "command")]
+    if "command_protocol" in raw:
+        if raw["command_protocol"] != "awkit-v1" or not rule.command:
+            raise ValueError("`command_protocol` needs a command and the supported value awkit-v1")
+        rule.command_protocol = raw["command_protocol"]
     if "message" in raw:
         if not isinstance(raw["message"], str) or not raw["message"].strip():
             raise ValueError("`message` must be text")
@@ -356,6 +361,23 @@ def _from_json(text):
     return value if isinstance(value, dict) else None
 
 
+class CommandProtocolError(ValueError):
+    """An opted-in command did not deliver a valid completed-check result."""
+
+
+def _protocol_result(code, output):
+    if code != 0:
+        raise CommandProtocolError(f"protocol command exited {code} without a successful result")
+    value = _from_json(output)
+    if (value is None or set(value) != {"protocol", "status", "message"}
+            or value.get("protocol") != "awkit-v1" or value.get("status") not in ("pass", "finding", "error")
+            or not isinstance(value.get("message"), str) or len(value["message"]) > OUTPUT_LIMIT):
+        raise CommandProtocolError("missing or invalid awkit-v1 result; check runner/child capability")
+    if value["status"] == "error":
+        raise CommandProtocolError(value["message"] or "bundled command execution error")
+    return value["status"], value["message"]
+
+
 def _firing(rule, event, reason):
     text = f"{rule.label}: {reason}"
     if rule.kind == "inject" or event not in CAN_BLOCK:
@@ -380,15 +402,21 @@ def evaluate(rule, call, root, state):
         if argv is None:
             return None
         code, output = run_command(argv, call.payload, root, rule.timeout)
-        decision = _from_json(output) if output.strip() else None
-        if code == 0:
-            if decision is None or decision.get("decision") == "allow":
+        if rule.command_protocol:
+            status, output = _protocol_result(code, output)
+            if status == "pass":
                 state["reported"].pop(rule.name, None)
                 return None
-            chosen = decision.get("decision") if decision.get("decision") in ("deny", "ask") else None
-            output = str(decision.get("reason") or decision.get("context") or "").strip()
-            if not output and not rule.message:
-                return None
+        else:
+            decision = _from_json(output) if output.strip() else None
+            if code == 0:
+                if decision is None or decision.get("decision") == "allow":
+                    state["reported"].pop(rule.name, None)
+                    return None
+                chosen = decision.get("decision") if decision.get("decision") in ("deny", "ask") else None
+                output = str(decision.get("reason") or decision.get("context") or "").strip()
+                if not output and not rule.message:
+                    return None
     if rule.kind == "verify":
         # Block once per failure: the same output again has already been reported in this session.
         digest = hashlib.sha256((output or "").encode("utf-8")).hexdigest()[:16]
@@ -568,6 +596,9 @@ def _run(payload, root, skip=(), kit_rules=False):
             firing = evaluate(rule, call, root, state)
         except subprocess.TimeoutExpired:
             errors.append((rule.name, f"timed out after {rule.timeout:g} s; allowed"))
+            continue
+        except CommandProtocolError as exc:
+            errors.append((rule.name, f"bundled command error: {exc}; allowed"))
             continue
         except OSError as exc:
             errors.append((rule.name, f"could not run {rule.command[0]}: {exc.strerror or exc}; allowed"))
@@ -808,10 +839,10 @@ def _author_ident(folder, env, options):
     return (match.group(1), match.group(2)) if match else None
 
 
-def check_commit_command(payload):
+def check_commit_command(payload, *, strict=False):
     """Problems with each `git commit` in a Bash hook event: the author and trailers compared with the
     repository's history, as `check commit` does for a written commit. Empty when there is no commit or
-    nothing wrong. A command that cannot be parsed is not judged."""
+    nothing wrong. Legacy calls leave unavailable parsing/checks unjudged; strict calls raise their ValueError."""
     from .checks import commit_identity
     data = payload.get("tool_input") if isinstance(payload.get("tool_input"), dict) else {}
     command = data.get("command")
@@ -821,6 +852,8 @@ def check_commit_command(payload):
     try:
         commits = git_commits(command)
     except ValueError:
+        if strict:
+            raise
         return []
     problems = []
     for env, options, args, moved in commits:
@@ -834,6 +867,8 @@ def check_commit_command(payload):
         try:
             report = commit_identity(folder, message=message, author=ident)
         except ValueError:
+            if strict:
+                raise
             continue
         problems.extend(problem for problem in report["problems"] if problem not in problems)
     return problems

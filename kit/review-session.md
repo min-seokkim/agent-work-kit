@@ -59,12 +59,16 @@ Prevents: F17.
 
 ## 6. Waiting
 
-`awkit channel wait <role> <mode> --max <seconds>` prints the awaited messages and exits with `0`. It exits with `1` on timeout and `3` when the reviewer receives `close`.
+`awkit channel wait <role> <mode> --max <seconds>` exits 0 with matching messages, 1 on timeout, or 3 when the reviewer receives `close`. Keep each wait within the user's and client's limit; 60 seconds is an example bound, not permission to exceed a smaller limit. A timeout is not cancellation. Exit 2 reports a usage/storage error; investigate it before waiting again.
 
-- **Claude Code.** A completed background command delivers its output to the session so work can continue. Run `wait reviewer request --max 7200` for the reviewer and `wait main new --max 7200` for the main session in the background. Restart the wait after handling messages. The turn may end while waiting.
-- **Codex.** In the session workflow described here, keep the turn open until the unit finishes because an ended turn cannot be awakened externally. Between portions, the main session checks `wait main new --max 0`. Only when blocked does it repeat `wait main reply <ID> --max 600`. The reviewer repeats `wait reviewer request --max 600` until exit code `3`. Each wait cycle requires a model invocation, so avoid short polling intervals.
+On startup or resume, inspect `channel export` for requests, prior results and closure before repeating work. Read `wait <role> new --max 0`, then recover unanswered requests with `wait <role> request --max 0`. Use IDs to distinguish unfinished work from an already returned result. The shared `new` position records reading; it does not establish handling or completion, and cannot hide an unanswered request from `request` mode. Use `reply <ID>` or export to recover an earlier result.
 
-Do not end the unit with open requests or an unapplied final result. Waiting for user judgment on a `decision-needed` item is the exception.
+Both roles inspect `new` between work portions, including notices and replies. Before waiting, check for unanswered requests. When idle or blocked, wait in `new` mode with the allowed bound, then check `request --max 0` and handle the corresponding IDs. Request-only waits omit notices; a receipt notice does not answer a request.
+
+- **Claude Code.** Where the client delivers completed background-command output to the session, run a bounded `new` wait in the background and restart it after handling messages. The turn may end only with that delivery capability established in the actual client; storing a channel message does not establish it.
+- **Codex.** Keep the turn open while waiting: an ended turn cannot be awakened by a stored message. Repeat bounded `new` waits, inspect notices and recover requests after each return. Each cycle requires a model invocation, so avoid short polling intervals and keep the user informed.
+
+Exit 3 means the reviewer stops waiting on that closed channel. Do not end a unit with open requests or an unapplied final result, except for a pending user `decision-needed` item. If the client forces the turn to end, retain a checkpoint with pending IDs and report that resuming needs an active session.
 
 Prevents: F18.
 
@@ -80,13 +84,14 @@ Prevents: F20.
 
 ## 8. Starting prompts
 
-Paste the appropriate prompt into each session and replace `<unit>`.
+These prompts assign independent review. Replace `<unit>` before use. For another explicitly authorized pairing, state the actual responsibilities and treat `main`/`reviewer` as transport addresses; an address does not establish independent review.
 
 Main session:
 
 ```text
 Implement <unit> as the main session. Read agent-work-kit/review-session.md and follow the main role. A review session is monitoring the channel.
 Use .awkit/review-<unit>.sqlite3 as the channel file. After each risky portion, create a snapshot with awkit review snapshot and request review.
+On startup/resume, inspect history, new messages and unanswered requests. Between work portions inspect new notices; use bounded new-mode waits when blocked, recovering requests by ID.
 At the end, request final, apply its results and send close. Do not commit.
 ```
 
@@ -94,7 +99,7 @@ Review session:
 
 ```text
 Act as the independent review session for <unit>. Read agent-work-kit/review-session.md and follow the reviewer role.
-Use .awkit/review-<unit>.sqlite3 as the channel file. Receive and handle requests with awkit channel wait reviewer request; stop when close arrives.
+Use .awkit/review-<unit>.sqlite3 as the channel file. Inspect history on startup/resume and recover unanswered requests in request mode. Read new messages between portions and use bounded new-mode waits while idle, then recover requests by ID. Handle notices as well as assignments; stop when close returns exit 3. Keep the Codex turn open while waiting.
 ```
 
 Prevents: F17.

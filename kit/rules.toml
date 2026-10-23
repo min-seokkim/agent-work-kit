@@ -15,7 +15,8 @@ kind = "block"
 events = ["PreToolUse"]
 tools = ["Bash"]
 shell = '\bgit\b[^\n]*\bcommit\b'
-command = ["{python}", "-m", "awkit", "check", "commit", "--hook"]
+command_protocol = "awkit-v1"
+command = ["{python}", "-m", "awkit.rule_command", "check", "commit", "--hook"]
 
 # Work reported as done while changed files have no passing check of their current state. The same
 # command records the session's starting point on SessionStart.
@@ -24,7 +25,8 @@ name = "done-check"
 prevents = ["F1"]
 kind = "verify"
 events = ["SessionStart", "Stop"]
-command = ["{python}", "-m", "awkit", "check", "done", "--hook"]
+command_protocol = "awkit-v1"
+command = ["{python}", "-m", "awkit.rule_command", "check", "done", "--hook"]
 
 # Writing patterns readers recognize as generated, in the Markdown file just edited.
 [[rules]]
@@ -34,7 +36,8 @@ kind = "verify"
 events = ["PostToolUse"]
 tools = ["Edit", "Write", "MultiEdit"]
 paths = ["*.md"]
-command = ["{python}", "-m", "awkit", "check", "writing", "{paths}"]
+command_protocol = "awkit-v1"
+command = ["{python}", "-m", "awkit.rule_command", "check", "writing", "{paths}"]
 message = "The edited Markdown has writing errors. Fix them before continuing."
 
 [[rules]]

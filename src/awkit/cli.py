@@ -124,7 +124,7 @@ def _parser():
                               epilog=REFERENCE)
     usage.add_argument("paths", nargs="+", type=Path, help="Claude Code or Codex .jsonl files, or folders searched recursively")
     usage.add_argument("--since", metavar="YYYY-MM-DD", help="read only files modified on or after this date (UTC)")
-    usage.add_argument("--json", action="store_true", help="print the result as JSON (format 2)")
+    usage.add_argument("--json", action="store_true", help="print JSON (format 3; token and human-input coverage are separate)")
 
     channel = groups.add_parser("channel", help="message log for a main session and a reviewer session",
                                 epilog=REFERENCE)

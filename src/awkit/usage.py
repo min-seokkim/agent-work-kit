@@ -1,14 +1,15 @@
 """Read Claude Code and Codex session logs and total the real models and tokens per thread.
 
 The log formats are not public contracts. Claude Code parsing was checked against real
-transcripts; Codex parsing follows field names recorded from real rollout files
-(`turn_context`, `token_count` with `info.total_token_usage`) and should be re-checked
-against a current file before relying on it.
+transcripts; Codex parsing follows recorded rollout fields (`turn_context`, `token_count`
+with `info.total_token_usage`) and human-origin metadata from a bounded IDE sample.
+Other clients and versions need separate validation.
 
-Result format 2: a token field is an integer only when every counted record carried it.
+Result format 3: a token field is an integer only when every counted record carried it.
 A field that any record lacked, or carried with an invalid value, is null, and the thread's
 `missing` and `invalid` maps say how many records were affected. `total` sums the known
-values and `total.complete` says whether every thread was fully measured.
+values and `total.complete` describes token/log completeness. Human-input coverage is
+separate: `user_messages` is null when origin, identity or overlap is unresolved.
 """
 
 from __future__ import annotations
@@ -22,7 +23,7 @@ from pathlib import Path
 # reported as zero, and a subagent's self-reported model.
 PREVENTS = {"awkit usage": ("F6", "F20")}
 
-FORMAT = 2
+FORMAT = 3
 FIELDS = ("fresh_input", "cache_write", "cache_read", "output")
 CLAUDE_FIELDS = {"fresh_input": "input_tokens", "cache_write": "cache_creation_input_tokens",
                  "cache_read": "cache_read_input_tokens", "output": "output_tokens"}
@@ -75,6 +76,7 @@ def _count(value):
 def _thread(provider, path, label, counted):
     return {"provider": provider, "file": str(path), "thread": label, "models": Counter(),
             "effort": None, "calls": 0, "counted": counted, "user_messages": 0, "commands": 0,
+            "user_message_coverage": {"complete": True, "observations": {}, "unclassified": 0, "reasons": []},
             "started_at": None, "ended_at": None, "minutes": None,
             **{field: 0 for field in FIELDS}, "missing": Counter(), "invalid": Counter()}
 
@@ -184,6 +186,9 @@ def _claude(path, problems):
             if kind:
                 thread = threads.setdefault("main", _thread("claude", path, "main", "responses"))
                 thread["user_messages" if kind == "message" else "commands"] += 1
+                if kind == "message":
+                    coverage = thread["user_message_coverage"]
+                    coverage["observations"]["claude"] = coverage["observations"].get("claude", 0) + 1
                 _touch(thread, record)
             continue
         if record.get("type") != "assistant" or not isinstance(message, dict):
@@ -212,15 +217,83 @@ def _claude(path, problems):
     return [_finish(thread) for thread in threads.values()]
 
 
+class _CodexMessages:
+    """Count supported observations; refuse to guess whether the two streams overlap.
+
+    IDs are local to one file. A repeated ID must preserve content and origin metadata;
+    matching text or timestamps are never identity keys.
+    """
+
+    NON_HUMAN = {"agents_md.instructions", "environments.environment_context",
+                 "additional_content.codex_apps_open_page"}
+
+    def __init__(self):
+        self.observations = {"legacy": 0, "modern": 0}
+        self.unclassified = 0
+        self.reasons = set()
+        self.seen = {}
+        self.human_ids = set()
+        self.has_user_records = False
+
+    def observe(self, kind, payload):
+        if kind == "event_msg" and payload.get("type") == "user_message":
+            self.has_user_records = True
+            self.observations["legacy"] += 1
+            return
+        if kind != "response_item" or payload.get("type") != "message" or payload.get("role") != "user":
+            return
+        self.has_user_records = True
+        metadata = payload.get("internal_chat_message_metadata_passthrough")
+        markers = metadata.get("content_item_kinds") if isinstance(metadata, dict) else None
+        message_id = payload.get("id")
+        valid_id = isinstance(message_id, str) and bool(message_id.strip())
+        if valid_id:
+            identity = json.dumps({"content": payload.get("content"), "markers": markers,
+                                   "turn_id": metadata.get("turn_id") if isinstance(metadata, dict) else None},
+                                  sort_keys=True)
+            if message_id in self.seen and self.seen[message_id] != identity:
+                self.reasons.add("conflicting_message_id")
+            self.seen[message_id] = identity
+        if not isinstance(markers, list) or not markers or any(not isinstance(m, str) for m in markers):
+            self.unclassified += 1
+            self.reasons.add("unknown_origin" if metadata is None else "malformed_metadata")
+            return
+        origins = set(markers)
+        if origins <= self.NON_HUMAN:
+            return
+        if origins != {"user.text"}:
+            self.unclassified += 1
+            self.reasons.add("mixed_origin" if "user.text" in origins else "unknown_origin")
+            return
+        self.observations["modern"] += 1
+        content = payload.get("content")
+        if (not isinstance(content, list) or not content
+                or any(not isinstance(block, dict) or block.get("type") != "input_text"
+                       or not isinstance(block.get("text"), str) for block in content)):
+            self.reasons.add("malformed_content")
+        if not valid_id:
+            self.reasons.add("missing_message_id")
+        else:
+            self.human_ids.add(message_id)
+
+    def finish(self, thread):
+        if all(self.observations.values()):
+            self.reasons.add("ambiguous_representations")
+        thread["user_message_coverage"] = {
+            "complete": not self.reasons, "observations": self.observations,
+            "unclassified": self.unclassified, "reasons": sorted(self.reasons)}
+        thread["user_messages"] = None if self.reasons else self.observations["legacy"] + len(self.human_ids)
+
+
 def _codex(path, problems):
-    thread = _thread("codex", path, "thread", "turns")
+    thread = _thread("codex", path, "thread", "model_context_rows")
+    messages = _CodexMessages()
     total = None
     for record in _records(path, problems):
         kind, payload = record.get("type"), record.get("payload")
         payload = payload if isinstance(payload, dict) else {}
         _touch(thread, record)
-        if payload.get("type") == "user_message":
-            thread["user_messages"] += 1
+        messages.observe(kind, payload)
         if kind == "turn_context":
             if payload.get("model"):
                 thread["models"][payload["model"]] += 1
@@ -231,8 +304,9 @@ def _codex(path, problems):
             usage = info.get("total_token_usage")
             if isinstance(usage, dict):
                 total = usage  # cumulative: the last one is the thread total
+    messages.finish(thread)
     if total is None:
-        if not thread["models"]:
+        if not thread["models"] and not messages.has_user_records:
             return []
         for field in FIELDS:
             thread["missing"][field] += 1
@@ -270,14 +344,21 @@ def collect(paths, since=None):
     for path in _files(paths, since):
         provider = _provider(path)
         found = {"damaged_lines": 0, "partial_line": False}
+        parsed = []
         if provider == "claude":
-            threads.extend(_claude(path, found))
+            parsed = _claude(path, found)
         elif provider == "codex":
-            threads.extend(_codex(path, found))
+            parsed = _codex(path, found)
         else:
             unknown.append(str(path))
         if found["damaged_lines"] or found["partial_line"]:
             problems[str(path)] = found
+            for thread in parsed:
+                coverage = thread["user_message_coverage"]
+                coverage["reasons"] = sorted({*coverage["reasons"], *(key for key, value in found.items() if value)})
+                coverage["complete"] = False
+                thread["user_messages"] = None
+        threads.extend(parsed)
     totals = {}
     for thread in threads:
         for model, calls in thread["models"].items():
@@ -287,7 +368,21 @@ def collect(paths, since=None):
     incomplete = [thread for thread in threads if any(thread[field] is None for field in FIELDS)]
     summary = {field: sum(thread[field] for thread in threads if thread[field] is not None)
                for field in FIELDS}
-    summary["user_messages"] = sum(thread["user_messages"] for thread in threads)
+    observations = Counter()
+    reasons = set()
+    for thread in threads:
+        coverage = thread["user_message_coverage"]
+        observations.update(coverage["observations"])
+        reasons.update(coverage["reasons"])
+    if unknown:
+        reasons.add("unrecognized_files")
+    for found in problems.values():
+        reasons.update(key for key, value in found.items() if value)
+    summary["user_messages"] = None if reasons else sum(thread["user_messages"] for thread in threads)
+    summary["user_message_coverage"] = {
+        "complete": not reasons, "observations": dict(observations),
+        "unclassified": sum(thread["user_message_coverage"]["unclassified"] for thread in threads),
+        "reasons": sorted(reasons)}
     summary["commands"] = sum(thread["commands"] for thread in threads)
     summary["complete"] = not incomplete and not unknown and not problems
     summary["incomplete_threads"] = len(incomplete)
@@ -301,7 +396,7 @@ def _cell(value, width):
 
 def render(result):
     lines = []
-    header = (f"{'provider':<8} {'thread':<24} {'model':<28} {'calls':>5} {'user':>5} {'min':>7} "
+    header = (f"{'provider':<8} {'thread':<24} {'model':<28} {'calls':>5} {'unit':<18} {'user':>5} {'min':>7} "
               f"{'fresh in':>11} {'cache write':>11} {'cache read':>12} {'output':>9}")
     lines.append(header)
     for row in result["threads"]:
@@ -311,14 +406,23 @@ def render(result):
         thread = row["thread"] if row["thread"] != "thread" else Path(row["file"]).stem[-24:]
         minutes = f"{row['minutes']:>7.1f}" if row["minutes"] is not None else f"{'':>7}"
         lines.append(f"{row['provider']:<8} {thread[:24]:<24} {models[:28]:<28} {row['calls']:>5} "
-                     f"{row['user_messages']:>5} {minutes} "
+                     f"{row['counted']:<18} {_cell(row['user_messages'], 5)} {minutes} "
                      f"{_cell(row['fresh_input'], 11)} {_cell(row['cache_write'], 11)} "
                      f"{_cell(row['cache_read'], 12)} {_cell(row['output'], 9)}")
+        coverage = row["user_message_coverage"]
+        observations = ", ".join(f"{source}={count}" for source, count in coverage["observations"].items()) or "none"
+        state = "complete" if coverage["complete"] else "incomplete: " + ", ".join(coverage["reasons"])
+        lines.append(f"  human-input observations: {observations}; unclassified={coverage['unclassified']}; coverage {state}")
     total = result["total"]
     label = "total" if total["complete"] else "known"
-    lines.append(f"{label:<8} {'':<24} {'':<28} {'':>5} {total['user_messages']:>5} {'':>7} "
+    lines.append(f"{label:<8} {'':<24} {'':<28} {'':>5} {'':<18} {_cell(total['user_messages'], 5)} {'':>7} "
                  f"{total['fresh_input']:>11,} {total['cache_write']:>11,} "
                  f"{total['cache_read']:>12,} {total['output']:>9,}")
+    coverage = total["user_message_coverage"]
+    observations = ", ".join(f"{source}={count}" for source, count in coverage["observations"].items()) or "none"
+    lines.append(f"supported human-input observations by representation: {observations}; these are not deduplicated across representations or files")
+    state = "complete" if coverage["complete"] else "incomplete: " + ", ".join(coverage["reasons"])
+    lines.append(f"token/log coverage: {'complete' if total['complete'] else 'incomplete'}; human-input coverage: {state}")
     if total["incomplete_threads"]:
         lines.append(f"{total['incomplete_threads']} thread(s) have unmeasured fields, shown as ?; "
                      "the sums above cover known values only")

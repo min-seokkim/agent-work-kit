@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from awkit.usage import collect
+from awkit.usage import collect, render
 from support import child_env
 
 
@@ -19,6 +19,20 @@ def claude_turn(message_id, model="claude-sonnet", usage=None, **extra):
                       "cache_read_input_tokens": 1000, "output_tokens": 20}
     return {"type": "assistant", "effort": "medium", **extra,
             "message": {"id": message_id, "model": model, "usage": usage, "content": []}}
+
+
+def codex_message(message_id="message-a", text="please check", markers=("user.text",)):
+    payload = {"type": "message", "role": "user", "content": [{"type": "input_text", "text": text}],
+               "internal_chat_message_metadata_passthrough": {"content_item_kinds": list(markers)}}
+    if message_id is not None:
+        payload["id"] = message_id
+    return {"type": "response_item", "timestamp": "2026-10-22T10:00:00Z", "payload": payload}
+
+
+def codex_tokens(**values):
+    return {"type": "event_msg", "payload": {"type": "token_count", "info": {"total_token_usage": {
+        "input_tokens": 100, "cached_input_tokens": 20, "cache_write_input_tokens": 0, "output_tokens": 10,
+        **values}}}}
 
 
 class UsageTests(unittest.TestCase):
@@ -143,13 +157,13 @@ class UsageTests(unittest.TestCase):
         self.assertEqual(thread["invalid"], {"output": 1})
         self.assertEqual(result["total"]["complete"], False)
         self.assertEqual(result["total"]["incomplete_threads"], 1)
-        self.assertEqual(result["format"], 2)
+        self.assertEqual(result["format"], 3)
 
     def test_codex_without_token_counts_reports_unmeasured_tokens(self):
         rollout = self.root / "codex" / "rollout.jsonl"
         write_jsonl(rollout, [{"type": "turn_context", "payload": {"model": "gpt-luna"}}])
         (thread,) = collect([rollout])["threads"]
-        self.assertEqual((thread["models"], thread["calls"], thread["counted"]), ({"gpt-luna": 1}, 1, "turns"))
+        self.assertEqual((thread["models"], thread["calls"], thread["counted"]), ({"gpt-luna": 1}, 1, "model_context_rows"))
         self.assertEqual([thread[f] for f in ("fresh_input", "cache_write", "cache_read", "output")], [None] * 4)
         partial = self.root / "codex" / "partial.jsonl"
         write_jsonl(partial, [
@@ -177,6 +191,189 @@ class UsageTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             collect([self.root / "missing.jsonl"])
 
+    def test_modern_messages_have_exact_ids_and_separate_token_coverage(self):
+        path = self.root / "modern.jsonl"
+        write_jsonl(path, [codex_message(), codex_tokens()])
+        result = collect([path])
+        (thread,) = result["threads"]
+        self.assertEqual(result["format"], 3)
+        self.assertEqual(thread["user_messages"], 1)
+        self.assertEqual(thread["user_message_coverage"], {
+            "complete": True, "observations": {"legacy": 0, "modern": 1}, "unclassified": 0, "reasons": []})
+        self.assertEqual(result["total"]["user_messages"], 1)
+        self.assertTrue(result["total"]["complete"])
+        self.assertEqual((thread["fresh_input"], thread["cache_read"], thread["cache_write"], thread["output"]),
+                         (80, 20, 0, 10))
+
+    def test_original_modern_shape_without_id_keeps_the_human_observation(self):
+        path = self.root / "modern.jsonl"
+        write_jsonl(path, [codex_message(None), codex_tokens()])
+        result = collect([path])
+        (thread,) = result["threads"]
+        self.assertIsNone(thread["user_messages"])
+        self.assertEqual(thread["user_message_coverage"]["observations"]["modern"], 1)
+        self.assertEqual(thread["user_message_coverage"]["reasons"], ["missing_message_id"])
+        self.assertTrue(result["total"]["complete"])  # tokens remain fully measured
+        self.assertFalse(result["total"]["user_message_coverage"]["complete"])
+        self.assertIsNone(result["total"]["user_messages"])
+        table = render(result)
+        self.assertIn("modern=1", table)
+        self.assertIn("missing_message_id", table)
+        self.assertIn("token/log coverage: complete; human-input coverage: incomplete", table)
+        self.assertIn("?", table)
+
+    def test_messages_survive_without_model_or_tokens(self):
+        legacy = {"type": "event_msg", "payload": {"type": "user_message", "message": "go"}}
+        for name, record, expected in (("modern", codex_message(), 1), ("legacy", legacy, 1),
+                                        ("unknown", codex_message(markers=("future.wrapper",)), None)):
+            with self.subTest(name=name):
+                path = self.root / f"{name}.jsonl"
+                write_jsonl(path, [record])
+                result = collect([path])
+                (thread,) = result["threads"]
+                self.assertEqual(thread["user_messages"], expected)
+                self.assertEqual(thread["calls"], 0)
+                self.assertEqual(thread["models"], {})
+                self.assertEqual([thread[field] for field in ("fresh_input", "cache_read", "cache_write", "output")],
+                                 [None] * 4)
+                self.assertFalse(result["total"]["complete"])
+
+    def test_known_scaffolds_are_excluded_and_uncertain_origins_are_visible(self):
+        cases = [
+            (("agents_md.instructions",), 0, None),
+            (("agents_md.instructions", "environments.environment_context"), 0, None),
+            (("additional_content.codex_apps_open_page",), 0, None),
+            (("hook.feedback",), None, "unknown_origin"),
+            (("ui.answer",), None, "unknown_origin"),
+            (("user.text", "agents_md.instructions"), None, "mixed_origin"),
+            (("user.text", "future.marker"), None, "mixed_origin"),
+            ((), None, "malformed_metadata"),
+            ((None,), None, "malformed_metadata"),
+        ]
+        for markers, expected, reason in cases:
+            with self.subTest(markers=markers):
+                path = self.root / "origins.jsonl"
+                write_jsonl(path, [codex_message(markers=markers), codex_tokens()])
+                result = collect([path])
+                (thread,) = result["threads"]
+                self.assertEqual(thread["user_messages"], expected)
+                coverage = thread["user_message_coverage"]
+                self.assertEqual(coverage["complete"], reason is None)
+                self.assertEqual(coverage["unclassified"], int(reason is not None))
+                self.assertEqual(coverage["reasons"], [reason] if reason else [])
+                self.assertTrue(result["total"]["complete"])
+        for value in (None, [], "user.text", {"content_item_kinds": "user.text"}):
+            with self.subTest(metadata=value):
+                record = codex_message()
+                record["payload"]["internal_chat_message_metadata_passthrough"] = value
+                write_jsonl(path, [record, codex_tokens()])
+                (thread,) = collect([path])["threads"]
+                self.assertIsNone(thread["user_messages"])
+                self.assertEqual(thread["user_message_coverage"]["unclassified"], 1)
+
+    def test_modern_replay_distinct_ids_and_conflicts_do_not_use_text_identity(self):
+        path = self.root / "identities.jsonl"
+        a = codex_message("a", "same text")
+        b = codex_message("b", "same text")
+        write_jsonl(path, [a, a, b, codex_tokens()])
+        (thread,) = collect([path])["threads"]
+        self.assertEqual(thread["user_messages"], 2)
+        self.assertEqual(thread["user_message_coverage"]["observations"]["modern"], 3)
+        for conflicting in (codex_message("a", "changed text"), codex_message("a", markers=("agents_md.instructions",))):
+            with self.subTest(payload=conflicting["payload"]):
+                write_jsonl(path, [a, conflicting, codex_tokens()])
+                result = collect([path])
+                self.assertIsNone(result["total"]["user_messages"])
+                self.assertIn("conflicting_message_id", result["threads"][0]["user_message_coverage"]["reasons"])
+        for message_id in (None, "", 7, False, []):
+            with self.subTest(message_id=message_id):
+                write_jsonl(path, [codex_message(message_id), codex_tokens()])
+                (thread,) = collect([path])["threads"]
+                self.assertIsNone(thread["user_messages"])
+                self.assertIn("missing_message_id", thread["user_message_coverage"]["reasons"])
+
+    def test_mixed_streams_never_guess_correspondence(self):
+        path = self.root / "mixed.jsonl"
+        modern = codex_message(text="same text")
+        legacy = {"type": "event_msg", "timestamp": modern["timestamp"],
+                  "payload": {"type": "user_message", "message": "same text"}}
+        write_jsonl(path, [modern, legacy, codex_tokens()])
+        result = collect([path])
+        (thread,) = result["threads"]
+        self.assertIsNone(thread["user_messages"])
+        coverage = thread["user_message_coverage"]
+        self.assertEqual(coverage["observations"], {"legacy": 1, "modern": 1})
+        self.assertEqual(coverage["reasons"], ["ambiguous_representations"])
+        table = render(result)
+        self.assertIn("legacy=1, modern=1", table)
+        self.assertIn("ambiguous_representations", table)
+        self.assertIn("?", table)
+        self.assertIsNone(result["total"]["user_messages"])
+
+    def test_same_ids_in_separate_files_remain_separate_per_file_counts(self):
+        for name in ("one", "two"):
+            write_jsonl(self.root / f"{name}.jsonl", [codex_message(), codex_tokens()])
+        result = collect([self.root])
+        self.assertEqual(len(result["threads"]), 2)
+        self.assertEqual(result["total"]["user_messages"], 2)
+        self.assertEqual(result["total"]["user_message_coverage"]["observations"]["modern"], 2)
+
+    def test_unknown_threads_and_files_do_not_become_exact_aggregate_zeroes(self):
+        write_jsonl(self.root / "known.jsonl", [codex_message(), codex_tokens()])
+        write_jsonl(self.root / "unknown.jsonl", [codex_message(markers=("future.marker",)), codex_tokens()])
+        result = collect([self.root])
+        self.assertIsNone(result["total"]["user_messages"])
+        self.assertTrue(result["total"]["complete"])
+        self.assertEqual(result["total"]["user_message_coverage"]["unclassified"], 1)
+        write_jsonl(self.root / "other.jsonl", [{"unrecognized": "format"}])
+        result = collect([self.root])
+        self.assertIsNone(result["total"]["user_messages"])
+        self.assertIn("unrecognized_files", result["total"]["user_message_coverage"]["reasons"])
+
+    def test_damaged_and_partial_logs_invalidate_human_coverage(self):
+        for tail, reason in (("{bad}\n", "damaged_lines"), ('{"type":', "partial_line")):
+            with self.subTest(reason=reason):
+                path = self.root / "partial.jsonl"
+                write_jsonl(path, [codex_message(), codex_tokens()], tail=tail)
+                result = collect([path])
+                self.assertIsNone(result["total"]["user_messages"])
+                self.assertFalse(result["total"]["complete"])
+                self.assertIn(reason, result["threads"][0]["user_message_coverage"]["reasons"])
+                self.assertEqual(result["total"]["user_message_coverage"]["observations"]["modern"], 1)
+
+    def test_repeated_contexts_keep_existing_call_and_model_totals(self):
+        path = self.root / "contexts.jsonl"
+        context = {"type": "turn_context", "payload": {"model": "gpt-luna", "turn_id": "turn-a", "root_turn_id": "root-a"}}
+        write_jsonl(path, [context, context, {"type": "turn_context", "payload": {"model": "gpt-sol", "turn_id": "turn-a"}},
+                           {"type": "turn_context", "payload": {"turn_id": "turn-b"}}, codex_tokens()])
+        result = collect([path])
+        (thread,) = result["threads"]
+        self.assertEqual(thread["calls"], 3)
+        self.assertEqual(thread["models"], {"gpt-luna": 2, "gpt-sol": 1})
+        self.assertEqual(result["models"]["gpt-luna"]["calls"], 2)
+        self.assertEqual(thread["counted"], "model_context_rows")
+        self.assertIn("model_context_rows", render(result))
+
+    def test_marked_malformed_content_does_not_claim_an_exact_count(self):
+        path = self.root / "content.jsonl"
+        for content in (None, [], "text", [None], [{"type": "input_text", "text": 42}]):
+            with self.subTest(content=content):
+                record = codex_message()
+                record["payload"]["content"] = content
+                write_jsonl(path, [record, codex_tokens()])
+                (thread,) = collect([path])["threads"]
+                self.assertIsNone(thread["user_messages"])
+                self.assertEqual(thread["user_message_coverage"]["observations"]["modern"], 1)
+                self.assertIn("malformed_content", thread["user_message_coverage"]["reasons"])
+
+    def test_cumulative_counter_reset_policy_is_unchanged(self):
+        path = self.root / "reset.jsonl"
+        write_jsonl(path, [codex_message(), codex_tokens(input_tokens=500, output_tokens=50),
+                           codex_tokens(input_tokens=40, cached_input_tokens=5, output_tokens=3)])
+        (thread,) = collect([path])["threads"]
+        self.assertEqual((thread["fresh_input"], thread["cache_read"], thread["output"]), (35, 5, 3))
+        self.assertEqual(thread["user_messages"], 1)
+
     def test_cli_json_and_table(self):
         write_jsonl(self.root / "s.jsonl", [claude_turn("m1")])
         command = [sys.executable, "-m", "awkit", "usage", str(self.root)]
@@ -188,6 +385,7 @@ class UsageTests(unittest.TestCase):
         self.assertNotIn("?", table.stdout)
         data = json.loads(subprocess.run(command + ["--json"], capture_output=True, text=True,
                                          encoding="utf-8", env=env).stdout)
+        self.assertEqual(data["format"], 3)
         self.assertEqual(data["total"]["cache_write"], 100)
         future = subprocess.run(command + ["--since", "2999-01-01", "--json"], capture_output=True,
                                 text=True, encoding="utf-8", env=env)
@@ -197,6 +395,20 @@ class UsageTests(unittest.TestCase):
         self.assertIn("?", table.stdout)
         self.assertIn("known", table.stdout)
         self.assertIn("unmeasured", table.stdout)
+        modern = self.root / "modern.jsonl"
+        write_jsonl(modern, [codex_message(None), codex_tokens()])
+        modern_command = [sys.executable, "-m", "awkit", "usage", str(modern)]
+        uncertain_json = subprocess.run(modern_command + ["--json"], capture_output=True, text=True,
+                                        encoding="utf-8", env=env)
+        uncertain_table = subprocess.run(modern_command, capture_output=True, text=True, encoding="utf-8", env=env)
+        self.assertEqual(uncertain_json.returncode, 0, uncertain_json.stderr)
+        self.assertEqual(uncertain_table.returncode, 0, uncertain_table.stderr)
+        uncertain = json.loads(uncertain_json.stdout)
+        self.assertIsNone(uncertain["total"]["user_messages"])
+        self.assertEqual(uncertain["total"]["user_message_coverage"]["observations"]["modern"], 1)
+        self.assertIn("modern=1", uncertain_table.stdout)
+        self.assertIn("missing_message_id", uncertain_table.stdout)
+        self.assertIn("human-input coverage: incomplete", uncertain_table.stdout)
 
 
 if __name__ == "__main__":

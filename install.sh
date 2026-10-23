@@ -39,7 +39,7 @@ if ! have git; then
 fi
 
 PYTHON=""
-for candidate in python3 python3.13 python3.12 python3.11; do
+for candidate in python3 python3.14 python3.13 python3.12 python3.11; do
     if python_ok "$candidate"; then PYTHON="$candidate"; break; fi
 done
 if [ -z "$PYTHON" ]; then
@@ -48,6 +48,9 @@ if [ -z "$PYTHON" ]; then
         *) need "Python 3.11 or later" "your package manager, for example: sudo apt install python3 python3-venv" ;;
     esac
 fi
+
+PYTHON_EXECUTABLE="$("$PYTHON" -c 'import sys; print(sys.executable)')"
+[ -n "$PYTHON_EXECUTABLE" ] || need "Python executable path" "$PYTHON -c 'import sys; print(sys.executable)'"
 
 if have pipx; then
     PIPX="pipx"
@@ -65,7 +68,8 @@ else
 fi
 
 say "Installing awkit from $SOURCE..."
-$PIPX install --force "$SOURCE"
+say "New environments use Python $PYTHON_EXECUTABLE; existing pipx environments keep their Python."
+$PIPX install --force --python "$PYTHON_EXECUTABLE" "$SOURCE"
 $PIPX ensurepath >/dev/null 2>&1 || true
 
 BIN="$($PIPX environment --value PIPX_BIN_DIR 2>/dev/null || true)"

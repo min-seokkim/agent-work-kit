@@ -63,6 +63,8 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Fixed
 
+- Installers resolve the selected Python executable and pass it to pipx for fresh environments. POSIX discovery includes standalone `python3.14`; Windows prefers a usable PATH Python before the launcher. Existing app environments retain their interpreter, which `awkit doctor` reports. CI adds 3.14 tests alongside 3.11-3.13 and installer/installed-wheel checks on Windows and Linux at 3.12 and 3.14, with actual interpreter assertions and separate artifacts.
+
 - `hook reply` now correlates recognized guide reads with their successful results and returned main-guide content. Successful CLI reads receive credit; failed reads and path mentions do not. Missing or ambiguous evidence remains fail-open and is distinct from confirmed access. Supported Claude/Codex shapes, the narrow current `exec` wrapper and the content heuristic are documented in the reference. The document trigger, one-block policy, generic command errors and hook settings are unchanged.
 
 - Writing and done-check text summaries identify their scope: complete-file pattern checks, repository-state matching and configured-command success do not establish document review. Task checks and unmatched repository state are reported separately. The writing and reporting guides require omitted reviews to remain visible. Check logic, exit codes and JSON fields are unchanged.

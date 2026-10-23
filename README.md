@@ -44,6 +44,8 @@ You can open separate implementation and review sessions, including sessions fro
 
 awkit needs Python 3.11 or later and Git, and has no release yet. The installer adds Git and Python when they are missing (winget on Windows, Homebrew on macOS; on Linux it names the package to install), installs awkit from the development branch with [pipx](https://pipx.pypa.io), writes the kit's guides as skills in your user folder, and runs `awkit doctor`, which says how to fix anything still missing. The guides are your way of working, so they live on your computer once, for every project.
 
+For a fresh install, the scripts use Python found in the active shell. Updating an existing pipx environment preserves its Python interpreter. Run `awkit doctor` to see which Python actually runs awkit.
+
 On Windows, in PowerShell:
 
 ```powershell

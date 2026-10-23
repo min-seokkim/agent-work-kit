@@ -36,39 +36,60 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
-        python: ["3.11", "3.12", "3.13"]
+        python: ["3.11", "3.12", "3.13", "3.14"]
     env:
       PYTHONPATH: ${{ github.workspace }}/src
+      PYTHONUTF8: "1"
+      EXPECTED_PYTHON: ${{ matrix.python }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Assert the invoked Python
+        run: python -c "import os, sys; print(sys.executable); print(sys.version); assert '.'.join(map(str, sys.version_info[:2])) == os.environ['EXPECTED_PYTHON']"
+      - name: Run tests
+        run: python -m unittest discover -s tests -v
+
+  install:
+    name: Installer / ${{ matrix.os }} / Python ${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ["3.12", "3.14"]
+    env:
+      EXPECTED_PYTHON: ${{ matrix.python }}
       PYTHONUTF8: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
-      - name: Run tests
-        run: python -m unittest discover -s tests -v
-
-  install:
-    name: Installer on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
+      - name: Assert the bootstrap Python
+        run: python -c "import os, sys; print(sys.executable); print(sys.version); assert '.'.join(map(str, sys.version_info[:2])) == os.environ['EXPECTED_PYTHON']"
       - run: |
           git config --global user.name "CI"
           git config --global user.email ci@example.com
+      - name: Isolate fresh pipx environments
+        shell: bash
+        run: |
+          python - <<'PY'
+          import os, pathlib
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as output:
+              for name, suffix in (("PIPX_HOME", "home"), ("PIPX_BIN_DIR", "bin"), ("PIPX_MAN_DIR", "man")):
+                  path = pathlib.Path(os.environ["RUNNER_TEMP"]) / ("awkit-pipx-" + suffix)
+                  assert not path.exists(), path
+                  output.write(f"{name}={path}\n")
+          PY
       - name: Run install.sh from this checkout
         if: runner.os != 'Windows'
         env:
           AWKIT_SOURCE: ${{ github.workspace }}
         run: |
           sh install.sh
+          export PATH="$PIPX_BIN_DIR:$PATH"
           awkit doctor
           test -f "$HOME/.claude/skills/awkit-workflow/SKILL.md" && test -f "$HOME/.agents/skills/awkit-workflow/SKILL.md"
       - name: Run install.ps1 from this checkout
@@ -78,30 +99,59 @@ jobs:
           AWKIT_SOURCE: ${{ github.workspace }}
         run: |
           ./install.ps1
+          $env:Path = "$env:PIPX_BIN_DIR;$env:Path"
           awkit doctor
           if ($LASTEXITCODE -ne 0) { exit 1 }
           if (-not (Test-Path "$HOME\.claude\skills\awkit-workflow\SKILL.md")) { Write-Error "no user skills"; exit 1 }
+          if (-not (Test-Path "$HOME\.agents\skills\awkit-workflow\SKILL.md")) { Write-Error "no Codex user skills"; exit 1 }
+      - name: Assert the installed application's Python
+        shell: bash
+        run: |
+          python - <<'PY'
+          import os, pathlib, subprocess
+          executable = pathlib.Path(os.environ["PIPX_HOME"]) / "venvs" / "agent-work-kit"
+          executable /= "Scripts/python.exe" if os.name == "nt" else "bin/python"
+          code = "import os,sys,awkit; print(sys.executable); print(sys.version); print(awkit.__file__); assert '.'.join(map(str,sys.version_info[:2])) == os.environ['EXPECTED_PYTHON']"
+          subprocess.run([str(executable), "-c", code], check=True)
+          PY
 
   package:
-    name: Build and smoke-test the wheel
-    runs-on: windows-latest
+    name: Wheel / ${{ matrix.os }} / Python ${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ["3.12", "3.14"]
     env:
       PYTHONUTF8: "1"
+      EXPECTED_PYTHON: ${{ matrix.python }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: ${{ matrix.python }}
+      - name: Assert the build Python
+        run: python -c "import os, sys; print(sys.executable); print(sys.version); assert '.'.join(map(str, sys.version_info[:2])) == os.environ['EXPECTED_PYTHON']"
+      - run: |
+          git config --global user.name "CI"
+          git config --global user.email ci@example.com
       - name: Build release files
         run: |
           python -m pip install "setuptools>=77" wheel
           python scripts/build_release.py dist
-      - name: Install into a clean environment and run the quick start
+      - name: Install wheel and run the quick start on Windows
+        if: runner.os == 'Windows'
         shell: pwsh
         run: |
           python -m venv "$env:RUNNER_TEMP\venv"
+          if ($LASTEXITCODE -ne 0) { exit 1 }
           $awkit = "$env:RUNNER_TEMP\venv\Scripts\awkit.exe"
-          & "$env:RUNNER_TEMP\venv\Scripts\python" -m pip install --no-index --no-deps (Get-Item dist\*.whl).FullName
+          $appPython = "$env:RUNNER_TEMP\venv\Scripts\python.exe"
+          & $appPython -m pip install --no-index --no-deps (Get-Item dist\*.whl).FullName
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          & $appPython -c "import os,sys,awkit; print(sys.executable); print(sys.version); print(awkit.__file__); assert '.'.join(map(str,sys.version_info[:2])) == os.environ['EXPECTED_PYTHON']"
+          if ($LASTEXITCODE -ne 0) { exit 1 }
           $project = "$env:RUNNER_TEMP\project"
           New-Item -ItemType Directory $project | Out-Null
           & $awkit kit init $project
@@ -120,7 +170,32 @@ jobs:
           $snap = & $awkit review --repo $example snapshot input/orders.csv
           & $awkit review --repo $example check $snap --config "$example\checks.toml"
           if ($LASTEXITCODE -ne 0) { exit 1 }
+      - name: Install wheel and run the quick start on Linux
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          python -m venv "$RUNNER_TEMP/venv"
+          awkit="$RUNNER_TEMP/venv/bin/awkit"
+          app_python="$RUNNER_TEMP/venv/bin/python"
+          "$app_python" -m pip install --no-index --no-deps dist/*.whl
+          "$app_python" -c "import os,sys,awkit; print(sys.executable); print(sys.version); print(awkit.__file__); assert '.'.join(map(str,sys.version_info[:2])) == os.environ['EXPECTED_PYTHON']"
+          project="$RUNNER_TEMP/project"
+          mkdir "$project"
+          "$awkit" kit init "$project"
+          cp examples/local-release/* "$project/"
+          "$awkit" pipeline --config "$project/pipeline.toml" deploy aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          "$awkit" pipeline --config "$project/pipeline.toml" status
+          example="$RUNNER_TEMP/data-example"
+          "$awkit" kit example data "$example"
+          if "$awkit" review --repo "$example" check HEAD --config "$example/checks.toml"; then
+            echo "the unfixed example must fail"; exit 1
+          else
+            test "$?" -eq 1
+          fi
+          sed -i 's/^date,item,qty,/date,item,quantity,/' "$example/input/orders.csv"
+          snap="$("$awkit" review --repo "$example" snapshot input/orders.csv)"
+          "$awkit" review --repo "$example" check "$snap" --config "$example/checks.toml"
       - uses: actions/upload-artifact@v4
         with:
-          name: dist
+          name: dist-${{ runner.os }}-py${{ matrix.python }}
           path: dist/

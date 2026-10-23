@@ -26,7 +26,7 @@ function Install-WithWinget($Name, $Id) {
 
 function Find-Python {
     # The Microsoft Store alias named python prints nothing useful; check the version, not the name.
-    foreach ($candidate in @(@('py', '-3'), @('python'), @('python3'))) {
+    foreach ($candidate in @(@('python'), @('python3'), @('py', '-3'))) {
         $exe = $candidate[0]
         if (-not (Get-Command $exe -ErrorAction SilentlyContinue)) { continue }
         $arguments = @($candidate | Select-Object -Skip 1) + @('-c', 'import sys; print(sys.version_info >= (3, 11))')
@@ -54,6 +54,12 @@ function Install-Awkit {
     }
     $pyExe = $python[0]
     $pyArgs = @($python | Select-Object -Skip 1)
+    $targetPython = & $pyExe @pyArgs -c 'import sys; print(sys.executable)'
+    if ($LASTEXITCODE -ne 0 -or -not "$targetPython".Trim()) {
+        Write-Host 'Could not resolve the selected Python executable.'
+        return
+    }
+    $targetPython = "$targetPython".Trim()
 
     & $pyExe @pyArgs -m pipx --version *> $null
     if ($LASTEXITCODE -ne 0) {
@@ -63,7 +69,8 @@ function Install-Awkit {
     }
 
     Write-Host "Installing awkit from $source..."
-    & $pyExe @pyArgs -m pipx install --force $source
+    Write-Host "New environments use Python $targetPython; existing pipx environments keep their Python."
+    & $pyExe @pyArgs -m pipx install --force --python $targetPython $source
     if ($LASTEXITCODE -ne 0) { Write-Host 'Installing awkit failed.'; return }
     & $pyExe @pyArgs -m pipx ensurepath *> $null
     Update-SessionPath

@@ -44,6 +44,8 @@ Git 프로젝트에서 에이전트에게 일을 거듭 맡기고, 돌아온 결
 
 awkit을 쓰려면 Python 3.11 이상과 Git이 필요하고, 아직 릴리스한 버전은 없습니다. 설치 스크립트는 Git이나 Python이 없으면 먼저 설치합니다. Windows는 winget, macOS는 Homebrew를 쓰고, Linux에서는 설치할 패키지를 알려 줍니다. 그다음 [pipx](https://pipx.pypa.io)로 개발 브랜치의 awkit을 설치하고, 키트의 가이드를 사용자 폴더에 스킬로 넣은 뒤 `awkit doctor`를 실행합니다. 빠진 것이 남아 있으면 이 명령이 고치는 방법을 알려 줍니다. 가이드는 일하는 사람의 방식이라서 프로젝트마다 넣지 않고 컴퓨터에 한 번만 둡니다.
 
+처음 설치할 때는 현재 터미널에서 찾은 Python을 사용합니다. 기존 pipx 환경을 업데이트할 때는 사용하던 Python을 유지합니다. `awkit doctor`로 awkit을 실행하는 Python을 확인하세요.
+
 Windows에서는 PowerShell에 입력하세요.
 
 ```powershell

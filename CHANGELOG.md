@@ -32,6 +32,8 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Added
 
+- `awkit check writing-compare BASELINE CANDIDATE PATH...` compares full-file writing findings from explicit frozen Git revisions, retaining every occurrence, source witnesses and both reports. It identifies reliable same-path matches, leaves uncertain correspondence visible and inventories absent findings without accepting corrections. A separate format-1 JSON preserves legacy writing output and hook policy. Candidate errors still exit 1, unavailable comparison evidence exits 2, and warning-only results exit 0. Git blobs are read without checkout or index changes.
+
 - Development documentation now has separate design, roadmap, task, evidence and release records. `docs/development.md` remains the starting point, with current state and links. Completed work moves out of the roadmap; old section anchors remain available through the document map.
 
 - `awkit hook EVENT`, the `prompt` condition for inject rules, and three default rules in `kit/rules-session.toml`: `writing-request` adds the writing guide's line on the first request for a prompt, instructions or a document; `writing-reply` blocks once a long Korean reply shaped like a document from a session that never read the guide (`awkit hook reply`); `kit-version` says once when `checks.toml` records another kit version (`awkit hook kit-version`). A project with `.awkit/` but no `rules.toml` gets one log line per session.

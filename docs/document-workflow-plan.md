@@ -54,6 +54,8 @@ Start by exercising the existing partial-edit rule: draft and review the changed
 
 Use existing records to collect preparation time, active drafting/review time, automated execution time, channel waiting, corrections and defects found after delivery. Keep fixed-deadline waiting separate from necessary work. Compare distinct tasks with similar constraints and state their differences; repeating the same solved task is not a controlled baseline. Missing measurements stay unverified, including [usage counts affected by current logs](tasks/usage-log-compatibility.md). Simplify a step only when its useful evidence can be preserved and the trial records both missed defects and unnecessary work. A reduction in steps alone is not success.
 
+The [scoped document trial](tasks/scoped-document-trial.md#accepted-results) applied this procedure to two fictional documents. Source hashes supported reuse after unrelated edits, while reading caught repetition and an omitted role and rendering exposed broken word wrapping. Its explicit incomplete checkpoint separated command success from missing visual review. These results support the existing procedure without establishing a productivity gain, automatic review enforcement or intended-reader acceptance.
+
 ## Common workflow
 
 | Stage | Agent action | Evidence or working output |

@@ -103,6 +103,13 @@ def _parser():
                                         "that is wrong on one sighting is found, warnings do not fail")
     writing.add_argument("paths", nargs="+", type=Path, help="Markdown files, or folders searched recursively for *.md")
     writing.add_argument("--json", action="store_true", help="print the findings as JSON")
+    comparison = check_commands.add_parser("writing-compare", help="compare complete-file writing findings at two "
+                                           "explicit Git revisions; candidate errors still exit 1, invalid evidence 2")
+    comparison.add_argument("baseline", help="explicit baseline Git revision; never advanced automatically")
+    comparison.add_argument("candidate", help="explicit candidate Git revision")
+    comparison.add_argument("paths", nargs="+", help="repository-relative regular Markdown file paths")
+    comparison.add_argument("--repo", type=Path, default=Path("."), help="folder in the Git repository (default: .)")
+    comparison.add_argument("--json", action="store_true", help="print the separate format-1 comparison report")
     finished = check_commands.add_parser("done", help="check that the files changed in this session have a passing "
                                          "`review check` of their current state; exit 0 yes, 1 no")
     finished.add_argument("--repo", type=Path, default=Path("."), help="folder in the Git repository (default: .)")
@@ -400,6 +407,11 @@ def _run_check(args):
         report = checks.check_writing(args.paths)
         print(json.dumps(report, ensure_ascii=False, indent=2) if args.json else checks.render_writing(report))
         return 0 if report["ok"] else 1
+    if args.action == "writing-compare":
+        from .writing_compare import compare_writing, render_comparison
+        report = compare_writing(args.repo, args.baseline, args.candidate, args.paths)
+        print(json.dumps(report, ensure_ascii=False, indent=2) if args.json else render_comparison(report))
+        return report["exit_code"]
     session, event, repeated, source = args.session, None, False, None
     if args.hook:
         try:

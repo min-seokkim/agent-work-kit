@@ -20,6 +20,8 @@ Remaining work and its completion criteria. Item numbers retain the earlier deve
 
 ## Task plans
 
+- [Writing comparison report](tasks/writing-comparison.md): accepted command implementation with conservative correspondence, complete-file findings and preserved exit policy; the task record links delivery receipts.
+- [Scoped document revision trial](tasks/scoped-document-trial.md): one local correction and one substantive revision using current instructions, with source preservation, evidence reuse and omitted-review reporting.
 - [Planning and implementation trial](tasks/planning-implementation.md): bounded assignments from existing plans, product acceptance and feedback from using awkit during implementation.
 - [Usage log compatibility](tasks/usage-log-compatibility.md): reproduced modern-message gap, uncertain turn counts and acceptance criteria for reliable measurement.
 - [Document workflow trial](tasks/workflow-review.md): live proposal-writing evidence, check-scope explanations and collaboration with an existing user session.
@@ -37,8 +39,8 @@ The [trial](tasks/workflow-review.md) supplies one real document case for item 5
 
 | Work | Next bounded result | Completion boundary |
 |---|---|---|
-| Scale document work to the change | Exercise the [scoped document trial](document-workflow-plan.md#scale-the-work-to-the-change) on a local correction and a substantive revision. | Preserve required evidence while recording preparation, review, execution, waiting and missed defects separately; passing commands must not hide omitted reviews. Presentation phases remain open. |
-| Separate old and introduced writing findings | Define baseline ownership and ambiguous correspondence using the [diagnostic cases](tasks/connection-diagnostics.md#writing-scope-and-path-limits). | Keep full-file findings visible and test contextual changes; display and exit-code policy require an explicit decision. |
+| Scale document work to the change | The [two-document trial](tasks/scoped-document-trial.md) accepted a one-sentence correction and a substantive revision using scoped evidence reuse. | Reading and rendered inspection caught defects after mechanical passes. The omitted-review checkpoint remained incomplete until inspection. Active time, productivity and intended-reader acceptance remain unmeasured; presentation phases remain open. |
+| Separate old and introduced writing findings | The [bounded report](tasks/writing-comparison.md) is implemented and accepted. Its next use should record actual attribution effort; the earlier proposal trial supplies the observed burden. | Explicit frozen revisions, complete-file reports, occurrence preservation and conservative uncertainty are verified in the candidate. Legacy writing and blocking policy remain unchanged. The task record links cumulative verification and delivery; productivity remains unmeasured. |
 | Diagnose the automatic Stop-hook import failure | Capture the [failing automatic invocation](tasks/connection-diagnostics.md#automatic-hook-import-investigation) and compare the direct shell under identified permissions. | A direct import or matching installation cannot establish restored automatic execution. |
 | Preserve the working collaboration path | Exercise [receipt and closure recovery](tasks/independent-session-collaboration.md#lessons-from-the-proposal-trial) using existing commands. | Delivered and checked versions match, requests are answered, and retries do not repeat external actions. Extra channel infrastructure remains conditional. |
 

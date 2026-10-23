@@ -24,6 +24,8 @@ No path-resolution replacement is justified yet. The reported standalone Python 
 
 ### Proposed first comparison unit
 
+The [writing-comparison task](writing-comparison.md) now owns the accepted first interface, contract evidence and implementation state. The requirements below retain their planning basis.
+
 The [planning trial](planning-implementation.md) recommends a comparison report before changing enforcement. Its benefit is to show which findings need investigation after an edit; it does not yet remove the burden of existing errors. The candidate's full-file findings and current exit policy remain authoritative.
 
 Use an explicitly selected frozen baseline and candidate. Record both trees and the checker revision, and evaluate both versions with the same checker. A session start, user edit, failed run or successful partial review must not silently advance the baseline. Calling a finding existing means it was also present in that baseline; it does not mean accepted or resolved.

@@ -24,7 +24,9 @@ def kit_root():
     """The kit installed with the wheel, or the repository's kit/ folder when run from source."""
     try:
         from importlib.resources import files
-        root = files("awkit.kit")
+        # Anchor at the regular package: kit/ has no __init__.py in a wheel,
+        # so files("awkit.kit") can return a namespace wrapper, not a path.
+        root = files("awkit").joinpath("kit")
         if root.joinpath("README.md").is_file():
             return root
     except ModuleNotFoundError:

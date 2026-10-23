@@ -354,5 +354,62 @@ class Install(Project):
         skipped = hooks.run(json.dumps({**payload, "session_id": "t"}), kit_rules=True, skip=["research"])
         self.assertEqual(skipped, "")
 
+class InstalledResources(unittest.TestCase):
+    def test_installed_namespace_guides_survive_the_hook_process(self):
+        # A wheel puts kit/ below awkit without an __init__.py. Source-checkout
+        # tests instead use the top-level kit/ fallback and missed this failure.
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary).resolve()
+            packages = base / "packages"
+            shutil.copytree(ROOT / "src" / "awkit", packages / "awkit",
+                            ignore=shutil.ignore_patterns("__pycache__"))
+            shutil.copytree(ROOT / "kit", packages / "awkit" / "kit")
+            script = '''
+import json
+import sys
+from importlib.resources import files
+from pathlib import Path
+sys.path.insert(0, sys.argv[1])
+from awkit import hooks
+from awkit.kit_hooks import draft_rules
+root = Path(sys.argv[2])
+folder = hooks.kit_folder(root)
+payload = {"hook_event_name": "PreToolUse", "session_id": "bundled",
+           "cwd": str(root), "tool_name": "WebSearch", "tool_input": {"query": "fictional"}}
+bundled = json.loads(hooks.run(json.dumps(payload), kit_rules=True))
+(root / "rules.toml").write_text(draft_rules(root), encoding="utf-8")
+payload["session_id"] = "generated"
+generated = json.loads(hooks.run(json.dumps(payload), kit_rules=True))
+print(json.dumps({"namespace_type": type(files("awkit.kit")).__name__, "folder": folder,
+                  "bundled": bundled, "generated": generated}))
+'''
+            for local in ((), ("kit",), ("agent-work-kit", "kit")):
+                with self.subTest(local=local):
+                    project = base / (local[0] if local else "installed")
+                    project.mkdir()
+                    git(project, "init", "-q")
+                    for name in local:
+                        folder = project / name
+                        folder.mkdir()
+                        for guide in ("workflow.md", "work-types.md"):
+                            shutil.copyfile(ROOT / "kit" / guide, folder / guide)
+                    result = subprocess.run([sys.executable, "-I", "-X", "utf8", "-c", script,
+                                             str(packages), str(project)], capture_output=True,
+                                            text=True, encoding="utf-8")
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    data = json.loads(result.stdout)
+                    self.assertEqual(data["namespace_type"], "MultiplexedPath")
+                    expected = local[0] if local else str(packages / "awkit" / "kit")
+                    self.assertEqual(data["folder"], expected)
+                    context = data["bundled"]["hookSpecificOutput"]["additionalContext"]
+                    self.assertEqual(context, data["generated"]["hookSpecificOutput"]["additionalContext"])
+                    self.assertIn(f"{expected}/work-types.md", context)
+                    self.assertNotIn("MultiplexedPath(", context)
+                    # Inspect after the process exits, ruling out a temporary
+                    # resource extraction whose lifetime ended with the hook.
+                    self.assertEqual((project / expected / "work-types.md").read_bytes(),
+                                     (ROOT / "kit" / "work-types.md").read_bytes())
+
+
 if __name__ == "__main__":
     unittest.main()

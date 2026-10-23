@@ -16,6 +16,18 @@ Next validation work, before expanding the protocol:
 2. Exercise interruption and replay: stop after reading but before replying, resume and find unanswered requests, then repeat a request after its result exists. Use request IDs to detect prior work. Check that cursor movement is not mistaken for processing and that retained results can prevent duplicate actions. These are planned checks, not new recovery guarantees.
 3. Run a real task with independent Claude and Codex sessions using the current channel and snapshot workflow. Record the exact clients, versions, models and environments, manual relays or wakes, and interruption outcomes. Establish CLI, IDE and desktop behavior separately; record untested combinations as unverified.
 
+## Lessons from the proposal trial
+
+The [trial recorded with `89549b7`](workflow-review.md) completed assignment, frozen review, correction, checks and final receipt using the existing channel without either session editing the other's product files. The main and reviewer used Codex IDE and Desktop clients and were exposed to the implementation discussion. This supports the local two-role workflow; cross-provider operation, automatic wake-up, recovery after interruption and blinded review remain unverified. The reviewer's later account judged the channel sufficient for this task and reported procedure overhead for small edits.
+
+Preserve this working path before expanding the protocol. Verify session identity from the active runtime when a handoff names an older session. Request judgments against snapshots; retain failed runs as well as corrected runs, classify environment failures separately from candidate defects, and reuse accepted evidence for unchanged content. In this trial, final review found a guide word-limit violation while a separate run failed because Ruff was absent from PATH. They require different corrections.
+
+At closure, confirm the delivered tree equals the checked tree and obtain the recipient's acknowledgement before sending `close`, which prevents further posts. Check for unanswered requests and disclose remaining processes and work. For shared external actions, designate one executor and wait for all affected sessions to finish; task completion never supplies fresh authorization. A deadline for starting closure should leave time for checks and receipts rather than force an abrupt stop. Test interruption immediately before the final receipt and before close without repeating external actions.
+
+Measure active work and waiting separately, using the [usage compatibility plan](usage-log-compatibility.md) where counts are uncertain. Compare the burden of a scoped correction and a larger task before adding acknowledgements, services or routine full reviews. These observations justify validation scenarios, not a larger channel schema.
+
+## Conditional extensions
+
 External designs are references for specific problems, not adoption candidates under this decision. The research inspected public documentation and selected source/CI files; no external tool was installed or tested here. Recheck upstream behavior before using a design.
 
 | Lesson and source | Application and trigger |

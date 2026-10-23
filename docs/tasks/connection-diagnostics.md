@@ -18,7 +18,15 @@ Four synthetic writing comparisons cover an unchanged old finding, a new finding
 
 No writing-check behavior changes in this task. A later trial needs actual before/after edits and an explicit baseline policy for user edits, renames, repeated edits, newly exposed prose and whole-document findings. Full inspection must remain available, and retained findings must not be described as resolved. The reported 106 findings are not independently classified as mistakes or false positives.
 
+The [proposal trial](workflow-review.md) subsequently reproduced the burden during actual edits. `89549b7` clarifies output scope while retaining full-file inspection and existing exit codes. Before implementing classification, define which revision supplies the baseline and when it may advance; automatic advancement after a failed or partial review could hide unresolved findings. Exercise unchanged errors with clean additions, introduced errors, shifted lines, renames, repeated edits, user edits, removed fences and mixed endings. Findings without reliable correspondence must remain unclassified. Acceptance requires both a reproducible before/after comparison and retained full-file results; an extracted-lines pass is not a full-document pass. Select display and exit-code policy explicitly before implementation.
+
 No path-resolution replacement is justified yet. The reported standalone Python comparison narrows the condition to a sandbox, but does not identify the responsible implementation. The shell used for executable probes here required execution permission, so it does not reproduce that sandbox condition. Preserve link resolution and containment checks until a minimal reproducer establishes a safe correction. The exclude-file permission denial is not treated as a product failure.
+
+## Automatic hook import investigation
+
+The later proposal trial includes a reported Stop-hook `ImportError` for `awkit.checks`. Installed source and kit contents matched their recorded commit; an approved shell imported the module successfully while the restricted shell could not launch the base interpreter. These are different execution conditions and do not explain the automatic failure. Keep this separate from the earlier path-resolution report.
+
+Next, capture a sanitized failing automatic event with the client/version, interpreter and loaded module paths, working directory, execution permissions and traceback. Compare the same invocation in the automatic hook and direct shell, preserving settings and package provenance. Do not reinstall merely to hide the failing state. A correction is accepted only when the original automatic path is reproduced and passes after the change, with unsupported clients or permission contexts still explicit. If reproduction remains unavailable, retain the uncertainty and the minimal next probe instead of claiming restored hooks from a direct import.
 
 ## Verification and next action
 

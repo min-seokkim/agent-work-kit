@@ -28,6 +28,32 @@ Preserve evidence distinctions in future research:
 
 Keep private originals, source paths, conversation identifiers, work conditions and personal interpretations in their existing private locations. This public-facing repository plan contains generalized lessons and public references. Build public fixtures independently with fictional content; redaction alone does not make a private artifact suitable for distribution. Check reuse rights for reference images, fonts and code before packaging them.
 
+### Findings from the proposal trial
+
+The [live proposal trial](tasks/workflow-review.md), recorded with `89549b7`, exercised source checking, Korean revision, HTML previews and cross-session review. It supplies evidence for this common workflow without completing the presentation phases below. The installed kit remained at `0f41f0b`; the candidate's passing checks do not establish its behavior in automatic hooks.
+
+The reviewer subsequently reported that snapshots and the channel helped connect claims to evidence, while drafting, reading passes, rendering and frozen checks felt heavy for short edits. The reported five hook firings cover the whole conversation; one occurred during the collaboration. These are firings, not all hook invocations or completed review steps. Neither this account nor the observed corrections measures a productivity gain.
+
+| Finding | Consequence for the next trial | Acceptance evidence |
+|---|---|---|
+| Mechanical checks passed while preservation and reading evidence were missing. Those duties already existed. | Trace each applicable duty to its actual output or an explicit gap in the existing task record. Diagnose whether it was unavailable, misunderstood or omitted before adding guidance. | Deliberately omit one required review while commands pass; the completion report still names the gap and its consequence. Unsupported check marks do not count as evidence. |
+| A report called newly added information a restoration from the original. | Compare the preserved original and candidate before describing what a revision recovered. | A fictional case distinguishes retained facts, additions from new sources and actual restoration; the review narrative matches the diff. |
+| An exact hour was supported by an official attachment rather than the cited schedule page. One web tool could not retrieve another valid source. | Attach precise claims to the source passage that supports them; distinguish retrieval failure from missing support. | Keep the relevant excerpt and source identity; qualify an unresolved claim without treating a tool error as proof it is false. |
+| Mobile rendering exposed a broken word and crowded footer despite passing pattern checks. | Inspect the affected layout after text edits, including narrow screens when they are a delivery target. | Retain the input identity, viewport and before/after images showing the correction; screenshots alone do not establish that someone read them. |
+| Old findings blocked a clean local addition; task checks and whole-repository state had different scopes. | Use the [writing-scope investigation](tasks/connection-diagnostics.md#writing-scope-and-path-limits); state both scopes in delivery evidence. | Old findings remain visible, new and context-dependent failures are exercised, and task success is never described as full-file or repository-wide verification. |
+
+### Scale the work to the change
+
+Start by exercising the existing partial-edit rule: draft and review the changed passage and affected content. The reported burden does not establish that the guides require rewriting or rereading everything after every small edit. The following trial scopes identify work to reuse; they do not waive current mandatory checks or introduce fixed word-count thresholds.
+
+| Change | Work to perform | Evidence that can be reused |
+|---|---|---|
+| Local wording correction with unchanged facts and structure | Inspect the diff and nearby meaning; apply the required drafting/prose review to that passage; inspect affected rendering and run applicable checks. | Existing audience, preservation conditions and source review when their inputs and claims are unchanged. |
+| New fact, number, condition or source | Verify the exact claim and its dependencies, revise the affected argument and review the resulting layout. | Unaffected source checks and sections, with the retained version identified. |
+| Reorganization, format conversion or shared style/resource change | Review explanation order, protected content and all output affected by the dependency. | Only evidence whose inputs and coverage remain valid; a local edit label does not establish local impact. |
+
+Use existing records to collect preparation time, active drafting/review time, automated execution time, channel waiting, corrections and defects found after delivery. Keep fixed-deadline waiting separate from necessary work. Compare distinct tasks with similar constraints and state their differences; repeating the same solved task is not a controlled baseline. Missing measurements stay unverified, including [usage counts affected by current logs](tasks/usage-log-compatibility.md). Simplify a step only when its useful evidence can be preserved and the trial records both missed defects and unnecessary work. A reduction in steps alone is not success.
+
 ## Common workflow
 
 | Stage | Agent action | Evidence or working output |
@@ -199,6 +225,9 @@ Public fixtures must contain enough realistic complexity to expose the recorded 
 | Compression removes a condition, negation or uncertainty; a plan becomes a completed result; team work becomes personal work | Source comparison identifies the meaning change. |
 | Source documents disagree on audience, assumptions or conclusion | The contradiction is surfaced and resolved or retained as uncertainty. |
 | A technical report and an administrative attachment inherit the same Korean endings or internal IDs | Review applies each document's conventions and reader knowledge; the rendered form still fits. |
+| All configured commands pass but preservation, a required reading pass or rendering is missing | The report distinguishes command success from the omitted duty and identifies what remains unverified. |
+| A short correction triggers repeated full-document preparation | Apply the scoped workflow above; retain unchanged evidence and measure work saved and defects missed before changing standing guidance. |
+| A report claims a fact was restored, but it never appeared in the preserved original | Correct the revision history and cite the new source instead of inventing lost content. |
 | Reviews repeatedly add explanation or react to feedback by deleting all decoration | Compare replacement, deletion, reordering and visual alternatives against reader impact. |
 | A representative page works, but denser content breaks it | Test realistic content variation and final-format output before wider reuse. |
 | A generated concept is inserted as a full-slide picture | Requested native edits fail the editability check. |

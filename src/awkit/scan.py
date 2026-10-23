@@ -186,7 +186,9 @@ def suggested_checks(commands):
 
 
 def scan(folder):
-    folder = Path(folder).resolve()
+    # Windows realpath's access-denied fallback can append the directory name
+    # again for cwd + '\\.'. Anchor first, while retaining link resolution.
+    folder = Path(folder).absolute().resolve()
     if not folder.is_dir():
         raise ValueError(f"The folder does not exist: {folder}")
     manifests = sorted(name for name in MANIFESTS if (folder / name).is_file())

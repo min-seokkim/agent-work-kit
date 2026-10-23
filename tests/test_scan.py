@@ -1,10 +1,14 @@
 import json
+import ntpath
+import os
 import subprocess
 import sys
 import tempfile
 import tomllib
 import unittest
+from contextlib import chdir
 from pathlib import Path
+from unittest.mock import patch
 
 from awkit.kit_install import install
 from awkit.review import track
@@ -86,6 +90,49 @@ class ScanTests(unittest.TestCase):
         self.assertEqual(tomllib.loads(only.stdout)["checks"][0]["argv"], ["go", "test", "./..."])
         with self.assertRaises(ValueError):
             scan(self.root / "missing")
+
+    def test_cli_default_dot_and_absolute_select_same_project(self):
+        project = self.root / "project with spaces \ud55c\uae00"
+        project.mkdir()
+        (project / "go.mod").write_text("module x\n", encoding="utf-8")
+        reports = []
+        for arguments in ([], ["."], [str(project)]):
+            result = subprocess.run([sys.executable, "-m", "awkit", "kit", "scan", *arguments],
+                                    cwd=project, env=child_env(), capture_output=True,
+                                    text=True, encoding="utf-8")
+            self.assertEqual(result.returncode, 0, result.stderr)
+            reports.append(json.loads(result.stdout))
+        self.assertEqual(reports[0], reports[1])
+        self.assertEqual(reports[0], reports[2])
+        self.assertEqual(reports[0]["languages"], ["go"])
+
+    @unittest.skipUnless(os.name == "nt", "Windows realpath fallback")
+    def test_scan_when_windows_denies_trailing_dot(self):
+        original = ntpath._getfinalpathname
+
+        def denied_dot(path):
+            if path.endswith("\\."):
+                error = PermissionError(13, "Simulated trailing-dot access denial")
+                error.winerror = 5
+                raise error
+            return original(path)
+
+        (self.root / "go.mod").write_text("module x\n", encoding="utf-8")
+        with chdir(self.root), patch.object(ntpath, "_getfinalpathname", denied_dot):
+            # Exercise Python's real fallback; only the denied OS call is mocked.
+            self.assertEqual(scan("."), scan(self.root))
+
+    def test_relative_scan_still_follows_directory_links(self):
+        target = self.root / "target"
+        target.mkdir()
+        (target / "go.mod").write_text("module x\n", encoding="utf-8")
+        link = self.root / "link"
+        try:
+            link.symlink_to(target, target_is_directory=True)
+        except OSError as exc:
+            self.skipTest(f"Directory links unavailable: {exc}")
+        with chdir(self.root):
+            self.assertEqual(scan("link"), scan(target))
 
 
 if __name__ == "__main__":

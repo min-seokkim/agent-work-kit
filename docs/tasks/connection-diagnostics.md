@@ -20,7 +20,19 @@ No writing-check behavior changes in this task. A later trial needs actual befor
 
 The [proposal trial](workflow-review.md) subsequently reproduced the burden during actual edits. `89549b7` clarifies output scope while retaining full-file inspection and existing exit codes. Before implementing classification, define which revision supplies the baseline and when it may advance; automatic advancement after a failed or partial review could hide unresolved findings. Exercise unchanged errors with clean additions, introduced errors, shifted lines, renames, repeated edits, user edits, removed fences and mixed endings. Findings without reliable correspondence must remain unclassified. Acceptance requires both a reproducible before/after comparison and retained full-file results; an extracted-lines pass is not a full-document pass. Select display and exit-code policy explicitly before implementation.
 
-No path-resolution replacement is justified yet. The reported standalone Python comparison narrows the condition to a sandbox, but does not identify the responsible implementation. The shell used for executable probes here required execution permission, so it does not reproduce that sandbox condition. Preserve link resolution and containment checks until a minimal reproducer establishes a safe correction. The exclude-file permission denial is not treated as a product failure.
+The original investigation deferred path changes because its executable probes required permission outside the failing sandbox. The exclude-file permission denial remains separate.
+
+### Default scan path follow-up
+
+At base `c08418b`, the owner supplied the missing invocation: `awkit kit scan` failed with the current folder name repeated; specifying the absolute project folder worked. The intended result is for default, explicit-dot and absolute scan inputs to select the same folder. Verification covers those CLI forms, the Windows access-denied fallback, directory links and the frozen repository checks.
+
+The installed Python 3.14.7 implementation explains a reproducible failure mechanism. `realpath('.')` joins the current directory with a trailing dot. When `_getfinalpathname` denies that path, its non-strict fallback uses `_findfirstfile`, which returns the current directory's name for the dot. Splitting the input removes only the dot, so the fallback appends the directory name again. A probe mocking only that OS denial reproduced the duplicated path with the real Python fallback. Making the input absolute before resolving avoided it.
+
+`scan` now anchors its input with `Path.absolute()` before `resolve()`. Resolution of links remains enabled, and no repeated names are removed from paths. The correction is limited to the reported scan entry point. Other commands and the sandbox's original access-denial trigger remain unverified.
+
+Focused Windows checks passed five cases and skipped the directory-link case because Windows denied link creation. The default tool shell could not launch the installed Python; the same interpreter ran outside that sandbox. Native path probes in the reported directory succeeded in the current sandbox, so the original automatic failure was not reproduced end to end. This is a tested correction for the reproduced Python failure mechanism, not evidence that the sandbox's access policy changed. Delivery receipts belong in `.awkit/handoffs/scan-relative-path/`.
+
+The first frozen run, `.awkit/reviews/review-262t8f1i`, could not launch Ruff because its executable was absent from the shell's PATH. Adding the existing `.awkit/tools/ruff/bin` directory made the focused lint check pass. The final Windows fault test checks scan output without requiring every Python version to exhibit the older fallback defect. Records and CHANGELOG received source review and mechanical writing checks; rendered Markdown inspection was omitted for this bounded update.
 
 ### Proposed first comparison unit
 

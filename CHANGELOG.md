@@ -65,6 +65,8 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Fixed
 
+- `awkit kit scan` makes its input absolute before resolving links. This avoids a Windows Python fallback that can repeat the current folder name when access to the trailing `.` is denied. Default, explicit-dot and absolute inputs select the same project; link resolution is retained.
+
 - Review-session guidance now has both roles inspect new notices between work and recover unanswered requests on startup/resume. Bounded waits, read positions, completion and client wake-up limits are distinct. Independent-review prompts retain their roles; explicitly assigned other responsibilities do not become independent merely through channel addresses. No channel protocol or acknowledgement feature is added.
 
 - Bundled hook rules now opt into `command_protocol = "awkit-v1"` and a restricted adapter with pass/finding/error results. Execution and protocol errors are logged and allowed without consuming a later violation's block opportunity; real findings retain their existing behavior. Unmarked custom/legacy rules are unchanged. Existing project copies require explicit per-rule migration after checking the actual interpreter's capability; an older runner/child means unavailable protection. The repository's exact default entries opt in; other settings and matching conditions are preserved. The commit helper's optional strict path exposes execution errors only to the adapter, keeping legacy behavior unchanged.

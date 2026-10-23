@@ -247,6 +247,12 @@ The default rules, each with the entries it guards:
 | `delegation` | inject, PreToolUse | starting a subagent | F19, F21 |
 | `kit-version` | inject, SessionStart | `[kit] version` in `checks.toml` other than the installed awkit (`hook kit-version`) | F25 |
 
+`awkit hook reply` keeps the existing long-Korean-document trigger and one-block rule. Guide-access evidence has three states: `read` means a recognized operation returned the main guide; `absent` means a complete supported transcript shows no such access; `unknown` means evidence cannot settle it. Only `absent` can trigger the rule. Unknown evidence fails open and is not a claim that the guide was read.
+
+Supported pairs are Claude `tool_use.id` / `tool_result.tool_use_id`, and Codex call/output `call_id` within the same provider. Recognized operations are Read, Skill loading `awkit-writing`, single `cat`/`Get-Content` reads and `awkit kit guide writing`. Claude results use the `is_error` convention; Codex child JSON needs integer `exit_code=0` and returned `output`. The observed `exec` wrapper is supported only as `text(await tools.exec_command(JSON));`, parsed as JSON without evaluating JavaScript. Its completion banner never supplies the child's exit status. Other relevant wrappers remain unknown.
+
+Successful content must contain the main guide's title, Before writing and Completion check sections. Heading case, spacing, level and Read line numbers may vary. This small heuristic establishes returned content, not comprehension, authenticity or writing quality. Missing, interleaved incorrectly, reused or conflicting identities/results, malformed or partial transcripts, truncation, partial reads, pointer-only skill output and unfamiliar guide shapes remain unknown. The Korean supplement alone also remains unknown. A fresh successful retry can establish access while failed evidence is retained. Echo/search/comment and simple literal-print mentions do not establish access; an explicitly failed supported read remains absent. Generic command-error handling and hook approval settings are unchanged.
+
 ## kit hooks
 
 `awkit kit hooks [DIR] [--git] [--claude] [--codex]` connects the hook runner to the project at the repository's top folder (or `DIR` outside a repository). Without a choice it does all three; each choice limits it to that part. Every part also writes `rules.toml` when there is none.

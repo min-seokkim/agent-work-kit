@@ -63,6 +63,8 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Fixed
 
+- `hook reply` now correlates recognized guide reads with their successful results and returned main-guide content. Successful CLI reads receive credit; failed reads and path mentions do not. Missing or ambiguous evidence remains fail-open and is distinct from confirmed access. Supported Claude/Codex shapes, the narrow current `exec` wrapper and the content heuristic are documented in the reference. The document trigger, one-block policy, generic command errors and hook settings are unchanged.
+
 - Writing and done-check text summaries identify their scope: complete-file pattern checks, repository-state matching and configured-command success do not establish document review. Task checks and unmatched repository state are reported separately. The writing and reporting guides require omitted reviews to remain visible. Check logic, exit codes and JSON fields are unchanged.
 - `doctor` now validates an existing `checks.toml` without executing its commands and warns about empty or invalid configuration. Its summary distinguishes available tools from warnings and unverified execution; exit codes and JSON finding fields remain unchanged. Repeated `kit init` retains the no-checks warning, and the connect guide establishes actual checks before running an empty draft.
 - `doctor` reports the loaded package path and installation commit when matching metadata records one. Source execution reports its own checkout and local changes; unrelated installed metadata is not used. Unknown provenance remains explicit, without printing source URLs or credentials.

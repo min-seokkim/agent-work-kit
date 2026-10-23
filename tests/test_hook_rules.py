@@ -168,16 +168,22 @@ class WritingReply(Project):
         self.assertEqual(self.log(), [])
 
     def test_a_session_that_read_the_guide_passes(self):
-        for tool_use in (("Skill", {"skill": "awkit-writing"}), ("Read", {"file_path": "/x/kit/korean-writing.md"}),
+        guide = (Path(__file__).resolve().parents[1] / "kit/writing.md").read_text(encoding="utf-8")
+        for tool_use in (("Skill", {"skill": "awkit-writing"}), ("Read", {"file_path": "/x/kit/writing.md"}),
                          ("Bash", {"command": "cat agent-work-kit/writing.md"})):
             transcript = self.transcript("구현 세션에 붙일 지시문을 써 줘.", tool_use)
+            with Path(transcript).open("a", encoding="utf-8") as handle:
+                handle.write(json.dumps({"type": "user", "message": {"role": "user", "content": [
+                    {"type": "tool_result", "tool_use_id": "t", "is_error": False, "content": guide}]}}) + "\n")
             self.assertIsNone(self.stop(DOCUMENT, transcript, session=tool_use[0]), tool_use)
         # Codex writes its transcript as response items; a shell call that reads the guide counts the same.
         codex = self.base / "codex.jsonl"
         codex.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in [
             {"type": "event_msg", "payload": {"type": "user_message", "message": "보고서를 작성해 줘."}},
             {"type": "response_item", "payload": {"type": "function_call", "name": "shell",
-                                                  "arguments": "{\"command\": [\"cat\", \"kit/writing.md\"]}"}},
+                                                  "call_id": "read", "arguments": "{\"command\": [\"cat\", \"kit/writing.md\"]}"}},
+            {"type": "response_item", "payload": {"type": "function_call_output", "call_id": "read",
+                                                  "output": json.dumps({"exit_code": 0, "output": guide})}},
         ]), encoding="utf-8")
         self.assertIsNone(self.stop(DOCUMENT, str(codex), session="codex"))
         self.assertEqual(self.log(), [])

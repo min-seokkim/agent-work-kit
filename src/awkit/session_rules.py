@@ -6,14 +6,16 @@ that misses.
 Writing is the one situation that can end in the chat with no tool call, so no rule that reads tool calls
 sees it. `reply` reads the result instead: the final reply, from the event's `last_assistant_message` (Claude
 Code and Codex both send it on Stop) or the session's transcript, and the transcript for the turn's request
-and for any sign that the writing guide was read. Transcripts are JSON lines: Claude Code writes `user` and
+and for correlated evidence that the writing guide was returned. Transcripts are JSON lines: Claude Code writes `user` and
 `assistant` records whose `message.content` holds `text` and `tool_use` blocks; Codex writes `response_item`
 records (`message`, `function_call`, `custom_tool_call`, `local_shell_call`) and `event_msg` records
 (`user_message`, `agent_message`). Both are only read.
 """
 
+import ast
 import json
 import re
+import shlex
 import sys
 import tomllib
 from pathlib import Path
@@ -26,8 +28,9 @@ DOCUMENT_REQUEST = re.compile(r"(지시문|프롬프트|문서|보고서|안내�
                               r".{0,40}?(써|쓰|작성|만들|정리|write|draft)"
                               r"|(써|작성|write|draft).{0,40}?(지시문|프롬프트|문서|보고서|prompt|instructions|document)",
                               re.I | re.S)
-# A sign in a tool call that the writing guide was read: the skill, the guide files, or a copy of them.
-GUIDE = re.compile(r"(?:korean-)?writing\.md|awkit-writing|\"skill\":\s*\"[^\"]*writing")
+# Mentions identify potentially relevant unsupported operations, never successful access.
+GUIDE = re.compile(r"(?:korean-)?writing\.md|awkit-writing|kit\s+guide\s+(?:korean-)?writing", re.I)
+EXEC_WRAPPER = re.compile(r"\s*text\(await tools\.exec_command\((\{.*\})\)\);\s*", re.S)
 
 # The failure catalogue entries (kit/failures.md) these commands guard: Korean written for others without the
 # guide that the agent itself was given (F14), and guidance followed for another version of the kit (F25).
@@ -38,21 +41,26 @@ PREVENTS = {"awkit hook reply": ("F14",), "awkit hook kit-version": ("F25",)}
 
 
 def read_transcript(path):
-    """The records of a transcript, or None when there is none or it cannot be read."""
+    """The complete transcript records, or None for unreadable, malformed or partial input."""
     if not isinstance(path, str) or not path:
         return None
     try:
-        lines = Path(path).expanduser().read_text(encoding="utf-8", errors="replace").splitlines()
-    except OSError:
+        text = Path(path).expanduser().read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
         return None
+    if text and not text.endswith("\n"):
+        return None  # a final record may still be in flight
     records = []
-    for line in lines:
+    for line in text.splitlines():
+        if not line.strip():
+            continue
         try:
             record = json.loads(line)
         except ValueError:
-            continue
-        if isinstance(record, dict):
-            records.append(record)
+            return None
+        if not isinstance(record, dict):
+            return None
+        records.append(record)
     return records
 
 
@@ -69,23 +77,176 @@ def _payload(record):
     return payload if isinstance(payload, dict) else {}
 
 
-def tool_calls(records):
-    """Each tool call in the transcript as text: its name and input. Also a slash command the person ran, such as
-    /awkit-writing, which loads the skill without a tool call."""
-    for record in records:
+def _tool_events(records):
+    """Only the two supported call/result envelopes, retaining transcript order."""
+    for position, record in enumerate(records):
         kind, payload = record.get("type"), _payload(record)
         if kind == "assistant":
             for block in _blocks(record):
                 if block.get("type") == "tool_use":
-                    yield json.dumps({"name": block.get("name"), "input": block.get("input")}, ensure_ascii=False)
+                    yield position, "call", ("claude", block.get("id")), block.get("name"), block.get("input")
         elif kind == "user":
             for block in _blocks(record):
-                text = block.get("text")
-                if isinstance(text, str) and text.lstrip().startswith("<command-name>"):
-                    yield text
+                if block.get("type") == "tool_result":
+                    yield position, "result", ("claude", block.get("tool_use_id")), "claude", block
+                elif isinstance(block.get("text"), str) and "<command-name>" in block["text"] and GUIDE.search(block["text"]):
+                    yield position, "call", ("claude", None), "slash_skill", block["text"]
         elif payload.get("type") in ("function_call", "custom_tool_call", "local_shell_call"):
-            yield json.dumps({key: payload.get(key) for key in ("name", "arguments", "input", "action")},
-                             ensure_ascii=False)
+            yield position, "call", ("codex", payload.get("call_id")), payload.get("name") or "local_shell_call", \
+                payload.get("arguments", payload.get("input", payload.get("action")))
+        elif payload.get("type") in ("function_call_output", "custom_tool_call_output", "local_shell_call_output"):
+            yield position, "result", ("codex", payload.get("call_id")), "codex", payload.get("output")
+
+
+def _shell_access(command):
+    """Recognize single reads and known mentions; unfamiliar candidate commands stay unknown."""
+    if isinstance(command, str):
+        try:
+            words = shlex.split(command, comments=True, posix=False)
+        except ValueError:
+            return "unknown" if GUIDE.search(command) else "none"
+        if not words:
+            return "none"
+    elif isinstance(command, list) and all(isinstance(word, str) for word in command):
+        words = command
+    else:
+        return "unknown"
+    words = [word.strip("\"'") for word in words]
+    if not words:
+        return "none"
+    raw = command if isinstance(command, str) else " ".join(command)
+    if isinstance(command, str) and GUIDE.search(raw) and re.search(r"[;|&<>`\n]", command):
+        return "unknown"
+    program = words[0].replace("\\", "/").rsplit("/", 1)[-1].lower()
+    # A filename mentioned as an argument of these operations is not a file read.
+    if program in {"echo", "write-output", "printf", "rg", "grep", "select-string", "findstr"}:
+        return "none"
+    if program in {"python", "python3", "python.exe", "py"} and len(words) == 3 and words[1] == "-c":
+        try:
+            body = ast.parse(words[2]).body
+            if all(isinstance(node, ast.Expr) and (isinstance(node.value, ast.Constant)
+                   or isinstance(node.value, ast.Call) and isinstance(node.value.func, ast.Name)
+                   and node.value.func.id == "print" and not node.value.keywords
+                   and all(isinstance(arg, ast.Constant) for arg in node.value.args)) for node in body):
+                return "none"
+        except (SyntaxError, ValueError):
+            pass
+    if not GUIDE.search(raw):
+        return "none"
+    if program in {"awkit", "awkit.exe"} and words[1:] == ["kit", "guide", "writing"]:
+        return "read"
+    if program in {"cat", "get-content"}:
+        paths = words[1:]
+        if program == "get-content":
+            paths = [word for word in paths if word.lower() not in {"-raw", "-literalpath", "-path"}]
+        if len(paths) == 1 and not paths[0].startswith("-"):
+            path = paths[0].replace("\\", "/").lower()
+            if path.endswith("/writing.md") or path == "writing.md" or path.endswith("/awkit-writing/skill.md"):
+                return "read"
+    return "unknown"
+
+
+def _access_operation(name, arguments):
+    raw = arguments if isinstance(arguments, str) else json.dumps(arguments)
+    name = str(name).rsplit(".", 1)[-1].lower()
+    if name == "exec":
+        match = EXEC_WRAPPER.fullmatch(raw)
+        if not match:
+            return "unknown" if GUIDE.search(raw) else "none"
+        arguments = match.group(1)
+        name = "exec_command"
+    if isinstance(arguments, str):
+        try:
+            arguments = json.loads(arguments)
+        except ValueError:
+            return "unknown" if GUIDE.search(raw) else "none"
+    if not isinstance(arguments, dict):
+        return "unknown" if GUIDE.search(raw) else "none"
+    if name == "skill":
+        return "read" if str(arguments.get("skill", "")).rsplit(":", 1)[-1] == "awkit-writing" else \
+            "unknown" if GUIDE.search(raw) else "none"
+    if name == "read":
+        path = str(arguments.get("file_path", "")).replace("\\", "/").lower()
+        if GUIDE.search(path):
+            if any(key in arguments for key in ("offset", "limit", "pages")) or path.endswith("korean-writing.md"):
+                return "unknown"
+            return "read" if path.endswith("/writing.md") or path == "writing.md" or path.endswith("/awkit-writing/skill.md") else "unknown"
+        return "none"
+    if name in {"bash", "exec_command", "shell", "shell_command", "local_shell_call"}:
+        return _shell_access(arguments.get("cmd", arguments.get("command")))
+    return "unknown" if GUIDE.search(raw) else "none"
+
+
+def _text_content(value):
+    if isinstance(value, str):
+        return value
+    if isinstance(value, list) and all(isinstance(item, dict) and item.get("type") == "text"
+                                       and isinstance(item.get("text"), str) for item in value):
+        return "\n".join(item["text"] for item in value)
+    return None
+
+
+def _access_result(provider, value):
+    if provider == "claude":
+        failed = value.get("is_error", False)
+        return (not failed if isinstance(failed, bool) else None), _text_content(value.get("content"))
+    # Current exec output separates its completion banner from the child's JSON.
+    # The banner alone says nothing about the child's exit status.
+    if (isinstance(value, list) and len(value) == 2
+            and all(isinstance(item, dict) and item.get("type") == "input_text"
+                    and isinstance(item.get("text"), str) for item in value)
+            and re.fullmatch(r"Script completed\nWall time [0-9.]+ seconds\nOutput:\s*", value[0]["text"])):
+        text = value[1]["text"]
+    else:
+        text = _text_content(value)
+    try:
+        result = json.loads(text) if text is not None else value
+    except ValueError:
+        return None, None
+    if not isinstance(result, dict) or type(result.get("exit_code")) is not int:
+        return None, None
+    return result["exit_code"] == 0, _text_content(result.get("output"))
+
+
+def _returned_guide(text):
+    """Small content heuristic, not proof of comprehension or authentic provenance."""
+    if not isinstance(text, str) or re.search(r"\b(?:(?:output|tokens?|characters?|lines?) (?:was |were )?truncated|truncated (?:output|tokens?|characters?|lines?))\b", text, re.I):
+        return False
+    headings = re.findall(r"^\s*(?:\d+\s*[→:|]\s*)?#{1,6}\s+(.+?)\s*$", text.lstrip("\ufeff"), re.M)
+    normalized = {" ".join(heading.strip("#* ").lower().split()) for heading in headings}
+    return {"writing guide", "before writing", "completion check"} <= normalized
+
+
+def guide_access(records):
+    """read: returned main-guide content; absent: supported evidence shows none; unknown: fail open."""
+    if records is None:
+        return "unknown"
+    calls, results = {}, {}
+    unknown = False
+    for position, kind, identity, name, value in _tool_events(records):
+        if not isinstance(identity[1], str) or not identity[1].strip():
+            unknown |= kind == "call" and _access_operation(name, value) != "none"
+            continue
+        target = calls if kind == "call" else results
+        target.setdefault(identity, []).append((position, name, value))
+    for identity, entries in calls.items():
+        operations = [_access_operation(name, value) for _, name, value in entries]
+        if all(operation == "none" for operation in operations):
+            continue
+        outputs = results.get(identity, [])
+        if len(entries) != 1 or len(outputs) != 1 or outputs[0][0] <= entries[0][0]:
+            unknown = True
+            continue
+        operation = operations[0]
+        if operation == "unknown":
+            unknown = True
+            continue
+        _, provider, value = outputs[0]
+        success, text = _access_result(provider, value)
+        if success and _returned_guide(text):
+            return "read"
+        unknown |= success is not False
+    return "unknown" if unknown else "absent"
 
 
 def last_request(records):
@@ -136,7 +297,7 @@ def reply_check(payload, hangul):
     """What the writing-reply rule says about the reply that ends this turn, or None when the reply passes or
     the check cannot tell. A reply counts as a Korean document for use elsewhere when it has more than
     `hangul` Hangul syllables, and a heading or a turn that asked for a prompt or document, and the session
-    shows no sign of the writing guide."""
+    has supported complete evidence of no successful guide access."""
     records = read_transcript(payload.get("transcript_path"))
     reply = payload.get("last_assistant_message")
     if not isinstance(reply, str) or not reply.strip():
@@ -147,7 +308,7 @@ def reply_check(payload, hangul):
         return None  # without the transcript the guide's use cannot be judged
     if not (has_heading(reply) or DOCUMENT_REQUEST.search(last_request(records))):
         return None
-    if any(GUIDE.search(call) for call in tool_calls(records)):
+    if guide_access(records) != "absent":
         return None
     from .checks import check_text
     findings = check_text(reply)

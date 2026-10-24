@@ -1,6 +1,7 @@
 import copy
 import json
 import os
+import re
 import sqlite3
 import subprocess
 import sys
@@ -11,7 +12,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from awkit.channel import Channel
-from awkit.channel_status import observe
+from awkit.channel_status import observe, render
 from support import child_env
 
 
@@ -157,7 +158,92 @@ class ChannelStatusTests(unittest.TestCase):
         returned = next(row for row in result["protocol"] if row["observation"] == "returned-response")
         self.assertEqual(returned["declaration_details"][0]["support"], "unsupported")
         text = self.cli("status", "--record", str(self.record_path)).stdout
-        self.assertIn("declaration missing-proof | done | unsupported | evidence: none", text)
+        declared = next(line for line in text.splitlines() if line.startswith("Declared missing-proof |"))
+        self.assertIn("| done |", declared)
+        self.assertIn("support: unsupported", declared)
+        self.assertIn("evidence: none", text)
+
+    def test_human_output_groups_outstanding_before_history_without_changing_report(self):
+        self.ab.post("main", "reviewer", "question", "Settled question.")
+        self.ab.post("reviewer", "main", "re", "Answer.", reply_to="M-001")
+        self.ab.post("main", "reviewer", "question", "New question.")
+        self.ab.post("main", "reviewer", "question", "Another settled question.")
+        self.ab.post("reviewer", "main", "re", "Another answer.", reply_to="M-003")
+        self.ac.post("main", "reviewer", "notice", "Sample notice.")
+        self.ac.post("main", "reviewer", "question", "Waiting for a result.")
+        self.obligation("settled", "ab", "M-001", "done", [("ab", "R-001")])
+        self.obligation("notice-first", "ac", "M-001")
+        self.obligation("question", "ab", "M-002")
+        self.obligation("notice-second", "ac", "M-001")
+        report = self.status()
+        before = copy.deepcopy(report)
+        text = render(report)
+        history = text.index("Recorded history:")
+        self.assertLess(text.index("ab:M-002 |"), history)
+        self.assertLess(text.index("ac:M-002 |"), history)
+        self.assertGreater(text.index("ab:M-001 |"), history)
+        self.assertLess(text.index("ab:M-002 |"), text.index("ac:M-002 |"))
+        self.assertLess(text.index("ab:M-001 |"), text.index("ab:M-003 |"))
+        self.assertLess(text.index("Declared notice-first |"), text.index("Declared question |"))
+        self.assertLess(text.index("Declared question |"), text.index("Declared notice-second |"))
+        self.assertLess(text.index("Declared notice-second |"), history)
+        self.assertGreater(text.index("Declared settled |"), history)
+        waiting = next(line for line in text.splitlines() if line.startswith("ac:M-002 |"))
+        self.assertIn("await linked response", waiting)
+        self.assertNotIn("send", waiting)
+        self.assertEqual(len(re.findall(r"^(?:ab|ac):[MR]-[0-9]+ \|", text, re.M)), len(report["protocol"]))
+        for row in report["obligations"]:
+            self.assertEqual(sum(line.startswith(f"Declared {row['id']} |") for line in text.splitlines()), 1)
+        self.assertEqual(report, before)
+        self.assertEqual(render(report), text)
+
+    def test_human_output_keeps_unsupported_conflicting_and_unavailable_early(self):
+        self.fixture()
+        self.obligation("unsupported", "ac", "R-001", "done")
+        self.obligation("conflicting", "ac", "R-001")
+        self.record["relationships"].append(dict(id="unavailable", channel="../missing.sqlite3",
+                                                 local_role="main", counterpart="fiction-D"))
+        report = self.status(expected=1)
+        text = render(report)
+        attention = text.index("Outstanding protocol and declarations:")
+        history = text.index("Recorded history:")
+        self.assertLess(text.index("Diagnostic:"), attention)
+        self.assertLess(text.index("unavailable: fiction-D | local main | unavailable"), attention)
+        self.assertLess(text.index("Declared unsupported |"), history)
+        self.assertLess(text.index("Declared conflicting |"), history)
+        returned = next(line for line in text.splitlines() if line.startswith("ac:R-001 |"))
+        self.assertLess(text.index(returned), history)
+        self.assertIn("unsupported", returned)
+        self.assertIn("channel closed", returned)
+        self.assertIn("conflicts: conflicting", text)
+        for row in report["protocol"]:
+            self.assertIn(row["next_protocol_action"], text)
+
+    def test_all_settled_human_output_retains_history_and_completion_limit(self):
+        self.ab.post("main", "reviewer", "question", "Question.")
+        self.ab.post("reviewer", "main", "re", "Answer.", reply_to="M-001")
+        self.ac.post("main", "reviewer", "notice", "Information only.")
+        self.ac.post("main", "reviewer", "close", "Closed.")
+        self.obligation("settled", "ab", "M-001", "done", [("ab", "R-001")])
+        self.obligation("info", "ac", "M-001", "no-action", [("ac", "M-001")])
+        report = self.status()
+        text = render(report)
+        self.assertIn("No outstanding protocol or declaration is recorded.", text)
+        self.assertIn("semantic completion is not verified", text)
+        self.assertLess(text.index("Recorded history:"), text.index("ab:M-001 |"))
+        for row in report["obligations"]:
+            self.assertEqual(sum(line.startswith(f"Declared {row['id']} |") for line in text.splitlines()), 1)
+            self.assertGreater(text.index(f"Declared {row['id']} |"), text.index("Recorded history:"))
+        self.assertIn("fiction-C | local main | closed", text)
+
+    def test_unavailable_only_report_does_not_imply_settled_work(self):
+        report = self.status(expected=1)
+        self.assertEqual(report["protocol"], [])
+        self.assertEqual(report["obligations"], [])
+        text = render(report)
+        self.assertIn("Unavailable channel evidence leaves outstanding work unknown.", text)
+        self.assertNotIn("No outstanding protocol or declaration is recorded.", text)
+        self.assertTrue(all(row["state"] == "unavailable" for row in report["relationships"]))
 
     def test_aliases_deduplicate_rows_and_resolve_declarations(self):
         self.fixture()

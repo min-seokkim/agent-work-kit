@@ -227,25 +227,63 @@ def render(report):
                  + " | conflicting=" + str(sum(bool(row["conflicts"]) for row in obligations))
                  + " | unavailable channels=" + str(sum(row["state"] == "unavailable" and "alias_of" not in row
                                                         for row in report["relationships"])))
-    for row in report["relationships"]:
+    def declaration_outstanding(row):
+        return row["state"] == "pending" or row["support"] == "unsupported" or bool(row["conflicts"])
+
+    def protocol_outstanding(row):
+        return (row["observation"] in ("protocol-unanswered", "awaiting-reply")
+                or row.get("disposition") == "disposition-unrecorded"
+                or any(declaration_outstanding(item) for item in row["declaration_details"]))
+
+    def relationship_line(row):
         alias = f" (alias of {row['alias_of']})" if "alias_of" in row else ""
-        lines.append(f"{row['id']}: {row['counterpart']} | local {row['local_role']} | {row['state']}{alias} | {row['channel']}")
-    for row in report["protocol"]:
+        return f"{row['id']}: {row['counterpart']} | local {row['local_role']} | {row['state']}{alias} | {row['channel']}"
+
+    def evidence_text(row):
+        return ", ".join(f"{ref['relationship']}:{ref['message']} ({ref['status']})"
+                         for ref in row["evidence_resolution"]) or "none"
+
+    def protocol_line(row):
         source = row["source"]
         disposition = f" | {row['disposition']}" if "disposition" in row else ""
-        lines.append(f"{source['relationship']}:{source['message']} | {row['counterpart']} | local {row['local_role']} | "
-                     f"{row['observation']}{disposition} | next: {row['next_protocol_action']}")
-        for declaration in row["declaration_details"]:
-            evidence = ", ".join(f"{ref['relationship']}:{ref['message']} ({ref['status']})"
-                                 for ref in declaration["evidence_resolution"]) or "none"
-            conflict = f" | conflicts: {', '.join(declaration['conflicts'])}" if declaration["conflicts"] else ""
-            lines.append(f"  declaration {declaration['id']} | {declaration['state']} | {declaration['support']} | "
-                         f"evidence: {evidence}{conflict}")
-    for row in report["obligations"]:
+        references = "; ".join(f"{item['id']} ({item['state']}, {item['support']}; evidence: {evidence_text(item)})"
+                               for item in row["declaration_details"])
+        return (f"{source['relationship']}:{source['message']} | {row['counterpart']} | local {row['local_role']} | "
+                f"{row['observation']}{disposition} | channel {row['channel_state']} | next: {row['next_protocol_action']}"
+                + (f" | declaration refs: {references}" if references else ""))
+
+    relationships = {row["id"]: row for row in report["relationships"]}
+
+    def declaration_lines(row):
         source = row["source"]
+        relationship = relationships[source["relationship"]]
         conflict = f" | conflicts: {', '.join(row['conflicts'])}" if row["conflicts"] else ""
-        lines.append(f"Declared {row['id']} | {source['relationship']}:{source['message']} | {row['responsible_session']} | "
-                     f"{row['state']} | {row['action']} | support: {row['support']}{conflict}")
+        details = "".join(f" | {key}: {row[key]}" for key in ("recipient", "revision", "reason") if key in row)
+        return [f"Declared {row['id']} | {source['relationship']}:{source['message']} | {relationship['counterpart']} | "
+                f"local {relationship['local_role']} | channel {relationship['state']} | {row['responsible_session']} | {row['state']} | "
+                f"action: {row['action']} | support: {row['support']}{conflict}{details}",
+                f"  evidence: {evidence_text(row)}"]
+
     lines.extend("Diagnostic: " + json.dumps(row, ensure_ascii=False) for row in report["diagnostics"])
+    unavailable = [row for row in report["relationships"] if row["state"] == "unavailable"]
+    if unavailable:
+        lines.append("Unavailable relationships:")
+        lines.extend(relationship_line(row) for row in unavailable)
+    outstanding_protocol = [row for row in protocol if protocol_outstanding(row)]
+    outstanding_declarations = [row for row in obligations if declaration_outstanding(row)]
+    lines.append("Outstanding protocol and declarations:")
+    if not outstanding_protocol and not outstanding_declarations:
+        lines.append("Unavailable channel evidence leaves outstanding work unknown." if unavailable
+                     else "No outstanding protocol or declaration is recorded.")
+    lines.extend(protocol_line(row) for row in outstanding_protocol)
+    for row in outstanding_declarations:
+        lines.extend(declaration_lines(row))
+    lines.append("Relationships:")
+    lines.extend(relationship_line(row) for row in report["relationships"] if row["state"] != "unavailable")
+    lines.append("Recorded history:")
+    lines.extend(protocol_line(row) for row in protocol if not protocol_outstanding(row))
+    for row in obligations:
+        if not declaration_outstanding(row):
+            lines.extend(declaration_lines(row))
     lines.append("Declarations describe recorded intent and evidence references; semantic completion is not verified.")
     return "\n".join(lines)

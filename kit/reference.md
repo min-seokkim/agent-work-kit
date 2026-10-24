@@ -363,7 +363,7 @@ Paths: record-relative or absolute. IDs: unique per list. Optional strings: `tas
 
 Aliases, including hard links, share protocol rows under the first relationship; later IDs/paths carry `alias_of`. Roles/counterparts must match. Alias references resolve there. Identity holds per invocation. Different DBs keep separate message namespaces.
 
-Read-only connections validate schema-1 channels without creation, migration or cursor movement. No discovery/posting/execution/link-opening occurs. JSON schema 1: `session`, `relationships` with channel state, `protocol`, `obligations`, `diagnostics`. Text shows counts and full rows.
+Read-only connections validate schema-1 channels without creation, migration or cursor movement. No discovery/posting/execution/link-opening occurs. JSON schema 1: `session`, `relationships` with channel state, `protocol`, `obligations`, `diagnostics`. Text shows counts, diagnostics and outstanding items before history.
 
 Unanswered requests/rebuttals: `protocol-unanswered` incoming, `awaiting-reply` outgoing. Linked `re`/`rebut` records a response; rebut remains a request. Incoming responses without explicit result-source declarations show `disposition-unrecorded`, assigning no integration duty. Notices imply no reply duty. Cursors and closure never complete work.
 

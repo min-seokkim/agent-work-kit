@@ -32,6 +32,8 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Added
 
+- Human `channel status` output places diagnostics, unresolved protocol and pending/unsupported/conflicting declarations before recorded history, retaining stable order and each full row once. Counterpart, role, stated action and evidence stay visible, including notice-only work and unavailable relationships. JSON, database access, exit codes and semantic-completion limits are unchanged.
+
 - The writing guide checks source-derived preservation briefs against relevant available originals before drafting or delegation, distinguishes source forms and unknown coverage, and scopes topic-omission claims to inspected material with available project plans. Current explicit user decisions retain precedence. A synthetic paired trial exposed a shared brief's unsupported premise; it does not establish a preferred drafting language or author acceptance.
 
 - `examples/document-evidence/` demonstrates explicit source, preservation and rendered-review declarations for a fictional note. Its standard-library checker distinguishes missing, unavailable, stale and changed evidence, reusing the review runner's artifact retention. It checks recorded coverage without certifying review truth, writing quality or author acceptance; the example is repository-only.

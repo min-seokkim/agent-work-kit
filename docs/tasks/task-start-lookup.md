@@ -1,6 +1,6 @@
 # Task-start lookup
 
-Status: preparation completed in R-051, with its limits retained. M-091 withdraws the scan-output addition assigned in M-090 because R-050 corrected its premise; M-092 confirms that disposition in response to R-052. Existing scan output already includes the configured records reference. No product implementation is assigned. Planning owns this task record and the roadmap.
+Status: preparation completed in R-051, with its limits retained. M-091 withdraws the scan-output addition assigned in M-090 because R-050 corrected its premise; M-092 confirms that disposition in response to R-052. Existing scan output already includes the configured records reference. No retrieval feature is assigned. M-103 separately assigns the input-compatibility follow-up below. Planning owns this task record and the roadmap.
 
 ## User outcome
 
@@ -59,3 +59,13 @@ Planning selected scope before inspecting the raw user-facing output and correct
 R-051's final `contract.md` preserves the preliminary error, corrected observation and concrete existing-command sequence. R-052 confirms that no production edit was made for M-090. M-092 closes the product decision: use existing records and commands for this case, without substituting an unrelated diagnostic improvement. Rendering, independent review and actual resumed use remain unperformed; the scripted sequence is not an observed autonomous-agent recovery.
 
 Reopen a feature proposal only when ordinary use reveals a missing step after the existing route is applied. The subsequent [full presentation and revision task](presentation-method-trial.md#native-control-prerequisite) remains blocked on native application control. The separate [repair trial](installed-guide-paths.md#repair-trial-product-disposition) concluded with existing capabilities. Provider message delivery remains a distinct product proposal. Planning record changes require their own coordinated delivery.
+
+## Task-record input compatibility follow-up
+
+Ordinary use of `channel status` failed after planning rewrote its own JSON record with Windows PowerShell `Set-Content -Encoding UTF8`. The writer added a UTF-8 BOM, and status returned an unexpected-BOM parsing error before reading relationships. Removing only the leading `EF BB BF` bytes restored the same record's output. Planning owns that record-writing error; the observation establishes this input incompatibility, not a broader parser failure.
+
+M-103 assigns a bounded improvement: accept plain UTF-8 and UTF-8 with one leading BOM in the selected task record without rewriting it. Preserve JSON/schema validation, report shape, exit behavior, missing-channel handling and read-only observation. Unsupported encodings, malformed JSON and invalid records must remain explicit failures. No encoding detector, new schema, native transport or automatic disposition inference is assigned.
+
+Implementation owns the affected parser/tests, CHANGELOG and delivery. Reproduce the observed input with invented records and verify equivalent plain/BOM results plus unchanged input/channel state. The assignment and original error are retained under `.awkit/handoffs/collaboration-obligations/status-bom-assignment.md`. This follow-up is independent of the completed lookup and repair trials; it does not establish reduced reminders or better role adherence.
+
+Product-only candidate `6b60b4f` passed Ruff, 38 focused channel/kit tests without skips, and writing checks. An actual Windows PowerShell fixture reproduced the installed parser's exit 2 for its BOM record; candidate source returned the same observations as plain UTF-8 with exit 0, retaining the non-ASCII value and input/database bytes and mtimes. Malformed/unsupported encodings, misplaced/repeated BOMs and invalid schema/references remain rejected. The original expected failures and a duplicated-test edit caught by Ruff are retained separately under `.awkit/handoffs/channel-status-bom/`. Cumulative verification and delivery are tracked there independently of this focused pass.

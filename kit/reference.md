@@ -365,7 +365,7 @@ A message log in SQLite shared by two local sessions: `main` (implements) and `r
 
 Exit codes: 0 found, 1 timed out, 2 usage or storage error, 3 the reviewer received `close`. `awkit channel export [--json]` prints the whole log; bodies are quoted so they cannot imitate headers.
 
-`awkit channel status --record task.json [--json]` observes listed channels and declarations; `--db` is rejected:
+`awkit channel status --record task.json [--json]` reads UTF-8 records (optional leading BOM); `--db` is rejected:
 
 ```json
 {

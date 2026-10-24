@@ -36,7 +36,7 @@ def _same_channel(left, right):
 def _load(record_path):
     # Anchor before resolve: Windows may reject resolving a relative path directly.
     anchor = Path(os.path.abspath(record_path))
-    record = json.loads(anchor.read_text(encoding="utf-8"))
+    record = json.loads(anchor.read_text(encoding="utf-8-sig"))
     if not isinstance(record, dict) or type(record.get("schema")) is not int or record["schema"] != 1:
         raise ValueError("The task record needs schema 1.")
     session = _text(record.get("session"), "session")

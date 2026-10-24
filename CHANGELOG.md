@@ -32,6 +32,8 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Added
 
+- `awkit channel status` accepts an optional leading UTF-8 BOM in its selected JSON task record, including records written by Windows PowerShell. Plain UTF-8, validation, observations and exit codes are preserved; input records and channel state are never rewritten.
+
 - The documented PowerShell snapshot recipe reads NUL-delimited changed/untracked Git paths and invokes the installed CLI through direct arguments. It preserves non-ASCII and spaced paths without requiring awkit in the caller Python or a helper file inside the project. Snapshot behavior and Git configuration are unchanged.
 
 - `awkit doctor` validates one captured project rules input without running rules and checks a kit directory only when message/command substitution or possible failure citations consume it. It distinguishes rules errors, missing/non-directory paths and unavailable inspection, resolving relative paths from the project root. Custom rules remain unchanged; directory presence verifies neither guide freshness nor client loading. Warnings keep the existing nonfatal exit behavior.

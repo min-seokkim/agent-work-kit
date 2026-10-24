@@ -101,6 +101,8 @@ One supported proxy attempt for a metadata-only check exited 1 with OS error 100
 
 [Microsoft classifies 10050 as WSAENETDOWN](https://learn.microsoft.com/en-us/windows/win32/winsock/windows-sockets-error-codes-2), but the local error does not establish a general network outage or the cause of the control-socket failure. [Codex issue 54112](https://github.com/openai/codex/issues/54112) reports a similar symptom with the same CLI version on Windows Desktop; it is a separate firsthand report, not confirmation of the cause in this IDE session. No supported repair was established by the inspected evidence. Continue the durable channel and revisit native delivery when a supported existing endpoint or a discriminating diagnostic is available. Do not substitute a newly launched runtime for this selected conversation.
 
+M-099 preparation, returned in R-058, found that full doctor collection exceeds the selected-endpoint scope. The narrower daemon-version candidate can observe endpoint health but cannot identify the selected conversation; its inspected backend path has conditional PID cleanup and helper-process side effects. The source-only report is `.awkit/handoffs/collaboration-obligations/executor/provider-diagnostic-preparation/report.md`; public revision/version agreement does not independently certify installed-binary provenance. No live diagnostic ran, the prior proxy failure remains unresolved, and a supported next observation remains a research decision.
+
 ## Conditional extensions
 
 The expanded third-party comparison below informs the provider reuse plan. It combines primary documentation with selected source and test inspection; no third-party tool was installed or executed. Pinned sources identify the inspected revisions. Upstream test code and reported experiments do not establish operation in this environment. Detailed local evidence is under `.awkit/handoffs/collaboration-obligations/research-delivery/` and `research-planning/`.
@@ -119,6 +121,8 @@ Apply these lessons to the next bridge contract: preserve the existing durable c
 
 Status: product design for the next integration experiment, not an implementation assignment. Existing-session reachability remains a prerequisite. The current coordinator already stores assignments and results in explicitly registered channels; choose that workflow as the caller rather than adding an owned-worker launcher.
 
+Use native messaging directly for ordinary same-provider coordination when it already serves the task. This proposal connects work that uses the existing awkit channel; it does not require mirroring native conversations into SQLite. Planning owns the product decision, research supplies the selected capability evidence, and implementation owns execution and delivery.
+
 | Option | Fit for the current workflow |
 |---|---|
 | Send the full task through a native message | Avoids a recipient fetch, but the current workflow would still need to correlate that native task and its replies with the retained channel record. This design has not been compared in ordinary use. |
@@ -128,11 +132,17 @@ Select the second option for the next experiment. The proposed caller is an expl
 
 Resolve the recipient's explicitly selected provider/session and verified owning endpoint. Send a fixed automation notice containing correlation identifiers, without copying peer-supplied instructions or a local filesystem path into the native notice. The recipient resolves the reference through its own authorized relationship and reads the original channel message. Unsupported attachment leaves the message available through existing polling and reports the native path unavailable; it does not create a substitute conversation or switch providers.
 
+The current relationship name is local to its record, and message IDs are local to a database. Require an agreed binding that both participants resolve through their own records. Matching names, working directories, message numbers or message text cannot establish that binding. Reuse existing local file-identity checks to confirm a shared channel during same-machine setup; they do not define remote transport. Two channels between the same sessions must remain distinguishable. Missing or ambiguous bindings leave the message available without sending a native notice. Choose identifier storage and rebinding behavior with the integration design, using existing relationship/channel state before proposing another registry.
+
 ### Durable attempt boundary
 
 Keep the dispatch attempt with the existing channel's durable state, linked to the canonical source message and recipient binding. This is transport evidence, not another task registry. A process must retain and exclusively claim the attempt before invoking the native operation. A restart or competing caller must consult that same state before any send. The future implementation must specify its schema/migration and compatibility behavior; no database change is assigned here.
 
 Retain the binding identity and runtime generation, attempt identity, native reference when returned, process outcome and submission certainty. A timeout or lost caller response after dispatch begins remains uncertain until reconciled. It must not trigger another native transport or a second send merely because no task reply exists. Keep the initial outcome when a late receipt arrives. Receipt, authoritative channel reply and declared application of the result remain separate.
+
+Preserve native policy and lifecycle outcomes. [Claude's messaging contract](https://code.claude.com/docs/en/cross-session-messaging) distinguishes delivery, holding and refusal, and supplies idle/exit notices. A held or refused message must not trigger a policy change or another transport to evade that decision. Idle is lifecycle evidence, not a task reply or an accepted result. These documented semantics have not been exercised in the selected runtime.
+
+Keep existing posting, polling and read-only status usable for projects that do not enable native notification. Current readers require database version 1 and the existing message/cursor shapes. The migration proposal must cover mixed old/new clients, atomic setup and recovery from failed setup; an additive description alone does not establish compatibility.
 
 The existing offline negative control demonstrates why an in-memory attempt flag is insufficient after restart. A future integrated trial must cover interruption before sending, uncertain admission, concurrent attempts, late receipt, wrong runtime generation and a returned result still awaiting handling. These observations cannot establish exactly-once remote execution or power-loss durability by themselves.
 

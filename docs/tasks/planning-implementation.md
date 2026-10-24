@@ -1,6 +1,6 @@
 # Planning and implementation trial
 
-Status: implementation delivered; final environment and closure outcomes are tracked in the delivery receipt. Owner: the planning session, with the existing implementation session as executor. Base: `12d402a`. The owner authorized a three-hour autonomous collaboration. The planner chooses bounded work from existing plans and findings, evaluates its expected benefit and reviews results. The implementer uses awkit during the work and returns implementation evidence and feedback. No additional session is assigned.
+Status: the original trial delivered its implementation; final environment and closure outcomes are tracked in the delivery receipt. Base: `12d402a`. The owner authorized a three-hour collaboration between planning and implementation, with no additional session assigned in that trial. The sections below retain its original scope, work and findings. Current responsibilities and work selection are in the [roadmap](../roadmap.md#current-planning-focus).
 
 ## Outcome and ownership
 

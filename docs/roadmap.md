@@ -8,14 +8,18 @@ Remaining work and its completion criteria. Item numbers retain the earlier deve
 
 Planning selects product work across awkit under the owner's continuing-development instruction. The implementation session owns technical implementation, verification and delivery. Existing writing trials supply evidence alongside development and collaboration use.
 
+The separate research/diagnosis session is registered, as reported in M-106; its startup handoff is under `.awkit/handoffs/product-research/`. Research answers a selected product question with existing capabilities, alternatives, evidence and the next decision. Planning decides what to build; implementation owns execution. Implementation completed M-099 provider-diagnostic preparation, and research reused that result without transfer or duplicate investigation.
+
 | User outcome | Next product decision |
 |---|---|
-| Continue work without explaining the project again | [Task-start preparation](tasks/task-start-lookup.md#product-disposition) is complete. The configured pointer already exists; use scan/profile, project records and channel status. Reconsider a feature only after an ordinary continuation demonstrates a missing step. |
+| Continue work without explaining the project again | [Task-start preparation](tasks/task-start-lookup.md#product-disposition) is complete; reuse scan/profile, project records and channel status. Subsequent ordinary use exposed a UTF-8 BOM input failure. [M-103](tasks/task-start-lookup.md#task-record-input-compatibility-follow-up) assigns that bounded compatibility improvement, without a new retrieval command or task store. |
 | Exchange work between independent sessions without manual relay | [The next integration experiment](tasks/independent-session-collaboration.md#proposed-integration-caller) proposes notifying a selected session about an existing channel message. Its supported endpoint, exact interface and durable attempt migration must be settled before implementation. Preserve the chosen conversation; owned-worker success does not establish IDE attachment. |
 | Update a project's connection while preserving its customization | [The isolated repair trial](tasks/installed-guide-paths.md#repair-trial-product-disposition) restored one guide reference with existing capabilities. Preserve the distinction between message access and kit-directory repair. No general updater is justified by this case; native loading and different-version upgrades remain unverified. |
 | Revise an editable output without losing accepted content | [M-093 is blocked before production](tasks/presentation-method-trial.md#native-control-prerequisite) because actual PowerPoint control is unavailable. Preserve the full presentation/native-edit requirements and resume on a supported connection; human revision and acceptance remain separate. |
 
 These are product directions, not four concurrent implementation assignments. Promote a candidate when its next decision is settled. Measure repeated explanations, wrong or duplicated actions, rework and time until usable output; passing checks and completed agent tasks describe narrower results.
+
+Before handing off implementation, name the user problem and observed consequence, the expected improvement, what existing capabilities already cover, the selected change and the result that would justify keeping it. When research establishes that current behavior suffices, retain that procedure without inventing another feature. A research question ends when its evidence supports the pending decision; unresolved details that do not change it remain explicit. Planning inspects the relevant product behavior without repeating the implementer's technical verification.
 
 ## Next work
 

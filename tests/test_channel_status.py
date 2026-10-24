@@ -343,6 +343,60 @@ class ChannelStatusTests(unittest.TestCase):
         with patch.object(Channel, "_prepare", side_effect=AssertionError("must not prepare")):
             self.assertEqual(observe(self.record_path)[1], 0)
 
+    def test_cli_plain_and_bom_utf8_records_match_without_mutation(self):
+        self.fixture()
+        self.record["session"] = "fiction-\ud55c\uae00"
+        raw = json.dumps(self.record, ensure_ascii=False).encode("utf-8")
+        channels = {path: (path.read_bytes(), path.stat().st_mtime_ns) for path in (self.ab.path, self.ac.path)}
+        baseline = None
+        for prefix in (b"", b"\xef\xbb\xbf"):
+            with self.subTest(prefix=prefix):
+                self.record_path.write_bytes(prefix + raw)
+                before = self.record_path.read_bytes(), self.record_path.stat().st_mtime_ns
+                report = self.cli("status", "--record", str(self.record_path), "--json").stdout
+                text = self.cli("status", "--record", str(self.record_path)).stdout
+                self.assertEqual(json.loads(report)["session"], self.record["session"])
+                if baseline is None:
+                    baseline = report, text
+                self.assertEqual((report, text), baseline)
+                self.assertEqual((self.record_path.read_bytes(), self.record_path.stat().st_mtime_ns), before)
+                self.assertEqual({path: (path.read_bytes(), path.stat().st_mtime_ns) for path in channels}, channels)
+
+    def test_bom_record_preserves_partial_channel_exit_and_missing_database(self):
+        self.fixture()
+        missing = self.root / "not-created" / "missing.sqlite3"
+        self.record["relationships"].append(dict(id="missing", channel=str(missing), local_role="main",
+                                                counterpart="fiction-missing"))
+        raw = b"\xef\xbb\xbf" + json.dumps(self.record).encode("utf-8")
+        self.record_path.write_bytes(raw)
+        before = self.record_path.stat().st_mtime_ns
+        result = self.cli("status", "--record", str(self.record_path), "--json", expected=1)
+        report = json.loads(result.stdout)
+        self.assertEqual(report["relationships"][-1]["state"], "unavailable")
+        self.assertTrue(report["protocol"])
+        self.assertFalse(missing.parent.exists())
+        self.assertEqual((self.record_path.read_bytes(), self.record_path.stat().st_mtime_ns), (raw, before))
+
+    def test_invalid_encoding_extra_boms_and_invalid_bom_json_still_exit_two(self):
+        self.fixture()
+        raw = json.dumps(self.record).encode("utf-8")
+        bom = b"\xef\xbb\xbf"
+        invalid_reference = dict(self.record, obligations=[dict(id="invalid", state="pending", action="sample",
+            responsible_session="fiction-A", source=dict(relationship="unknown", message="M-001"), evidence=[])])
+        variants = [raw.decode("utf-8").encode("utf-16"), b"\xfe\xff" + raw.decode().encode("utf-16-be"),
+                    b"\xff" + raw, bom + b"\xff" + raw, bom + bom + raw, b" " + bom + raw,
+                    raw + bom, raw.replace(b'"schema"', bom + b'"schema"', 1), bom + b'{"schema":1,',
+                    bom + json.dumps(dict(self.record, schema=2)).encode("utf-8"),
+                    bom + json.dumps(invalid_reference).encode("utf-8")]
+        channels = {path: (path.read_bytes(), path.stat().st_mtime_ns) for path in (self.ab.path, self.ac.path)}
+        for value in variants:
+            with self.subTest(value=value[:24]):
+                self.record_path.write_bytes(value)
+                before = self.record_path.stat().st_mtime_ns
+                self.cli("status", "--record", str(self.record_path), expected=2)
+                self.assertEqual((self.record_path.read_bytes(), self.record_path.stat().st_mtime_ns), (value, before))
+                self.assertEqual({path: (path.read_bytes(), path.stat().st_mtime_ns) for path in channels}, channels)
+
     def test_record_paths_are_anchored_before_resolve(self):
         self.fixture()
         self.save()

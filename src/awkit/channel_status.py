@@ -237,7 +237,8 @@ def render(report):
 
     def relationship_line(row):
         alias = f" (alias of {row['alias_of']})" if "alias_of" in row else ""
-        return f"{row['id']}: {row['counterpart']} | local {row['local_role']} | {row['state']}{alias} | {row['channel']}"
+        task = f" | declared task: {row['task']}" if "task" in row else ""
+        return f"{row['id']}: {row['counterpart']} | local {row['local_role']} | {row['state']}{alias} | {row['channel']}{task}"
 
     def evidence_text(row):
         return ", ".join(f"{ref['relationship']}:{ref['message']} ({ref['status']})"

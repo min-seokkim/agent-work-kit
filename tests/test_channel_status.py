@@ -219,6 +219,55 @@ class ChannelStatusTests(unittest.TestCase):
         for row in report["protocol"]:
             self.assertIn(row["next_protocol_action"], text)
 
+    def test_human_relationships_show_declared_tasks_without_changing_json_or_inputs(self):
+        self.fixture()
+        self.record["relationships"][0].update(counterpart="fiction-planner", task="Product planning")
+        self.record["relationships"][1].update(counterpart="fiction-researcher", task="조사: 근거 확인")
+        implementation = Channel(self.root / "implementation.sqlite3")
+        implementation.post("main", "reviewer", "notice", "Available counterpart.")
+        self.record["relationships"].append(dict(id="implementation", channel=str(implementation.path),
+                                                local_role="main", counterpart="fiction-implementer", task="Implementation"))
+        self.record["relationships"].append(dict(self.record["relationships"][0], id="planning-alias",
+                                                task="Plan the next experiment"))
+        self.save()
+        paths = (self.record_path, self.ab.path, self.ac.path, implementation.path)
+        before = {path: (path.read_bytes(), path.stat().st_mtime_ns) for path in paths}
+        original_json = self.cli("status", "--record", str(self.record_path), "--json").stdout
+        text = self.cli("status", "--record", str(self.record_path)).stdout
+        self.assertEqual(self.cli("status", "--record", str(self.record_path), "--json").stdout, original_json)
+        report = json.loads(original_json)
+        self.assertEqual([row["task"] for row in report["relationships"]],
+                         ["Product planning", "조사: 근거 확인", "Implementation", "Plan the next experiment"])
+        for row in report["relationships"]:
+            line = next(line for line in text.splitlines() if line.startswith(row["id"] + ": "))
+            self.assertIn(row["counterpart"] + " | local " + row["local_role"], line)
+            self.assertIn(row["state"], line)
+            self.assertIn(row["channel"], line)
+            self.assertTrue(line.endswith(" | declared task: " + row["task"]), line)
+        alias_line = next(line for line in text.splitlines() if line.startswith("planning-alias: "))
+        self.assertIn("alias of ab", alias_line)
+        self.assertNotIn("declared task: Product planning", alias_line)
+        self.assertEqual({path: (path.read_bytes(), path.stat().st_mtime_ns) for path in paths}, before)
+
+    def test_human_unavailable_aliases_keep_tasks_and_absent_task_keeps_old_line(self):
+        self.fixture()
+        missing = self.root / "not-created" / "missing.sqlite3"
+        self.record["relationships"].extend([
+            dict(id="missing", channel=str(missing), local_role="main", counterpart="fiction-missing", task="待機中の調査"),
+            dict(id="missing-alias", channel=str(missing), local_role="main", counterpart="fiction-missing", task="Follow-up"),
+        ])
+        report = self.status(expected=1)
+        before = copy.deepcopy(report)
+        text = self.cli("status", "--record", str(self.record_path), expected=1).stdout
+        lines = text.splitlines()
+        self.assertIn(f"ab: fiction-B | local reviewer | open | {self.ab.path.resolve()}", lines)
+        self.assertIn(f"missing: fiction-missing | local main | unavailable | {missing.resolve()} | declared task: 待機中の調査", lines)
+        self.assertIn(f"missing-alias: fiction-missing | local main | unavailable (alias of missing) | {missing.resolve()} | declared task: Follow-up", lines)
+        self.assertLess(text.index("missing-alias:"), text.index("Outstanding protocol and declarations:"))
+        self.assertFalse(missing.parent.exists())
+        self.assertEqual(report, before)
+        self.assertEqual(render(report), text.rstrip("\n"))
+
     def test_all_settled_human_output_retains_history_and_completion_limit(self):
         self.ab.post("main", "reviewer", "question", "Question.")
         self.ab.post("reviewer", "main", "re", "Answer.", reply_to="M-001")

@@ -387,9 +387,9 @@ Exit codes: 0 found, 1 timed out, 2 usage or storage error, 3 the reviewer recei
 }
 ```
 
-Paths: record-relative or absolute. IDs: unique per list. Optional strings: `task` on relationships; `recipient`/`revision`/`reason` on obligations. States: `pending`/`done`/`no-action`. Optional `evidence`: `[]`. References require declared relationships and valid message IDs.
+Paths: record-relative/absolute. IDs: unique per list. Optional strings: relationship `task`; obligation `recipient`/`revision`/`reason`. Text labels relationship `task` as `declared task`, including aliases/unavailable channels. States: `pending`/`done`/`no-action`. Omitted `evidence`: `[]`. References require declared relationships and valid message IDs.
 
-Aliases, including hard links, share protocol rows under the first relationship; later IDs/paths carry `alias_of`. Roles/counterparts must match. Alias references resolve there. Identity holds per invocation. Different DBs keep separate message namespaces.
+Aliases (including hard links) share protocol rows under the first relationship; later IDs/paths carry `alias_of`. Require matching roles/counterparts; references resolve there. Identity: per invocation; separate DB message namespaces.
 
 Read-only connections validate schema-1 channels without creation, migration or cursor movement. No discovery/posting/execution/link-opening occurs. JSON schema 1: `session`, `relationships` with channel state, `protocol`, `obligations`, `diagnostics`. Text shows counts, diagnostics and outstanding items before history.
 

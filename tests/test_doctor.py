@@ -306,7 +306,8 @@ class ProjectRulesDiagnostics(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         findings = {row['item']: row for row in json.loads(result.stdout)}
         self.assertEqual(findings['rules kit directory']['status'], 'ok')
-        self.assertIn(str(self.root / 'custom-guides'), findings['rules kit directory']['detail'])
+        reported = findings['rules kit directory']['detail'].split(': directory exists;', 1)[0]
+        self.assertTrue(Path(reported).samefile(self.root / 'custom-guides'))
         self.assertEqual((rules.read_bytes(), rules.stat().st_mtime_ns), original)
         self.assertFalse((self.root / '.awkit').exists())
         rules.write_text('schema = 2\n', encoding='utf-8')

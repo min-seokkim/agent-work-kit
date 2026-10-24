@@ -1,6 +1,6 @@
 # Snapshot command path handling
 
-Status: documentation candidate `e8f0529` is accepted in `M-079` for cumulative delivery with the [existing-project diagnostic](installed-guide-paths.md#diagnostic-candidate-acceptance). Planning owns scope and this record. Implementation owns the named documentation files below and isolated evidence under `.awkit/handoffs/snapshot-path-recipe-preparation/`. Full repository verification and delivery remain pending.
+Status: documentation candidate `e8f0529` is accepted in `M-079` for cumulative delivery with the [existing-project diagnostic](installed-guide-paths.md#diagnostic-candidate-acceptance). Planning owns scope. Implementation owns execution records, verification and delivery under `M-081`, the named documentation files below and isolated evidence under `.awkit/handoffs/snapshot-path-recipe-preparation/`. The initial cumulative local check passed; Windows CI requires the test assertion repair described below. Current delivery state is retained in the shared receipt.
 
 ## Observed problem
 
@@ -18,7 +18,7 @@ Planning read both scripts, the reports, discovery evidence and selected-path/tr
 
 Put one runnable installed-CLI recipe in the existing snapshot section of `kit/reference.md`, link to it from `AGENTS.md`, and add one CHANGELOG entry. Preserve additions/deletions, HEAD inclusion, path refusals, unchanged Git state, lack of secret filtering and garbage-collection limits. Recalculate the reference word limit: the earlier source-runtime proposal had no remaining margin. Test the exact documented snippet against the retained fixture and run existing link, kit, word-limit and writing checks. Do not add a command, dependency, persistent Git setting or automatic migration. This preparation establishes no writing-quality improvement or reduction in repeated owner effort.
 
-The accepted diagnostic leaves the reference at 8,959 words. Preserve its explanation and source changes while revising the existing snapshot section. Give an actual PowerShell-compatible invocation or an explicitly external script path so the helper is not accidentally selected as a new project file. The returned documentation snapshot will not supersede the diagnostic's source snapshot; planning owns cumulative checks, installation and delivery.
+The accepted diagnostic leaves the reference at 8,959 words. Preserve its explanation and source changes while revising the existing snapshot section. Give an actual PowerShell-compatible invocation or an explicitly external script path so the helper is not accidentally selected as a new project file. The returned documentation snapshot will not supersede the diagnostic's source snapshot; implementation now owns cumulative checks, installation and delivery under `M-081`.
 
 ## Candidate verification
 
@@ -27,3 +27,9 @@ The accepted diagnostic leaves the reference at 8,959 words. Preserve its explan
 Frozen run `.awkit/reviews/review-azo7d9k8` passed five existing guard, link, word-limit and skill-payload checks, writing checks, and extraction/execution of the exact documented block. In Windows PowerShell 5.1 with ordinary Python 3.14.7, PYTHONPATH removed and awkit not importable, the installed CLI produced fixture snapshot `97540ca`. The five-path delta, expected frozen bytes and deletion matched. Unchanged HEAD content remained included; branch, HEAD, index, status and worktree hashes stayed unchanged. Missing-CLI and empty-selection cases stopped explicitly. Reports and per-command logs are under the preparation folder's `documentation/` directory.
 
 Planning read the candidate, helper, preservation and execution records, verified current-file correspondence, and inspected the reference code block, AGENTS instructions and CHANGELOG rendered in Edge. `M-079` accepts the result for cumulative integration. No POSIX route, broader encoding support, parser correction or reduced user effort is established. Full checks, CI and exact installation belong to the shared delivery receipt under `.awkit/handoffs/project-update-delivery/`.
+
+## Cumulative execution and delivery
+
+Commit `335270b` combined this documentation with the diagnostic and planning records after snapshot `5fe139f` passed Ruff and 360 tests with seven skips. [CI run 40068654398](https://github.com/min-seokkim/agent-work-kit/actions/runs/40068654398) failed only in the diagnostic's exact-path assertion on four Windows interpreters. The snapshot recipe itself was not implicated. The [diagnostic record](installed-guide-paths.md#windows-ci-path-identity-and-delivery-ownership) explains the filesystem-identity assertion repair and preserved evidence.
+
+Implementation owns the follow-up checks, CI, normal `dev` delivery and exact installation under `M-081`; planning no longer acts as its routine code-review gate. The current stage, checked commit/tree and installation/content comparisons belong to `.awkit/handoffs/project-update-delivery/validation.json`. Installation was withheld after the original failed CI. Neither the repair nor a later delivery pass expands the recipe's tested platform/filename scope or establishes a writing-quality benefit.

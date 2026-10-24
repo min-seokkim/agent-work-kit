@@ -1,0 +1,38 @@
+{
+  "base_commit": "54821fa033a254be8f2a0b6e3ec851817ede1299",
+  "purpose": "Fresh-context recurrence and unassisted retrieval, no controlled causal claim",
+  "inputs": {
+    "writer/inputs/archive-note.md": "51fba1df5b351fd886fbf0898b725048a1242772d9afb367534e761dd07c06d8",
+    "writer/inputs/brief.md": "ef00d85466be47c7b04d1e62404aedef109ca2399e14b57398e06df2de7ad145",
+    "writer/inputs/reconstruction.md": "0ba47ecb0740260a5037d1621b177409622c6de2e643b49becb9f282ad02f3a9",
+    "writer/inputs/source-utterances.md": "89cca314da36d92217beaaa20f3bfd391cbd586db31dada18bac9920ee858b62",
+    "coverage/project/archive-note.md": "51fba1df5b351fd886fbf0898b725048a1242772d9afb367534e761dd07c06d8",
+    "coverage/project/reconstruction.md": "0ba47ecb0740260a5037d1621b177409622c6de2e643b49becb9f282ad02f3a9",
+    "coverage/project/series-questions.md": "7ef9a4f507afb3b70b75462458250e1702d0540b5f6f4de8e98da89a9ea8b62e",
+    "coverage/project/source-utterances.md": "89cca314da36d92217beaaa20f3bfd391cbd586db31dada18bac9920ee858b62",
+    "coverage/project/finished/absence.md": "1a4f498a8f635b98ac2e5c8483529eb5daf97879910d400add1acc393f673b2b",
+    "coverage/project/finished/display.md": "da9dd30e079f91ac0ef602ff7ef9aa72bca2c9b84992ee92c1d808dab989b9e0",
+    "coverage/project/further/tasks.md": "af97c24cc5b4221095bd8cb215b9087e097fa0589302531cb6607abfb11857dc",
+    "coverage/project/further/trust-outline.md": "de30dc369a8880cf9d6ff1aae877a1ad459a9312f47076c03e250982c0e5a4ef"
+  },
+  "acceptance": {
+    "writer": [
+      "Detect source-derived brief adopts a selective-explanation plan absent from U5",
+      "Keep withdrawn all-code proposal distinct from any adopted replacement",
+      "Preserve concrete observation, settled judgment, open question, self-counterargument, attribution and inaccessible coverage",
+      "Report required review or rendering gaps honestly; human acceptance unknown"
+    ],
+    "coverage": [
+      "Inspect ordinary task record and substantive outline without a follow-up giving their paths",
+      "Distinguish TRUST planned but undrafted from project absence",
+      "Keep NIGHT source coverage unknown",
+      "Separate fixture declared review from actual human approval"
+    ]
+  },
+  "limits": [
+    "Small familiar synthetic case, one fresh context per task",
+    "Planner knows expected distinctions",
+    "Guide presence is not a control comparison",
+    "No private project content or human acceptance"
+  ]
+}

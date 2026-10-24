@@ -1,0 +1,19 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; font-src 'none'"><title>Cache pilot decision</title><style>:root { color-scheme: light; font-family: system-ui, sans-serif; color: #202c38; background: #eef2f5; }
+body { margin: 0; padding: 40px 24px; }
+article { box-sizing: border-box; max-width: 760px; margin: auto; padding: 40px; background: white; border-top: 5px solid #28736c; }
+h1 { margin: 0 0 24px; font-size: 30px; line-height: 1.2; letter-spacing: -0.02em; }
+h2 { margin: 28px 0 12px; font-size: 20px; }
+p { font-size: 17px; line-height: 1.6; margin: 0 0 18px; }
+table { border-collapse: collapse; width: 100%; margin: 18px 0; font-variant-numeric: tabular-nums; }
+th, td { padding: 10px 14px; text-align: right; border-bottom: 1px solid #d5dde3; }
+th:first-child, td:first-child { text-align: left; }
+th { background: #edf5f3; }
+@media (max-width: 500px) { body { padding: 20px 12px; } article { padding: 24px 20px; } h1 { font-size: 26px; } th, td { padding: 9px 8px; } }
+</style></head><body><article><h1>Extend the cache pilot with a bounded trial</h1>
+<p>The maintainer should authorize a mixed-workload trial before deciding on a wider rollout. The current fictional pilot measured faster repeated reads, but it leaves the costs of other workloads unmeasured. Expansion has neither been approved nor implemented.</p>
+<h2>What the pilot measured</h2>
+<p>These four synthetic pairs measure milliseconds per request before and after caching:</p>
+<table><tr><th>Sample</th><th>Before (ms)</th><th>After (ms)</th></tr><tr><td>1</td><td>120</td><td>84</td></tr><tr><td>2</td><td>100</td><td>80</td></tr><tr><td>3</td><td>140</td><td>98</td></tr><tr><td>4</td><td>160</td><td>112</td></tr></table>
+<p>The arithmetic mean decreased from 130 ms to 93.5 ms, a reduction of 36.5 ms, or about 28.1%. These four samples describe repeated read-only requests for a small set of keys, with a warm cache and one client. They do not establish production performance or a general statistical result.</p>
+<h2>What the next decision needs</h2>
+<p>Cold starts, writes, invalidation, concurrent clients and memory use remain unmeasured. The proposed next step is a bounded mixed-workload trial covering cold starts and writes while observing memory use. That trial remains planned and requires the maintainer&#x27;s decision; it has not run. Its results would inform a later expansion decision.</p></article></body></html>

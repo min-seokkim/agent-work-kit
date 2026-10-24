@@ -1,0 +1,52 @@
+{
+  "schema": 1,
+  "duties": {
+    "source": {
+      "status": "performed",
+      "provenance": "executor-self-review",
+      "reviewer": "implementation executor (informed self-review)",
+      "method": "Executor read note against the independently fixed source facts, requirements and all four CSV pairs; recomputed means 130/93.5 ms, difference 36.5 ms and ratio-of-means decrease about 28.1%.",
+      "inputs": {
+        "note.md": "eb6e7db4b815a061f4b82f82420b36d72ee26b4e7532a27952dcb096cc5274c5",
+        "requirements.json": "3e6ac05b9bb8f42f8cb08b51ed18da0f70d3dd6fe914767291f9bb31db40dbd0",
+        "inputs/source-facts.md": "b9d24bbecfb3e4f57b9cc8fb7002b98c04d050fa6ba2afcd9fff03bead2a3661",
+        "inputs/measurements.csv": "4a101eb30127b2274713f671ac2fc3eae93c5fecd52232b79fb5a52cb7222f65"
+      },
+      "findings": [],
+      "limitations": "Informed executor self-review; intended-reader/author acceptance and independent review are unverified."
+    },
+    "preservation": {
+      "status": "performed",
+      "provenance": "executor-self-review",
+      "reviewer": "implementation executor (informed self-review)",
+      "method": "Executor compared every preservation requirement with the note: all four pairs and units, warm repeated read-only/small-key-set/single-client scope, unmeasured workloads, non-generalizable sample and planned/unapproved expansion remain explicit.",
+      "inputs": {
+        "note.md": "eb6e7db4b815a061f4b82f82420b36d72ee26b4e7532a27952dcb096cc5274c5",
+        "requirements.json": "3e6ac05b9bb8f42f8cb08b51ed18da0f70d3dd6fe914767291f9bb31db40dbd0",
+        "inputs/source-facts.md": "b9d24bbecfb3e4f57b9cc8fb7002b98c04d050fa6ba2afcd9fff03bead2a3661",
+        "inputs/measurements.csv": "4a101eb30127b2274713f671ac2fc3eae93c5fecd52232b79fb5a52cb7222f65"
+      },
+      "findings": [],
+      "limitations": "Informed executor self-review; intended-reader/author acceptance and independent review are unverified."
+    },
+    "rendered": {
+      "status": "performed",
+      "provenance": "executor-self-review",
+      "reviewer": "implementation executor (informed self-review)",
+      "method": "Executor viewed both full PNGs with the image viewer: 1200x1004 from 1200x900 viewport and 390x1301 from 390x844. Title, table, conditions and planned next step are readable without clipped text or horizontal overflow. Subsequent capture bytes equal those inspected images.",
+      "inputs": {
+        "note.md": "eb6e7db4b815a061f4b82f82420b36d72ee26b4e7532a27952dcb096cc5274c5",
+        "requirements.json": "3e6ac05b9bb8f42f8cb08b51ed18da0f70d3dd6fe914767291f9bb31db40dbd0",
+        "styles/shared.css": "4c55a39376be5621595a839e5917c2aa90ecd25e9f68aabb957c9b67b11289c6",
+        "preview.py": "56a44b5a282bf80859276bdbd04614186b3e3ebd72e1b5727a0ceb8a2fd8024b",
+        "evidence/preview.html": "ac078c622b76c3ae6d70701a779c88de70109a75d725feb469f800504dce9ce5",
+        "evidence/preview.json": "33bc7d137adeea9f0e0b72e9c273b16c188cc1aaa523123cc8e77a0a0c3bf746",
+        "evidence/render.json": "47170c93dc1eb7976094fff473b89210e77d73114da2c15ff59857a9dd961f10",
+        "evidence/wide.png": "9996346cab64f6d6c45b06e471447cd0c2df3d42e590da438e002c5d00b0e0b7",
+        "evidence/narrow.png": "ca467768aaa722820b5a71c4722de4ff336a2b2cbdf889cc172dbc2fff3ba0b6"
+      },
+      "findings": [],
+      "limitations": "Informed executor self-review; intended-reader/author acceptance and independent review are unverified."
+    }
+  }
+}

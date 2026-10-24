@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "generator": {
+    "name": "preview.py",
+    "format": 1
+  },
+  "inputs": {
+    "note.md": "eb6e7db4b815a061f4b82f82420b36d72ee26b4e7532a27952dcb096cc5274c5",
+    "requirements.json": "3e6ac05b9bb8f42f8cb08b51ed18da0f70d3dd6fe914767291f9bb31db40dbd0",
+    "styles/shared.css": "4c55a39376be5621595a839e5917c2aa90ecd25e9f68aabb957c9b67b11289c6",
+    "preview.py": "56a44b5a282bf80859276bdbd04614186b3e3ebd72e1b5727a0ceb8a2fd8024b"
+  },
+  "output": {
+    "path": "evidence/preview.html",
+    "sha256": "ac078c622b76c3ae6d70701a779c88de70109a75d725feb469f800504dce9ce5"
+  }
+}

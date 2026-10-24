@@ -157,7 +157,8 @@ Long human-oriented documents for a tool whose user is an agent, or agent detail
 
 A rewrite drops a number, condition or exception, turns a possibility into a certainty or a permission into an obligation, or claims something was verified when only the wording changed. Shortening removes facts instead of repetition. A plan reads as what happened, or one person's or project's work is credited to another.
 - Evidence: owner's records. A purchase plan read as the purchase actually made, and had to be rewritten to say what was planned and what was bought. Asked to write a status document more compactly, the agent cut content; the owner corrected that it should say the same in fewer words, over more than one page if needed. In resumes: results from two projects merged, a problem someone else found written as the owner's discovery, integration work written as ownership of the system, a technology used once listed as a skill.
-- Countermeasure: list what must be preserved (facts, numbers, conditions, who did what, plan or done) before writing and check the text against the list; shorten by removing repetition and wordy phrasing.
+- Further evidence: a synthetic paired writing trial exposed a shared preservation brief turning withdrawal of a proposal into a new plan; both drafts followed that unsupported premise. Source comparison exposed the error, and bounded revisions removed it.
+- Countermeasure: list what must be preserved (facts, numbers, conditions, who did what, plan or done), validate source-derived claims against relevant available originals, and compare the draft with both; shorten by removing repetition and wordy phrasing.
 - Check: Kind: guidance. prose.
 
 #### F31. The form of a correction is fixed, not its reason.
@@ -339,7 +340,7 @@ Generated from the guards' own declarations: each guide section ends with a "Pre
 | F8 The user's unrelated work is bundled in | workflow.md Define the task | `awkit kit init --commit and kit example (commit only what they wrote)` | none |
 | F9 The agent's own identity replaces the repository's convention | connect.md | `awkit check commit`, `awkit kit hooks`, `awkit kit init --commit and kit example (commit only what they wrote)`, `awkit doctor`, `awkit hook` | `commit-identity (block)` |
 | F10 Irreversible publication prepared before it is justified | none | none | none |
-| F11 A guess is presented as a finding | workflow.md Do the work; connect.md; checking.md The checked version | `awkit doctor`, `awkit kit scan`, `awkit hook` | none |
+| F11 A guess is presented as a finding | workflow.md Do the work; connect.md; checking.md The checked version; writing.md Before writing | `awkit doctor`, `awkit kit scan`, `awkit hook` | none |
 | F12 Scope grows before anything is measured | connect.md | `awkit kit scan`, `awkit kit init`, `awkit kit skills` | none |
 | F13 AI writing patterns in English | workflow.md Report; writing.md Write plainly | `awkit check writing`, `awkit check writing-compare`, `awkit hook` | `writing-check (verify)` |
 | F14 Korean that reads like a translation, including from an agent that wrote the rules | korean-writing.md Writing process; korean-writing.md Tone and terminology; korean-writing.md Revise sentences | `awkit check writing`, `awkit check writing-compare`, `awkit hook`, `awkit hook reply` | `writing-check (verify)`, `korean-writing (inject)`, `writing-request (inject)`, `writing-reply (verify)` |
@@ -357,7 +358,7 @@ Generated from the guards' own declarations: each guide section ends with a "Pre
 | F26 Checks interfere through shared resources | checking.md Shared resources and processes | none | none |
 | F27 A one-off request becomes a standing automation | work-types.md Automation | none | none |
 | F28 The wrong level of autonomy | workflow.md Define the task; work-types.md Learning | none | none |
-| F29 Context is lost between sessions | workflow.md Continue across sessions; connect.md; protocol.md A task record; protocol.md Resume after interruption | `awkit doctor`, `awkit kit scan`, `awkit kit init`, `awkit kit skills`, `awkit kit guide`, `awkit channel status`, `awkit hook` | none |
+| F29 Context is lost between sessions | workflow.md Continue across sessions; connect.md; protocol.md A task record; protocol.md Resume after interruption; writing.md Before writing | `awkit doctor`, `awkit kit scan`, `awkit kit init`, `awkit kit skills`, `awkit kit guide`, `awkit channel status`, `awkit hook` | none |
 | F30 Facts, attribution or certainty change while writing | work-types.md Writing; writing.md Before writing; writing.md Write plainly; writing.md Preserve facts and judgments | none | none |
 | F31 The form of a correction is fixed, not its reason | writing.md Corrections; korean-writing.md Revise sentences | none | none |
 | F32 One instance is fixed and the same problem stays elsewhere | writing.md Corrections | `awkit check writing` | `writing-check (verify)` |

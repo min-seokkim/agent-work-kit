@@ -12,9 +12,13 @@ Decide these first, because text written for the wrong reader has to be rewritte
 - **What the reader must understand, decide or do.** Include what serves that. Leave the rest out or link to it.
 - **What must be preserved.** Facts, decisions, numbers, dates, IDs, commands, quotations, links and heading anchors; conditions, negations and the direction of each cause and effect; who did what; and whether each item is planned, decided, implemented, verified or in use.
 
+Before drafting or delegating, check source-derived briefs and preservation claims against relevant available originals; shared briefs can introduce commitments. Distinguish original statements, excerpts, summaries and reconstructions; keep unavailable coverage unknown. Current explicit user decisions take precedence over older sources.
+
 Write from the reader's needs and use existing documents and the conversation only as sources of facts. A developer document reworded for stakeholders keeps the developer's structure, and the user's own words pasted in keep the conversation's framing. State decisions and their reasons directly instead of describing the conversation that produced them.
 
-Prevents: F15, F30, F34.
+Limit omission claims to inspected material. Consult available project plans before inferring project-wide absence.
+
+Prevents: F11, F15, F29, F30, F34.
 
 ## Write plainly
 

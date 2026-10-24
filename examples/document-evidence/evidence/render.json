@@ -1,0 +1,143 @@
+{
+  "schema": 1,
+  "status": "performed",
+  "provenance": "actual-browser-capture",
+  "inputs": {
+    "evidence/preview.html": "ac078c622b76c3ae6d70701a779c88de70109a75d725feb469f800504dce9ce5",
+    "evidence/preview.json": "33bc7d137adeea9f0e0b72e9c273b16c188cc1aaa523123cc8e77a0a0c3bf746"
+  },
+  "renderer": {
+    "application": "Microsoft Edge",
+    "version": "156.0.4314.42",
+    "os": "win32 10.0.26300 x64",
+    "method": "Playwright full-page screenshot, deviceScaleFactor 1; all network routes aborted",
+    "font_conditions": "CSS system-ui, sans-serif; platform font samples recorded per capture for first h1/p/th/td only; other glyph resolution unverified",
+    "node": "v24.22.1",
+    "playwright": "1.62.1",
+    "capture_harness_sha256": "9fd45d1006cd95a54939745d496d721c26dd8efa08b434e04e5d58b4472f073d"
+  },
+  "captures": [
+    {
+      "path": "evidence/wide.png",
+      "viewport": {
+        "width": 1200,
+        "height": 900
+      },
+      "image_height": 1004,
+      "full_page": true,
+      "sha256": "9996346cab64f6d6c45b06e471447cd0c2df3d42e590da438e002c5d00b0e0b7",
+      "layout": {
+        "horizontalOverflow": false,
+        "bodyFontFamily": "system-ui, sans-serif",
+        "documentHeight": 1004
+      },
+      "sampled_platform_fonts": [
+        {
+          "selector": "h1",
+          "fonts": [
+            {
+              "familyName": "Malgun Gothic",
+              "postScriptName": "MalgunGothicBold",
+              "isCustomFont": false,
+              "glyphCount": 43
+            }
+          ]
+        },
+        {
+          "selector": "p",
+          "fonts": [
+            {
+              "familyName": "Malgun Gothic",
+              "postScriptName": "MalgunGothic",
+              "isCustomFont": false,
+              "glyphCount": 255
+            }
+          ]
+        },
+        {
+          "selector": "th",
+          "fonts": [
+            {
+              "familyName": "Malgun Gothic",
+              "postScriptName": "MalgunGothicBold",
+              "isCustomFont": false,
+              "glyphCount": 6
+            }
+          ]
+        },
+        {
+          "selector": "td",
+          "fonts": [
+            {
+              "familyName": "Malgun Gothic",
+              "postScriptName": "MalgunGothic",
+              "isCustomFont": false,
+              "glyphCount": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "evidence/narrow.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "image_height": 1301,
+      "full_page": true,
+      "sha256": "ca467768aaa722820b5a71c4722de4ff336a2b2cbdf889cc172dbc2fff3ba0b6",
+      "layout": {
+        "horizontalOverflow": false,
+        "bodyFontFamily": "system-ui, sans-serif",
+        "documentHeight": 1301
+      },
+      "sampled_platform_fonts": [
+        {
+          "selector": "h1",
+          "fonts": [
+            {
+              "familyName": "Malgun Gothic",
+              "postScriptName": "MalgunGothicBold",
+              "isCustomFont": false,
+              "glyphCount": 42
+            }
+          ]
+        },
+        {
+          "selector": "p",
+          "fonts": [
+            {
+              "familyName": "Malgun Gothic",
+              "postScriptName": "MalgunGothic",
+              "isCustomFont": false,
+              "glyphCount": 253
+            }
+          ]
+        },
+        {
+          "selector": "th",
+          "fonts": [
+            {
+              "familyName": "Malgun Gothic",
+              "postScriptName": "MalgunGothicBold",
+              "isCustomFont": false,
+              "glyphCount": 6
+            }
+          ]
+        },
+        {
+          "selector": "td",
+          "fonts": [
+            {
+              "familyName": "Malgun Gothic",
+              "postScriptName": "MalgunGothic",
+              "isCustomFont": false,
+              "glyphCount": 1
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

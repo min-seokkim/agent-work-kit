@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "audience": "Maintainer deciding whether to extend a fictional cache pilot",
+  "intended_decision": "Choose a bounded mixed-workload trial, retain current scope, or request more evidence",
+  "document": "note.md",
+  "source_inputs": ["inputs/source-facts.md", "inputs/measurements.csv"],
+  "render_inputs": ["note.md", "styles/shared.css", "preview.py", "requirements.json"],
+  "excluded_inputs": ["inputs/unrelated-source.md"],
+  "required_duties": ["source", "preservation", "rendered"],
+  "preserve": [
+    "Paired durations in milliseconds: 120/84, 100/80, 140/98, 160/112",
+    "Limited workload: repeated read-only requests, warm cache, one client, small key set",
+    "Four samples do not establish general or production performance",
+    "Cold starts, writes, invalidation, concurrent clients and memory use remain unmeasured",
+    "The mixed-workload trial is proposed and planned; expansion is neither approved nor implemented"
+  ],
+  "derived_values": {"before_mean_ms": 130, "after_mean_ms": 93.5, "decrease_ms": 36.5},
+  "preview_viewports": [{"width": 1200, "height": 900}, {"width": 390, "height": 844}],
+  "review_limit": "Recorded declarations and matching identities establish coverage metadata, not truthful execution or document quality"
+}

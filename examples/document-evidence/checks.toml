@@ -1,0 +1,13 @@
+schema = 1
+timeout_seconds = 60
+
+artifacts = [".gitattributes", "README.md", "requirements.json", "note.md", "inputs/*", "styles/shared.css", "*.py", "evidence/*"]
+required_artifacts = [".gitattributes", "requirements.json", "note.md", "inputs/source-facts.md", "inputs/measurements.csv", "styles/shared.css", "preview.py", "check_evidence.py", "evidence/preview.html", "evidence/preview.json", "evidence/render.json", "evidence/review.json", "evidence/wide.png", "evidence/narrow.png"]
+
+[[checks]]
+name = "preview-identities"
+argv = ["{python}", "preview.py", "check"]
+
+[[checks]]
+name = "declared-review-coverage"
+argv = ["{python}", "check_evidence.py", "--json"]

@@ -32,6 +32,10 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Added
 
+- The writing guide checks source-derived preservation briefs against relevant available originals before drafting or delegation, distinguishes source forms and unknown coverage, and scopes topic-omission claims to inspected material with available project plans. Current explicit user decisions retain precedence. A synthetic paired trial exposed a shared brief's unsupported premise; it does not establish a preferred drafting language or author acceptance.
+
+- `examples/document-evidence/` demonstrates explicit source, preservation and rendered-review declarations for a fictional note. Its standard-library checker distinguishes missing, unavailable, stale and changed evidence, reusing the review runner's artifact retention. It checks recorded coverage without certifying review truth, writing quality or author acceptance; the example is repository-only.
+
 - `awkit channel status --record task.json [--json]` reads explicitly listed channel relationships and obligation declarations without creating databases, migrating schemas or advancing cursors. Schema-1 reports retain unanswered protocol requests, returned responses, closed-channel work, unsupported evidence and conflicting declarations separately. Readable reports exit 0, partial channel evidence exits 1, and invalid records or arguments exit 2; declarations never certify semantic completion.
 
 - `awkit check writing-compare BASELINE CANDIDATE PATH...` compares full-file writing findings from explicit frozen Git revisions, retaining every occurrence, source witnesses and both reports. It identifies reliable same-path matches, leaves uncertain correspondence visible and inventories absent findings without accepting corrections. A separate format-1 JSON preserves legacy writing output and hook policy. Candidate errors still exit 1, unavailable comparison evidence exits 2, and warning-only results exit 0. Git blobs are read without checkout or index changes.

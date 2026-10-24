@@ -71,3 +71,116 @@ Ten-file snapshot `96541f3` passed Ruff and 352 tests with seven skips in `.awki
 The two comparisons support limited improvements in prose and argument. Direct awkit contribution to those improvements remains uncertain. The repeated broad style corrections show a practical shortfall worth addressing, even though the mechanism is not yet isolated. The current evidence does not justify a new memory service, a universal essay style or a change to the Korean drafting default.
 
 Local metadata belongs under `.awkit/handoffs/writing-outcome-evaluation/`. No manuscript copies are retained there. Further reading should locate whether the applicable correction reached later work and distinguish failed application from unavailable context. Report unresolved access or opaque tool payloads as unknown; do not infer missing instructions from them. Any later causal comparison must disclose differences in sources, model, context and owner involvement.
+
+## Candidates from upstream comparison
+
+R-032 forwards a one-off contribution from the README/comparison session, separate from the registered research executor's assignments. Its note reads [im-not-ai at `b37e0206`](https://github.com/epoko77-ai/im-not-ai/tree/b37e0206d31fffd9149bf57168d4d62eb2086bee) and identifies useful review methods alongside conflicting instructions and unverified effectiveness. Planning read the note, retained at `.awkit/handoffs/im-not-ai-comparison/planning-note.md`; it has not independently repeated the upstream inspection or a live comparison.
+
+Use the following as candidate evaluation cases, not adopted rules or automatic writing gates:
+
+| Candidate | Evidence to inspect in a revision |
+|---|---|
+| Preserve obligation, possibility, negation and conditions | Compare the original and output directly, including who must or may act and when a claim applies. |
+| Preserve phrase boundaries and list relationships | Check whether punctuation or marker changes alter grouping, comparison or an announced list. |
+| Remove empty rhetoric without adding a claim | Identify whether a replacement asserts something the source did not support. |
+| Preserve passages that already serve the reader | Distinguish a justified local repair from unnecessary changes outside the diagnosed problem. |
+
+Research completed that coverage mapping in R-037. Existing document-intent and scoped-edit evidence partially covers modality, unsupported replacement claims and preservation outside an assigned edit. The inspected fixtures lack a dedicated comparison of phrase grouping or list membership. One invented source with known-good, deliberately defective and unchanged variants could fill that evaluation gap. It would test source-relative judgments, including a no-change decision; a supplied defective variant is not an observed model failure. Mechanical checks cannot make those semantic judgments.
+
+A new example should fill a demonstrated evaluation gap and preserve known-good controls; mechanically countable features do not establish editorial defects. Existing guidance already requires source preservation, scoped corrections and direct comparison with accepted work. No mandatory agent pipeline, style grade, change-rate threshold or change to the English-draft default is selected. Any later trial must name the reader's problem and preservation requirements before revision and separate mechanical checks, direct reading and actual owner acceptance. Private manuscripts remain in their authorized projects.
+
+## Priority after the supplemental writing review
+
+R-036 supplies a supplemental module inventory from the same comparison session, retained at `.awkit/handoffs/im-not-ai-comparison/module-inventory.md`. Its current-source claims refer to the pinned upstream revision above. Historical author-context material and proposed business-document rules remain distinct from shipped functionality. Planning has read the report, without repeating its source inspection or experiments.
+
+The next product question is whether guidance for diagnosing existing prose is being applied too broadly when generating a first draft. The report describes upstream warnings about that transfer; it does not demonstrate the same failure in awkit. A useful change would help an agent choose an appropriate revision while preserving the author's adopted expressions and the document's purpose. More pattern rules or more review stages are not an outcome by themselves.
+
+| Planning priority | Next decision and evidence needed |
+|---|---|
+| Distinguish drafting from revision | Research maps the current instructions to their intended task and proposes a minimal clarification only where existing protections are insufficient. Implementation answers feasibility questions directly. |
+| Preserve author choices within their scope | Reuse current user precedence and project requirements. Establish a missing behavior before proposing additional author-profile storage; the reported retired upstream profile is not an adopted feature. |
+| Respect the document's genre | Use the optional Korean commit skill as a reported example of genre-specific design. It does not justify changing this repository's English commit policy or importing proposed business-document rules. |
+| Evaluate useful changes and justified no-change decisions | Retain the relationship-preservation case as a bounded evaluation candidate. Judge the requested improvement and source fidelity separately from mechanical pattern counts. |
+
+M-042 assigns the bounded guidance assessment to research. Planning owns the selection and priority of any resulting change; research and implementation exchange technical questions directly. No shipped writing instruction changes in this planning step. Later evaluation must still distinguish improved prose, fewer repeated owner corrections and awkit's contribution to either outcome.
+
+## Selected drafting and revision clarification
+
+R-039 finds a wording tension: Before writing treats existing documents as factual sources without limiting that advice to a new draft, while a later clause protects adopted wording and structure during revision. Existing task scope and user precedence can reconcile the two. This finding supports a local clarification; it does not establish that the paragraph caused earlier failures.
+
+Planning selects replacement of that paragraph, retaining reader-led organization for new drafts and making revision scope explicit. Source meaning and author-approved choices apply to both. A request or applicable requirement can justify an edit without a separately demonstrated defect; the change must not make users defend their preferences. Where no applicable reason calls for revision, unchanged prose is a valid result. Existing text is not automatically accepted text.
+
+Implementation owns the guide change, CHANGELOG, applicable generated guard map and delivery after the current application unit. Research and implementation coordinate a small fictional application exercise directly: new drafting, a satisfactory approved passage and one local actor/condition ambiguity with a relationship-preservation constraint. Fix the inputs and evaluator expectations before outputs; retain corrections and disagreements. Use existing drafting requirements only for affected writing. Direct reading of requested improvement and preservation is separate from packaging checks and rendered inspection.
+
+This unit changes neither the Korean drafting method nor checker behavior and adds no required review stage. The exercise's known purpose and synthetic material limit inference: it cannot prove better real-world prose, fewer reminders or an awkit-caused improvement. The implementation and bounded exercise results are recorded below; technical delivery has its own receipt. The handoff is `.awkit/handoffs/product-research/writing-guidance-implementation.md`.
+
+### Drafting-clarification implementation and delivery
+
+M-143 replaces only the existing source-use paragraph in `kit/writing.md`.
+New drafts follow the reader's needs while preserving source meaning, intended
+voice and approved choices. Revisions stay within requested scope; unchanged
+prose is valid when no request, applicable requirement or reader problem calls
+for a change. Explicit requests/preferences need neither defect proof nor renewed
+permission. Approval claims remain limited to choices actually approved. Direct
+decisions/reasons, source comparison, correction carry-forward, pattern checks,
+genre exceptions and the Korean drafting method remain unchanged.
+
+The first fictional application is frozen at
+`.awkit/handoffs/writing-guidance-implementation/executor/initial-v1/`. Research
+fixed inputs and separate expectations before writing. A retained its facts and
+approved voice in two paragraphs; B stayed unchanged with no manufactured English
+draft; C changed only one sentence while preserving actors, both-item condition,
+permission and administrative endings. Research directly read the actual drafts
+against the fixed expectations in direct-channel M-008 and requested no correction.
+Its independent identity/body comparisons passed after correcting its BOM reader;
+raw files and the initial failed verification remain. Known task purpose,
+synthetic material and no human acceptance limit interpretation.
+
+The subsequent request used actual retained C output and ordinary context,
+with fresh expectations fixed before writing. The frozen `followup-v1/` changes
+only the storage body: retain existing records, record an assigned shelf code in
+the exact requested field, or record the specified unassigned value. Earlier
+actor, both-item and permission conditions survived. A sentence-local preference
+did not spread to the new field label. Research read the actual English draft and
+Korean result in direct M-012 and requested no correction. Identity and unchanged
+region checks passed. This supports this context-available fictional continuation;
+it does not establish cross-session persistence, real author acceptance, saved
+reminders or a causal guide benefit. There was no failed prose result to invent.
+
+Implementation inspected the changed paragraph and all four Korean outputs in
+new task-owned plain-source HTML views using Edge accessibility text and
+screenshots. Paragraphs, source heading order, wrapping and the relevant conditions
+were visible at the default desktop viewport. This was not whole-document GitHub
+rendering or a narrow-screen check. The owned tab and server were closed; scope
+and hashes are in the executor's `rendered-review.json`.
+
+The existing focused packaging/link/word/guard tests (17) and writing checks
+passed on snapshot `2fef3fc649444ad271289310ce3e9e2b9e1df27e`, before these final
+record additions. The guide has 1,253 words and the generated guard map did not
+change. No checker, schema or new test was added. Final cumulative checks,
+commit/CI and exact installation identities belong to
+`.awkit/handoffs/writing-guidance-implementation/executor/delivery.json`.
+
+Delivery uses an isolated `dev` clone so the original checkout's deferred M-141
+work remains intact and excluded. Three initial and four later planning files
+were preserved at their transferred hashes before permitted integration edits;
+later outcome notes do not claim those edited copies retain the original hashes.
+Owner-label and missing-copy preparation mistakes stopped before a check run;
+their records remain alongside the successful runs.
+
+## Later passage comparison after owner intervention
+
+Research R-043 compared one later opening and bridge with a retained predecessor
+and selected original user messages in place. Both versions preserved part of the
+starting question; the later passage made the connections clearer. Some stronger
+evaluative wording remains unsupported by the inspected excerpts alone, while
+the writer reports additional uninspected material. This is a limited improvement,
+not whole-manuscript fidelity or confirmed invention.
+
+Retained owner messages show further intervention before revision, so persistence
+without another reminder is not demonstrated. Reported kit use, fuller sources,
+fresh writing contexts and owner input changed together. Causal kit contribution
+and saved effort remain unknown. Planning read research's report without another
+private-manuscript inspection; no private prose was copied here. Research source
+identities and limits remain under
+`.awkit/handoffs/product-research/executor/later-preservation-output/`.

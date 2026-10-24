@@ -40,4 +40,43 @@ The executor recovered runtime and prior-check information from the existing pro
 
 The reported npm configuration collision and unsupported TypeScript syntax were executor mistakes. Their correction does not establish an awkit defect or a saved-effort claim. Dependency compatibility in the application was not reproduced by research.
 
-Keep the next awkit unit limited to the first-check revision guidance and existing setup pointer. This trial supports input identity, isolation and retained evidence as observed kit contributions; project checks detected the code and setup errors. It does not justify a new runner, dependency manager, mandatory subagent or claim of fewer owner reminders.
+The resulting awkit unit stayed limited to first-check revision guidance and an existing setup pointer. R-074 delivered it with five planning documents in `c3dd1bf`; the [connection task](connection-diagnostics.md#selecting-the-first-checked-revision) owns verification details. Planning read the delivery and installation receipts, independently confirmed all 17 CI jobs succeeded, and observed the installed runtime and new guide text with `PYTHONPATH` removed. Rendered Markdown inspection and intended-reader acceptance remain unverified. This trial supports input identity, isolation and retained evidence as observed kit contributions; project checks detected the code and setup errors. It does not justify a new runner, dependency manager, mandatory subagent or claim of fewer owner reminders.
+
+## Next revision trial
+
+M-136 assigns a current discovery-normalization task in another existing personal development project. Research R-030 found the task explicitly deferred in the project's roadmap and prior first-use record, with no Unicode normalization in the relevant discovery helpers. Equivalent Korean composition and full-width forms can therefore be treated differently by title grouping or token extraction. This conclusion comes from source reading; an executed reproduction is part of the implementation assignment.
+
+R-075 subsequently reports reproducing the helper gap and a preceding language-selection problem: wholly decomposed Korean was inferred as `other`, so the usual `ko` selection excluded it before discovery. M-140 extends the unit to the necessary inferred-language input boundary. Preserve explicit language choices and raw source/history identities. A fixture that explicitly selects `other` can test version isolation, but completion also needs equivalent Korean inputs to pass through the ordinary Korean path without a fixture-only language override. If this requires a historical-data migration, implementation must return that decision before rewriting old rows; previous-input limits remain explicit.
+
+Normalize derived comparison and token inputs while preserving stored source text, prior evaluation work and unaffected grouping rules. Planning accepts a new result-version boundary through the application's existing mechanism. Implementation must settle normalization and extra-stopword treatment before editing, keep prior-version history distinguishable and preserve fixed source references. Existing rerun supersession remains allowed; no literal immutability claim applies to its `superseded_by` field.
+
+No accepted discovery-output artifact was established. Freeze the actual starting code and harmless fixture results, label that observed baseline accurately and retain the candidate separately. Check equivalent forms and distinct controls, source preservation, representative selection, duplicate mass, earlier evaluator behavior and separation of old and new version history. Existing runtime and copied guidance remain separate from the current executable's provenance.
+
+This is a real application revision using synthetic inputs. It does not establish detection quality on operational data or complete the separate real-data evaluation. Protected labels, operational databases, source fetching, model calls, application commit and deployment are outside the assignment. Application source and evidence stay in its project; `.awkit/handoffs/market-unicode-revision/assignment.md` holds the private location and detailed handoff. Implementation owns changes and checks; planning will use the returned preservation evidence and kit feedback to choose any further awkit work.
+
+### Completed local revision
+
+R-076/R-077 complete M-136/M-140. Fresh composed/decomposed/full-width Korean
+reaches the ordinary inferred-language ingestion and default `ko` selection;
+derived tokens and duplicate groups match. Raw source text and explicit language
+selection remain intact. Existing stored `other` observations are not migrated;
+a fresh observation can append corrected language metadata while past as-of
+selection and fixed source references retain the old version.
+
+Final application snapshot `a7909ee5fc51d0d63e5aff82c62841993c5e9383` passed 77
+tests, project lint, source identity and actual synthetic v2-to-v3 preservation.
+The existing version boundary separates previous linkage/growth; old source,
+topic and evidence rows remain, with the allowed same-date supersession field.
+The observed baseline was not promoted to acceptance. Branch, HEAD, raw index and
+previous evaluation work were preserved. Application records and fixtures remain
+in that project; no application commit, deployment or operational data was used.
+
+The writing comparison retained 216 confirmed-existing findings, zero introduced
+and zero unclassified; its exit 1 and unchanged error policy remain explicit.
+Application rendering and human acceptance were not performed. Source/diff and
+fixture review were executor work; planning read the report/metadata without a
+second code review. Input identity, isolated checks, retained artifacts/failures
+and conservative comparison were observed awkit capabilities. These observations
+do not establish that awkit caused the improvement or saved effort. Historical
+repair is a separate unselected change; no diagnostic feature follows from this
+successful local unit.

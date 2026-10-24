@@ -32,6 +32,8 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Added
 
+- The writing guide distinguishes a new draft from a scoped revision, preserves source meaning and author choices, and allows suitable prose to stay unchanged. Explicit requests and preferences remain sufficient reasons to edit. Existing pattern checks, genre exceptions and the Korean drafting method are unchanged.
+
 - `review compare --include-added --run` optionally inventories newly recorded retained-artifact paths with their source and scope. Default output and accepted-file statuses/exits are preserved; additions alone do not change the comparison result. Requested missing, malformed or unsafe inventory evidence is an error. No content verification or acceptance is implied.
 
 - `channel status` human relationship lines show each optional `task` as `declared task`, including aliases and unavailable channels. JSON, validation, exit codes and read-only behavior are unchanged.

@@ -14,7 +14,7 @@ Decide these first, because text written for the wrong reader has to be rewritte
 
 Before drafting or delegating, check source-derived briefs and preservation claims against relevant available originals; shared briefs can introduce commitments. Distinguish original statements, excerpts, summaries and reconstructions; keep unavailable coverage unknown. Current explicit user decisions take precedence over older sources.
 
-Write from the reader's needs and use existing documents and the conversation only as sources of facts. A developer document reworded for stakeholders keeps the developer's structure, and the user's own words pasted in keep the conversation's framing. State decisions and their reasons directly instead of describing the conversation that produced them.
+For a new draft, organize the text around the reader's needs while preserving source meaning, the author's intended voice and approved choices unless the request changes them. For existing prose, identify what the requested revision should improve and keep changes within that scope. Leave wording and structure unchanged when neither the request, applicable requirements nor an identified reader problem calls for a change. Explicit requests or preferences to change text are sufficient reasons; no proof of a defect or renewed permission is required. Keep approval claims limited to choices the author has actually approved. State decisions and their reasons directly.
 
 Limit omission claims to inspected material. Consult available project plans before inferring project-wide absence.
 

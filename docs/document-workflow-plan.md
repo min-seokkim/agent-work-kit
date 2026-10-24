@@ -12,6 +12,8 @@ The user should be able to request a finished document without assembling writin
 
 For a local edit, run the affected stages and check its consequences. For review-only work, inspect the existing document against its purpose. Reuse known requirements instead of asking the owner to complete a new questionnaire. Save inspectable sections or representative pages during long work and report what is available, what is being checked and what remains unresolved.
 
+The [review and revision plan](tasks/writing-revision-workflow.md) develops this behavior across successive requests: assess an existing draft, make a scoped edit, preserve adopted choices and carry applicable feedback into a later revision. Its assigned exercises use existing records and comparison tools; additional packaging and genre-specific guidance remain candidates. This work does not complete the presentation and native-editing phases below.
+
 ## Basis and evidence limits
 
 The input is the owner's local external-session proposal, titled in translation *awkit document work module proposal*, SHA-256 `25284ea10111700a9f56007cc31ffc6738f24f429137408b99780935ef5b3a66`. This plan incorporates the owner's subsequent decisions about a common document workflow, broader design research and further development of their own methods. The inspected repository base is `f85a1ec`; existing concurrent edits are outside this plan's change scope.

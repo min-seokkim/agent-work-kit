@@ -358,8 +358,46 @@ def _text_diff(before, after, relative):
     return "".join(lines)
 
 
-def compare(repo, label="accepted", run_dir=None, diff=False):
+def _added_artifacts(source, accepted):
+    """Inventory recorded candidate paths; do not hash or open their contents."""
+    manifest_path = source / "manifest.json"
+    result_path = source.parent / "result.json"
+    if (source.is_symlink() or not source.resolve().is_relative_to(source.parent)
+            or manifest_path.is_symlink() or result_path.is_symlink()):
+        raise ValueError("Added-artifact inventory requires retained metadata inside the selected run.")
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    result = json.loads(result_path.read_text(encoding="utf-8"))
+    if (not isinstance(manifest, dict) or type(manifest.get("schema")) is not int or manifest["schema"] != 1
+            or not isinstance(manifest.get("files"), dict) or not isinstance(result, dict)
+            or not isinstance(manifest.get("snapshot"), str) or not manifest["snapshot"]
+            or manifest["snapshot"] != result.get("snapshot")
+            or not isinstance(manifest.get("config_sha256"), str) or not manifest["config_sha256"]
+            or manifest["config_sha256"] != result.get("config_sha256")):
+        raise ValueError("Added-artifact inventory needs a schema-1 manifest matching result.json.")
+    if not isinstance(accepted, dict):
+        raise ValueError("Added-artifact inventory needs accepted file declarations.")
+    for relative in [*accepted, *manifest["files"]]:
+        if not isinstance(relative, str):
+            raise ValueError("Recorded artifact paths must be relative strings.")
+        relative_file(relative)
+    for entry in manifest["files"].values():
+        if (not isinstance(entry, dict) or type(entry.get("size")) is not int or entry["size"] < 0
+                or not isinstance(entry.get("sha256"), str) or not re.fullmatch(r"[0-9a-f]{64}", entry["sha256"])):
+            raise ValueError("Added-artifact inventory needs recorded sizes and SHA-256 values.")
+    # The accepted-file comparison reads contents. Refuse parent links before it can leave source.
+    for relative in accepted:
+        path = source / relative_file(relative)
+        if (any(part.is_symlink() for part in [path, *path.parents] if part != source.parent)
+                or not path.resolve().is_relative_to(source)):
+            raise ValueError(f"Accepted artifact path leaves retained artifacts or uses a link: {relative}")
+    return {"source": str(manifest_path), "scope": "recorded paths only; contents not verified",
+            "files": [{"path": path} for path in sorted(set(manifest["files"]) - set(accepted))]}
+
+
+def compare(repo, label="accepted", run_dir=None, diff=False, include_added=False):
     """Compare the working tree (or a run's retained artifacts) with the accepted version."""
+    if include_added and run_dir is None:
+        raise ValueError("--include-added requires --run.")
     folder = accepted_root(repo) / label
     record_path = folder / "accepted.json"
     if not record_path.is_file():
@@ -375,6 +413,8 @@ def compare(repo, label="accepted", run_dir=None, diff=False):
         origin = "working-tree"
     report = {"label": label, "accepted_at": record.get("accepted_at"), "accepted_snapshot": record.get("snapshot"),
               "compared": origin, "files": []}
+    if include_added:
+        report["added_artifacts"] = _added_artifacts(source, record["files"])
     for relative, entry in sorted(record["files"].items()):
         rel = PurePosixPath(relative)
         accepted_file = folder / rel

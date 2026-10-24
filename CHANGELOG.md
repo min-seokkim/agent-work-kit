@@ -32,6 +32,8 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Added
 
+- `review compare --include-added --run` optionally inventories newly recorded retained-artifact paths with their source and scope. Default output and accepted-file statuses/exits are preserved; additions alone do not change the comparison result. Requested missing, malformed or unsafe inventory evidence is an error. No content verification or acceptance is implied.
+
 - `channel status` human relationship lines show each optional `task` as `declared task`, including aliases and unavailable channels. JSON, validation, exit codes and read-only behavior are unchanged.
 
 - `awkit channel status` accepts an optional leading UTF-8 BOM in its selected JSON task record, including records written by Windows PowerShell. Plain UTF-8, validation, observations and exit codes are preserved; input records and channel state are never rewritten.

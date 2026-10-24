@@ -193,10 +193,12 @@ def _parser():
     keep.add_argument("run_dir", type=Path, help="run folder printed by `review check`")
     keep.add_argument("--label", default="accepted", help="name of the accepted version (default: accepted)")
     against = review_commands.add_parser("compare", help="compare the working tree, or a run's artifacts, with the accepted "
-                                         "version; exit 0 when nothing changed")
+                                         "version; exit 0 when accepted files are unchanged")
     against.add_argument("--label", default="accepted", help="accepted version to compare with (default: accepted)")
     against.add_argument("--run", type=Path, help="compare this run folder's retained artifacts instead of the working tree")
     against.add_argument("--diff", action="store_true", help="include a unified diff for changed text files")
+    against.add_argument("--include-added", action="store_true",
+                         help="list recorded added paths separately; requires --run; no content verification or effect on exit 0/1")
 
     publish = groups.add_parser("publish", help="extra for web projects: check a static site build and switch to it atomically",
                                 epilog=REFERENCE)
@@ -541,7 +543,7 @@ def main(argv=None):
                 print(json.dumps(accept(args.repo, args.run_dir, args.label), ensure_ascii=False, indent=2))
                 return 0
             if args.action == "compare":
-                report = compare(args.repo, args.label, args.run, args.diff)
+                report = compare(args.repo, args.label, args.run, args.diff, args.include_added)
                 print(json.dumps(report, ensure_ascii=False, indent=2))
                 return 0 if report["unchanged"] else 1
             result = run_checks(args.repo, args.snapshot, args.config, args.runs_root, args.keep)

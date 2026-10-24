@@ -1,6 +1,6 @@
 # awkit Command Reference
 
-Look things up here when you run `awkit`; you do not need to read it before every task. `awkit <command> --help` lists the options of each command. Commands print JSON on stdout unless noted, and diagnostics on stderr.
+`awkit <command> --help` lists options. Commands print JSON on stdout unless noted; diagnostics go to stderr.
 
 Requirements: Python 3.11+, Git for the hooks `kit init` installs and for its `--commit`, `kit example`, `kit hooks --git` and `review`, Playwright for `ui`. The project under work can be in any language.
 
@@ -190,9 +190,11 @@ Run folder (default `.awkit/reviews/` in the repository, which `review check` ex
 |---|---|---|
 | `review verify RUN_DIR` | Rehashes each retained file: `ok`, `changed`, `missing`; lists extra files under `unexpected`; `interrupted` when `result.json` still says `running`. | `verified` is true |
 | `review accept RUN_DIR [--label L]` | Verifies the run, then copies its artifacts to `.awkit/accepted/<label>/` (default `accepted`) with `accepted.json` recording run, commit, config hash and hashes. Replaces an earlier version with the same label. One accept at a time per repository (lock `.awkit/accept.lock.sqlite3`). | accepted |
-| `review compare [--label L] [--run RUN_DIR] [--diff]` | Compares each accepted file with the working tree, or with a run's artifacts given `--run`: `same`, `changed`, `missing`. `--diff` adds unified diffs for changed text files. | every file is `same` |
+| `review compare [--label L] [--run RUN_DIR] [--diff] [--include-added]` | Compares each accepted file with the working tree, or with a run's artifacts given `--run`: `same`, `changed`, `missing`. `--diff` adds unified diffs for changed text files. | every file is `same` |
 
-Files a check produced exist only in its worktree, so comparing with the working tree reports them `missing` and adds a `note`; compare a later run with `--run` instead. A matching hash shows the bytes are unchanged; whether the content is right is for the review record to say.
+Generated files absent from the working tree show `missing` with a `note`; use `--run`. Matching hashes establish unchanged bytes; content correctness needs review.
+
+`--include-added` requires `--run`: `added_artifacts` lists candidate-manifest paths absent from acceptance, with source/scope. It excludes unrecorded files, verifies no content and adds no diffs. Invalid/unavailable inventory exits 2. Additions leave `unchanged` and exits 0/1 determined by accepted files. Default output remains unchanged.
 
 ## check
 

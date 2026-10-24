@@ -1,3 +1,4 @@
+import copy
 import json
 import sqlite3
 import subprocess
@@ -5,6 +6,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from awkit.review import accept, check, compare, git, snapshot, verify
 from support import child_env
@@ -403,6 +405,159 @@ class ReviewTests(unittest.TestCase):
                                  text=True, encoding="utf-8", env=env)
         self.assertEqual(changed.returncode, 1)
         self.assertIn("+edited", json.loads(changed.stdout)["files"][1]["diff"])
+
+    def inventory_runs(self):
+        self.configure(["from pathlib import Path; Path('kept.txt').write_text('same'); "
+                        "Path('removed.txt').write_text('old')"], artifacts=["kept.txt", "removed.txt"])
+        first = check(self.repo, self.head, self.config, self.root / "runs")
+        accept(self.repo, first["run_dir"], "inventory")
+        self.configure(["from pathlib import Path; Path('kept.txt').write_text('same'); "
+                        "Path('removed.txt').write_text('old'); Path('z new.txt').write_text('new'); "
+                        "Path('한글.txt').write_text('new')"], artifacts=["*.txt"])
+        second = check(self.repo, self.head, self.config, self.root / "runs")
+        return Path(first["run_dir"]), Path(second["run_dir"])
+
+    def inventory_cli(self, run=None, include_added=False, expected=0):
+        argv = [sys.executable, "-m", "awkit", "review", "--repo", str(self.repo), "compare", "--label", "inventory"]
+        if run is not None:
+            argv += ["--run", str(run)]
+        if include_added:
+            argv += ["--include-added"]
+        result = subprocess.run(argv, capture_output=True, text=True, encoding="utf-8", env=child_env())
+        self.assertEqual(result.returncode, expected, result.stdout + result.stderr)
+        return result
+
+    def test_include_added_cli_preserves_default_and_additions_only_exit(self):
+        first, second = self.inventory_runs()
+        before = self.inventory_cli(second).stdout
+        self.assertNotIn("added_artifacts", json.loads(before))
+        accepted = self.repo / ".awkit/accepted/inventory"
+        protected = [path for folder in (first, second, accepted) for path in folder.rglob("*") if path.is_file()]
+        states = {path: (path.read_bytes(), path.stat().st_mtime_ns) for path in protected}
+        result = json.loads(self.inventory_cli(second, True).stdout)
+        self.assertTrue(result["unchanged"])
+        self.assertEqual(result["files"], json.loads(before)["files"])
+        self.assertEqual(result["added_artifacts"]["source"], str(second.resolve() / "artifacts/manifest.json"))
+        self.assertIn("not verified", result["added_artifacts"]["scope"])
+        self.assertEqual(result["added_artifacts"]["files"], [{"path": "code.txt"}, {"path": "other.txt"},
+                         {"path": "z new.txt"}, {"path": "한글.txt"}])
+        self.assertEqual(self.inventory_cli(second).stdout, before)
+        self.assertEqual({path: (path.read_bytes(), path.stat().st_mtime_ns) for path in protected}, states)
+        no_added = json.loads(self.inventory_cli(first, True).stdout)
+        self.assertEqual(no_added["added_artifacts"]["files"], [])
+        self.assertTrue(no_added["unchanged"])
+        (second / "artifacts/unrecorded.txt").write_text("not retained")
+        (second / "artifacts/kept.txt").write_text("changed")
+        (second / "artifacts/removed.txt").unlink()
+        default = json.loads(self.inventory_cli(second, expected=1).stdout)
+        changed = json.loads(self.inventory_cli(second, True, expected=1).stdout)
+        self.assertEqual(changed["files"], default["files"])
+        self.assertEqual(changed["unchanged"], default["unchanged"])
+        self.assertEqual({item["path"]: item["status"] for item in changed["files"]},
+                         {"kept.txt": "changed", "removed.txt": "missing"})
+        self.assertNotIn("unrecorded.txt", [item["path"] for item in changed["added_artifacts"]["files"]])
+
+    def test_include_added_requires_explicit_run_and_does_not_change_default(self):
+        first, _ = self.inventory_runs()
+        with self.assertRaisesRegex(ValueError, "--include-added requires --run"):
+            compare(self.repo, "inventory", include_added=True)
+        result = self.inventory_cli(include_added=True, expected=2)
+        self.assertIn("--include-added requires --run", result.stderr)
+        self.assertNotIn("added_artifacts", compare(self.repo, "inventory", first))
+
+    def test_include_added_inventory_errors_leave_default_comparison_usable(self):
+        _, second = self.inventory_runs()
+        manifest_path = second / "artifacts/manifest.json"
+        original = manifest_path.read_bytes()
+        valid = json.loads(original)
+        baseline = self.inventory_cli(second).stdout
+        variants = [None, [], dict(valid, schema=2), dict(valid, schema=True), dict(valid, files=[]),
+                    dict(valid, snapshot="other"), dict(valid, config_sha256="other"),
+                    dict(valid, files={"new.txt": {"size": True, "sha256": "a" * 64}}),
+                    dict(valid, files={"new.txt": {"size": -1, "sha256": "a" * 64}}),
+                    dict(valid, files={"new.txt": {"size": 0, "sha256": "invalid"}})]
+        variants += [dict(valid, files={name: {"size": 0, "sha256": "a" * 64}})
+                     for name in ("../outside.txt", "/absolute.txt", "C:/outside.txt", "dir\\outside.txt", "a//b", ".git/config", "bad\0path")]
+        for variant in variants:
+            with self.subTest(variant=variant):
+                manifest_path.write_text(json.dumps(variant), encoding="utf-8")
+                self.assertEqual(self.inventory_cli(second).stdout, baseline)
+                self.inventory_cli(second, True, expected=2)
+        for data in (b'{"schema":', b"\xff"):
+            with self.subTest(data=data):
+                manifest_path.write_bytes(data)
+                self.assertEqual(self.inventory_cli(second).stdout, baseline)
+                self.inventory_cli(second, True, expected=2)
+        manifest_path.unlink()
+        self.assertEqual(self.inventory_cli(second).stdout, baseline)
+        self.inventory_cli(second, True, expected=2)
+        manifest_path.write_bytes(original)
+        result_path = second / "result.json"
+        saved = result_path.read_bytes()
+        result_path.write_text("[]", encoding="utf-8")
+        self.assertEqual(self.inventory_cli(second).stdout, baseline)
+        self.inventory_cli(second, True, expected=2)
+        result_path.write_bytes(saved)
+
+    def test_include_added_uses_only_declared_names_without_opening_added_contents(self):
+        _, second = self.inventory_runs()
+        source = (second / "artifacts").resolve()
+        manifest_path = source / "manifest.json"
+        manifest = json.loads(manifest_path.read_text())
+        manifest["files"]["manifest.json"] = {"size": 0, "sha256": "a" * 64}
+        manifest["files"]["not-present.txt"] = {"size": 0, "sha256": "a" * 64}
+        manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+        original = Path.read_bytes
+
+        def guarded(path):
+            if path.parent == source and path.name not in ("kept.txt", "removed.txt"):
+                raise AssertionError("added contents must not be read")
+            return original(path)
+
+        with patch.object(Path, "read_bytes", guarded):
+            report = compare(self.repo, "inventory", second, diff=True, include_added=True)
+        added = report["added_artifacts"]["files"]
+        self.assertIn({"path": "manifest.json"}, added)
+        self.assertIn({"path": "not-present.txt"}, added)
+        self.assertTrue(all(set(item) == {"path"} for item in added))
+        self.assertTrue(report["unchanged"])
+
+    def test_include_added_rejects_unsafe_accepted_paths_before_reading_outside(self):
+        _, second = self.inventory_runs()
+        accepted_path = self.repo / ".awkit/accepted/inventory/accepted.json"
+        record = json.loads(accepted_path.read_text())
+        record["files"] = {"../outside.txt": {"size": 0, "sha256": "a" * 64}}
+        accepted_path.write_text(json.dumps(record), encoding="utf-8")
+        with patch.object(Path, "read_bytes", side_effect=AssertionError("must not read outside artifacts")):
+            with self.assertRaises(ValueError):
+                compare(self.repo, "inventory", second, include_added=True)
+
+    def test_include_added_rejects_metadata_and_accepted_parent_links(self):
+        _, second = self.inventory_runs()
+        outside = self.root / "outside"
+        outside.mkdir()
+        (outside / "kept.txt").write_text("outside contents")
+        link = second / "artifacts/linked"
+        try:
+            link.symlink_to(outside, target_is_directory=True)
+        except OSError as error:
+            self.skipTest(f"Symlinks unavailable: {error}")
+        record_path = self.repo / ".awkit/accepted/inventory/accepted.json"
+        record = json.loads(record_path.read_text())
+        original = copy.deepcopy(record)
+        record["files"] = {"linked/kept.txt": {"size": 0, "sha256": "a" * 64}}
+        record_path.write_text(json.dumps(record), encoding="utf-8")
+        with patch.object(Path, "read_bytes", side_effect=AssertionError("must not read linked contents")):
+            with self.assertRaises(ValueError):
+                compare(self.repo, "inventory", second, include_added=True)
+        record_path.write_text(json.dumps(original), encoding="utf-8")
+        manifest_path = second / "artifacts/manifest.json"
+        metadata = self.root / "external-manifest.json"
+        metadata.write_bytes(manifest_path.read_bytes())
+        manifest_path.unlink()
+        manifest_path.symlink_to(metadata)
+        self.inventory_cli(second, expected=0)
+        self.inventory_cli(second, True, expected=2)
 
     def test_cli_verify_exit_codes(self):
         self.configure(["from pathlib import Path; Path('a.txt').write_text('a')"], artifacts=["a.txt"])

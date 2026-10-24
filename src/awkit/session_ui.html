@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>awkit · Sessions</title>
+<style>
+:root{color-scheme:light;--ink:#172b3a;--muted:#586a76;--line:#d8e0e3;--accent:#155d72;--paper:#fff;--wash:#f1f5f5}
+*{box-sizing:border-box}body{margin:0;background:var(--wash);color:var(--ink);font:16px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif}
+button,input,select,textarea{font:inherit}button{cursor:pointer;border:1px solid #b6c7ce;border-radius:7px;background:white;color:var(--ink);padding:.5rem .85rem}
+button:hover:not(:disabled){background:#e7f1f3}button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid #4a9ab5;outline-offset:2px}
+button:disabled{cursor:default;opacity:.55}.primary{background:var(--accent);border-color:var(--accent);color:white}.primary:hover:not(:disabled){background:#104b5c}
+header{background:var(--paper);border-bottom:1px solid var(--line);padding:1.3rem max(1.2rem,calc((100vw - 1440px)/2));display:flex;align-items:center;gap:1rem;flex-wrap:wrap}
+.brand{font-weight:750;letter-spacing:-.03em;font-size:1.45rem}.subtle,.meta{color:var(--muted);font-size:.86rem}.project{margin-left:auto;max-width:52%;overflow-wrap:anywhere}
+h1,h2,h3,p{margin-top:0}h1{font-size:1.35rem;margin-bottom:.15rem}h2{font-size:1.05rem}h3{font-size:1rem}
+.toolbar{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}.strip{max-width:1440px;margin:auto;padding:.8rem 1.2rem;display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;min-height:3.4rem}
+.strip button{font-size:.84rem;padding:.3rem .65rem}.strip .quiet{color:var(--muted);font-size:.9rem}
+main{max-width:1440px;margin:0 auto;padding:0 1.2rem 2rem;display:grid;grid-template-columns:290px minmax(0,1fr);gap:1.2rem;align-items:start}
+aside,.conversation{border:1px solid var(--line);background:var(--paper);border-radius:10px}
+aside{padding:1rem;position:sticky;top:1rem;max-height:calc(100dvh - 2rem);overflow:auto}.list{display:grid;gap:.55rem}
+.session{display:block;width:100%;text-align:left;padding:.8rem;border-radius:7px}.session[aria-current=true]{background:#eaf3f5;border-color:#31798f;box-shadow:inset 3px 0 #31798f}
+.session strong,.session span{display:block;overflow-wrap:anywhere}.session .state{font-size:.78rem;color:#375b68;margin-top:.3rem}.session .assignment{font-size:.8rem;margin-top:.4rem;color:var(--muted)}
+.conversation{min-height:540px;overflow:hidden}.conversation-head{padding:1.1rem 1.2rem;border-bottom:1px solid var(--line)}.conversation-head p{margin-bottom:.6rem}
+.back{display:none}.messages{padding:1.2rem;display:grid;gap:1rem}.message{border:1px solid var(--line);border-radius:8px;padding:1rem;scroll-margin-top:1rem;min-width:0}
+.message.request{border-left:3px solid #518094}.message.reply{background:#f7fafa}.message.notice{border-style:dashed}.message .who{font-weight:650;font-size:.91rem}
+.message .body{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.65;margin:.6rem 0 0}.message .relation{display:block;margin-top:.35rem;font-size:.85rem;color:var(--accent)}
+.message .handling{font-size:.8rem;color:var(--muted);margin:.65rem 0 0}.empty{padding:2rem;color:var(--muted);text-align:center}
+.compose{padding:1.1rem 1.2rem;background:#f8fafb;border-top:1px solid var(--line)}label{display:block;font-size:.9rem;font-weight:600;margin-bottom:.75rem}
+input:not([type=checkbox]),select,textarea{display:block;width:100%;margin-top:.3rem;padding:.6rem .7rem;color:var(--ink);border:1px solid #abbfc8;border-radius:6px;background:white}
+textarea{resize:vertical;min-height:115px}.check{display:flex;gap:.5rem;align-items:center;font-weight:400;margin:0}.compose .scope{font-size:.85rem;overflow-wrap:anywhere;margin-bottom:.65rem}
+.reason{color:var(--muted);font-size:.84rem;margin:.6rem 0 0}.banner{max-width:1400px;margin:.6rem auto;padding:.7rem 1rem;background:#fff3da;border:1px solid #e5ca91;border-radius:7px;overflow-wrap:anywhere}
+.banner:empty{display:none}.decision{margin:1rem 1.2rem;padding:1rem;border:1px solid #d8bb79;background:#fff9eb;border-radius:8px}
+details{margin-top:.7rem}summary{cursor:pointer;color:var(--accent);font-size:.88rem}pre{white-space:pre-wrap;overflow-wrap:anywhere;font:13px/1.5 ui-monospace,Consolas,monospace;max-width:100%}
+dialog{width:min(560px,calc(100% - 2rem));border:1px solid var(--line);border-radius:12px;padding:1.5rem;box-shadow:0 15px 80px #102a3e33}dialog::backdrop{background:#16344666}
+dialog h2{font-size:1.2rem}.dialog-actions{display:flex;justify-content:flex-end;gap:.6rem;margin-top:1rem}.split{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+a{color:var(--accent)}.small{font-size:.83rem}.hidden{display:none!important}
+@media(max-width:760px){header{padding:1rem}.project{margin-left:0;max-width:100%;width:100%;font-size:.8rem}main{display:block;padding:0 .65rem 1.2rem}.strip{padding:.65rem}aside{position:static;max-height:none}.conversation{min-height:65vh}.back{display:inline-flex}body.conversation-open aside{display:none}body:not(.conversation-open) .conversation{display:none}.conversation-head,.compose{padding:1rem}.messages{padding:.8rem}.message{padding:.85rem}.split{grid-template-columns:1fr}.decision{margin:.8rem}}
+</style>
+</head>
+<body>
+<header><div class="brand">awkit <span class="subtle">/ sessions</span></div><div id="project" class="project">Connecting to the local project…</div>
+<div class="toolbar"><button id="open-history">Open channel history</button><button id="open-create" class="primary">Create session</button></div></header>
+<div id="banner" class="banner" role="status" aria-live="polite"></div>
+<div id="pending" class="strip" aria-label="Project actions"></div>
+<main><aside><h2>Sessions &amp; histories</h2><div id="list" class="list"></div><p class="reason">Opening a conversation does not acknowledge or accept its messages.</p></aside>
+<section class="conversation" aria-label="Selected conversation">
+<div class="conversation-head"><button id="back" class="back">← Sessions &amp; histories</button><h1 id="selected-name">Choose a conversation</h1>
+<p id="selected-purpose" class="subtle"></p><p id="observation" class="small"></p>
+<div class="toolbar"><button id="interrupt" disabled>Interrupt turn</button><button id="resume" disabled>Resume same conversation</button></div>
+<p id="control-reason" class="reason"></p>
+<details><summary>Permissions and connection</summary><div id="permissions"></div></details>
+<details><summary>Technical details</summary><pre id="technical"></pre></details></div>
+<div id="decisions"></div><div id="messages" class="messages"><div class="empty">Create a session or open existing channel history.</div></div>
+<form id="compose" class="compose"><p id="scope" class="scope"></p><label>Message<textarea id="body" placeholder="Give this session a task…" disabled></textarea></label>
+<div class="toolbar"><label class="check"><input id="needs-reply" type="checkbox" checked> Request a reply</label><button id="send" class="primary" disabled>Send request</button></div>
+<p id="send-reason" class="reason"></p></form></section></main>
+<dialog id="create-dialog"><form id="create-form"><h2>Create an independent session</h2>
+<label>Project<select id="create-project"></select></label><label>Provider<select id="provider"><option value="codex">Codex</option><option disabled>Claude · not available yet</option></select></label>
+<label>Name<input id="create-name" required maxlength="200" placeholder="Research"></label>
+<label>Responsibility<textarea id="responsibility" required maxlength="2000" placeholder="What this session is responsible for"></textarea></label>
+<label>Requested permissions<select id="sandbox"><option value="read-only">Read only</option><option value="workspace-write">Write in this workspace</option></select></label>
+<p class="reason">Approval requests go to this screen. The conversation shows the scope actually returned by Codex.</p>
+<div class="dialog-actions"><button type="button" data-close="create-dialog">Cancel</button><button class="primary" id="create-submit">Create session</button></div></form></dialog>
+<dialog id="history-dialog"><form id="history-form"><h2>Open existing channel history</h2>
+<p class="subtle">Read a pairwise channel without connecting to its native sessions or changing its messages.</p>
+<label>Channel file in this project<input id="history-path" required placeholder=".awkit/channel.sqlite3"></label>
+<div class="split"><label>First participant<input id="main-name" required maxlength="200" placeholder="Planning"></label><label>Second participant<input id="reviewer-name" required maxlength="200" placeholder="Implementation"></label></div>
+<label>Task label (optional)<input id="history-task" maxlength="1000"></label>
+<details><summary>Stored role mapping</summary><p class="reason">The first participant uses the channel's existing main role; the second uses reviewer. These labels do not assign a new native conversation.</p>
+<label>Local role<select id="local-role"><option value="main">main · first participant</option><option value="reviewer">reviewer · second participant</option></select></label></details>
+<div class="dialog-actions"><button type="button" data-close="history-dialog">Cancel</button><button class="primary" id="history-submit">Open history</button></div></form></dialog>
+<script>
+'use strict';
+const byId = id => document.getElementById(id);
+const fragment = new URLSearchParams(location.hash.slice(1));
+let token = fragment.get('token') || sessionStorage.getItem('awkit-session-token') || '';
+if (token) { sessionStorage.setItem('awkit-session-token', token); history.replaceState(null, '', location.pathname); }
+let state = null, selected = null, loading = false, signature = '', draftKey = null;
+const drafts = new Map(), limits = new Map();
+function node(tag, text, cls) { const value = document.createElement(tag); if (text !== undefined) value.textContent = text; if (cls) value.className = cls; return value; }
+function banner(text) { byId('banner').textContent = text || ''; }
+function current() { return state && state.sessions.find(view => view.session.id === selected); }
+function time(value) { return value ? new Date(value).toLocaleString() : 'not observed'; }
+async function api(action, args) {
+  const response = await fetch(action === 'status' ? '/api/status' : '/api/command', {
+    method: action === 'status' ? 'GET' : 'POST', headers: {'Authorization':'Bearer ' + token, 'Content-Type':'application/json'},
+    body: action === 'status' ? undefined : JSON.stringify({action:action,args:args || {}})
+  });
+  const result = await response.json();
+  if (!response.ok || result.error) throw new Error(result.error || 'Controller request failed.');
+  return result.result;
+}
+function select(id) {
+  if (selected) drafts.set(selected, {body:byId('body').value,key:draftKey,needsReply:byId('needs-reply').checked});
+  selected = id; signature = '';
+  const saved = drafts.get(id) || {body:'',key:null,needsReply:true};
+  byId('body').value = saved.body; draftKey = saved.key; byId('needs-reply').checked = saved.needsReply;
+  document.body.classList.add('conversation-open'); render();
+}
+function linkBody(parent, text) {
+  const pattern = /https?:\/\/[^\s<>"']+/g;
+  let index = 0;
+  for (const match of text.matchAll(pattern)) {
+    parent.append(document.createTextNode(text.slice(index, match.index)));
+    const anchor = node('a', match[0]); anchor.href = match[0]; anchor.target = '_blank'; anchor.rel = 'noopener noreferrer'; parent.append(anchor);
+    index = match.index + match[0].length;
+  }
+  parent.append(document.createTextNode(text.slice(index)));
+}
+function revealMessage(id) {
+  const view = current(); if (!view) return;
+  limits.set(selected, view.messages.length); signature = ''; render();
+  requestAnimationFrame(() => { const target = byId('message-' + id); if (target) target.scrollIntoView({block:'start'}); });
+}
+function render() {
+  if (!state) return;
+  byId('project').textContent = 'Project · ' + state.project;
+  byId('open-create').disabled = !state.capabilities.codex_executable_available;
+  if (!state.capabilities.codex_executable_available) banner('Codex executable unavailable. Existing channel history can still be opened.');
+  if (!byId('create-project').options.length) { const option = node('option', state.project); option.value = state.project; byId('create-project').append(option); }
+  const list = byId('list'); list.replaceChildren();
+  if (!state.sessions.length) list.append(node('p','No sessions or channel histories yet.','subtle'));
+  for (const view of state.sessions) {
+    const m = view.session, button = node('button'); button.type = 'button'; button.className = 'session'; button.setAttribute('aria-current', String(m.id === selected));
+    button.append(node('strong',m.name),node('span',m.provider + (m.history ? ' · read only' : ''),'meta'),node('span',m.responsibility || 'No task label','meta'),node('span',view.execution_state,'state'));
+    const unanswered = view.messages.find(row => view.unanswered.includes(row.id));
+    if (unanswered) button.append(node('span','Awaiting reply: ' + unanswered.body.slice(0,95),'assignment'));
+    button.onclick = () => select(m.id); list.append(button);
+  }
+  const pending = byId('pending'); pending.replaceChildren();
+  let count = 0;
+  for (const view of state.sessions) {
+    const decisions = view.decisions.filter(row => ['pending','sending','sent','uncertain'].includes(row.state));
+    for (const [label, amount] of [['provider decision',decisions.length],['reply awaited',view.unanswered.length]]) {
+      if (amount) { const button = node('button',view.session.name + ' · ' + amount + ' ' + label); button.onclick = () => select(view.session.id); pending.append(button); count += amount; }
+    }
+  }
+  const declarations = state.declarations && state.declarations.report;
+  for (const obligation of (declarations && declarations.obligations || []).filter(row => row.state === 'pending')) {
+    const button = node('button','Declared action · ' + obligation.responsible_session + ' · ' + obligation.action);
+    const id = state.declarations.view_links && state.declarations.view_links[obligation.source.relationship];
+    button.disabled = !id; if (!id) button.title = 'Open the corresponding channel history to read this declared action.';
+    button.onclick = () => { if (id) { select(id); revealMessage(obligation.source.message); } };
+    pending.append(button); count++;
+  }
+  if (state.declarations && state.declarations.error) { pending.append(node('span','Declared actions unavailable: ' + state.declarations.error,'quiet')); count++; }
+  if (!count) pending.append(node('span','No recorded pending decisions, unanswered requests or declared actions.','quiet'));
+  const view = current();
+  if (!view) return;
+  const m = view.session;
+  byId('selected-name').textContent = m.name;
+  byId('selected-purpose').textContent = m.provider + ' · ' + (m.responsibility || 'No task label');
+  byId('observation').textContent = m.history ? 'Read-only channel history · read ' + time(m.observed_at) :
+    (view.connected ? 'Connection available' : 'Connection unavailable') + ' · State ' + view.execution_state +
+    ' · Last observed ' + m.state + ' at ' + time(m.observed_at) + ' (' + m.source + ')';
+  byId('control-reason').textContent = view.control_reason || 'Resume after controller restart is not supported yet.';
+  const active = view.attempts.find(row => ['admitting','accepted','executing','uncertain'].includes(row.state));
+  byId('interrupt').disabled = !view.connected || !active || !active.turn_id;
+  byId('body').disabled = !view.can_send; byId('send').disabled = !view.can_send;
+  byId('scope').textContent = 'To: ' + m.name + ' · Project: ' + state.project;
+  byId('send-reason').textContent = view.can_send ? 'Requests start when this conversation is observed idle. Informational notices do not start a turn.' : view.control_reason;
+  const permission = byId('permissions'); permission.replaceChildren();
+  permission.append(node('p',m.history ? 'Native permission scope is unavailable; this is stored history only.' : 'Actual scope returned by the provider.','reason'), node('pre',JSON.stringify(m.permissions,null,2)));
+  if (m.startup_context) permission.append(node('p','Responsibility supplied at creation: ' + m.startup_context.responsibility + ' (' + m.startup_context.admission + '). This is instruction input, not a compliance check.','reason'));
+  byId('technical').textContent = JSON.stringify({channel:view.channel,native_conversation:m.native_id,returned_identity:m.returned_native_id,generation:m.generation,client:m.client,startup_context:m.startup_context,attempts:view.attempts,events:view.events,diagnostics:state.diagnostics},null,2);
+  const key = JSON.stringify({id:selected,messages:view.messages,decisions:view.decisions,attempts:view.attempts,limit:limits.get(selected),declared:declarations});
+  if (key === signature) return; signature = key;
+  const decisionBox = byId('decisions'); decisionBox.replaceChildren();
+  for (const decision of view.decisions.filter(row => row.state !== 'resolved')) {
+    const box = node('section',undefined,'decision'); box.append(node('h2','Provider decision · ' + decision.state));
+    box.append(node('pre',JSON.stringify(decision.params,null,2)));
+    const buttons = node('div',undefined,'toolbar');
+    const labels = {accept:'Allow once',acceptForSession:'Allow for this session',decline:'Decline',cancel:'Cancel turn'};
+    for (const choice of decision.choices) {
+      const button = node('button',labels[choice] || choice); button.disabled = !view.connected || decision.state !== 'pending';
+      button.onclick = async () => { try { await api('decide',{ident:m.id,decision_id:decision.id,choice:choice}); await refresh(); } catch (error) { banner(error.message); } };
+      buttons.append(button);
+    }
+    box.append(buttons);
+    if (!decision.choices.length) box.append(node('p','This request cannot be answered here. It remains pending on its originating connection.','reason'));
+    decisionBox.append(box);
+  }
+  const messages = byId('messages'); messages.replaceChildren();
+  const limit = limits.get(selected) || 40;
+  if (view.messages.length > limit) {
+    const earlier = node('button','Show earlier messages (' + (view.messages.length - limit) + ')');
+    earlier.onclick = () => { limits.set(selected,limit + 40); signature = ''; render(); }; messages.append(earlier);
+  }
+  if (!view.messages.length) messages.append(node('div',m.error || 'No messages yet.','empty'));
+  for (const message of view.messages.slice(-limit)) {
+    const card = node('article',undefined,'message ' + (message.kind === 'notice' ? 'notice' : message.reply_to ? 'reply' : 'request')); card.id = 'message-' + message.id;
+    card.append(node('div',view.parties[message.sender] + ' → ' + view.parties[message.receiver],'who'));
+    card.append(node('div',(message.reply_to ? 'Reply' : message.kind === 'notice' ? 'Notice' : 'Request') + ' · ' + time(message.at),'meta'));
+    if (message.reply_to) {
+      const original = view.messages.find(row => row.id === message.reply_to);
+      const relation = node('a','Reply to: ' + (original ? original.body.slice(0,85) : 'referenced message unavailable'),'relation'); relation.href = '#message-' + message.reply_to;
+      relation.onclick = event => { event.preventDefault(); revealMessage(message.reply_to); }; card.append(relation);
+    }
+    const body = node('div',undefined,'body'); linkBody(body,message.body); card.append(body);
+    if (message.kind === 're') {
+      const related = (declarations && declarations.obligations || []).filter(row => {
+        const target = state.declarations.view_links && state.declarations.view_links[row.source.relationship];
+        return target === m.id && [message.id,message.reply_to].includes(row.source.message);
+      });
+      card.append(node('p',related.length ? 'Declared handling: ' + related.map(row => row.action + ' · ' + row.state).join('; ') : 'Result handling: unrecorded','handling'));
+    }
+    const detail = node('details'); detail.append(node('summary','Message details'),node('pre',JSON.stringify({id:message.id,kind:message.kind,reply_to:message.reply_to,snapshot:message.snap},null,2))); card.append(detail); messages.append(card);
+  }
+}
+async function refresh() {
+  if (loading) return;
+  loading = true;
+  try {
+    state = await api('status'); render();
+    if (state.provider_error) banner(state.provider_error);
+  } catch (error) {
+    banner('Connection unavailable: ' + error.message);
+    if (state) { for (const view of state.sessions) { if (!view.session.history) { view.connected = false; view.can_send = false; view.execution_state = 'unknown'; view.control_reason = 'Controller connection unavailable; the last observation remains below.'; } } render(); }
+    byId('send').disabled = true; byId('interrupt').disabled = true;
+  }
+  finally { loading = false; }
+}
+byId('open-create').onclick = () => byId('create-dialog').showModal();
+byId('open-history').onclick = () => byId('history-dialog').showModal();
+for (const button of document.querySelectorAll('[data-close]')) button.onclick = () => byId(button.dataset.close).close();
+byId('back').onclick = () => document.body.classList.remove('conversation-open');
+byId('needs-reply').onchange = () => { byId('send').textContent = byId('needs-reply').checked ? 'Send request' : 'Store notice'; };
+byId('body').oninput = () => { draftKey = null; };
+byId('compose').onsubmit = async event => {
+  event.preventDefault(); const view = current(); if (!view || !view.can_send) return;
+  const body = byId('body').value; if (!body.trim()) return;
+  const id = selected, key = draftKey || crypto.randomUUID(); draftKey = key; byId('send').disabled = true;
+  try {
+    await api('send',{ident:id,key:key,body:body,kind:byId('needs-reply').checked ? 'question' : 'notice',entry:'human'});
+    drafts.delete(id); if (selected === id) { byId('body').value = ''; draftKey = null; } banner('Message stored for ' + view.session.name + '.'); await refresh();
+  } catch (error) { banner(error.message + ' Client key: ' + key + '. Inspect the conversation before repeating an uncertain send.'); }
+  finally { if (current()) byId('send').disabled = !current().can_send; }
+};
+byId('create-form').onsubmit = async event => {
+  event.preventDefault(); byId('create-submit').disabled = true;
+  try {
+    const result = await api('create',{name:byId('create-name').value,responsibility:byId('responsibility').value,project:state.project,provider:byId('provider').value,sandbox:byId('sandbox').value});
+    byId('create-dialog').close(); await refresh(); select(result.session.id); banner(result.session.error || 'Created ' + result.session.name + '.');
+  } catch (error) { banner(error.message); }
+  finally { byId('create-submit').disabled = false; }
+};
+byId('history-form').onsubmit = async event => {
+  event.preventDefault(); byId('history-submit').disabled = true;
+  try {
+    const result = await api('register',{channel:byId('history-path').value,main_name:byId('main-name').value,reviewer_name:byId('reviewer-name').value,local_role:byId('local-role').value,task:byId('history-task').value});
+    byId('history-dialog').close(); await refresh(); select(result.id); banner('Opened channel history read-only.');
+  } catch (error) { banner(error.message); }
+  finally { byId('history-submit').disabled = false; }
+};
+byId('interrupt').onclick = async () => { if (!current()) return; try { await api('interrupt',{ident:selected}); banner('Interruption requested; waiting for the provider outcome.'); await refresh(); } catch (error) { banner(error.message); } };
+if (!token) banner('Use the capability URL printed by awkit session serve to open this project.');
+refresh(); setInterval(refresh,1500);
+</script>
+</body>
+</html>

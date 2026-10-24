@@ -69,3 +69,14 @@ One row per task, as [roadmap item 5](roadmap.md#next-work) defines. "Repeated" 
 | Real Claude Code logs | `usage` | 376 lines grouped into 156 calls; a later log gave 13 typed messages and 1 command, excluding notices, command output, interruptions and hook feedback. |
 
 Not verified: broader current Codex client coverage and unique-turn/API-call accounting; `release.yml` (never run); real server deployment, real devices, external submission; external databases or live provider APIs. The usage record above identifies the bounded current IDE sample. Known limits: a change of a submodule's commit cannot be snapshotted, because snapshots refuse folders; worktrees do not isolate DBs, ports or devices; a timeout stops local processes but not remote work; snapshots do not filter secrets; `publish` trusts its HTML and its lock is local only; `ui` judges only overflow and off-screen controls.
+
+## Managed session first-use path
+
+The [unit-1 record](tasks/session-orchestration.md#unit-1-execution-and-verification)
+separates the actual Windows Codex create/idle/contextual-follow-up path, named
+read-only existing history, desktop/narrow inspection and delegated offline checks.
+It retains the source/client/native identities, first failures and evidence limits.
+Controller restart, approval recovery, other providers and human usability
+acceptance remain outside that observation; final technical delivery has its own
+receipt. The [planning-role incident](tasks/planning-role-drift.md) remains open for
+behavioral observation and is not a runtime guard delivered by this feature.

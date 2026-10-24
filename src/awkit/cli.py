@@ -162,6 +162,42 @@ def _parser():
     status.add_argument("--record", type=Path, required=True, help="schema-1 task record JSON")
     status.add_argument("--json", action="store_true", help="print the schema-1 aggregate report")
 
+    session = groups.add_parser("session", help="local controls for managed conversations and read-only channel history",
+                                epilog=REFERENCE)
+    session.add_argument("--project", type=Path, default=Path.cwd(), help="project owned by the local controller")
+    session_commands = session.add_subparsers(dest="action", required=True, metavar="ACTION")
+    session_serve = session_commands.add_parser("serve", help="own a local controller; print its private human-control URL")
+    session_serve.add_argument("--codex", default="codex", help="Codex executable (default: codex on PATH)")
+    session_serve.add_argument("--port", type=int, default=0, help="loopback port; 0 selects an available port")
+    session_serve.add_argument("--record", type=Path, help="existing schema-1 declaration record to observe read-only")
+    session_create = session_commands.add_parser("create", help="create a named native Codex conversation")
+    session_create.add_argument("name")
+    session_create.add_argument("--responsibility", required=True)
+    session_create.add_argument("--provider", choices=("codex",), default="codex")
+    session_create.add_argument("--sandbox", choices=("read-only", "workspace-write"), default="read-only")
+    session_send = session_commands.add_parser("send", help="store an assignment; the owner starts an idle turn automatically")
+    session_send.add_argument("ident", help="managed session name or ID")
+    session_send.add_argument("--key", help="reuse this client key to recover the same stored submission; never auto-resend")
+    session_send.add_argument("--kind", choices=("review", "scout", "test", "draft", "question", "final", "notice"),
+                              default="question")
+    session_body = session_send.add_mutually_exclusive_group()
+    session_body.add_argument("--body")
+    session_body.add_argument("--body-file", type=Path)
+    session_commands.add_parser("status", help="read complete exchanges, actual observations and capabilities as JSON")
+    session_register = session_commands.add_parser("register", help="open an existing pairwise channel read-only")
+    session_register.add_argument("--channel", type=Path, required=True)
+    session_register.add_argument("--main-name", required=True, help="human name for the channel's existing main party")
+    session_register.add_argument("--reviewer-name", required=True, help="human name for the existing reviewer party")
+    session_register.add_argument("--local-role", choices=ROLES, default="main")
+    session_register.add_argument("--task", default="", help="optional task label; no task state is created")
+    session_decide = session_commands.add_parser("decide", help="answer an actual pending provider request on its connection")
+    session_decide.add_argument("ident")
+    session_decide.add_argument("--decision", required=True, dest="decision_id")
+    session_decide.add_argument("--choice", required=True, choices=("accept", "acceptForSession", "decline", "cancel"))
+    session_interrupt = session_commands.add_parser("interrupt", help="request interruption of the observed native turn")
+    session_interrupt.add_argument("ident")
+    session_commands.add_parser("stop", help="stop this controller and its owned provider; persisted sessions remain")
+
     pipeline = groups.add_parser("pipeline", help="extra for web projects: run delivery commands and verify the live release",
                                  epilog=REFERENCE)
     pipeline.add_argument("--config", type=Path, required=True, help="pipeline TOML (schema_version = 1)")
@@ -566,6 +602,32 @@ def main(argv=None):
             result = capture(args.config, args.output, args.channel)
             print(json.dumps(result, ensure_ascii=False, indent=2))
             return 0 if result["status"] == "passed" else 1
+        if args.group == "session":
+            import shutil
+            import uuid
+
+            from .session_http import request, serve
+            if args.action == "serve":
+                command = shutil.which(args.codex) or args.codex
+                return serve(args.project, [command], port=args.port, record=args.record)
+            payload = {}
+            if args.action == "create":
+                payload = dict(name=args.name, responsibility=args.responsibility, provider=args.provider,
+                               sandbox=args.sandbox, project=str(args.project.resolve()))
+            elif args.action == "send":
+                payload = dict(ident=args.ident, key=args.key or uuid.uuid4().hex,
+                               body=_read_body(args), kind=args.kind, entry="agent")
+            elif args.action == "register":
+                payload = dict(channel=str(args.channel), main_name=args.main_name, reviewer_name=args.reviewer_name,
+                               local_role=args.local_role, task=args.task)
+            elif args.action == "decide":
+                payload = dict(ident=args.ident, decision_id=args.decision_id, choice=args.choice)
+            elif args.action == "interrupt":
+                payload = dict(ident=args.ident)
+            result = request(args.project, args.action, payload)
+            print(json.dumps(dict(schema=1, **result)))
+            return 1 if args.action == "create" and result["session"]["state"] == "unknown" else 0
+
         if args.group == "channel":
             if args.action == "status":
                 if args.db is not None:

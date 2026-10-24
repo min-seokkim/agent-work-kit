@@ -471,3 +471,7 @@ After `running`, `uncertain`, `rollback-failed` or `failed-unrecovered`, every d
 ```
 
 `base_url` is an origin without credentials or path; 1 to 20 pages, 1 to 6 distinct widths between 240 and 3840. Only same-origin GET and HEAD requests are allowed; other requests, service workers and WebSockets are blocked. Findings per page and width: `horizontal-overflow`, `control-outside-viewport`, `http-error`, `capture-error` and `resource-blocked`. Any finding makes the exit code 1. Judge layout and content from the images yourself.
+
+## Sessions
+
+See [sessions](sessions.md).

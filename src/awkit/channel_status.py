@@ -94,7 +94,7 @@ def _load(record_path):
     return session, relationships, by_id, obligations
 
 
-def _read_channel(path):
+def _read_channel(path, *, include_body=False):
     # mode=ro refuses absent files. Never use Channel.transaction: it prepares/migrates.
     conn = sqlite3.connect(Path(path).as_uri() + "?mode=ro", uri=True, timeout=1)
     try:
@@ -113,8 +113,8 @@ def _read_channel(path):
             actual = {row["name"]: row["type"].upper() for row in conn.execute(f"PRAGMA table_info({table})")}
             if tables.get(table) != "table" or actual != expected:
                 raise ValueError(f"Unsupported channel table shape: {table}")
-        rows = [dict(row) for row in conn.execute(
-            "SELECT seq,id,sender,receiver,kind,reply_to,snap,at FROM messages ORDER BY seq")]
+        columns = "seq,id,sender,receiver,kind,reply_to,snap,at" + (",body" if include_body else "")
+        rows = [dict(row) for row in conn.execute(f"SELECT {columns} FROM messages ORDER BY seq")]
         seen = {}
         for row in rows:
             if (not isinstance(row["id"], str) or not ID.fullmatch(row["id"]) or row["id"] in seen

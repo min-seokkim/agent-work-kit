@@ -32,6 +32,8 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Added
 
+- `session` supplies a project-local controller, human controls and an agent CLI for managed Codex conversations over App Server stdio. Requests and linked replies stay in schema-1 channels; new managed channels add versioned identity, startup-context, attempt, event and decision records. Existing channel history can be registered read-only with named parties. Explicit decisions use their originating provider connection; uncertain work is not replayed automatically. Controller-restart recovery, Claude and existing IDE attachment remain unsupported.
+
 - The writing guide distinguishes a new draft from a scoped revision, preserves source meaning and author choices, and allows suitable prose to stay unchanged. Explicit requests and preferences remain sufficient reasons to edit. Existing pattern checks, genre exceptions and the Korean drafting method are unchanged.
 
 - `review compare --include-added --run` optionally inventories newly recorded retained-artifact paths with their source and scope. Default output and accepted-file statuses/exits are preserved; additions alone do not change the comparison result. Requested missing, malformed or unsafe inventory evidence is an error. No content verification or acceptance is implied.

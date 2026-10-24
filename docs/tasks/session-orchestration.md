@@ -1,6 +1,6 @@
 # Create, resume and follow independent sessions
 
-Status: selected for development after the active writing-guidance unit and its assigned application exercise. Planning owns the product contract; research owns provider capability evidence; implementation owns adapters, interface, verification and delivery. Planning base: `c3dd1bf`. The [collaboration record](independent-session-collaboration.md) retains existing channel behavior, native-provider research and executed worker probes. No production session launcher is delivered by this plan.
+Status: unit 1 implementation and bounded first-use observations are recorded below; technical delivery has its own receipt. Planning owns product scope, research supplies provider evidence and delegated checks, and implementation owns changes, integration and delivery. Planning base: `c3dd1bf`; implementation base: `2906d44`. Native execution, readable-screen inspection, mechanical verification and human acceptance remain separate.
 
 ## User outcome
 
@@ -80,3 +80,144 @@ Implementation supplies focused lifecycle/compatibility tests, a frozen full che
 Research assignment M-049 completed the capability matrix and reusable implementation recommendation in R-049. Planning selected the managed stdio path; technical feasibility and exact modules/schema are coordinated directly with implementation. M-149 sets this feature after the current M-143 writing unit and its assigned exercise. Public writing-example packaging remains a candidate for later selection. Deferred hook work remains separately preserved.
 
 Planning owns this document and the linked collaboration-plan updates. Implementation currently owns the roadmap integration files from the preceding handoff; request its priority/link update instead of editing those files concurrently. Transfer the new plan explicitly before delivery. No runtime behavior or completed verification is claimed by these planning edits.
+
+## M-151 implementation contract
+
+Base: `2906d44`. Work in the isolated `dev` clone; retain the original checkout and deferred M-141 unchanged. Baseline label `managed-unit-one` was marked before product edits. M-151 owns unit 1; M-154 and M-155 refine later routing and the first screen. Direct feasibility R-006/M-014 is an assessment, not live execution evidence.
+
+### Modules and interface
+
+- `src/awkit/codex_session.py`: owned App Server process, stable stdio JSONL handshake, RPC correlation, streamed events, server requests and bounded cleanup. No experimental queue, WebSocket or dynamic-tool requirement.
+- `src/awkit/session_store.py`: managed channel metadata, atomic message/key/attempt transactions, native event and decision projection. Existing `Channel` messages and linked replies remain authoritative task exchanges.
+- `src/awkit/sessions.py`: project controller, native thread/session binding, request dispatch after observed idle, normalized lifecycle, scoped approval answers and returned message publication. No semantic task-completion inference.
+- `src/awkit/session_http.py` and packaged `src/awkit/session_ui.html`: loopback HTTP owner/control service, token-authenticated agent client and local human screen. Human and agent entries call the same controller. A held SQLite lock prevents a second controller in the same project; stale processes are not killed or taken over.
+- `src/awkit/cli.py`: `session --project PATH serve/create/send/status/decide/interrupt`. Serve accepts the provider executable and an optional existing declaration record; other entries use the running owner. Request bodies use structured arguments/files. Human controls choose the scoped project, Codex, name, responsibility and supported permission settings.
+- `src/awkit/channel.py`: extract the existing validated insertion into a connection-taking internal helper so message insertion and managed correlation can share a transaction. Preserve all public channel arguments, roles, validation, IDs, schema and exits.
+- Tests: focused store/compatibility, stdio lifecycle/correlation and HTTP/CLI/control tests, with a harmless fake provider subprocess. Packaging includes the HTML. Reference points to a new optional `kit/sessions.md`, keeping the existing reference within 9,000 words. CHANGELOG and this record carry behavior and evidence.
+
+### Persistence fixed before code edits
+
+The project-owned `.awkit/sessions/channels/` contains one managed SQLite channel per local session. Its existing `messages` and `cursors` schema and `PRAGMA user_version=1` stay intact. Only explicit managed creation adds the following versioned extension; opening/browsing an ordinary channel never migrates it. Legacy channel readers/writers ignore these additional tables. No existing real channel needs migration for unit 1.
+
+- `awkit_session`: one row, extension schema 1, random local/channel UUID, human name, provider, resolved project, responsibility, native thread ID, controller generation, actual permission/model/client information, last observed state/time/source and error. The UUID is stored inside the database, not derived from its path. Aliases share it; conflicting copied identities are rejected.
+- `awkit_posts`: client idempotency key, authoritative message ID, entry source and creation time. The key and message are committed atomically. Repeating a key returns the same message; a different target/body is rejected. A client reports an uncertain transport outcome with its key rather than resending automatically.
+- `awkit_delivery`: random attempt ID, unique originating request ID, controller generation, native thread/turn IDs, provider-admission/execution state, linked reply ID, error and timestamps. A unique claim is committed before sending. Stored, accepted, executing and returned remain separate observations. Attempts are never replayed automatically, including after process interruption.
+- `awkit_events`: ordered generation-scoped native method/thread/turn/item observations and relevant payload/time. Exclude reasoning and unrelated account/config events. Only this controller's new conversations are observed.
+- `awkit_decisions`: generation and native RPC ID, originating thread/turn, method, original parameters, supported choices, state, explicit response and times. Decisions are never granted automatically. Unsupported requests remain visible with unavailable controls; supported answers return through that same live connection.
+
+The controller keeps a local endpoint/capability file and lifetime lock beside these channels. Neither is a new task registry. Existing task-record declarations are optional read-only evidence; absent declarations are unrecorded. Browsing never advances channel cursors or acknowledges/accepts a result. Unanswered requests and actual pending provider decisions are derived from their records; declared pending handling is shown beside returned replies without rewriting it.
+
+For a live session, supported unanswered request kinds trigger a uniquely claimed turn after observed idle; notices remain stored without invoking the provider. This also permits existing channel writers to post to a managed channel. A final native message becomes a linked channel reply atomically with the attempt result. Provider turn completion alone does not establish task success or result integration.
+
+### Runtime and acceptance boundaries
+
+Use the current generated default schemas in the executor's `schema/`; the executable matches retained SHA-256 `f5521b058ca08e249afd3b25b4681e81100181d92e73aa6b94bb8e75c2aa487b`. Its reused version is Codex 0.162.0-alpha.17.2. Current schema uses `read-only`/`workspace-write` sandbox inputs; some official examples use different spellings. Preserve the actual returned policy, reviewer and sandbox, not a requested label. Thread-local choices do not edit provider configuration or credentials.
+
+The first screen follows M-155: session list beside complete conversation, compact pending strip, visible project/recipient, optional technical details, actual permissions and reasons for unavailable actions. Narrow navigation opens the full conversation with a return control. Escape content and authenticate mutations; neither raw event text nor an untrusted page can choose a provider method.
+
+Acceptance uses a disposable project and invented text: create/name from the human interface, first assignment and actual reply, observed idle, then an agent CLI follow-up using a harmless fact from the first turn in the same native conversation. Retain full exchanges, IDs/events, permissions, binary/version, interventions and normal/narrow rendered inspection. Offline tests and Windows/Linux CI cover the wrapper only; actual provider/platform coverage is reported separately. No human usability acceptance is implied.
+
+Restart/same-ID resume and uncertain-send/approval recovery remain unit 2. Old generations are unavailable/unknown with their last observations; no silent replacement, automatic replay or takeover. Claude/cross-provider and selected IDE attachment remain later units. For later Claude routing, prefer native peer discovery/delivery only when the participating sender actually exposes and resolves it; this is not generic external RPC. Keep managed SDK/CLI same-ID recovery distinct, as M-154 requires. No live Claude call is part of unit 1.
+
+### M-158 existing-history integration
+
+Include explicit read-only registration in unit 1, as the original human-view requirement calls for. Add `src/awkit/session_history.py` for project-scoped channel path/name registration and read-only projections, plus `session register` and its human control. A schema-1 `.awkit/sessions/views.json` contains registration UUID, resolved channel path, human names for both existing roles, selected local role and optional task label. It holds references only, not copied messages or task state. Atomic file replacement is serialized by the existing controller lock. Aliases reuse a compatible registration; conflicting party/role labels are rejected. Missing/invalid channels remain visibly unavailable; they are never created or repaired by viewing.
+
+Extend the existing private `channel_status._read_channel` with optional full-body selection for this explicitly requested view. Its default projection, validation and public status output remain unchanged. Validation and full-body selection use the same read-only transaction. Existing-history views preserve both named parties and reply links, never claim a managed native identity, and disable send/resume with the reason. They neither write/migrate the channel nor advance cursors. Test byte/cursor preservation separately from managed-provider execution.
+
+The managed extension's session metadata is one versioned JSON object in `awkit_session.data` with its stable UUID also constrained in a separate column; the described fields retain their meanings. Delivery outcome is recorded separately from admission/execution state. This physical representation changes no existing channel table or schema version.
+
+A delivery also stores its client RPC ID before writing to the provider, so the durable request/attempt/turn binding retains ambiguous admission evidence. This is part of the new managed extension; no real managed records have been created or migrated yet.
+
+The controller also exposes an explicit stop action for graceful owned-process cleanup; it preserves native identities and uncertainty, and does not implement unit-2 resumption.
+
+The real-use [planning-role recurrence](planning-role-drift.md) is retained separately. Its bounded diagnosis is complete; procedural correction remains unverified. Startup responsibility is supplied through the provider-native thread instructions and retained with its admission source; a displayed role or an accepted creation request does not establish role compliance. This unit adds no role enforcement or mandatory acknowledgment turn.
+
+## Unit 1 execution and verification
+
+The implementation supplies the shared loopback controller and human/agent controls,
+with explicit existing-channel registration. Core channel schema and default status
+output remain compatible. The new managed extension stores identity, immutable
+submitted startup context and correlated runtime observations beside the existing
+task exchanges. The optional [session reference](../../kit/sessions.md) describes
+commands, permissions, errors and unsupported recovery.
+
+The Windows first-use execution used Codex 0.162.0-alpha.17.2 from the executable
+matching retained SHA-256 `f5521b058ca08e249afd3b25b4681e81100181d92e73aa6b94bb8e75c2aa487b`.
+The human screen created a named research conversation in a disposable Git project
+and sent its first invented-fact assignment. After an observed completed/idle
+turn, the agent CLI sent a contextual arithmetic follow-up without repasting the
+facts. Both actual replies appeared in the same human conversation view.
+Native identity `01a16e86-d6b9-7c43-951f-030cc5d41c04` retained two distinct turns,
+`01a16e88-6437-71b1-9ab9-34113292ded4` and
+`01a16e89-2d9b-74b3-a468-d176df59116f`, linked to the two channel requests/replies.
+The second answer retained the earlier name and calculated the expected remainder.
+The first answer identified the supplied responsibility; future adherence remains
+unverified. The provider returned read-only permissions, network access false,
+on-request approval and user review. No tool items or approval requests were
+observed. There were no extra runtime interventions, owner relays, turn retries or
+manual approval grants; the expected human create/first-send and agent follow-up
+are counted separately. This is two live turns, not a measured productivity gain.
+
+Implementation inspected actual full messages, reply links, recipient/project,
+permission source, stale-state provenance and unavailable recovery controls in
+Edge. The default desktop view and a 390 by 844 viewport were inspected; document
+width remained 390 pixels. Narrow list/back/conversation navigation and view
+reload preserved access to both exchanges. Temporary viewport settings were reset.
+Two current channels, Planning/Implementation and Research/Implementation, were
+opened separately as named read-only history. Their full bodies and reply links
+were readable; a reply navigated to its original request. Native controls stayed
+unavailable. Two bounded quiet status reads left both original database hashes
+unchanged; other sessions' independent writing remains outside that interval.
+
+Research executed the frozen offline package at
+`bdf0d2331df53d53992539bbdc68abbe7accdd63`, tree
+`e43e954bc251cc80ef2f1d4034f92d4f6df56b01`, under direct R-007/M-020. Ruff, all 23
+session tests and 35 existing-channel compatibility tests passed without warnings
+in its retained run `review-c9_8b386`. Implementation did not duplicate that
+delegated snapshot run. These tests use offline provider processes and ephemeral
+ports; they do not establish Linux live-provider behavior or actual approval
+recovery. The cumulative final delivery checks belong to the delivery receipt.
+
+Earlier working checks and failures remain: two initial Windows fixture cleanup
+errors from unclosed test connections were corrected; an HTTPError cleanup warning
+led to closing the product client's error response, followed by a clean HTTP
+slice. CLI/preflight helper assertions and path errors stopped before their
+claimed mutation or provider launch. The failed first disposable setup is retained
+with zero provider/model starts. No failure was relabeled as a successful live run.
+
+The product's stop control closed both feature-owned controllers and its owned
+native process; explicit process and endpoint observation confirmed cleanup. The
+two browser tabs were closed. Existing planner/researcher/IDE owners were neither
+attached nor interrupted. Full restart/resume and uncertain-send/approval recovery
+remain M-166/unit 2; Claude, selected existing attachment and real collaboration
+remain later units. Human usability acceptance and causal benefit are unverified.
+
+Evidence is retained under
+`.awkit/handoffs/managed-session-implementation/executor/`: `live-v2/` fixes inputs,
+actual exchanges/events, client/model/permission provenance, intervention counts
+and screenshots; `history-live/reading.json` records passive history scope;
+`cleanup.json` records owned-process observations. Research owns its check run and
+diagnosis under `.awkit/handoffs/product-research/executor/managed-session-verification/`.
+Final tree, cumulative checks, commit, CI and exact installed contents are recorded
+in the executor's `delivery.json`. The original checkout's pending copies and
+deferred M-141 remain separately preserved and unmatched.
+
+
+The final declaration-view exercise reused the four actual saved messages after
+closing their provider. A new controller read the old generation as unavailable,
+without native resume or another model turn. An explicitly synthetic pending
+declaration remained visible beside its actual returned reply and linked to the
+source request. Both declaration and channel hashes stayed unchanged during
+reading. The first fixture used the wrong ownership-field name; the UI showed
+declarations unavailable, and the corrected fixture used the existing
+`responsible_session` field. This was a fixture correction, not a schema migration.
+The invalid input and observation remain in `declaration-view/`; its controller
+was stopped separately. Full native restart recovery remains outside unit 1.
+
+
+The guard generator's explicit source lists register the new session guide and
+command module before regenerating their existing F24/F29 mappings. The first
+generation omitted those unregistered declarations and a final-preparation
+allowlist assertion stopped before creating a snapshot/check. This integration
+changes no role-incident rule, hook or failure entry.

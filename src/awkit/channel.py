@@ -76,7 +76,8 @@ class Channel:
         finally:
             conn.close()
 
-    def post(self, sender, receiver, kind, body, *, reply_to=None, snap=None):
+    @staticmethod
+    def _validate_post(sender, receiver, kind, body, reply_to=None, snap=None):
         if not isinstance(body, str) or not body.strip():
             raise ValueError("The message body is empty.")
         if sender not in ROLES or receiver not in ROLES or sender == receiver:
@@ -89,26 +90,34 @@ class Channel:
             raise ValueError("Invalid reply target ID.")
         if snap and not re.fullmatch(r"[0-9a-f]{7,64}", snap):
             raise ValueError("A snapshot ID is 7 to 64 lowercase hex characters.")
+
+    def _post(self, conn, sender, receiver, kind, body, *, reply_to=None, snap=None):
+        """Insert inside an existing transaction, including managed delivery correlation."""
+        self._validate_post(sender, receiver, kind, body, reply_to, snap)
+        if conn.execute("SELECT 1 FROM messages WHERE kind='close'").fetchone():
+            raise ValueError("This channel is closed. Use another database path for new work.")
+        if reply_to:
+            parent = conn.execute(
+                "SELECT * FROM messages WHERE id=?", (reply_to,)
+            ).fetchone()
+            if not parent or parent["sender"] != receiver or parent["receiver"] != sender:
+                raise ValueError("A reply must answer a message the other side sent.")
+        count = conn.execute(
+            "SELECT COUNT(*) FROM messages WHERE sender=?", (sender,)
+        ).fetchone()[0]
+        message_id = f"{'M' if sender == 'main' else 'R'}-{count + 1:03d}"
+        conn.execute(
+            "INSERT INTO messages(id,sender,receiver,kind,reply_to,snap,at,body) "
+            "VALUES (?,?,?,?,?,?,?,?)",
+            (message_id, sender, receiver, kind, reply_to, snap,
+             datetime.now(UTC).isoformat(), body),
+        )
+        return message_id
+
+    def post(self, sender, receiver, kind, body, *, reply_to=None, snap=None):
+        self._validate_post(sender, receiver, kind, body, reply_to, snap)
         with self.transaction() as conn:
-            if conn.execute("SELECT 1 FROM messages WHERE kind='close'").fetchone():
-                raise ValueError("This channel is closed. Use another database path for new work.")
-            if reply_to:
-                parent = conn.execute(
-                    "SELECT * FROM messages WHERE id=?", (reply_to,)
-                ).fetchone()
-                if not parent or parent["sender"] != receiver or parent["receiver"] != sender:
-                    raise ValueError("A reply must answer a message the other side sent.")
-            count = conn.execute(
-                "SELECT COUNT(*) FROM messages WHERE sender=?", (sender,)
-            ).fetchone()[0]
-            message_id = f"{'M' if sender == 'main' else 'R'}-{count + 1:03d}"
-            conn.execute(
-                "INSERT INTO messages(id,sender,receiver,kind,reply_to,snap,at,body) "
-                "VALUES (?,?,?,?,?,?,?,?)",
-                (message_id, sender, receiver, kind, reply_to, snap,
-                 datetime.now(UTC).isoformat(), body),
-            )
-            return message_id
+            return self._post(conn, sender, receiver, kind, body, reply_to=reply_to, snap=snap)
 
     def find(self, role, mode, target=None):
         if role not in ROLES or mode not in ("request", "new", "reply"):

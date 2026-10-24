@@ -135,7 +135,7 @@ def _parser():
 
     channel = groups.add_parser("channel", help="message log for a main session and a reviewer session",
                                 epilog=REFERENCE)
-    channel.add_argument("--db", type=Path, default=Path(".awkit/channel.sqlite3"),
+    channel.add_argument("--db", type=Path,
                          help="SQLite file both sessions use (default: .awkit/channel.sqlite3)")
     commands = channel.add_subparsers(dest="action", required=True, metavar="ACTION")
     post = commands.add_parser("post", help="record a message and print its ID; the body comes from --body, --body-file or stdin")
@@ -158,6 +158,9 @@ def _parser():
     wait.add_argument("--json", action="store_true", help="print messages as JSON")
     export = commands.add_parser("export", help="print the whole channel; does not move read positions")
     export.add_argument("--json", action="store_true", help="print messages as JSON")
+    status = commands.add_parser("status", help="observe listed channels and explicit task-record obligations without writes")
+    status.add_argument("--record", type=Path, required=True, help="schema-1 task record JSON")
+    status.add_argument("--json", action="store_true", help="print the schema-1 aggregate report")
 
     pipeline = groups.add_parser("pipeline", help="extra for web projects: run delivery commands and verify the live release",
                                  epilog=REFERENCE)
@@ -562,7 +565,15 @@ def main(argv=None):
             print(json.dumps(result, ensure_ascii=False, indent=2))
             return 0 if result["status"] == "passed" else 1
         if args.group == "channel":
-            store = Channel(args.db)
+            if args.action == "status":
+                if args.db is not None:
+                    parser.error("channel status uses --record; --db is not accepted")
+                from .channel_status import observe
+                from .channel_status import render as render_status
+                result, code = observe(args.record)
+                print(json.dumps(result, ensure_ascii=False, indent=2) if args.json else render_status(result))
+                return code
+            store = Channel(args.db if args.db is not None else Path(".awkit/channel.sqlite3"))
             if args.action == "post":
                 print(store.post(args.sender, args.receiver, args.kind, _read_body(args),
                                  reply_to=args.reply_to, snap=args.snap))

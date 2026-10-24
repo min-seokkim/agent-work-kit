@@ -32,6 +32,8 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Added
 
+- `awkit channel status --record task.json [--json]` reads explicitly listed channel relationships and obligation declarations without creating databases, migrating schemas or advancing cursors. Schema-1 reports retain unanswered protocol requests, returned responses, closed-channel work, unsupported evidence and conflicting declarations separately. Readable reports exit 0, partial channel evidence exits 1, and invalid records or arguments exit 2; declarations never certify semantic completion.
+
 - `awkit check writing-compare BASELINE CANDIDATE PATH...` compares full-file writing findings from explicit frozen Git revisions, retaining every occurrence, source witnesses and both reports. It identifies reliable same-path matches, leaves uncertain correspondence visible and inventories absent findings without accepting corrections. A separate format-1 JSON preserves legacy writing output and hook policy. Candidate errors still exit 1, unavailable comparison evidence exits 2, and warning-only results exit 0. Git blobs are read without checkout or index changes.
 
 - Development documentation now has separate design, roadmap, task, evidence and release records. `docs/development.md` remains the starting point, with current state and links. Completed work moves out of the roadmap; old section anchors remain available through the document map.

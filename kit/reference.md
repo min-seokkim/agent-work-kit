@@ -337,6 +337,40 @@ A message log in SQLite shared by two local sessions: `main` (implements) and `r
 
 Exit codes: 0 found, 1 timed out, 2 usage or storage error, 3 the reviewer received `close`. `awkit channel export [--json]` prints the whole log; bodies are quoted so they cannot imitate headers.
 
+`awkit channel status --record task.json [--json]` observes listed channels and declarations; `--db` is rejected:
+
+```json
+{
+  "schema": 1,
+  "session": "session-A",
+  "relationships": [
+    {"id": "contribution", "channel": "channels/sample.sqlite3", "local_role": "main", "counterpart": "session-B"}
+  ],
+  "obligations": [
+    {
+      "id": "inspect-result",
+      "source": {"relationship": "contribution", "message": "R-001"},
+      "responsible_session": "session-A",
+      "action": "Inspect sample",
+      "state": "pending",
+      "evidence": []
+    }
+  ]
+}
+```
+
+Paths: record-relative or absolute. IDs: unique per list. Optional strings: `task` on relationships; `recipient`/`revision`/`reason` on obligations. States: `pending`/`done`/`no-action`. Optional `evidence`: `[]`. References require declared relationships and valid message IDs.
+
+Aliases, including hard links, share protocol rows under the first relationship; later IDs/paths carry `alias_of`. Roles/counterparts must match. Alias references resolve there. Identity holds per invocation. Different DBs keep separate message namespaces.
+
+Read-only connections validate schema-1 channels without creation, migration or cursor movement. No discovery/posting/execution/link-opening occurs. JSON schema 1: `session`, `relationships` with channel state, `protocol`, `obligations`, `diagnostics`. Text shows counts and full rows.
+
+Unanswered requests/rebuttals: `protocol-unanswered` incoming, `awaiting-reply` outgoing. Linked `re`/`rebut` records a response; rebut remains a request. Incoming responses without explicit result-source declarations show `disposition-unrecorded`, assigning no integration duty. Notices imply no reply duty. Cursors and closure never complete work.
+
+Declarations never suppress protocol rows. Notice-answer evidence appears beside unanswered questions, suggesting reconciliation before replying. Missing/unavailable references, and `done`/`no-action` without evidence, show unsupported. Resolved references certify existence only. Different states for identical source/responsible-session/action/recipient conflict; revisions establish no precedence.
+
+Exits: 0 readable, including pending/conflicting; 1 missing/unreadable/unsupported channel with partial rows; 2 invalid arguments/record. Semantic completion remains unverified.
+
 ## usage
 
 `awkit usage PATH... [--since YYYY-MM-DD] [--json]` reads Claude Code and Codex `.jsonl` session logs (folders recursively) and reports per thread: provider, models, effort, calls, user messages, commands, minutes, fresh input, cache write, cache read and output tokens. It prints models and counts, never message content.

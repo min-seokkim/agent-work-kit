@@ -219,6 +219,14 @@ Proposed first task: a fictional technical system with source notes, a real synt
 
 Public fixtures must contain enough realistic complexity to expose the recorded failures. A private real task can establish usefulness later without publishing its evidence. Save visible intermediate work so the owner can inspect the direction before the entire document is finished; do not turn every stage into a mandatory approval request.
 
+### Next bounded evidence example
+
+Prepare a public synthetic reading-document example around the existing review runner. The scoped document trial already demonstrated an honestly reported missing visual review and input-hash-based reuse; it did not demonstrate automatic detection. The current documents example checks titles and links. `review verify` checks retained artifact bytes, while `check done` matches the repository tree to a passing run. Neither determines whether a render covers the selected source and style dependencies or whether a required reading pass was recorded.
+
+The next handoff should supply one short fictional decision note, a separate requirements record, a shared style file and a declared review record. Fix the required source, preservation and rendered-review duties before producing the candidate. Retain source/dependency hashes, renderer identity and output artifacts through the existing `checks.toml` artifact mechanism. A small example-specific checker should report an absent required record, a mismatched input hash and an explicitly unavailable review separately. Matching metadata establishes recorded coverage, not the quality of the reading or the truth of a reviewer declaration.
+
+Exercise three cases: commands succeed while a required review record is absent; a shared style changes while prose stays unchanged and the old render record is reused; and an unrelated source changes while evidence for the selected document remains reusable. Inspect actual rendered output on an available local renderer, with automated fixture checks reported separately. Keep the original failing artifacts. Acceptance is one runnable example with explicit input boundaries and meaningful failure cases, followed by assessment of whether any reusable tool is missing. This unit adds no completion hook, global evidence registry or claim that presentation phases are complete. Implementation follows the selected collaboration unit; planning owns the example's contract and evaluation.
+
 ### Verification scenarios
 
 | Scenario | Expected evidence |

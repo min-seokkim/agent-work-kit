@@ -1,0 +1,9 @@
+name = "one local mock effect"
+signal = "signal.json"
+event_id = "DEMO-ONE"
+effect = "delivery/effect.txt"
+effect_line = "mock effect DEMO-ONE\n"
+failure = "failure.json"
+attempt_limit = 1
+stop_after = "success-or-failure"
+notification = "local-record"

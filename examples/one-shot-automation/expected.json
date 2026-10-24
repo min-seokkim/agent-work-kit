@@ -1,0 +1,11 @@
+{
+  "event": {"event_id": "DEMO-ONE"},
+  "effect": "mock effect DEMO-ONE\n",
+  "blocker": "blocked\n",
+  "cases": {
+    "configured": {"status": "configured", "attempts": 0, "terminal": false, "observations": []},
+    "no-trigger": {"status": "no-trigger", "attempts": 0, "terminal": false, "observations": ["no-trigger"]},
+    "fired": {"status": "fired", "attempts": 1, "terminal": true, "observations": ["fired", "skipped-stopped"]},
+    "failed": {"status": "failed", "attempts": 1, "terminal": true, "observations": ["failed", "skipped-stopped"]}
+  }
+}

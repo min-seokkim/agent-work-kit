@@ -1,0 +1,32 @@
+schema = 1
+timeout_seconds = 60
+artifacts = ["examples/one-shot-automation/task.toml", "examples/one-shot-automation/input/signal.json", "examples/one-shot-automation/expected.json", "examples/one-shot-automation/output/fired/**/*"]
+required_artifacts = ["examples/one-shot-automation/task.toml", "examples/one-shot-automation/input/signal.json", "examples/one-shot-automation/expected.json", "examples/one-shot-automation/output/fired/configured.json", "examples/one-shot-automation/output/fired/state.json", "examples/one-shot-automation/output/fired/signal.json", "examples/one-shot-automation/output/fired/observations.jsonl", "examples/one-shot-automation/output/fired/delivery/effect.txt", "examples/one-shot-automation/output/fired/effect.json"]
+
+[env]
+PYTHONUTF8 = "1"
+
+[[setup]]
+name = "prepare"
+cwd = "examples/one-shot-automation"
+argv = ["{python}", "run_once.py", "prepare", "fired"]
+
+[[setup]]
+name = "stage-mock-event"
+cwd = "examples/one-shot-automation"
+argv = ["{python}", "run_once.py", "stage-event", "fired"]
+
+[[checks]]
+name = "observe-and-fire"
+cwd = "examples/one-shot-automation"
+argv = ["{python}", "run_once.py", "observe", "fired"]
+
+[[checks]]
+name = "observe-stopped-job"
+cwd = "examples/one-shot-automation"
+argv = ["{python}", "run_once.py", "observe", "fired"]
+
+[[checks]]
+name = "read-fired-evidence"
+cwd = "examples/one-shot-automation"
+argv = ["{python}", "check_output.py", "fired"]

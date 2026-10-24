@@ -1,0 +1,22 @@
+schema = 1
+timeout_seconds = 60
+artifacts = ["examples/one-shot-automation/task.toml", "examples/one-shot-automation/input/signal.json", "examples/one-shot-automation/expected.json", "examples/one-shot-automation/output/no-trigger/**/*"]
+required_artifacts = ["examples/one-shot-automation/task.toml", "examples/one-shot-automation/input/signal.json", "examples/one-shot-automation/expected.json", "examples/one-shot-automation/output/no-trigger/configured.json", "examples/one-shot-automation/output/no-trigger/state.json", "examples/one-shot-automation/output/no-trigger/observations.jsonl"]
+
+[env]
+PYTHONUTF8 = "1"
+
+[[setup]]
+name = "prepare"
+cwd = "examples/one-shot-automation"
+argv = ["{python}", "run_once.py", "prepare", "no-trigger"]
+
+[[checks]]
+name = "observe-absent-trigger"
+cwd = "examples/one-shot-automation"
+argv = ["{python}", "run_once.py", "observe", "no-trigger"]
+
+[[checks]]
+name = "read-no-trigger-evidence"
+cwd = "examples/one-shot-automation"
+argv = ["{python}", "check_output.py", "no-trigger"]

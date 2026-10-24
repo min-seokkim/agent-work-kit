@@ -1,0 +1,32 @@
+schema = 1
+timeout_seconds = 60
+artifacts = ["examples/one-shot-automation/task.toml", "examples/one-shot-automation/input/signal.json", "examples/one-shot-automation/expected.json", "examples/one-shot-automation/output/failed/**/*"]
+required_artifacts = ["examples/one-shot-automation/task.toml", "examples/one-shot-automation/input/signal.json", "examples/one-shot-automation/expected.json", "examples/one-shot-automation/output/failed/configured.json", "examples/one-shot-automation/output/failed/state.json", "examples/one-shot-automation/output/failed/signal.json", "examples/one-shot-automation/output/failed/observations.jsonl", "examples/one-shot-automation/output/failed/failure.json", "examples/one-shot-automation/output/failed/delivery"]
+
+[env]
+PYTHONUTF8 = "1"
+
+[[setup]]
+name = "prepare"
+cwd = "examples/one-shot-automation"
+argv = ["{python}", "run_once.py", "prepare", "failed"]
+
+[[setup]]
+name = "stage-mock-event"
+cwd = "examples/one-shot-automation"
+argv = ["{python}", "run_once.py", "stage-event", "failed"]
+
+[[checks]]
+name = "observe-intended-write-failure"
+cwd = "examples/one-shot-automation"
+argv = ["{python}", "run_once.py", "observe", "failed"]
+
+[[checks]]
+name = "observe-stopped-job"
+cwd = "examples/one-shot-automation"
+argv = ["{python}", "run_once.py", "observe", "failed"]
+
+[[checks]]
+name = "read-failed-evidence"
+cwd = "examples/one-shot-automation"
+argv = ["{python}", "check_output.py", "failed"]

@@ -1,0 +1,17 @@
+schema = 1
+timeout_seconds = 60
+artifacts = ["examples/one-shot-automation/task.toml", "examples/one-shot-automation/input/signal.json", "examples/one-shot-automation/expected.json", "examples/one-shot-automation/output/configured/**/*"]
+required_artifacts = ["examples/one-shot-automation/task.toml", "examples/one-shot-automation/input/signal.json", "examples/one-shot-automation/expected.json", "examples/one-shot-automation/output/configured/configured.json", "examples/one-shot-automation/output/configured/state.json"]
+
+[env]
+PYTHONUTF8 = "1"
+
+[[setup]]
+name = "prepare"
+cwd = "examples/one-shot-automation"
+argv = ["{python}", "run_once.py", "prepare", "configured"]
+
+[[checks]]
+name = "read-configured-evidence"
+cwd = "examples/one-shot-automation"
+argv = ["{python}", "check_output.py", "configured"]

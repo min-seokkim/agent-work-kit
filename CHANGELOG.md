@@ -32,6 +32,8 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Added
 
+- `examples/one-shot-automation/` uses explicit review invocations to distinguish configuration, absent trigger, one local mock append with stopping, and a failed action with retained notification. Its intentionally failed review remains failed while later evidence checks and retained-byte verification can pass. The repository-only example registers no schedule and makes no cross-run or production guarantee.
+
 - `examples/document-intent/` packages fictional source, coverage records, participant prompts and separate evaluator criteria for bounded reading and writing tasks. It preserves an observed planner error as known-flawed input and distinguishes copying integrity, agent passage judgments and actual human editing or approval. The optional repository example launches no trial and certifies no semantic result.
 
 - Human `channel status` output places diagnostics, unresolved protocol and pending/unsupported/conflicting declarations before recorded history, retaining stable order and each full row once. Counterpart, role, stated action and evidence stay visible, including notice-only work and unavailable relationships. JSON, database access, exit codes and semantic-completion limits are unchanged.

@@ -44,9 +44,11 @@ Prevents: F16, F30.
 
 ## Corrections
 
-When the user corrects text, identify the reader's problem behind the correction and check the fix against that problem. Changing only the named words recreates the problem in another form.
+When the user corrects text, identify the reader's problem and the correction's applicable scope. Check the fix against that reason; changing only the named words recreates the problem.
 
 Then search every text people read (other documents, UI text, CLI output) for the same pattern and fix each occurrence, or list those left and why. The user should not have to point at each one.
+
+Carry that reason and scope into the next related output and check it before returning the result, without making the user repeat the request or approve routine application. When persistence is needed, use the project's existing requirements or task record. Keep project preferences in that project and one-document instructions with that document; only reusable lessons belong in the kit. Distinguish added requirements from reminders to satisfy an existing one; a new action may address the same unresolved correction.
 
 Prevents: F31, F32.
 
@@ -54,9 +56,9 @@ Prevents: F31, F32.
 
 If a text has been revised more than twice, or has accumulated additions and repetition, reconsider its structure: make a preservation list, draft from a blank document, compare with the source and keep the prior content recoverable. Maintain one authoritative document per topic and link to it; keep historical records without maintaining them as duplicate current procedures.
 
-A review comment names the passage, the problem and the fix. After a fix, check that passage and the affected content instead of rescoring resolved issues. When reviews conflict, the main agent decides; established terms are not changed to suit a reviewer. A full rewrite gets one independent review where the project authorizes it. Before splitting writing among agents, finish one representative section and hand off the audience, purpose, preservation list, sources and drafts.
+A review comment names the passage, the problem and the fix. After a fix, check that passage and the affected content instead of rescoring resolved issues. When reviews conflict, the main agent decides; established terms are not changed to suit a reviewer. A full rewrite gets one independent review where the project authorizes it. Before splitting writing among agents, finish one representative section and hand off the audience, purpose, preservation list, sources, drafts and applicable corrections with their reasons and scope.
 
-Prevents: F18, F21.
+Prevents: F18, F21, F31, F32.
 
 ## Completion check
 

@@ -32,6 +32,8 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Added
 
+- The writing guide carries an accepted correction's reason and scope into later related outputs and delegated briefs, reusing existing project requirements or task records when needed. F31/F32 distinguish recurring corrections from new substantive scope. Mechanical checks and agent review do not establish owner acceptance or reduced repeated effort.
+
 - `examples/one-shot-automation/` uses explicit review invocations to distinguish configuration, absent trigger, one local mock append with stopping, and a failed action with retained notification. Its intentionally failed review remains failed while later evidence checks and retained-byte verification can pass. The repository-only example registers no schedule and makes no cross-run or production guarantee.
 
 - `examples/document-intent/` packages fictional source, coverage records, participant prompts and separate evaluator criteria for bounded reading and writing tasks. It preserves an observed planner error as known-flawed input and distinguishes copying integrity, agent passage judgments and actual human editing or approval. The optional repository example launches no trial and certifies no semantic result.

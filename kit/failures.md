@@ -165,15 +165,15 @@ A rewrite drops a number, condition or exception, turns a possibility into a cer
 
 After a correction, the agent changes exactly what was named and repeats the underlying problem in another form.
 - Evidence: owner's records. Told not to name categories "A and B", the agent renamed them all to four-character names that still did not say what each held. Told that tracking codes were hard to read, it put long names in the ID column, which broke the table.
-- Countermeasure: state the reader's problem behind the correction and check the edit against that problem.
+- Countermeasure: state the reader's problem and the correction's applicable scope; check the edit and next related result against that reason.
 - Check: Kind: guidance. prose.
 
-#### F32. One instance is fixed and the same problem stays elsewhere.
+#### F32. One instance is fixed and the same problem stays elsewhere or returns later.
 
-The passage the user pointed at is fixed; the same pattern remains in other passages, documents or outputs.
-- Evidence: owner's records. Mixed polite endings fixed in the document the owner showed and left in others; an "A and B" category name ("infrastructure and purchase documents") left after the first round; tracking codes left after a cleanup; the same "A and B" grouping in CLI status output after it was removed from documents.
-- Countermeasure: after a correction, search every text people read (documents, UI text, CLI output) for the same pattern and fix each occurrence, or list those left and why.
-- Check: Kind: verify. `awkit check writing` takes folders and searches them recursively, and the test suite runs it over every document in this repository. Status: enforced here for the mechanical patterns.
+The passage the user pointed at is fixed; the same pattern remains elsewhere or recurs in later related outputs.
+- Evidence: owner's records. Mixed polite endings fixed in the document the owner showed and left in others; an "A and B" category name ("infrastructure and purchase documents") left after the first round; tracking codes left after a cleanup; the same "A and B" grouping in CLI status output after it was removed from documents. Later records show renewed requests about the same broad style problem despite available project notes and writing guidance. They do not establish whether guidance was read or whether recording a preference would have prevented recurrence. The particular inspected research additions and substantive question added requirements; a new action can also address an earlier unmet requirement.
+- Countermeasure: search existing outputs for the pattern and fix each occurrence, or list those left and why; carry the accepted reason and scope into later related outputs and delegated briefs, using existing requirements or task records when persistence is needed.
+- Check: Kind: verify. `awkit check writing` searches folders recursively; repository tests cover its listed mechanical patterns. Comparing a later result with the correction's reason is agent review, not proof of owner acceptance. Status: mechanical patterns enforced here; future application remains guidance and review.
 
 #### F33. Following the writing procedure is reported as quality.
 
@@ -360,8 +360,8 @@ Generated from the guards' own declarations: each guide section ends with a "Pre
 | F28 The wrong level of autonomy | workflow.md Define the task; work-types.md Learning | none | none |
 | F29 Context is lost between sessions | workflow.md Continue across sessions; connect.md; protocol.md A task record; protocol.md Resume after interruption; writing.md Before writing | `awkit doctor`, `awkit kit scan`, `awkit kit init`, `awkit kit skills`, `awkit kit guide`, `awkit channel status`, `awkit hook` | none |
 | F30 Facts, attribution or certainty change while writing | work-types.md Writing; writing.md Before writing; writing.md Write plainly; writing.md Preserve facts and judgments | none | none |
-| F31 The form of a correction is fixed, not its reason | writing.md Corrections; korean-writing.md Revise sentences | none | none |
-| F32 One instance is fixed and the same problem stays elsewhere | writing.md Corrections | `awkit check writing` | `writing-check (verify)` |
+| F31 The form of a correction is fixed, not its reason | writing.md Corrections; writing.md Rewriting and collaboration; korean-writing.md Revise sentences | none | none |
+| F32 One instance is fixed and the same problem stays elsewhere or returns later | writing.md Corrections; writing.md Rewriting and collaboration | `awkit check writing` | `writing-check (verify)` |
 | F33 Following the writing procedure is reported as quality | writing.md Completion check; korean-writing.md Writing process | none | none |
 | F34 The user's own words become the document's text | writing.md Before writing | none | none |
 | F35 The user's guess becomes the requirement | workflow.md Define the task | none | none |

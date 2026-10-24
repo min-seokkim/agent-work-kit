@@ -1,0 +1,43 @@
+# Writing outcomes and repeated instructions
+
+Status: the initial retrospective is recorded; the bounded correction-carry-forward guidance candidate is accepted for cumulative integration. Planning owns this record, evidence interpretation and acceptance. The implementation session owns the assigned kit passages and CHANGELOG. The owner prioritizes better writing and fewer repeated instructions over completion counts. This task follows the [document intent trial](document-intent-trial.md), whose synthetic results do not establish an effect in actual writing.
+
+## Scope and method
+
+The owner authorized reading the selected application session's records and retained drafts to assess awkit. Its writing session retains editorial ownership. Read originals in place; keep private prose and raw conversation out of this repository and collaboration messages. Local metadata identifies the selected log, inspected line ranges, source files and hashes. It does not turn a partial recovered conversation into a full original.
+
+Compare a retained earlier draft with its revision, then trace the reason for the change through visible owner feedback, agent review and tool results. Judge whether the revision preserves the author's question, clarifies the argument, reads naturally and reduces work needed before use. Distinguish added requirements from reminders to meet an existing one. A request for a different corrective action can address the same unresolved problem. Repeated wording alone cannot establish an identical defect or measure the owner's effort.
+
+The inspected sample contains two draft pairs chosen because earlier versions and revision evidence were available. It is not a random sample or a verdict on the whole collection. Planning knows the version order and has read the feedback, so the reading is not blinded. No new independent fact-checking, target-editor inspection or human acceptance is implied.
+
+## Preliminary observations
+
+| Observation | Evidence and judgment | Attribution limit |
+|---|---|---|
+| An early revision restores a specific personal problem | Reading the retained first and third versions shows a more concrete opening, a clearer central question and a self-counterargument that reconnects the conclusion to the opening. Qualifications remain available. | The visible owner corrections and the writer's technical account identify owner feedback and rereading original material as the triggers. Existing guidance already required preservation. A better revision is not evidence that awkit caused the improvement. |
+| Another revision makes a local improvement | A standalone essay retained in the consolidated edition changes two opening paragraphs and a cross-reference. The question becomes more direct; most of the body and its research limits remain unchanged. | This supports a local editorial judgment, not a claim that the entire essay or collection was transformed. An intermediate wording criticized by the AI reviewer was not located as a retained candidate in this comparison. |
+| Similar style requirements recur in later work | The owner asks for less generic prose and preservation of voice, later asks for more natural blog writing, and raises the broad style concern again after additional drafting and consolidation. Frozen project instructions already contain a personal-voice requirement. | This demonstrates continued owner intervention at the requirement-class level. It does not show whether each delegated context received the requirement, that every occurrence was the same defect, or that a particular language procedure caused it. |
+| Agent editorial review produces specific proposed repairs | The retained review and response identify pacing, missing transitions, changed modality, repeated endings and an artificial conversational turn. The response records targeted integration. | These are agent review records. They are not independent factual verification or proof that the owner accepted the resulting prose. Only the two sampled pairs received the retrospective comparison above. |
+| Version and check records make the process inspectable | Preserved drafts, immutable snapshots and retained failed/passing runs let planning distinguish content revision from a mechanical pass and locate earlier requirements. | Inspectability is an observed capability. Saved owner time, lower cost and better final writing attributable to that capability remain unmeasured. |
+
+New owner requests for broader research, an additional opening or ending, and a new substantive question are scope additions. They must not inflate a count of forgotten instructions. Preparing publication also changes the output requirements; a later complaint about source-note style can relate to an earlier preference without making every platform-format request a recurrence.
+
+## Carry corrections forward
+
+Avoiding the need to repeat instructions is an explicit product outcome. A final text can improve while this outcome remains unmet. Evaluate the chain from the first correction, through its interpretation and applicable scope, to the next related draft and any delegated brief. Then inspect the later output. Saving a preference or reporting that a guide was read is insufficient.
+
+Existing F31 covers correcting the underlying problem; F32 covers other existing occurrences; F33 separates procedure from quality. `M-067` assigns a small revision in the existing writing guide to carry an accepted correction into later related outputs and handoffs. Use existing project requirements or task records when persistence is needed. General lessons belong in kit guidance; a project's voice preference and a one-document instruction keep their scope. No new correction registry, semantic score or automatic approval is assigned.
+
+Acceptance requires an actionable rule that closes this temporal gap, preserves current user precedence and existing review boundaries, and remains within the guide's word limit. Existing focused checks can verify packaging, links and mechanical writing. They cannot establish fewer repeated requests. The next evaluation should inspect a later applicable output without supplying the same correction again, identify any recurrence, and record the owner's actual response when available. Do not ask the owner to repeat a requirement merely to produce an evaluation result.
+
+## Guidance candidate and review
+
+`M-067` returned three-file candidate `a540d42` in `R-037`. Its existing five kit, guard, link, word-limit and skill-payload checks and writing checks passed in `.awkit/reviews/review-l_jh4_6x`. Planning found one overgeneralization: the new rule classified new research or a new question as additional scope. A different requested action can address the same unmet requirement. `M-068` requested that distinction, and `R-038` returned candidate `c0d55c2` with only the two affected guide/catalogue sentences changed. The original candidate and passing mechanical run remain evidence of what those checks missed.
+
+The refined three-file candidate passed the same focused checks in `.awkit/reviews/review-45tr11b6`. It carries correction reasons and scope into later related outputs and delegated briefs, uses existing project records where persistence is needed, and keeps reusable lessons separate from project or document preferences. The guard map was regenerated. No command, hook, registry, test suite or language-method default changed. Planning read the diff, refinement and retained results, inspected the final changed passages rendered in Edge at 1200 px, and accepted the candidate in `M-069`. Cumulative repository verification and delivery remain separate from this focused pass. Local delivery receipts will be retained under `.awkit/handoffs/correction-carry-forward-delivery/`.
+
+## Remaining evidence
+
+The two comparisons support limited improvements in prose and argument. Direct awkit contribution to those improvements remains uncertain. The repeated broad style corrections show a practical shortfall worth addressing, even though the mechanism is not yet isolated. The current evidence does not justify a new memory service, a universal essay style or a change to the Korean drafting default.
+
+Local metadata belongs under `.awkit/handoffs/writing-outcome-evaluation/`. No manuscript copies are retained there. Further reading should locate whether the applicable correction reached later work and distinguish failed application from unavailable context. Report unresolved access or opaque tool payloads as unknown; do not infer missing instructions from them. Any later causal comparison must disclose differences in sources, model, context and owner involvement.

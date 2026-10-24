@@ -1,6 +1,6 @@
 # One-shot automation example
 
-Status: candidate accepted for roadmap item 7; cumulative verification and delivery remain pending. The local mock example compares a configured trigger and stopping condition with actual execution records. Its four cases distinguish setup, a missing trigger, one local effect followed by stopping, and a failed action with retained evidence.
+Status: delivered in `5b943d0` for roadmap item 7. The local mock example compares a configured trigger and stopping condition with actual execution records. Its four cases distinguish setup, a missing trigger, one local effect followed by stopping, and a failed action with retained evidence.
 
 ## Existing behavior and boundary
 
@@ -40,3 +40,7 @@ Candidate `1c1c172` returned in `R-033` and was accepted in `M-059`. The frozen 
 The failed append encountered a retained regular-file blocker and recorded FileNotFoundError on Windows. Its second observation skipped the stopped job without retrying. Passing retained-byte verification and the evidence checker did not change the failed action's result. The fixed inputs preceded execution; expected bytes were not copied from produced output.
 
 Planning read the actor, checker, tests, configurations, focused results and retained effect, failure and observation records against the contract. It inspected the README and CHANGELOG rendered in local Edge at 1200 px without clipping. A BOM in the temporary render-target JSON initially prevented rendering; removing that marker corrected the preview without changing product files. Local review receipts remain under `.awkit/handoffs/automation-example/`. This acceptance covers the thirteen-file candidate, not the other changed planning records or the whole repository. Human acceptance and real F27 occurrence remain unestablished.
+
+## Delivery
+
+The sixteen-file integrated snapshot `0801a91` passed Ruff and 352 tests with seven skips in `.awkit/reviews/review-g71ze8k3`. The whole-tree done check matched, and commit `5b943d0` has that snapshot's tree. All seventeen Windows/Linux jobs passed in [CI run 40061184828](https://github.com/min-seokkim/agent-work-kit/actions/runs/40061184828). The platform installer installed that exact commit; provenance, 26 source files, 29 kit files and sixteen user-skill payloads matched after recorded line-ending normalization. Local receipts are under `.awkit/handoffs/automation-example-delivery/`. Later presentation planning edits are outside this delivered snapshot.

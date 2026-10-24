@@ -40,9 +40,10 @@ In a cloud session, `.claude/hooks/session-start.sh` installs a copy of awkit fr
 
 ## Checks before pushing
 
-```sh
-snap=$(awkit review snapshot $(git diff --name-only --no-renames HEAD; git ls-files --others --exclude-standard))
-awkit review check "$snap" --config checks.toml --runs-root .awkit/reviews
+From the repository root in PowerShell, run the [path-safe snapshot recipe](kit/reference.md#snapshot). It sets `$awkitSnapshot` and prints its ID. Then:
+
+```powershell
+awkit review check $awkitSnapshot --config checks.toml --runs-root .awkit/reviews
 ```
 
 The check runs Ruff and the test suite on exactly the snapshot. Without awkit installed, `PYTHONPATH=src python -m awkit` runs it from the source; the bare commands are `ruff check .` and `PYTHONPATH=src python -m unittest discover -s tests -v`.

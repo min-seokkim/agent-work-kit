@@ -4,6 +4,7 @@ import json
 import platform
 import re
 import shutil
+import stat
 import subprocess
 import sys
 import tomllib
@@ -19,7 +20,7 @@ MIN_PYTHON = (3, 11)
 
 # The failure catalogue entries (kit/failures.md) this command guards against: an agent's commit
 # identity, readiness inferred without usable checks (F11), a kit or skills made by another awkit version
-# (F25), and guides or hooks that a session never loads, so the way of working does not reach it (F29).
+# (F25), and guides or hooks that a session never loads, including consumed stale project kit paths (F29).
 PREVENTS = {"awkit doctor": ("F9", "F11", "F25", "F29")}
 MIN_GIT = (2, 25)
 
@@ -90,6 +91,71 @@ def _checks(top, add):
             "configure at least one real project check in checks.toml, then run awkit review check HEAD --config checks.toml")
     else:
         add("project checks", "ok", f"{len(settings['checks'])} configured check(s); configuration valid, execution unverified")
+
+
+def _rules(top, add):
+    """Validate project rules without evaluation; inspect only a kit directory the rules can consume."""
+    from .hooks import CAN_BLOCK, _rules_from_data
+
+    path = top / "rules.toml"
+    repair = "correct the reported rules.toml error while preserving custom rules and comments, then rerun awkit doctor"
+
+    def warning(stage, detail):
+        add("project rules", "warning", f"{path}: {stage}: {detail}; kit directory unverified", repair)
+
+    try:
+        text = path.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return
+    except UnicodeDecodeError as exc:
+        warning("decode error", str(exc))
+        return
+    except OSError as exc:
+        warning("read error", str(exc))
+        return
+    try:
+        data = tomllib.loads(text)
+    except tomllib.TOMLDecodeError as exc:
+        warning("TOML error", str(exc))
+        return
+    try:
+        rules, problems = _rules_from_data(data, path)
+    except ValueError as exc:
+        warning("schema error" if data.get("schema") != 1 else "configuration error", str(exc))
+        return
+    if problems:
+        warning("rule validation error", "; ".join(problems))
+        return
+    add("project rules", "ok", f"{len(rules)} valid rule(s); execution unverified")
+    consumed = False
+    for raw, rule in zip(data.get("rules", []), rules, strict=True):
+        command = raw.get("command", [])
+        strings = [raw.get("message", ""), *([command] if isinstance(command, str) else command)]
+        explicit = any("{kit}" in value for value in strings)
+        citation = rule.kind != "inject" and rule.prevents and any(event in CAN_BLOCK for event in rule.events)
+        consumed = consumed or explicit or bool(citation)
+    if not consumed:
+        return
+    configured_kit = data.get("kit", "agent-work-kit")
+    kit = Path(configured_kit)
+    if not kit.is_absolute():
+        kit = top / kit
+    hint = ("inspect the intended guide source, then correct only kit in rules.toml to an existing project-relative "
+            "or absolute directory; preserve custom rules/comments and rerun awkit doctor. Reinstalling awkit "
+            "does not repair preserved project rules")
+    try:
+        mode = kit.stat().st_mode
+    except FileNotFoundError:
+        add("rules kit directory", "warning", f"{kit}: consumed kit directory does not exist", hint)
+    except NotADirectoryError:
+        add("rules kit directory", "warning", f"{kit}: consumed kit path has a non-directory component", hint)
+    except (OSError, ValueError) as exc:
+        add("rules kit directory", "warning", f"{kit}: directory inspection unavailable ({type(exc).__name__})", hint)
+    else:
+        if not stat.S_ISDIR(mode):
+            add("rules kit directory", "warning", f"{kit}: consumed kit value is not a directory", hint)
+        else:
+            add("rules kit directory", "ok", f"{kit}: directory exists; individual guides, freshness and client loading unverified")
 
 
 def diagnose(folder="."):
@@ -166,6 +232,7 @@ def diagnose(folder="."):
                 _skills(top, add)
             _layers(top, add)
     _checks(checks_folder, add)
+    _rules(checks_folder, add)
     return findings
 
 

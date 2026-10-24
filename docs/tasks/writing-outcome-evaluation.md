@@ -1,6 +1,6 @@
 # Writing outcomes and repeated instructions
 
-Status: the initial retrospective is recorded; the bounded correction-carry-forward guidance candidate is accepted for cumulative integration. Planning owns this record, evidence interpretation and acceptance. The implementation session owns the assigned kit passages and CHANGELOG. The owner prioritizes better writing and fewer repeated instructions over completion counts. This task follows the [document intent trial](document-intent-trial.md), whose synthetic results do not establish an effect in actual writing.
+Status: the initial retrospective is recorded and correction-carry-forward guidance shipped in `b273d95`. Planning owns this record, evidence interpretation and acceptance. The implementation session owns assigned kit changes. The owner prioritizes better writing and fewer repeated instructions over completion counts. This task follows the [document intent trial](document-intent-trial.md), whose synthetic results do not establish an effect in actual writing.
 
 ## Scope and method
 
@@ -20,7 +20,15 @@ The inspected sample contains two draft pairs chosen because earlier versions an
 | Agent editorial review produces specific proposed repairs | The retained review and response identify pacing, missing transitions, changed modality, repeated endings and an artificial conversational turn. The response records targeted integration. | These are agent review records. They are not independent factual verification or proof that the owner accepted the resulting prose. Only the two sampled pairs received the retrospective comparison above. |
 | Version and check records make the process inspectable | Preserved drafts, immutable snapshots and retained failed/passing runs let planning distinguish content revision from a mechanical pass and locate earlier requirements. | Inspectability is an observed capability. Saved owner time, lower cost and better final writing attributable to that capability remain unmeasured. |
 
-New owner requests for broader research, an additional opening or ending, and a new substantive question are scope additions. They must not inflate a count of forgotten instructions. Preparing publication also changes the output requirements; a later complaint about source-note style can relate to an earlier preference without making every platform-format request a recurrence.
+The inspected requests for an additional opening or ending and a new substantive question add scope. Broader research needs interpretation against the unresolved requirement: a later request to read more platform examples, followed by the writer's acknowledgment that its earlier sample was insufficient, can continue the existing style correction. Preparing publication also changes output requirements. Do not count every platform-format request as forgotten guidance or classify every new action as new scope.
+
+## Later correction application
+
+Passive follow-up found another request to read platform examples and a separate correction about numeric display. The former continues the broad style concern, but does not establish that every intervening draft had the same defect. The numeric request is the first explicit correction of that display issue in the inspected sequence; it is not evidence of forgetting an earlier instruction.
+
+The writer interpreted the numeric correction as readability and unit formatting, then changed its chart formatter. Planning inspected the relevant code and one existing rendered chart in place. The chart uses grouped thousands with its stated unit and a rounding note; the formatter converts the magnitude instead of blindly replacing a decimal point with a comma. This supports application of that correction to the inspected chart. It does not establish consistency across the article, all charts or the publication platform, and no model calculation was independently rerun. Source identities and message references are retained locally without private prose or chart copies.
+
+This is an immediate correction example, not yet evidence of persistence into a later applicable output. The follow-up does not establish that the active writer reread the newly installed guide or that awkit caused the correction. Keep subsequent-output checks and actual owner acceptance separate from this observation.
 
 ## Carry corrections forward
 
@@ -34,7 +42,11 @@ Acceptance requires an actionable rule that closes this temporal gap, preserves 
 
 `M-067` returned three-file candidate `a540d42` in `R-037`. Its existing five kit, guard, link, word-limit and skill-payload checks and writing checks passed in `.awkit/reviews/review-l_jh4_6x`. Planning found one overgeneralization: the new rule classified new research or a new question as additional scope. A different requested action can address the same unmet requirement. `M-068` requested that distinction, and `R-038` returned candidate `c0d55c2` with only the two affected guide/catalogue sentences changed. The original candidate and passing mechanical run remain evidence of what those checks missed.
 
-The refined three-file candidate passed the same focused checks in `.awkit/reviews/review-45tr11b6`. It carries correction reasons and scope into later related outputs and delegated briefs, uses existing project records where persistence is needed, and keeps reusable lessons separate from project or document preferences. The guard map was regenerated. No command, hook, registry, test suite or language-method default changed. Planning read the diff, refinement and retained results, inspected the final changed passages rendered in Edge at 1200 px, and accepted the candidate in `M-069`. Cumulative repository verification and delivery remain separate from this focused pass. Local delivery receipts will be retained under `.awkit/handoffs/correction-carry-forward-delivery/`.
+The refined three-file candidate passed the same focused checks in `.awkit/reviews/review-45tr11b6`. It carries correction reasons and scope into later related outputs and delegated briefs, uses existing project records where persistence is needed, and keeps reusable lessons separate from project or document preferences. The guard map was regenerated. No command, hook, registry, test suite or language-method default changed. Planning read the diff, refinement and retained results, inspected the final changed passages rendered in Edge at 1200 px, and accepted the candidate in `M-069`. The delivery below records cumulative repository verification separately from this focused pass.
+
+## Delivery
+
+Ten-file snapshot `96541f3` passed Ruff and 352 tests with seven skips in `.awkit/reviews/review-st2gakg9`. The whole-tree done check matched; commit `b273d95` has the same tree. All seventeen Windows/Linux jobs passed in [CI run 40064211362](https://github.com/min-seokkim/agent-work-kit/actions/runs/40064211362). The exact-commit platform installation matched 26 source files, 29 kit files and sixteen user-skill payloads with recorded line-ending normalization. Receipts are under `.awkit/handoffs/correction-carry-forward-delivery/`. Updating installed files does not establish that an active application session has reread them.
 
 ## Remaining evidence
 

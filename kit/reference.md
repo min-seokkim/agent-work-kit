@@ -6,11 +6,13 @@ Requirements: Python 3.11+, Git for the hooks `kit init` installs and for its `-
 
 ## doctor
 
-`awkit doctor [DIR] [--json]` checks Python (3.11 or later), Git (2.25 or later), Git `user.name` and `user.email` (commits fail without them) and, in a repository, whether that identity fits its history (the rule of `check commit`), whether `awkit` is on PATH, and in DIR whether there is a repository with a commit, a kit folder or the version recorded in `.awkit/installed.json` (a warning when another awkit wrote it), awkit's skills, and another Git repository inside it (see Git tracking). Each item is `ok`, `missing` or `warning`, with the command that fixes it. Exit 0 when nothing required is missing, 1 otherwise.
+`awkit doctor [DIR] [--json]` checks Python 3.11+, Git 2.25+, Git name/email and history identity, awkit on PATH, repository/commit, kit/skill versions, hooks and nested repositories (see Git tracking). Findings contain item, status (`ok`, `missing`, `warning`), detail and fix. Missing required items exit 1; warnings keep exit 0.
+
+Project rules read/decode/parse/validation errors leave path readiness unverified. Only consumed kit directories are inspected, resolving relative paths from the project root. Directory presence verifies neither individual guides, freshness nor client loading. Repair hints preserve custom rules; doctor never repairs them.
 
 It also reports the loaded package path and its installation commit when matching distribution metadata records one. Source execution reports the code checkout's HEAD and whether its source and kit have local changes; another installed distribution's metadata is not attributed to that code. Missing provenance stays explicit, and recorded provenance does not establish file integrity or whether the installation is current. Source URLs and credentials are not printed.
 
-An existing `checks.toml` is validated with the same configuration rules as `review check`, without running commands. Empty or invalid settings produce a warning; valid configuration is reported as execution unverified. The final line reports missing tools or warnings instead of claiming readiness. Exit 0 does not establish passed checks or automatic hook execution; the JSON finding fields and exit codes are unchanged.
+An existing `checks.toml` uses `review check` validation without running commands. Empty/invalid settings warn; valid configuration leaves execution unverified. The final line reports missing tools or warnings. Exit 0 establishes neither passed checks nor automatic hook execution; finding fields and exit codes are unchanged.
 
 ## Git tracking
 
@@ -110,7 +112,33 @@ Memory and record files (`MEMORY.md`, `.beads/`, `.planning/`, Claude Code's aut
 
 ### snapshot
 
-`awkit review [--repo DIR] snapshot FILE...` prints one commit ID: HEAD plus the current content of the named files only. Added and deleted files count when named. The branch, index and working tree are untouched. Directories, links, ignored files and paths outside the repository are refused. Everything already committed in HEAD is in the snapshot; nothing filters secrets. The commit is unreferenced and `git gc` may remove it later. To include every change, tracked and new, in a POSIX shell: `awkit review snapshot $(git diff --name-only --no-renames HEAD; git ls-files --others --exclude-standard)` (paths with spaces need another form).
+`awkit review [--repo DIR] snapshot FILE...` prints an unreferenced commit: HEAD plus named files' current contents, including additions/deletions. Branch, index and worktree stay unchanged. Directories, links, ignored files and outside paths fail. Secrets are unfiltered; Git may garbage-collect the commit.
+
+From the repository root in PowerShell (Python, Git and awkit on PATH):
+
+```powershell
+$awkitSnapshot = @'
+import os
+import shutil
+import subprocess
+cli = shutil.which('awkit')
+if cli is None:
+    raise SystemExit('awkit missing from PATH')
+def paths(*args):
+    return [os.fsdecode(p) for p in subprocess.check_output(['git', *args]).split(b'\0') if p]
+selected = list(dict.fromkeys(
+    paths('diff', '--name-only', '--no-renames', '-z', 'HEAD')
+    + paths('ls-files', '--others', '--exclude-standard', '-z')
+))
+if not selected:
+    raise SystemExit('No changed files.')
+subprocess.run([cli, 'review', 'snapshot', '--', *selected], check=True)
+'@ | python -
+if ($LASTEXITCODE) { throw }
+$awkitSnapshot
+```
+
+Git display quoting caused the non-ASCII fixture failure; spaced paths stayed intact.
 
 ### check
 

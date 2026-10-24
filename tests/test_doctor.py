@@ -168,5 +168,171 @@ class ConnectionDiagnostics(unittest.TestCase):
                 self.assertIn('modified', diagnostics.runtime_origin())
 
 
+class ProjectRulesDiagnostics(unittest.TestCase):
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.root = Path(temporary.name) / 'project'
+        self.root.mkdir()
+
+    def write_rules(self, kit='missing-guides', body=None):
+        if body is None:
+            body = ('[[rules]]\nname = "custom"\nkind = "inject"\n'
+                    'message = "Read {kit}/writing.md."\n')
+        text = '# Preserve this custom comment.\nschema = 1\n'
+        if kit is not None:
+            text += 'kit = ' + json.dumps(str(kit)) + '\n'
+        path = self.root / 'rules.toml'
+        path.write_text(text + body, encoding='utf-8')
+        return path
+
+    def findings(self):
+        path = self.root / 'rules.toml'
+        before = (path.read_bytes(), path.stat().st_mtime_ns) if path.is_file() else None
+        found = []
+
+        def add(item, status, detail, fix=''):
+            found.append({'item': item, 'status': status, 'detail': detail, 'fix': fix})
+
+        with mock.patch('awkit.hooks.evaluate', side_effect=AssertionError('rules must not be evaluated')), \
+                mock.patch('awkit.hooks.run_command', side_effect=AssertionError('commands must not run')):
+            diagnostics._rules(self.root, add)
+        if before is not None:
+            self.assertEqual((path.read_bytes(), path.stat().st_mtime_ns), before)
+        self.assertFalse((self.root / '.awkit').exists())
+        for finding in found:
+            self.assertEqual(set(finding), {'item', 'status', 'detail', 'fix'})
+        return {finding['item']: finding for finding in found}
+
+    def test_consumption_follows_expansion_and_possible_failure_citations(self):
+        cases = [
+            ('[[rules]]\nname="x"\nkind="inject"\nmessage="Read {kit}/writing.md."\n', True),
+            ('[[rules]]\nname="x"\nkind="verify"\ncommand=["not-run", "{kit}/check.py"]\n', True),
+            ('[[rules]]\nname="x"\nkind="verify"\ncommand="{kit}/not-run"\n', True),
+            ('[[rules]]\nname="x"\nkind="block"\nmessage="Custom block."\nprevents=["F29"]\n', True),
+            ('[[rules]]\nname="x"\nkind="inject"\nmessage="Literal note."\nprevents=["F29"]\n', False),
+            ('[[rules]]\nname="x"\nkind="inject"\nmessage="Literal note."\npaths=["{kit}/x"]\n', False),
+            ('[[rules]]\nname="x"\nkind="verify"\nevents=["SessionStart"]\n'
+             'command=["not-run"]\nprevents=["F29"]\n', False),
+        ]
+        for body, consumed in cases:
+            with self.subTest(body=body):
+                self.write_rules("MultiplexedPath('fictional/kit')", body)
+                found = self.findings()
+                self.assertEqual(found['project rules']['status'], 'ok')
+                self.assertEqual('rules kit directory' in found, consumed)
+                if consumed:
+                    self.assertEqual(found['rules kit directory']['status'], 'warning')
+                    self.assertIn('does not exist', found['rules kit directory']['detail'])
+
+    def test_relative_absolute_default_and_literal_directories(self):
+        for name in ('guides', 'agent-work-kit', "MultiplexedPath('literal')"):
+            (self.root / name).mkdir()
+        for value in ('guides', self.root / 'guides', None, "MultiplexedPath('literal')"):
+            with self.subTest(value=value):
+                self.write_rules(value)
+                finding = self.findings()['rules kit directory']
+                self.assertEqual(finding['status'], 'ok')
+                self.assertIn('directory exists', finding['detail'])
+                self.assertIn('individual guides, freshness and client loading unverified', finding['detail'])
+
+    def test_missing_default_and_non_directory_are_warnings_with_targeted_fix(self):
+        self.write_rules(None)
+        missing = self.findings()['rules kit directory']
+        self.assertEqual(missing['status'], 'warning')
+        self.assertIn('does not exist', missing['detail'])
+        (self.root / 'guide-file').write_text('not a directory', encoding='utf-8')
+        self.write_rules('guide-file')
+        finding = self.findings()['rules kit directory']
+        self.assertIn('not a directory', finding['detail'])
+        self.assertIn('correct only kit', finding['fix'])
+        self.assertIn('preserve custom rules/comments', finding['fix'])
+        self.assertIn('does not repair preserved project rules', finding['fix'])
+
+    def test_invalid_rules_keep_read_decode_parse_schema_and_rule_errors_separate(self):
+        cases = [
+            (b'\xff', 'decode error'),
+            (b'schema = [\n', 'TOML error'),
+            (b'schema = 2\n', 'schema error'),
+            (b'schema = 1\nkit = 42\n', 'configuration error'),
+            (b'schema = 1\n[[rules]]\nname="x"\nkind="unknown"\nmessage="x"\n', 'rule validation error'),
+            (b'schema = 1\n[[rules]]\nname="valid"\nkind="inject"\nmessage="{kit}/writing.md"\n'
+             b'[[rules]]\nname="bad"\nkind="unknown"\n', 'rule validation error'),
+        ]
+        for data, reason in cases:
+            with self.subTest(reason=reason):
+                (self.root / 'rules.toml').write_bytes(data)
+                found = self.findings()
+                self.assertEqual(found['project rules']['status'], 'warning')
+                self.assertIn(reason, found['project rules']['detail'])
+                self.assertIn('kit directory unverified', found['project rules']['detail'])
+                self.assertNotIn('rules kit directory', found)
+
+    def test_read_and_directory_inspection_errors_do_not_claim_absence(self):
+        self.write_rules('unavailable')
+        with mock.patch.object(Path, 'read_text', side_effect=PermissionError('fixture read denied')):
+            found = self.findings()
+        self.assertIn('read error', found['project rules']['detail'])
+        self.assertNotIn('rules kit directory', found)
+        original = Path.stat
+
+        def inaccessible(path, *args, **kwargs):
+            if path == self.root / 'unavailable':
+                raise PermissionError('fixture inspection denied')
+            return original(path, *args, **kwargs)
+
+        with mock.patch.object(Path, 'stat', inaccessible):
+            finding = self.findings()['rules kit directory']
+        self.assertEqual(finding['status'], 'warning')
+        self.assertIn('inspection unavailable (PermissionError)', finding['detail'])
+        self.assertNotIn('does not exist', finding['detail'])
+
+    def test_absent_rules_need_no_finding_and_non_file_is_a_read_error(self):
+        self.assertEqual(self.findings(), {})
+        (self.root / 'rules.toml').mkdir()
+        finding = self.findings()['project rules']
+        self.assertEqual(finding['status'], 'warning')
+        self.assertIn('read error', finding['detail'])
+
+    def test_cli_resolves_rules_from_project_root_and_preserves_warning_exit(self):
+        identity = self.root.parent / 'gitconfig'
+        identity.write_text('[user]\nname = min-seokkim\nemail = raptor210@snu.ac.kr\n', encoding='utf-8')
+        subprocess.run(['git', 'init', '-q', str(self.root)], check=True, env=child_env())
+        (self.root / 'subfolder').mkdir()
+        (self.root / 'custom-guides').mkdir()
+        rules = self.write_rules('custom-guides')
+        original = rules.read_bytes(), rules.stat().st_mtime_ns
+        result = doctor(self.root / 'subfolder', identity)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        findings = {row['item']: row for row in json.loads(result.stdout)}
+        self.assertEqual(findings['rules kit directory']['status'], 'ok')
+        self.assertIn(str(self.root / 'custom-guides'), findings['rules kit directory']['detail'])
+        self.assertEqual((rules.read_bytes(), rules.stat().st_mtime_ns), original)
+        self.assertFalse((self.root / '.awkit').exists())
+        rules.write_text('schema = 2\n', encoding='utf-8')
+        warning = doctor(self.root / 'subfolder', identity)
+        self.assertEqual(warning.returncode, 0, warning.stderr)
+        self.assertTrue(any(row['item'] == 'project rules' and row['status'] == 'warning'
+                            for row in json.loads(warning.stdout)))
+
+    def test_successive_valid_versions_cannot_mix_validation_and_consumption(self):
+        first = ('schema=1\nkit="unused-first"\n[[rules]]\nname="first"\nkind="inject"\n'
+                 'message="Literal note."\nprevents=["F29"]\n')
+        changed_versions = [
+            'schema=1\nrules=[]\n',
+            ('schema=1\nkit="different-second"\n[[rules]]\nname="second"\nkind="block"\n'
+             'message="Literal block."\nprevents=["F29"]\n'),
+        ]
+        for changed in changed_versions:
+            with self.subTest(changed=changed):
+                (self.root / 'rules.toml').write_text(first, encoding='utf-8')
+                with mock.patch.object(Path, 'read_text', side_effect=[first, changed]) as reads:
+                    found = self.findings()
+                self.assertEqual(set(found), {'project rules'})
+                self.assertEqual(found['project rules']['status'], 'ok')
+                self.assertIn('1 valid rule', found['project rules']['detail'])
+                self.assertEqual(reads.call_count, 1)  # One captured version supplies both validation and use.
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -184,6 +184,11 @@ def load_rules(path, kit=None):
         data = tomllib.loads("\n".join(Path(each).read_text(encoding="utf-8") for each in paths))
     except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError) as exc:
         raise ValueError(f"{path}: {exc}") from None
+    return _rules_from_data(data, path, kit)
+
+
+def _rules_from_data(data, path, kit=None):
+    """Validate captured TOML data without reading again or evaluating rules; path labels errors."""
     if data.get("schema") != 1:
         raise ValueError(f"{path}: `schema = 1` is required")
     kit = data.get("kit", "agent-work-kit") if kit is None else kit

@@ -19,6 +19,8 @@ Remaining work and its completion criteria. Item numbers retain the earlier deve
 
 ## Task plans
 
+- [Existing-project update diagnosis](tasks/installed-guide-paths.md#existing-project-update-follow-up): a shared reinstall leaves project settings intact. A read-only doctor candidate passed focused tests and retained cases, including a correction for mixed input versions; cumulative delivery remains pending and automatic repair is unassigned.
+- [Snapshot path recipe](tasks/snapshot-path-recipe.md): the documented NUL/direct-argument invocation passed the retained Windows fixture with ordinary Python and pipx. Its candidate is accepted for cumulative delivery alongside the diagnostic; broader platform support remains unverified.
 - [Writing outcomes and repeated instructions](tasks/writing-outcome-evaluation.md): inspect retained revisions and owner corrections for actual quality and awkit contribution; carry accepted corrections into later work through existing kit guidance. Better prose, fewer reminders and causal contribution require separate evidence.
 - [Writing comparison report](tasks/writing-comparison.md): accepted command implementation with conservative correspondence, complete-file findings and preserved exit policy; the task record links delivery receipts.
 - [Scoped document revision trial](tasks/scoped-document-trial.md): one local correction and one substantive revision using current instructions, with source preservation, evidence reuse and omitted-review reporting.

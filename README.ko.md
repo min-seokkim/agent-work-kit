@@ -72,7 +72,9 @@ awkit kit init
 
 > 이 프로젝트에 Agent Work Kit을 연결해 주세요.
 
-업데이트할 때는 위의 설치 스크립트를 다시 실행하세요. `dev` 브랜치에서 awkit을 다시 설치하고 스킬도 갱신합니다. `awkit kit remove`는 프로젝트에서, `awkit kit remove --user`는 사용자 폴더에서 키트를 뺍니다. 스킬을 쓰지 못하는 에이전트는 `awkit kit guide workflow`로 가이드를 읽습니다.
+업데이트할 때는 위의 설치 스크립트를 다시 실행하세요. `dev` 브랜치에서 awkit을 다시 설치하고, 사용자 폴더에서 awkit이 관리하는 스킬을 갱신합니다. 각 프로젝트의 설정과 훅, 복사한 가이드, 프로젝트 안의 스킬은 그대로 둡니다. 프로젝트마다 `awkit doctor`로 연결 상태를 확인하세요. 실행 중인 에이전트는 갱신된 가이드를 다시 읽어야 할 수 있습니다.
+
+`awkit kit remove`는 프로젝트에서, `awkit kit remove --user`는 사용자 폴더에서 키트를 뺍니다. 스킬을 쓰지 못하는 에이전트는 `awkit kit guide workflow`로 가이드를 읽습니다.
 
 예제로 먼저 써 보려면 에이전트에게 `awkit kit example data demo`를 실행하고 그 README대로 진행하라고 하세요. 예제는 열 이름 하나가 틀린 작은 데이터 프로젝트입니다. 에이전트가 검사를 돌려 실패를 확인하고, 입력을 고친 뒤 다시 검사하고, 보관한 파일을 보여 줍니다.
 

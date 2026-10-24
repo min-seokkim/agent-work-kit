@@ -72,7 +72,9 @@ Then tell your agent:
 
 > Connect Agent Work Kit to this project.
 
-To update, rerun the installer above; it reinstalls awkit from `dev` and refreshes the skills. `awkit kit remove` takes the kit out of the project and `awkit kit remove --user` out of your user folder. An agent without skills reads a guide with `awkit kit guide workflow`.
+To update, rerun the installer above; it reinstalls awkit from `dev` and refreshes awkit's managed user skills. Project settings, hooks, copied guides and project-local skills stay unchanged. Run `awkit doctor` in each project to inspect its connection. Active agents may need to reread updated guides.
+
+`awkit kit remove` takes the kit out of the project and `awkit kit remove --user` out of your user folder. An agent without skills reads a guide with `awkit kit guide workflow`.
 
 To try it on a sample first, tell your agent to run `awkit kit example data demo` and follow its README. The sample is a small data project with one wrong column name. The agent runs the check and sees it fail, fixes the input, runs the check again and shows you the files it kept.
 

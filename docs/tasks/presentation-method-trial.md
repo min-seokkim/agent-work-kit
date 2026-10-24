@@ -1,6 +1,6 @@
 # Representative presentation page trial
 
-Status: one corrected local page probe was accepted in `M-066` after result `R-036`. This advances part of phases A/B in the [document workflow plan](../document-workflow-plan.md), using existing authoring tools before proposing an awkit feature. Planning owns the fictional inputs, acceptance and review; the implementation session owns the isolated probe. No private writing-project content is used.
+Status: one corrected local page probe was accepted in `M-066` after result `R-036`. The M-093 full presentation/native-edit task is blocked before production by the unavailable native control connection reported in R-054. It remains incomplete with its original requirements. Planning owns product requirements and the interpretation of findings; implementation owns isolated execution and verification. No private writing-project content is used.
 
 ## Question and fixed task
 
@@ -20,7 +20,7 @@ Preparation `M-060` returned in `R-034`. Read-only inspection found Artifact Too
 
 Read the page against the fixed source and inspect the final image. Verify actual slide order through presentation relationships and identify native text, table and diagram objects. Record the renderer, fonts, source and output identities, unavailable checks and unsupported objects. A library rendering is evidence about that renderer. Native object structure alone does not establish editing or fidelity in PowerPoint.
 
-An optional later probe could make one local wording edit on a copy and compare protected content and diagram relations. Keep v1 recoverable. This would be an agent-assigned revision, not the human edit required by phase C. It is not currently assigned: the owner's priority is [actual writing outcomes and repeated instructions](writing-outcome-evaluation.md). A full presentation, human use and acceptance remain unperformed.
+At M-066, the optional local edit and full presentation remained unassigned while planning evaluated [actual writing outcomes and repeated instructions](writing-outcome-evaluation.md). M-093 now assigns the follow-up below. An agent-assigned revision remains distinct from the human edit required by phase C; human use and acceptance are unperformed.
 
 Classify any failure as guidance, execution or evidence before selecting an implementation. Current guidance already requires preservation and scoped review. A missing local renderer or application observation does not by itself justify a new awkit engine, schema, index or semantic score. Local capability records and probe results belong under `.awkit/handoffs/document-method-preparation/executor/`.
 
@@ -37,3 +37,21 @@ The executor retained its initial inspection errors concerning package-absolute 
 ## Planning record observation
 
 At `5b943d0`, the parent document plan still described the shipped document-evidence example as the next handoff and left cumulative delivery pending. The example and delivery receipt were already available. Planning corrected those statements and retained the old heading anchor for incoming links. This is an observed state-maintenance omission in this repository; it does not establish that existing records cannot express the stage or that an automatic coverage index is needed.
+
+## Full presentation and native revision follow-up
+
+M-093 assigns a five-slide editable Korean 16:9 briefing for the fictional maintenance lead, roughly five minutes. Use the same fixed source notes and twelve replay records. Explain the decision question, request path, threshold tradeoff, untested conditions and proposed further tests while retaining the baseline. Layout may adapt to the reader; new measurements, reliability claims and approved deployment are unsupported.
+
+The existing one-page requirement remains the historical probe scope. This assignment expands production while preserving its source constraints: both Celsius thresholds, counts, synthetic label, independent events, sensor branches and technician authority. Use the selected Artifact Tool route and an actual English draft before Korean. Reuse the accepted page only where it serves the full briefing, keeping its original intact. Production and visual checking belong to implementation.
+
+Observe final-PPTX output and, where its supported control surface is available, actual PowerPoint open/render/save behavior. Native application observation is newly assigned for isolated outputs; executable discovery or another library's render cannot stand in for it. After baseline checks, change one diagram label from `점검 요청` to `담당자 점검 요청` in a copy, save and reopen it, and compare protected quantities, meaning, relationships and unaffected slides. Keep the baseline, edited file and failed attempts recoverable. This is an agent-assigned edit and does not satisfy human phase-C acceptance.
+
+Implementation owns only `.awkit/handoffs/document-method-preparation/executor/full-presentation/`. It may use fresh isolated documents/processes, but may not attach to a user's open document, change shared tools or private project files, add dependencies or author product code under this assignment. If required format or editing observation is unavailable, stop expanding production and report the precise prerequisite instead of claiming structural checks establish editing.
+
+Return a concise report distinguishing guidance, execution, evidence and missing-capability findings. Product planning will decide whether a specific comparison or evidence adapter is justified. Existing-tool success can also justify adding no capability. Full phase B and human phase C remain incomplete unless their actual requirements are met. The handoff is retained as `.awkit/handoffs/collaboration-obligations/full-presentation-assignment.md`.
+
+### Native-control prerequisite
+
+R-054 reports no connected PowerPoint session and two native Computer Use connection failures with operating-system error 2. No app or user document was opened. The existing Artifact Tool import succeeded; fixed-source counting and preservation checks passed. No new deck, English draft, render or edited copy was produced. The report and `prerequisite-results.json` are in the assigned full-presentation evidence folder.
+
+M-094 retains the original completion boundary. Resume when a working native connection can target a fresh isolated PowerPoint document, or a connected document session exposes verified schemas for the required operations. Repeating the same unavailable connection or substituting a library render supplies no new native-edit evidence. This environment gap does not justify an awkit engine, dependency or product feature. The independent selected-project repair trial proceeds separately; it does not complete or replace this task.

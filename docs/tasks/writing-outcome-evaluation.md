@@ -1,6 +1,6 @@
 # Writing outcomes and repeated instructions
 
-Status: the initial retrospective is recorded and correction-carry-forward guidance shipped in `b273d95`. Planning owns this record, evidence interpretation and acceptance. The implementation session owns assigned kit changes. The owner prioritizes better writing and fewer repeated instructions over completion counts. This task follows the [document intent trial](document-intent-trial.md), whose synthetic results do not establish an effect in actual writing.
+Status: the initial retrospective is recorded and correction-carry-forward guidance shipped in `b273d95`. Planning owns this record, evidence interpretation and product decisions. The implementation session owns assigned technical work, checks and delivery. The owner prioritizes better writing and fewer repeated instructions over completion counts. This task follows the [document intent trial](document-intent-trial.md), whose synthetic results do not establish an effect in actual writing.
 
 ## Scope and method
 
@@ -37,6 +37,16 @@ Avoiding the need to repeat instructions is an explicit product outcome. A final
 Existing F31 covers correcting the underlying problem; F32 covers other existing occurrences; F33 separates procedure from quality. `M-067` assigns a small revision in the existing writing guide to carry an accepted correction into later related outputs and handoffs. Use existing project requirements or task records when persistence is needed. General lessons belong in kit guidance; a project's voice preference and a one-document instruction keep their scope. No new correction registry, semantic score or automatic approval is assigned.
 
 Acceptance requires an actionable rule that closes this temporal gap, preserves current user precedence and existing review boundaries, and remains within the guide's word limit. Existing focused checks can verify packaging, links and mechanical writing. They cannot establish fewer repeated requests. The next evaluation should inspect a later applicable output without supplying the same correction again, identify any recurrence, and record the owner's actual response when available. Do not ask the owner to repeat a requirement merely to produce an evaluation result.
+
+## Further visible user inputs
+
+The selected session's later visible inputs include an author-disclosure boundary, a request to restore a passage's intended meaning, another full revision and an explicitly requested independent agent review. The disclosure request refers to an earlier agreement, but a limited search of earlier visible inputs did not locate it. Its prior scope remains unavailable; this is not proof of either a first-time requirement or repeated noncompliance. The bounded observation also does not establish that identifying details were publicly exposed.
+
+These requests establish further owner intervention, without establishing the quality of the resulting revisions or their cause. The later output and delegation evidence were not inspected in this observation. An additional review request does not by itself prove that an earlier required review was omitted. Keep the applicable requirement and actual changed output as the comparison unit instead of counting every request as recurrence.
+
+A later user question asks whether messages from other sessions were read. The writer's answer limits its claim to messages received in that chat and states that linked materials were not all read in full. This supports distinguishing message reading from source inspection; it does not establish that every registered channel was checked or that an obligation was missed. The separate technical feedback channel had no new or unanswered request at this inspection.
+
+Metadata-only evidence is `later-input-observation.json` under the existing local evaluation folder. Private prose and identity details remain in the application session. Future preservation evaluation should include author-approved disclosure scope alongside meaning and style, using existing project requirements. These observations assign no editorial intervention, privacy scanner or new record system.
 
 ## Guidance candidate and review
 

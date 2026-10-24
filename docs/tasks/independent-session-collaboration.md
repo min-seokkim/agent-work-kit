@@ -115,6 +115,33 @@ The expanded third-party comparison below informs the provider reuse plan. It co
 
 Apply these lessons to the next bridge contract: preserve the existing durable channel, use a native wake that points to a pending request when supported, and fetch the actual task under the recipient's existing permissions. Compare this with direct native task delivery before selecting either design. Keep original message IDs across attempts; distinguish wake receipt, task reply and applied result. A fixed wake should identify its automation origin and carry no peer-supplied instruction body.
 
+## Proposed integration caller
+
+Status: product design for the next integration experiment, not an implementation assignment. Existing-session reachability remains a prerequisite. The current coordinator already stores assignments and results in explicitly registered channels; choose that workflow as the caller rather than adding an owned-worker launcher.
+
+| Option | Fit for the current workflow |
+|---|---|
+| Send the full task through a native message | Avoids a recipient fetch, but the current workflow would still need to correlate that native task and its replies with the retained channel record. This design has not been compared in ordinary use. |
+| Notify the recipient about an already stored channel message | Reuses the current task and reply source, permits the existing polling path to continue, and keeps native delivery separate from handling the work. It adds a fetch under the recipient's permissions. The offline contract already exercises fixed reference-only wakes. |
+
+Select the second option for the next experiment. The proposed caller is an explicit notification of one already stored message through the existing channel command group, provisionally `channel notify`. It takes a selected relationship and message identity from the existing coordination record. Exact arguments remain an interface decision before implementation. Ordinary `post`, `wait` and `status` keep their current effects; registration or reading does not itself send a native message. The operation may notify about an assignment or a returned result, without treating either as completed work.
+
+Resolve the recipient's explicitly selected provider/session and verified owning endpoint. Send a fixed automation notice containing correlation identifiers, without copying peer-supplied instructions or a local filesystem path into the native notice. The recipient resolves the reference through its own authorized relationship and reads the original channel message. Unsupported attachment leaves the message available through existing polling and reports the native path unavailable; it does not create a substitute conversation or switch providers.
+
+### Durable attempt boundary
+
+Keep the dispatch attempt with the existing channel's durable state, linked to the canonical source message and recipient binding. This is transport evidence, not another task registry. A process must retain and exclusively claim the attempt before invoking the native operation. A restart or competing caller must consult that same state before any send. The future implementation must specify its schema/migration and compatibility behavior; no database change is assigned here.
+
+Retain the binding identity and runtime generation, attempt identity, native reference when returned, process outcome and submission certainty. A timeout or lost caller response after dispatch begins remains uncertain until reconciled. It must not trigger another native transport or a second send merely because no task reply exists. Keep the initial outcome when a late receipt arrives. Receipt, authoritative channel reply and declared application of the result remain separate.
+
+The existing offline negative control demonstrates why an in-memory attempt flag is insufficient after restart. A future integrated trial must cover interruption before sending, uncertain admission, concurrent attempts, late receipt, wrong runtime generation and a returned result still awaiting handling. These observations cannot establish exactly-once remote execution or power-loss durability by themselves.
+
+### Readiness and next decision
+
+The initial real recipient should be the already selected implementation conversation when its supported owning endpoint is available. The passing disposable-worker probe cannot replace this existing-session requirement. Verify current provider interfaces at that point; a tool listed in a schema or a stored session ID does not establish reachability.
+
+Before product implementation, settle the supported endpoint, exact caller interface and durable-state migration together. Then assign one integrated notification path and observe a bounded development task, including the return notification. Measure user relays, missed responses, duplicate work, setup and declaration upkeep. Do not ship an unused attempt-storage abstraction or add a background service while the actual recipient is unresolved. The completed repair trial remains separate from this proposal.
+
 Extend validation after the first native round trip with lost sender responses, late receipt, interrupted or approval-waiting recipients, restarted owners and duplicate delivery. Reconcile uncertain submissions before another transport is used. Preserve manual-relay and setup measurements. Consider an existing transport component before building another broker, but keep dependency adoption separate from learning its design; the current repository decision adds no third-party collaboration dependency.
 
 Session registration, explicit acknowledgements and file reservations remain conditional extensions. Evaluate automatic wake-up after repeated manual intervention, and remote transport after selecting two real environments that need it. Prefer the existing commands and storage; account for installation, background processes and provider-version maintenance before expanding them. This planning update authorizes no implementation or external dependency installation.

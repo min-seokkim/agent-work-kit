@@ -6,6 +6,8 @@ Use this when setting up checks for a project, when a check needs a database, po
 
 Run checks on a snapshot in a separate worktree (`awkit review check`), so the result belongs to known files and not to whatever the working folder held at the time. For source that is not in Git, record a stable identifier and the location of the checked files. Identify the build host, the target runtime and the toolchain separately from the runtime that runs the kit. Check dependencies, generated inputs and each command's working directory before running; an installed package or editable environment must load the code under review, not an older copy.
 
+Use the project's `[[setup]]` steps for [dependency preparation](reference.md#check); they run for each fresh worktree and expand per-run paths. Keep install or link commands in `checks.toml`. Reused dependencies must match the snapshot's declared inputs and must not load project code or generated outputs from an unreviewed working tree; the configuration hash does not certify dependency contents.
+
 Use the commands recorded in the [project profile](templates/project.md). Do not assume a test tool exists because of the programming language. Use argument arrays, or name the shell when shell syntax is required. Record the working directory, the command, the revision, the exit code, the output location and the scope of each check, without secrets. For checks a person does, state the method and its limits and keep them apart from automated results.
 
 Prevents: F3, F11, F17.

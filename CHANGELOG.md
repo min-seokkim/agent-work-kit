@@ -89,6 +89,8 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Fixed
 
+- Connection guidance selects HEAD only when it contains the intended check inputs; otherwise it uses explicitly selected current files in a snapshot. Check setup guidance points to per-worktree `[[setup]]` preparation and preserves snapshot-compatible dependency selection. Command behavior and separately hashed external configuration are unchanged.
+
 - Bundled hook messages and newly generated rules now name the installed kit's readable guide folder. Resource lookup starts at the regular `awkit` package, avoiding a namespace object's `MultiplexedPath(...)` representation. Project-local kit precedence is preserved. Existing project rules are left untouched; previously generated malformed paths need separate repair.
 
 - `awkit kit scan` makes its input absolute before resolving links. This avoids a Windows Python fallback that can repeat the current folder name when access to the trailing `.` is denied. Default, explicit-dot and absolute inputs select the same project; link resolution is retained.

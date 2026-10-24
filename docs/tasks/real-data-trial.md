@@ -50,6 +50,8 @@ Product snapshot `41a09bb` passed Ruff, 38 focused review/kit tests with 3 skips
 
 `.awkit/handoffs/compare-added-artifacts/delivery/validation.json` owns the exact cumulative checked tree, committed revision, CI and final installation state. Its `report.md` returns that final delivery state through the implementation channel. Product-only evidence, before/after CLI outputs, focused/full check runs and installation comparisons remain under that folder. This delivery combines the five product files with the transferred roadmap and this record; it excludes the read-only data workspace and does not diagnose the unresolved acceptance promotion failure.
 
+R-070 completes delivery at `9e17bdb`. The receipt reports 371 tests with eight local skips, all seventeen Windows/Linux jobs passing in [CI run 40083120682](https://github.com/min-seokkim/agent-work-kit/actions/runs/40083120682), and matching installed source, kit and managed skills. Planning then used the installed option on the retained real pair and observed the separate 23-path inventory with expected exit 1. M-119/M-120 retain that product result; no further comparison extension is selected. Rendering, human acceptance and measured savings remain unverified.
+
 ## Retained evidence
 
 The local baseline snapshot is `614455d2acc0c6502c338c1642fe66a4ece59b68`; run `.awkit/handoffs/ci-data-trial/executor/reviews/review-1fjrhfx9` owns the frozen artifacts. Its receipt and effort record are in the executor directory. Research evidence is `.awkit/handoffs/product-research/executor/ci-data-reading/decision.md` with `source-reading.json`.

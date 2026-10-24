@@ -38,6 +38,14 @@ Existing F31 covers correcting the underlying problem; F32 covers other existing
 
 Acceptance requires an actionable rule that closes this temporal gap, preserves current user precedence and existing review boundaries, and remains within the guide's word limit. Existing focused checks can verify packaging, links and mechanical writing. They cannot establish fewer repeated requests. The next evaluation should inspect a later applicable output without supplying the same correction again, identify any recurrence, and record the owner's actual response when available. Do not ask the owner to repeat a requirement merely to produce an evaluation result.
 
+## Reported recurrence after a handoff
+
+M-023 traced one applicable preservation correction from a retained handoff into another writing project's existing plan and revision records. R-020 reports this explicit sequence: recorded receipt and intended incorporation, later owner intervention about preserving the source questions' connections, then a corrective plan revision. The handoff hash matches the recorded receipt; this identifies the source without independently proving that every worker read or applied it.
+
+The records support a reported recurrence at the requirement-category level after receipt. They do not establish an identical textual defect, successful later prose or persistence without another reminder. The later request also adds material, so it cannot all be counted as repeated correction. The inspected English working plan is supporting context; newer task records, rather than that file or modification times alone, establish the subsequent work sequence.
+
+This observation reads agent-authored records, not the underlying owner messages or manuscript/source pairs. No editorial judgment or new writing instruction was given. The cause remains unresolved: context transfer, application and plan quality cannot be separated from these records. Existing carry-forward guidance remains applicable; no new registry, semantic check or approval gate is selected. Sanitized source identities and scope are retained under `.awkit/handoffs/product-research/executor/correction-carry-forward/`.
+
 ## Further visible user inputs
 
 The selected session's later visible inputs include an author-disclosure boundary, a request to restore a passage's intended meaning, another full revision and an explicitly requested independent agent review. The disclosure request refers to an earlier agreement, but a limited search of earlier visible inputs did not locate it. Its prior scope remains unavailable; this is not proof of either a first-time requirement or repeated noncompliance. The bounded observation also does not establish that identifying details were publicly exposed.

@@ -54,6 +54,32 @@ The later proposal trial includes a reported Stop-hook `ImportError` for `awkit.
 
 Next, capture a sanitized failing automatic event with the client/version, interpreter and loaded module paths, working directory, execution permissions and traceback. Compare the same invocation in the automatic hook and direct shell, preserving settings and package provenance. Do not reinstall merely to hide the failing state. A correction is accepted only when the original automatic path is reproduced and passes after the change, with unsupported clients or permission contexts still explicit. If reproduction remains unavailable, retain the uncertainty and the minimal next probe instead of claiming restored hooks from a direct import.
 
+## Selecting the first checked revision
+
+Status: implemented for M-129/M-133; cumulative delivery is recorded in `.awkit/handoffs/first-check-revision/executor/delivery.json`. Base: `3c771e8`. Scope: connection step 3, the reference's scan paragraph, the checking guide's dependency pointer, this record and the unreleased CHANGELOG entry. CLI/source behavior and commit policy are unchanged.
+
+Research M-028/R-024 found a retained initial check against an old tree without the new task input, followed by a passing snapshot containing it. Tree-presence queries support that distinction; the historical command trace, elapsed recovery and causal role of kit guidance were not inspected. The application incident was already recovered. Only the sanitized research memo and metadata were read for this unit; no private project files were reopened.
+
+The connection and reference guides now use HEAD only when it contains the intended source and command dependencies. Otherwise they route to the existing explicit-file snapshot procedure. Configuration remains read outside the snapshot and separately hashed; an uncommitted configuration alone does not require a snapshot unless a check reads it as an input. This does not advance a baseline, commit files automatically or suppress a genuine failure.
+
+The checking guide now points to the existing `[[setup]]` mechanism for each fresh worktree and per-run path expansion. Project-specific install/link commands stay in `checks.toml`. Reused dependencies must match the snapshot's declared inputs and cannot load project code or generated outputs from an unreviewed working tree. A configuration hash does not verify dependency contents. Existing isolation/concurrency guidance remains in place. Research R-026 found the contract sufficient; it did not reproduce the application's dependency suitability.
+
+### Synthetic route and preservation
+
+The invented fixture in `.awkit/handoffs/first-check-revision/executor/corrected/` checks committed input against HEAD successfully, retains a failed HEAD check when a new task input is absent, then passes an explicit snapshot containing only that new input over HEAD. Both configurations are uncommitted and absent from both checked trees; the runner records their hashes separately. The committed baseline and current validation remain distinct. `fixture-result.json` records full revisions, config hashes and all three run folders.
+
+The exercise verifies unchanged branch, HEAD, raw index bytes, worktree files and unrelated staged/unstaged/untracked edits. The snapshot excludes those unrelated edits. No real project source or private material was copied into the fixture. This supports the documented route, not historical causation or a measured benefit.
+
+The first invented fixture failed unexpectedly because Windows text writes produced CRLF while its assertion expected LF. Retain `runs/review-xb3wrezy` and `reproduce-first-attempt.py`; the corrected fixture uses explicit LF in a new directory. This is an executor fixture error, separate from the intentional missing-input failure and from a product defect. A prior edit helper also stopped on the system encoding while reading UTF-8; subsequent reads use explicit UTF-8 and the error record remains.
+
+The first focused run, `.awkit/reviews/review-6qs5p9he`, caught a guide-packaging defect in the new pointer: nested brackets in its Markdown link label prevented the existing skill-link rewriter from converting that relative target. The label now uses plain words, with `[[setup]]` outside the link. The original focused run and corrected run remain separate. No parser or command behavior changed.
+
+Focused corrected snapshot `f271686b84dc93800c1790198c19d84a64f9c47c` passed in `.awkit/reviews/review-oqgi5aa9`: 17 kit tests and six snapshot/setup tests, with one Windows directory-link skip. The reference remains at 8,995 words under its 9,000-word limit. The later cumulative full check and CI/install identity belong to `delivery.json`.
+
+Existing kit/link/word-limit/guard tests and focused snapshot/setup tests cover the changed passages and reused contracts. No wording-matching tests, new command, dependency, detector, cache manager or universal linking recipe were added. The guard table was regenerated; its mapping is unchanged. Source/diff and preservation review are executor self-review. Rendered Markdown inspection is omitted for this bounded unit under the retained browser/native limits; passing commands do not establish intended-reader quality or owner acceptance.
+
+The five planning files transferred in M-135 are included in the cumulative delivery with their exact transfer hashes verified first. Their originating session's source reading, mechanical checks and rendering limits remain distinct from the executor's checks. Preserve other-session commit `3c771e8`; no further main merge is assigned.
+
 ## Verification and next action
 
 Acceptance requires regression cases for empty and invalid settings, repeat installation, configured-but-unexecuted commands, matching and mismatched metadata, missing provenance, and a source checkout with local edits. The frozen snapshot must pass `checks.toml`; record its result outside the snapshot in `.awkit/handoffs/connection-diagnostics/validation.json`. Inspect documentation and generated guard mappings. Record failures and environment limits separately. Then retain this task as the source of the deferred writing and path investigation.

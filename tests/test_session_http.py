@@ -122,8 +122,8 @@ class SessionHTTPTests(unittest.TestCase):
         self.assertIn("Create an independent session", html)
         self.assertNotIn(self.server.token, html)
 
-    def wait_for_replies(self, count):
-        deadline = time.monotonic() + 6
+    def wait_for_replies(self, count, *, timeout=35):
+        deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
             view = self.call("status")["sessions"][0]
             if sum(message["kind"] == "re" for message in view["messages"]) == count:

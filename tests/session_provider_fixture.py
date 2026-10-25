@@ -3,6 +3,7 @@
 import json
 import os
 import sys
+import time
 import uuid
 from pathlib import Path
 
@@ -106,6 +107,8 @@ def main():
                 continue
             if text == "HOLD":
                 continue
+            if text == "DELAYED_FINISH":
+                time.sleep(7)  # Deterministically exceeds the old six-second harness deadline.
             answer = "Remembered: " + thread["memory"] if text == "recall" else "Fixture reply: " + text
             if not thread["memory"]:
                 thread["memory"] = text

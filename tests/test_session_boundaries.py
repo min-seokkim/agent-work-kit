@@ -32,7 +32,7 @@ class SessionBoundaryTests(unittest.TestCase):
         result = self.controller.create(name="Research", responsibility="Invented work")
         path = result["channel"]
         request_id = Channel(path).post("main", "reviewer", "question", "Direct existing channel request")
-        deadline = time.monotonic() + 5
+        deadline = time.monotonic() + 35
         while time.monotonic() < deadline:
             view = self.controller.status()["sessions"][0]
             if len(view["messages"]) == 2:
@@ -53,7 +53,7 @@ class SessionBoundaryTests(unittest.TestCase):
         self.assertEqual(view["execution_state"], "unknown")
         self.assertFalse(view["connected"])
         self.assertIsNone(reopened.provider)
-        deadline = time.monotonic() + 6
+        deadline = time.monotonic() + 35
         while time.monotonic() < deadline:
             view = reopened.status()["sessions"][0]
             if view["can_send"]:

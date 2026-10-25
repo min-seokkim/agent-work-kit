@@ -24,8 +24,9 @@ class SessionControllerTests(unittest.TestCase):
         self.assertEqual(result["session"]["state"], "idle", result)
         return result["session"]
 
-    def wait_for(self, predicate):
-        deadline = time.monotonic() + 6
+    def wait_for(self, predicate, *, timeout=35):
+        # Admission alone has a 30s RPC budget; six seconds also counted durable I/O.
+        deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
             views = self.controller.status()["sessions"]
             if views and predicate(views[0]):

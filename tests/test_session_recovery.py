@@ -36,6 +36,14 @@ class RecoveryTests(unittest.TestCase):
     def test_lost_rpc_response_is_correlated_by_client_id_without_resend(self):
         self.check_recovered_reply("LOST_RESPONSE", expect_bound=False)
 
+    def test_slow_provider_completion_is_waited_for_without_another_attempt(self):
+        session = self.create()
+        request = self.controller.send(session["id"], key="delayed", body="DELAYED_FINISH")["message"]
+        completed = self.wait_for(lambda view: len(view["messages"]) == 2)
+        self.assertEqual(completed["messages"][-1]["reply_to"], request["id"])
+        self.assertEqual(completed["attempts"][0]["state"], "returned")
+        self.assertEqual(len(completed["attempts"]), 1)
+
     def test_reply_missing_locally_is_recovered_by_known_turn(self):
         self.check_recovered_reply("MISSING_RECORD", expect_bound=True)
 

@@ -56,11 +56,11 @@ a{color:var(--accent)}.small{font-size:.83rem}.hidden{display:none!important}
 <div class="toolbar"><label class="check"><input id="needs-reply" type="checkbox" checked> Request a reply</label><button id="send" class="primary" disabled>Send request</button></div>
 <p id="send-reason" class="reason"></p></form></section></main>
 <dialog id="create-dialog"><form id="create-form"><h2>Create an independent session</h2>
-<label>Project<select id="create-project"></select></label><label>Provider<select id="provider"><option value="codex">Codex</option><option disabled>Claude · not available yet</option></select></label>
+<label>Project<select id="create-project"></select></label><label>Provider<select id="provider"><option value="codex">Codex</option><option value="claude">Claude</option></select></label><p id="provider-reason" class="reason"></p>
 <label>Name<input id="create-name" required maxlength="200" placeholder="Research"></label>
 <label>Responsibility<textarea id="responsibility" required maxlength="2000" placeholder="What this session is responsible for"></textarea></label>
-<label>Requested permissions<select id="sandbox"><option value="read-only">Read only</option><option value="workspace-write">Write in this workspace</option></select></label>
-<p class="reason">Approval requests go to this screen. The conversation shows the scope actually returned by Codex.</p>
+<label id="codex-permissions">Requested permissions<select id="sandbox"><option value="read-only">Read only</option><option value="workspace-write">Write in this workspace</option></select></label>
+<p id="creation-permissions" class="reason">Approval requests go to this screen. The conversation shows the scope actually returned by Codex.</p>
 <div class="dialog-actions"><button type="button" data-close="create-dialog">Cancel</button><button class="primary" id="create-submit">Create session</button></div></form></dialog>
 <dialog id="history-dialog"><form id="history-form"><h2>Open existing channel history</h2>
 <p class="subtle">Read a pairwise channel without connecting to its native sessions or changing its messages.</p>
@@ -139,8 +139,10 @@ function revealMessage(id) {
 function render() {
   if (!state) return;
   byId('project').textContent = 'Project · ' + state.project;
-  byId('open-create').disabled = !state.capabilities.codex_executable_available;
-  if (!state.capabilities.codex_executable_available) banner('Codex executable unavailable. Existing channel history can still be opened.');
+  const claude = state.capabilities.claude_runtime || {};
+  byId('open-create').disabled = !state.capabilities.codex_executable_available && !claude.available;
+  for (const option of byId('provider').options) option.disabled = option.value === 'claude' ? !claude.available : !state.capabilities.codex_executable_available;
+  providerDraft();
   if (!byId('create-project').options.length) { const option = node('option', state.project); option.value = state.project; byId('create-project').append(option); }
   const list = byId('list'); list.replaceChildren();
   if (!state.sessions.length) list.append(node('p','No sessions or channel histories yet.','subtle'));
@@ -190,15 +192,15 @@ function render() {
   byId('control-reason').textContent = view.control_reason || 'History is retained. Closing this view does not stop provider work.';
   byId('resume').disabled = !view.can_resume;
   const active = view.attempts.find(row => ['admitting','accepted','executing','uncertain'].includes(row.state));
-  byId('interrupt').disabled = !view.connected || !active || !active.turn_id;
+  byId('interrupt').disabled = !view.connected || !active || !(active.turn_id || active.provider_input_id);
   byId('body').disabled = !view.can_send; byId('send').disabled = !view.can_send;
   byId('scope').textContent = 'To: ' + m.name + ' · Project: ' + state.project;
-  byId('send-reason').textContent = view.can_send ? 'Requests start when this conversation is observed idle. Informational notices do not start a turn.' : view.control_reason;
+  byId('send-reason').textContent = !view.can_send ? view.control_reason : m.provider === 'claude' && m.state === 'waiting for idle' ? 'Work stays queued until Claude reports native idle. A result alone does not establish idle.' : 'Requests start when this conversation is observed idle. Informational notices do not start a turn.';
   const permission = byId('permissions'); permission.replaceChildren();
-  permission.append(node('p',m.history ? 'Native permission scope is unavailable; this is stored history only.' : 'Actual scope returned by the provider.','reason'), node('pre',JSON.stringify(m.permissions,null,2)));
+  permission.append(node('p',m.history ? 'Native permission scope is unavailable; this is stored history only.' : m.provider === 'claude' ? 'Submitted Claude mode and partial native observations. Complete effective rules and Windows sandbox enforcement remain unverified.' : 'Actual scope returned by the provider.','reason'), node('pre',JSON.stringify(m.permissions,null,2)));
   if (m.returned_scope) permission.append(node('p','Reconnection returned a different scope. Saved permissions remain above; queued work is held.','reason'),node('pre',JSON.stringify(m.returned_scope,null,2)));
   if (m.startup_context) permission.append(node('p','Responsibility supplied at creation: ' + m.startup_context.responsibility + ' (' + m.startup_context.admission + '). This is instruction input, not a compliance check.','reason'));
-  byId('technical').textContent = JSON.stringify({channel:view.channel,native_conversation:m.native_id,returned_identity:m.returned_native_id,generation:m.generation,client:m.client,startup_context:m.startup_context,posts:view.posts,cancellations:view.cancellations,attempts:view.attempts,events:view.events,diagnostics:state.diagnostics},null,2);
+  byId('technical').textContent = JSON.stringify({channel:view.channel,native_conversation:m.native_id,returned_identity:m.returned_native_id,generation:m.generation,client:m.client,startup_context:m.startup_context,recovery_evidence:m.recovery_evidence,posts:view.posts,cancellations:view.cancellations,attempts:view.attempts,events:view.events,diagnostics:state.diagnostics},null,2);
   const key = JSON.stringify({id:selected,messages:view.messages,decisions:view.decisions,attempts:view.attempts,dispositions:view.dispositions,connected:view.connected,limit:limits.get(selected),declared:declarations});
   if (key === signature) return; signature = key;
   const decisionBox = byId('decisions'); decisionBox.replaceChildren();
@@ -211,15 +213,29 @@ function render() {
     }
     box.append(node('pre',JSON.stringify(decision.params,null,2)));
     const buttons = node('div',undefined,'toolbar');
-    const labels = {accept:'Allow once',acceptForSession:'Allow for this session',decline:'Decline',cancel:'Cancel turn'};
+    const labels = {accept:'Allow once',acceptForSession:'Allow for this session',decline:'Decline',cancel:'Cancel turn',allow:'Allow once',deny:'Decline'};
     for (const choice of decision.choices) {
       const button = node('button',labels[choice] || choice); button.disabled = !decision.can_answer;
       button.onclick = async () => { try { await api('decide',{ident:m.id,decision_id:decision.id,choice:choice}); await refresh(); } catch (error) { banner(error.message); } };
       buttons.append(button);
     }
     box.append(buttons);
-    if (!decision.can_answer) box.append(node('p','This original decision route is unavailable. Review its assignment below; reconnect or request interruption only through an observed live turn. No previous approval will be reused.','reason'));
-    if (!decision.choices.length) box.append(node('p','This request cannot be answered here. It remains pending on its originating connection.','reason'));
+    const questions = decision.method === 'claude/permission' && decision.params.tool === 'AskUserQuestion' && decision.params.input.questions;
+    if (Array.isArray(questions)) {
+      const form = node('form'); const answers = [];
+      for (const question of questions) {
+        const label = node('label',question.question); const input = node('input'); input.disabled = !decision.can_answer; input.required = true;
+        label.append(input); form.append(label);
+        for (const option of question.options || []) form.append(node('p',option.label + ': ' + option.description,'reason'));
+        answers.push([question.question,input]);
+      }
+      const submit = node('button','Send answers'); submit.disabled = !decision.can_answer; form.append(submit);
+      form.onsubmit = async event => { event.preventDefault(); try { await api('decide',{ident:m.id,decision_id:decision.id,choice:{answers:Object.fromEntries(answers.map(([text,input]) => [text,input.value]))}}); await refresh(); } catch (error) { banner(error.message); } };
+      box.append(form);
+    }
+    if (decision.state === 'sent' || decision.state === 'sending') box.append(node('p','The response is being sent or awaits native resolution. It will not be sent again.','reason'));
+    else if (!decision.can_answer) box.append(node('p','This original decision route is unavailable. Review its assignment below; reconnect or request interruption only through an observed live turn. No previous approval will be reused.','reason'));
+    if (!decision.choices.length && !questions) box.append(node('p','This request cannot be answered here. It remains pending on its originating connection.','reason'));
     decisionBox.append(box);
   }
   const messages = byId('messages'); messages.replaceChildren();
@@ -272,7 +288,16 @@ async function refresh() {
   }
   finally { loading = false; }
 }
-byId('open-create').onclick = () => byId('create-dialog').showModal();
+function providerDraft() {
+  const claude = byId('provider').value === 'claude';
+  byId('codex-permissions').hidden = claude;
+  byId('codex-permissions').classList.toggle('hidden',claude);
+  byId('sandbox').disabled = claude;
+  byId('creation-permissions').textContent = claude ? 'Claude uses its native default approval mode and project instructions. Requests that need a decision appear here. This choice does not establish a Codex sandbox or Windows network restriction.' : 'Approval requests go to this screen. The conversation shows the scope actually returned by Codex.';
+  byId('provider-reason').textContent = claude ? (state.capabilities.claude_runtime.reason || 'SDK available. Native login and this conversation are checked when connecting.') : (state.capabilities.codex_executable_available ? '' : 'Codex executable unavailable.');
+}
+byId('provider').onchange = () => { byId('sandbox').value = 'read-only'; providerDraft(); };
+byId('open-create').onclick = () => { providerDraft(); byId('create-dialog').showModal(); };
 byId('open-history').onclick = () => byId('history-dialog').showModal();
 for (const button of document.querySelectorAll('[data-close]')) button.onclick = () => byId(button.dataset.close).close();
 byId('back').onclick = () => document.body.classList.remove('conversation-open');
@@ -291,7 +316,9 @@ byId('compose').onsubmit = async event => {
 byId('create-form').onsubmit = async event => {
   event.preventDefault(); byId('create-submit').disabled = true;
   try {
-    const result = await api('create',{name:byId('create-name').value,responsibility:byId('responsibility').value,project:state.project,provider:byId('provider').value,sandbox:byId('sandbox').value});
+    const provider = byId('provider').value;
+    const permissions = provider === 'claude' ? {permission_mode:'default'} : {sandbox:byId('sandbox').value};
+    const result = await api('create',{name:byId('create-name').value,responsibility:byId('responsibility').value,project:state.project,provider,...permissions});
     byId('create-dialog').close(); await refresh(); select(result.session.id); banner(result.session.error || 'Created ' + result.session.name + '.');
   } catch (error) { banner(error.message); }
   finally { byId('create-submit').disabled = false; }

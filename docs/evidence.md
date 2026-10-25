@@ -84,3 +84,8 @@ behavioral observation and is not a runtime guard delivered by this feature.
 ## Managed conversation recovery
 
 The [unit-2 record](tasks/session-orchestration.md#unit-2-recovery-and-current-work-reading) separates a real same-native-ID Windows restart and persisted client correlation from deterministic offline fault tests, actual-history interface reading and human acceptance. Its retained execution package owns final snapshot/check, delivery and installation receipts. No uncertain task was replayed in the observed case; this does not establish exactly-once effects or old approval callback recovery. Existing Codex IDE ownership and other providers remain outside that observation. The [other-project collection analysis](tasks/real-data-trial.md#other-project-observed-collection-analysis) is a separate reported real-use case; the managed-session checks do not validate its data or establish causal kit benefit.
+
+
+## Optional persistent Claude observations
+
+The [unit-3 record](tasks/session-orchestration.md#unit-3-persistent-claude-integration) separates actual Windows same-context cross-provider requests, public native idle frames, a native question, exact-ID restart and a deliberately missing local result from offline protocol tests. The weekly-limit error, fresh later success, two unresolved inputs and thirteen manual native command approvals remain visible. Desktop/narrow inspection and the last disconnected screen are bounded presentation evidence. Late source refinements do not inherit an exact-version live pass. The executor delivery receipt identifies final frozen checks, CI, installation and task-owned cleanup. Existing-session attachment, Linux live execution, human acceptance and an unattended workflow remain unverified.

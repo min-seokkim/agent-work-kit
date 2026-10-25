@@ -6,13 +6,15 @@ Status: bounded document trials and evidence examples have shipped, and one corr
 
 Help an agent turn source material into a document that serves its reader, remains accurate through revision, works in the required format, and reaches the recipient with evidence of what was checked. Reduce the owner's repeated explanations, recovery of accepted work and manual correction after delivery.
 
-Presentations are documents within this workflow. Their quality depends on material selection, argument, evidence, explanation order, visual expression and actual use. Design and PPTX integrity are parts of that outcome. Apply the same method to reports, proposals, explanatory documents and correspondence, adding the requirements of each form when needed.
+Presentations are documents within this workflow. Their quality depends on material selection, argument, evidence, explanation order, visual expression and actual use. Design and PPTX integrity are parts of that outcome. Use the common principles for reports, proposals, explanatory documents, personal writing and correspondence, choosing methods and evidence for each reader and purpose.
 
-The user should be able to request a finished document without assembling writing, design, conversion and checking skills themselves. The agent carries the audience, purpose, source facts and preservation conditions through the entire task. Use the existing writing methodology, task records and review commands to connect the stages. Authoring applications and renderers remain replaceable tools supplied by the environment.
+The user should be able to request a finished document without assembling writing, design, conversion and checking skills themselves. The agent carries the audience, purpose, source facts and preservation conditions through the entire task. Use applicable writing methods, task records and review commands to connect the stages; evaluate a method's suitability before making it a requirement. Authoring applications and renderers remain replaceable tools supplied by the environment.
 
 For a local edit, run the affected stages and check its consequences. For review-only work, inspect the existing document against its purpose. Reuse known requirements instead of asking the owner to complete a new questionnaire. Save inspectable sections or representative pages during long work and report what is available, what is being checked and what remains unresolved.
 
 The [review and revision plan](tasks/writing-revision-workflow.md) develops this behavior across successive requests: assess an existing draft, make a scoped edit, preserve adopted choices and carry applicable feedback into a later revision. Its assigned exercises use existing records and comparison tools; additional packaging and genre-specific guidance remain candidates. This work does not complete the presentation and native-editing phases below.
+
+The [design decision](design.md#principles-methods-and-verification) separates common principles, selectable methods and verification conditions. The [method-selection review](tasks/writing-revision-workflow.md#method-selection-review) therefore examines excessive obligations as well as missing guidance. Source expression and the progression of thought can be protected material when they serve the commissioned work. A concise handoff can point to complete required sources; its size does not determine source coverage. Corrections should improve the actual artifact, with persistence scaled to demonstrated continuity needs.
 
 ## Basis and evidence limits
 
@@ -29,6 +31,8 @@ Preserve evidence distinctions in future research:
 - Missing conversations and unavailable prior versions remain evidence gaps. Do not infer deletion or reconstruct undocumented disputes from a final file.
 
 Keep private originals, source paths, conversation identifiers, work conditions and personal interpretations in their existing private locations. This public-facing repository plan contains generalized lessons and public references. Build public fixtures independently with fictional content; redaction alone does not make a private artifact suitable for distribution. Check reuse rights for reference images, fonts and code before packaging them.
+
+The [expanded essay retrospective](tasks/writing-outcome-evaluation.md#expanded-essay-project-retrospective) adds observations of purpose drift, specific improvements and limits of review records. It supports checking whether the actual output still serves its reader after transformation. It does not establish that essay techniques improve every document genre; the [revision plan](tasks/writing-revision-workflow.md#purpose-and-transfer-between-genres) keeps general principles, conditional methods and unsafe extrapolations distinct.
 
 ### Findings from the proposal trial
 
@@ -67,7 +71,7 @@ The [scoped document trial](tasks/scoped-document-trial.md#accepted-results) app
 | Build the explanation | Decide the order of ideas, section roles, comparisons and dependencies. Assign words and visuals distinct jobs. | An outline or storyboard that explains why each section belongs. |
 | Explore expression | Resolve important uncertainty with relevant examples and a representative page using real content. | Selected visual principles, rejected alternatives and a prototype in the required format. |
 | Produce and revise | Write and implement the document, preserving accepted features and limiting changes to the task. | An editable candidate and visible intermediate results. |
-| Review in use | Check purpose, content, design, requested edits and actual output on the same version. | Findings tied to locations and reader impact, with evidence of correction. |
+| Review in use | Check purpose, content, design, requested edits and actual output on the same version. Recheck the reader's task after substantial compression, merging or adaptation. | Findings tied to actual passages and reader impact, with evidence of correction; written destinations for moved requirements and explicit remaining work. |
 | Deliver and retain | Deliver the checked artifact under existing authorization rules and retain the accepted result and its evidence. | Identified final files, acceptance status, limitations and a usable next action. |
 
 Keep the outline and review reasoning in working records. They are not a repeated set of boxes, internal identifiers or a checklist to print in the final document. Draft from the reader's needs instead of retaining the source document's structure or turning research questions into the final headings.
@@ -246,6 +250,8 @@ The [representative presentation trial](tasks/presentation-method-trial.md) exer
 | Scenario | Expected evidence |
 |---|---|
 | An attractive but irrelevant detail dominates the document | Content review restores weight to the reader's question and supporting evidence. |
+| A revision retains the stated purpose in its plan but changes the body's question, or assigns an omitted argument to an unwritten section | Direct reading identifies the changed purpose and checks actual destination passages; planned work remains pending. |
+| A technique useful in a reflective essay is imposed on a decision report or instruction | The result meets its reader's task, retains necessary uncertainty and uses a suitable conclusion; the local technique remains conditional. |
 | Compression removes a condition, negation or uncertainty; a plan becomes a completed result; team work becomes personal work | Source comparison identifies the meaning change. |
 | Source documents disagree on audience, assumptions or conclusion | The contradiction is surfaced and resolved or retained as uncertainty. |
 | A technical report and an administrative attachment inherit the same Korean endings or internal IDs | Review applies each document's conventions and reader knowledge; the rendered form still fits. |

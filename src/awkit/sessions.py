@@ -15,6 +15,7 @@ from pathlib import Path
 
 from .channel import REQUESTS
 from .channel_status import observe
+from .claude_session import ClaudeSession, availability, recover_local_results
 from .codex_session import CodexSession, ProviderError
 from .session_history import HistoryViews
 from .session_recovery import resume
@@ -25,7 +26,8 @@ DECISIONS = {"item/commandExecution/requestApproval", "item/fileChange/requestAp
 
 
 class SessionController:
-    def __init__(self, project, command, *, record=None, provider_factory=CodexSession):
+    def __init__(self, project, command, *, record=None, provider_factory=CodexSession,
+                 claude_cli=None, claude_factory=ClaudeSession):
         self.project = Path(project).resolve(strict=True)
         if not self.project.is_dir():
             raise ValueError("The selected project is not a directory.")
@@ -43,6 +45,9 @@ class SessionController:
         self.provider_factory = provider_factory
         self.provider = None
         self.provider_error = None
+        self.claude_cli = claude_cli
+        self.claude_factory = claude_factory
+        self.claude_clients = {}
         self.client = {}
         self.errors = []
         self._stores = {}
@@ -94,9 +99,16 @@ class SessionController:
             self.provider_error = str(exc)
             raise ProviderError(self.provider_error) from exc
 
-    def create(self, *, name, responsibility, project=None, provider="codex", sandbox="read-only"):
-        if provider != "codex":
-            raise ValueError("This unit supports managed Codex only; Claude and native IDE attachment are unavailable.")
+    def create(self, *, name, responsibility, project=None, provider="codex", sandbox=None, permission_mode=None):
+        if provider not in ("codex", "claude"):
+            raise ValueError("Select Codex or Claude.")
+        if provider == "claude" and (sandbox is not None or permission_mode not in (None, "default")):
+            raise ValueError("Claude uses its native default permission mode; Codex sandbox choices cannot be transferred.")
+        if provider == "codex" and permission_mode is not None:
+            raise ValueError("Claude permission modes cannot be transferred to Codex.")
+        if provider == "claude" and not availability()["available"]:
+            raise ValueError(availability()["reason"])
+        sandbox = sandbox or "read-only"
         if project is not None and Path(project).resolve() != self.project:
             raise ValueError("This controller manages only its selected project.")
         for value, label, limit in ((name, "name", 200), (responsibility, "responsibility", 2000)):
@@ -113,13 +125,23 @@ class SessionController:
                 store = SessionStore.create(self.directory / "channels", name=name.strip(), project=self.project,
                                              responsibility=responsibility.strip(), generation=self.generation,
                                              permissions={"requested": {"sandbox": sandbox, "approvalPolicy": "on-request",
-                                                                        "approvalsReviewer": "user"}})
+                                                                        "approvalsReviewer": "user"}} if provider == "codex" else
+                                             {"requested": {"permission_mode": "default", "setting_sources": ["user", "project", "local"]},
+                                              "effective_rules": "unverified", "windows_sandbox": "not established"}, provider=provider)
                 ident = store.metadata()["id"]
                 self._stores[ident] = store
             startup = dict(name=name.strip(), responsibility=responsibility.strip(), project=str(self.project),
                            developer_instructions=f"Your assigned role is {name.strip()}. Responsibility: {responsibility.strip()}",
                            source="thread/start parameters", admission="pending")
             store.update(startup_context=startup)
+            if provider == "claude":
+                store.update(requested_native_id=str(uuid.uuid4()),
+                             startup_context=dict(startup, source="Claude native preset with role append"))
+                try:
+                    self.claude_clients[ident] = self.claude_factory(store, cli_path=self.claude_cli)
+                except (OSError, ValueError, RuntimeError, ImportError) as exc:
+                    store.update(state="unknown", error=str(exc), source="Claude initialization unavailable", observed_at=now())
+                return store.snapshot()
             try:
                 result = self._owned_provider().call("thread/start", {
                     "cwd": str(self.project), "sandbox": sandbox, "approvalPolicy": "on-request",
@@ -158,9 +180,11 @@ class SessionController:
 
     def send(self, ident, *, key, body, kind="question", entry="agent"):
         store = self._store(ident)
-        if store.metadata()["generation"] != self.generation:
+        meta = store.metadata()
+        provider, generation = self._connection(store)
+        if meta["generation"] != generation:
             raise ValueError("This conversation is reconnecting. Its saved history remains readable.")
-        if (self.provider is None or not self.provider.alive or not store.metadata()["native_id"]
+        if (provider is None or not provider.alive or not (meta["native_id"] or meta.get("requested_native_id"))
                 or store.metadata()["state"] == "unknown"):
             raise ValueError("Provider connection or conversation state is unavailable; the assignment has not been submitted.")
         with self._mutex:
@@ -173,6 +197,26 @@ class SessionController:
     def resume(self, ident):
         store = self._store(ident)
         with self._creation:
+            if self._stop.is_set():
+                raise ValueError("The controller is stopping; no provider connection will be started.")
+            if store.metadata()["provider"] == "claude":
+                meta = store.metadata()
+                prior = self.claude_clients.get(meta["id"])
+                if prior and prior.alive and meta["state"] != "unknown":
+                    return store.snapshot()
+                if prior:
+                    prior.close()
+                self.claude_clients.pop(meta["id"], None)
+                recover_local_results(store)
+                generation = str(uuid.uuid4())
+                store.reconnect(generation)
+                store.update(generation=generation, state="reconnecting", observed_at=now(), source="exact-ID Claude resume")
+                self._recovery_attempted.add(meta["id"])
+                try:
+                    self.claude_clients[meta["id"]] = self.claude_factory(store, cli_path=self.claude_cli, resume=True)
+                except (OSError, ValueError, RuntimeError, ImportError) as exc:
+                    store.update(state="unknown", error=str(exc), source="Claude resume unavailable; no resend", observed_at=now())
+                return store.snapshot()
             self.provider_error = None
             if self.provider is not None and not self.provider.alive:
                 self.provider.close()
@@ -189,6 +233,13 @@ class SessionController:
             except (OSError, ValueError, KeyError, TypeError, sqlite3.Error, ProviderError) as exc:
                 store.update(state="unknown", observed_at=now(), source="resume unavailable; history retained", error=str(exc))
             return store.snapshot()
+
+    def _connection(self, store):
+        meta = store.metadata()
+        if meta["provider"] == "claude":
+            client = self.claude_clients.get(meta["id"])
+            return client, client.generation if client else self.generation
+        return self.provider, self.generation
 
     def cancel(self, ident, request_id):
         return self._store(ident).cancel(request_id)
@@ -212,6 +263,15 @@ class SessionController:
             for store in stores:
                 try:
                     meta = store.metadata()
+                    if meta["provider"] == "claude":
+                        if meta["id"] not in self.claude_clients and meta["id"] not in self._recovery_attempted:
+                            self.resume(meta["id"])
+                        client = self.claude_clients.get(meta["id"])
+                        if client and client.alive and store.metadata()["state"] == "idle":
+                            claim = store.claim(client.generation)
+                            if claim:
+                                client.submit(claim)
+                        continue
                     if meta["generation"] != self.generation and meta["id"] not in self._recovery_attempted:
                         self.resume(meta["id"])
                         meta = store.metadata()
@@ -248,7 +308,7 @@ class SessionController:
                     for method, params in store.turn_events(turn_id):
                         self._apply_turn(store, method, params)
                 except (OSError, ValueError, KeyError, TypeError, sqlite3.Error, ProviderError) as exc:
-                    store.uncertain(self.generation, str(exc))
+                    store.uncertain(self._connection(store)[1], str(exc))
 
     def _message(self, message):
         method, params = message.get("method", ""), message.get("params", {})
@@ -260,15 +320,16 @@ class SessionController:
             stores = list(self._stores.values())
         if method == "awkit/connectionError":
             for store in stores:
-                if store.metadata()["generation"] == self.generation:
+                if store.metadata()["provider"] == "codex" and store.metadata()["generation"] == self.generation:
                     store.uncertain(self.generation, params.get("reason", "Provider connection lost"))
             return
         if method == "serverRequest/resolved":
             for store in stores:
-                store.resolve_decisions(self.generation, params.get("requestId"), params.get("threadId"))
+                if store.metadata()["provider"] == "codex":
+                    store.resolve_decisions(self.generation, params.get("requestId"), params.get("threadId"))
             return
         native_id = params.get("threadId", params.get("thread", {}).get("id"))
-        store = next((value for value in stores if value.metadata().get("native_id") == native_id
+        store = next((value for value in stores if value.metadata()["provider"] == "codex" and value.metadata().get("native_id") == native_id
                       and value.metadata()["generation"] == self.generation), None)
         if store is None:
             if "id" in message:
@@ -302,6 +363,11 @@ class SessionController:
 
     def decide(self, ident, decision_id, choice):
         store = self._store(ident)
+        if store.metadata()["provider"] == "claude":
+            client = self.claude_clients.get(store.metadata()["id"])
+            if not client or not client.alive:
+                raise ValueError("The original Claude callback connection is unavailable.")
+            return client.decide(decision_id, choice)
         decision = next((row for row in store.snapshot()["decisions"] if row["id"] == decision_id), None)
         if (decision is None or decision["generation"] != self.generation or decision["method"] not in DECISIONS
                 or choice not in decision["choices"]):
@@ -322,6 +388,15 @@ class SessionController:
 
     def interrupt(self, ident):
         store = self._store(ident)
+        if store.metadata()["provider"] == "claude":
+            client = self.claude_clients.get(store.metadata()["id"])
+            active = store.active(client.generation) if client else None
+            if not active or not client.alive:
+                raise ValueError("No correlated Claude work is active on this connection.")
+            with store.channel.transaction() as conn:
+                conn.execute("UPDATE awkit_delivery SET interruption_requested=?,updated=? WHERE id=?", (now(), now(), active["id"]))
+            client.interrupt()
+            return dict(state="interrupt requested", task_result="unverified")
         active = store.active(self.generation)
         if active is None or not active["turn_id"] or self.provider is None or not self.provider.alive:
             raise ValueError("There is no observed live turn to interrupt on this connection.")
@@ -336,9 +411,10 @@ class SessionController:
         for store in stores:
             snapshot = store.snapshot()
             meta = snapshot["session"]
-            connected = bool(self.provider and self.provider.alive and meta["generation"] == self.generation)
+            provider, generation = self._connection(store)
+            connected = bool(provider and provider.alive and meta["generation"] == generation)
             age = (datetime.now(UTC) - datetime.fromisoformat(meta["observed_at"])).total_seconds()
-            can_send = (connected and bool(meta["native_id"]) and not snapshot["closed"]
+            can_send = (connected and bool(meta["native_id"] or meta.get("requested_native_id")) and not snapshot["closed"]
                         and meta["state"] in ("idle", "waiting for idle", "running", "accepted", "decision needed", "submitting"))
             reason = ("This channel is closed." if snapshot["closed"] else
                       "Conversation state is uncertain. Inspect unfinished work; reconnecting never resends uncertain work." if connected else
@@ -346,9 +422,10 @@ class SessionController:
             if not can_send and meta.get("error"):
                 reason += " " + str(meta["error"])
             for decision in snapshot["decisions"]:
-                decision["can_answer"] = connected and decision["generation"] == self.generation and decision["state"] == "pending"
+                decision["can_answer"] = connected and decision["generation"] == generation and decision["state"] == "pending"
                 decision["request_id"] = next((row["request_id"] for row in snapshot["attempts"]
-                                               if row["turn_id"] == decision["params"].get("turnId")), None)
+                                               if (row["provider_input_id"] == decision["params"].get("provider_input_id")
+                                                   if meta["provider"] == "claude" else row["turn_id"] == decision["params"].get("turnId"))), None)
             dispositions = []
             for request_id in (row["id"] for row in snapshot["messages"] if row["kind"] in REQUESTS):
                 attempt = next((row for row in snapshot["attempts"] if row["request_id"] == request_id), None)
@@ -401,11 +478,13 @@ class SessionController:
                 declarations = dict(report=report, exit_code=exit_code, view_links=links)
             except (OSError, ValueError, sqlite3.Error) as exc:
                 declarations = dict(error=str(exc))
+        claude = availability()
         return dict(project=str(self.project), generation=self.generation, sessions=views,
                     provider_error=self.provider_error, diagnostics=self.errors[-10:], declarations=declarations,
                     capabilities={"managed_codex": True,
                                   "codex_executable_available": bool(shutil.which(self.command[0])),
-                                  "restart_resume": True, "claude": False, "ide_attachment": False})
+                                  "restart_resume": True, "claude": claude["available"],
+                                  "claude_runtime": claude, "ide_attachment": False})
 
     def close(self):
         self._stop.set()
@@ -415,6 +494,8 @@ class SessionController:
             self._closed = True
             if self.provider:
                 self.provider.close()
+            for client in self.claude_clients.values():
+                client.close()
         self._worker.join(timeout=5)
         self.lock.rollback()
         self.lock.close()

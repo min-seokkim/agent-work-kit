@@ -20,6 +20,7 @@ classifiers = [
 
 [project.optional-dependencies]
 ui = ["playwright>=1.48,<2"]
+claude = ["claude-agent-sdk==0.2.174"]
 
 [project.scripts]
 awkit = "awkit.cli:main"

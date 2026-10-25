@@ -51,6 +51,25 @@ jobs:
       - name: Run tests
         run: python -m unittest discover -s tests -v
 
+  claude-sdk:
+    name: Claude SDK / ${{ matrix.os }} / Python ${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ["3.11", "3.14"]
+    env:
+      PYTHONUTF8: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m pip install ".[claude]"
+      - name: Check installed optional API and unmodified bundled binary without login or model calls
+        run: python scripts/check_claude_sdk.py
+
   install:
     name: Installer / ${{ matrix.os }} / Python ${{ matrix.python }}
     runs-on: ${{ matrix.os }}

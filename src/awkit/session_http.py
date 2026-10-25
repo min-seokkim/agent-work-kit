@@ -154,10 +154,10 @@ def request(project, action="status", args=None):
     return result["result"]
 
 
-def serve(project, command, *, port=0, record=None):
+def serve(project, command, *, port=0, record=None, claude_cli=None):
     if not 0 <= port <= 65535:
         raise ValueError("The loopback port must be between 0 and 65535.")
-    controller = SessionController(project, command, record=record)
+    controller = SessionController(project, command, record=record, claude_cli=claude_cli)
     server = None
     path = controller.directory / "controller.json"
     try:

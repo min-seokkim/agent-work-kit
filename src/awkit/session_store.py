@@ -18,9 +18,10 @@ CREATE TABLE awkit_session (singleton INTEGER PRIMARY KEY CHECK(singleton=1),
 CREATE TABLE awkit_posts (key TEXT PRIMARY KEY, message_id TEXT UNIQUE NOT NULL,
     entry TEXT NOT NULL, created TEXT NOT NULL);
 CREATE TABLE awkit_delivery (id TEXT PRIMARY KEY, request_id TEXT UNIQUE NOT NULL,
-    generation TEXT NOT NULL, native_id TEXT NOT NULL, rpc_id TEXT, turn_id TEXT, reply_id TEXT,
+    generation TEXT NOT NULL, native_id TEXT, rpc_id TEXT, turn_id TEXT, reply_id TEXT,
     state TEXT NOT NULL, outcome TEXT, error TEXT, created TEXT NOT NULL, updated TEXT NOT NULL,
-    origin_generation TEXT, client_id TEXT, interruption_requested TEXT);
+    origin_generation TEXT, client_id TEXT, interruption_requested TEXT,
+    provider_input_id TEXT, input_echoed INTEGER, provider_result_id TEXT);
 CREATE TABLE awkit_cancellations (request_id TEXT PRIMARY KEY, created TEXT NOT NULL, disposition TEXT NOT NULL);
 CREATE TABLE awkit_events (seq INTEGER PRIMARY KEY, key TEXT UNIQUE NOT NULL,
     generation TEXT NOT NULL, method TEXT NOT NULL, thread_id TEXT, turn_id TEXT,
@@ -55,7 +56,7 @@ class SessionStore:
         self.channel = Channel(self.path)
 
     @classmethod
-    def create(cls, directory, *, name, project, responsibility, generation, permissions):
+    def create(cls, directory, *, name, project, responsibility, generation, permissions, provider="codex"):
         directory = Path(directory)
         directory.mkdir(parents=True, exist_ok=True)
         ident = str(uuid.uuid4())
@@ -64,7 +65,7 @@ class SessionStore:
         with path.open("xb"):
             pass
         channel = Channel(path)
-        data = dict(id=ident, name=name, provider="codex", project=str(Path(project).resolve()),
+        data = dict(id=ident, name=name, provider=provider, project=str(Path(project).resolve()),
                     responsibility=responsibility, native_id=None, generation=generation,
                     permissions=permissions, state="creating", observed_at=now(),
                     source="local creation intent", error=None)
@@ -72,7 +73,7 @@ class SessionStore:
             for statement in SCHEMA.split(";"):
                 if statement.strip():
                     conn.execute(statement)
-            conn.execute("INSERT INTO awkit_session VALUES (1,2,?,?)", (ident, encoded(data)))
+            conn.execute("INSERT INTO awkit_session VALUES (1,3,?,?)", (ident, encoded(data)))
         return cls(path)
 
     @staticmethod
@@ -81,7 +82,7 @@ class SessionStore:
             row = conn.execute("SELECT schema,id,data FROM awkit_session WHERE singleton=1").fetchone()
         except sqlite3.OperationalError as exc:
             raise ValueError("This is not a managed session channel.") from exc
-        if row is None or row["schema"] not in (1, 2):
+        if row is None or row["schema"] not in (1, 2, 3):
             raise ValueError("Unsupported managed session extension.")
         data = json.loads(row["data"])
         if data.get("id") != row["id"] or str(uuid.UUID(row["id"])) != row["id"]:
@@ -99,6 +100,16 @@ class SessionStore:
                 conn.execute("CREATE TABLE awkit_cancellations (request_id TEXT PRIMARY KEY, "
                              "created TEXT NOT NULL, disposition TEXT NOT NULL)")
                 conn.execute("UPDATE awkit_session SET schema=2 WHERE singleton=1")
+                version = 2
+            if version == 2:
+                conn.execute("ALTER TABLE awkit_delivery RENAME TO awkit_delivery_v2")
+                statement = next(part for part in SCHEMA.split(";") if "CREATE TABLE awkit_delivery " in part)
+                conn.execute(statement)
+                columns = [row[1] for row in conn.execute("PRAGMA table_info(awkit_delivery_v2)")]
+                names = ",".join(columns)
+                conn.execute(f"INSERT INTO awkit_delivery({names}) SELECT {names} FROM awkit_delivery_v2")
+                conn.execute("DROP TABLE awkit_delivery_v2")
+                conn.execute("UPDATE awkit_session SET schema=3 WHERE singleton=1")
 
     @staticmethod
     def _update(conn, **fields):
@@ -136,7 +147,8 @@ class SessionStore:
         """Reserve one idle request durably before the provider can see it."""
         with self.channel.transaction() as conn:
             data = self._metadata(conn)
-            if data["generation"] != generation or data["state"] != "idle" or not data["native_id"]:
+            if (data["generation"] != generation or data["state"] != "idle"
+                    or not (data["native_id"] or data.get("requested_native_id"))):
                 return None
             if self._active(conn, generation) is not None:
                 return None
@@ -152,9 +164,10 @@ class SessionStore:
             if request is None:
                 return None
             ident, at = str(uuid.uuid4()), now()
-            conn.execute("INSERT INTO awkit_delivery(id,request_id,generation,native_id,state,created,updated,origin_generation,client_id) "
-                         "VALUES (?,?,?,?,'admitting',?,?,?,?)",
-                         (ident, request["id"], generation, data["native_id"], at, at, generation, ident))
+            conn.execute("INSERT INTO awkit_delivery(id,request_id,generation,native_id,state,created,updated,origin_generation,client_id,provider_input_id) "
+                         "VALUES (?,?,?,?,'admitting',?,?,?,?,?)",
+                         (ident, request["id"], generation, data["native_id"], at, at, generation, ident,
+                          ident if data["provider"] == "claude" else None))
             self._update(conn, state="submitting", observed_at=at, source="durable local send intent")
             return dict(id=ident, request=dict(request), native_id=data["native_id"], generation=generation)
 
@@ -200,16 +213,49 @@ class SessionStore:
         with self.channel.transaction() as conn:
             row = conn.execute("SELECT * FROM awkit_delivery WHERE generation=? AND turn_id=?",
                                (generation, turn_id)).fetchone()
+            return self._finish(conn, row, outcome, text, error, "turn/completed")
+
+    def _finish(self, conn, row, outcome, text, error, source, *, next_state="idle"):
+        if row is None or row["state"] in ("returned", "failed", "no-reply"):
+            return False
+        reply = None
+        if text.strip():
+            reply = self.channel._post(conn, "reviewer", "main", "re", text, reply_to=row["request_id"])
+        state = "returned" if reply else "failed" if outcome == "failed" else "no-reply"
+        conn.execute("UPDATE awkit_delivery SET state=?,outcome=?,reply_id=?,error=?,updated=? WHERE id=?",
+                     (state, outcome, reply, encoded(error) if error else None, now(), row["id"]))
+        self._update(conn, state=next_state, observed_at=now(), source=source, error=error)
+        return True
+
+    def claude_echo(self, generation, input_id, native_id):
+        with self.channel.transaction() as conn:
+            row = self._active(conn, generation)
+            if row is None or row["provider_input_id"] != input_id:
+                return False
+            conn.execute("UPDATE awkit_delivery SET input_echoed=1,native_id=?,state='executing',updated=? WHERE id=?",
+                         (native_id, now(), row["id"]))
+            self._update(conn, state="running", observed_at=now(), source="Claude input UUID echo")
+            return True
+
+    def claude_finish(self, generation, input_id, result_id, outcome, text, error=None, *, idle_observed=False):
+        with self.channel.transaction() as conn:
+            row = conn.execute("SELECT * FROM awkit_delivery WHERE generation=? AND provider_input_id=? AND input_echoed=1",
+                               (generation, input_id)).fetchone()
             if row is None or row["state"] in ("returned", "failed", "no-reply"):
                 return False
-            reply = None
-            if text.strip():
-                reply = self.channel._post(conn, "reviewer", "main", "re", text, reply_to=row["request_id"])
-            state = "returned" if reply else "failed" if outcome == "failed" else "no-reply"
-            conn.execute("UPDATE awkit_delivery SET state=?,outcome=?,reply_id=?,error=?,updated=? WHERE id=?",
-                         (state, outcome, reply, encoded(error) if error else None, now(), row["id"]))
-            self._update(conn, state="idle", observed_at=now(), source="turn/completed", error=error)
-            return True
+            if result_id and conn.execute("SELECT 1 FROM awkit_delivery WHERE provider_result_id=? AND id!=?",
+                                          (result_id, row["id"])).fetchone():
+                return False
+            conn.execute("UPDATE awkit_delivery SET provider_result_id=?,native_id=? WHERE id=?",
+                         (result_id, self._metadata(conn)["native_id"], row["id"]))
+            for decision in conn.execute("SELECT id,params FROM awkit_decisions WHERE generation=? AND state='sending'", (generation,)).fetchall():
+                params = json.loads(decision["params"])
+                if params.get("provider_input_id") == input_id and params.get("agent_id") is None:
+                    params["resolution_source"] = "correlated native parent result; response effect is not inferred"
+                    conn.execute("UPDATE awkit_decisions SET state='resolved',params=?,updated=? WHERE id=?",
+                                 (encoded(params), now(), decision["id"]))
+            return self._finish(conn, row, outcome, text, error, "Claude correlated result; native idle " +
+                                ("observed" if idle_observed else "awaited"), next_state="idle" if idle_observed else "waiting for idle")
 
     def add_decision(self, generation, rpc_id, method, params, choices):
         callback = hashlib.sha256(encoded([method, params.get("threadId"), params.get("turnId"),
@@ -278,7 +324,7 @@ class SessionStore:
             messages = [dict(row) for row in conn.execute("SELECT * FROM messages ORDER BY seq")]
             attempts = [dict(row) for row in conn.execute("SELECT * FROM awkit_delivery ORDER BY created")]
             version = conn.execute("SELECT schema FROM awkit_session WHERE singleton=1").fetchone()[0]
-            cancellations = [dict(row) for row in conn.execute("SELECT * FROM awkit_cancellations")] if version == 2 else []
+            cancellations = [dict(row) for row in conn.execute("SELECT * FROM awkit_cancellations")] if version >= 2 else []
             posts = [dict(row) for row in conn.execute("SELECT * FROM awkit_posts ORDER BY created")]
             decisions = []
             for row in conn.execute("SELECT * FROM awkit_decisions ORDER BY created"):

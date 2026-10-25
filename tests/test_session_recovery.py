@@ -199,7 +199,7 @@ class RecoveryTests(unittest.TestCase):
                 conn.execute(f"ALTER TABLE awkit_delivery DROP COLUMN {field}")
             conn.execute("UPDATE awkit_session SET schema=1")
         after = self.restart()
-        self.assertEqual(after["extension_schema"], 2)
+        self.assertEqual(after["extension_schema"], 3)
         self.assertEqual(after["messages"], before["messages"])
         self.assertEqual(after["posts"], before["posts"])
         self.assertEqual(after["attempts"][0]["origin_generation"], before["attempts"][0]["generation"])

@@ -20,6 +20,14 @@ The project environment keeps running agents, builds, tests, services, deploymen
 
 A new situation guard needs a failure entry it prevents, with a recorded occurrence, and a check that would have caught that occurrence. Baseline workflow text needs a step of the default procedure it describes and stays within the every-session word limit. Any new feature also needs a reason the existing commands cannot be extended, a way to see the target version, the result and the cause of failure, and tests for its important failure paths. Kit text that is neither baseline workflow nor a guard for a listed failure moves to the reference; nothing is removed until real use shows it unused, because only use shows which sections are needed. A check runs without the agent choosing to and an instruction does not, so a guard that can be a check becomes one. Measure effect by time to finish, rework, usage and defects found after acceptance, never by the number of features or roles.
 
+### Principles, methods and verification
+
+The owner selected a planning direction that separates common safeguards from task-dependent methods. Purpose, reader, factual fidelity, authorization and agreed author choices remain common. Drafting language, source transformation, explanation order, handoff packaging and review arrangement are methods to choose for the work. Genre informs that choice; it does not prescribe one method for every document of that kind.
+
+Assess a procedure by its contribution to the usable result as well as its burden. A supported improvement can narrow an obligation, make a step optional or replace a method. Reuse existing records and tools where they help; their existence does not establish fitness for every task. Automated checks establish the properties they inspect. Voice, reasoning and reader understanding require the applicable reading or use evidence.
+
+The [method-selection review](tasks/writing-revision-workflow.md#method-selection-review) owns the writing-specific changes to consider and their acceptance conditions. This decision authorizes planning integration; shipped guidance and enforcement change through a scoped implementation with its own evidence.
+
 ## Decisions
 
 | Decision | Detail |

@@ -168,13 +168,15 @@ def _parser():
     session_commands = session.add_subparsers(dest="action", required=True, metavar="ACTION")
     session_serve = session_commands.add_parser("serve", help="own a local controller; print its private human-control URL")
     session_serve.add_argument("--codex", default="codex", help="Codex executable (default: codex on PATH)")
+    session_serve.add_argument("--claude", help="unmodified Claude executable; otherwise use the SDK bundled binary")
     session_serve.add_argument("--port", type=int, default=0, help="loopback port; 0 selects an available port")
     session_serve.add_argument("--record", type=Path, help="existing schema-1 declaration record to observe read-only")
-    session_create = session_commands.add_parser("create", help="create a named native Codex conversation")
+    session_create = session_commands.add_parser("create", help="create a named owned Codex or Claude conversation")
     session_create.add_argument("name")
     session_create.add_argument("--responsibility", required=True)
-    session_create.add_argument("--provider", choices=("codex",), default="codex")
-    session_create.add_argument("--sandbox", choices=("read-only", "workspace-write"), default="read-only")
+    session_create.add_argument("--provider", choices=("codex", "claude"), default="codex")
+    session_create.add_argument("--sandbox", choices=("read-only", "workspace-write"), help="Codex scope (default: read-only)")
+    session_create.add_argument("--permission-mode", choices=("default",), help="Claude native mode (default: default)")
     session_send = session_commands.add_parser("send", help="store an assignment; the owner starts an idle turn automatically")
     session_send.add_argument("ident", help="managed session name or ID")
     session_send.add_argument("--key", help="reuse this client key to recover the same stored submission; never auto-resend")
@@ -193,7 +195,9 @@ def _parser():
     session_decide = session_commands.add_parser("decide", help="answer an actual pending provider request on its connection")
     session_decide.add_argument("ident")
     session_decide.add_argument("--decision", required=True, dest="decision_id")
-    session_decide.add_argument("--choice", required=True, choices=("accept", "acceptForSession", "decline", "cancel"))
+    decision_answer = session_decide.add_mutually_exclusive_group(required=True)
+    decision_answer.add_argument("--choice", choices=("accept", "acceptForSession", "decline", "cancel", "allow", "deny"))
+    decision_answer.add_argument("--answers-file", type=Path, help="Claude question answers JSON object keyed by exact question text")
     session_interrupt = session_commands.add_parser("interrupt", help="request interruption of the observed native turn")
     session_interrupt.add_argument("ident")
     session_resume = session_commands.add_parser("resume", help="retry exact-ID reconnection; never replay uncertain work")
@@ -614,11 +618,11 @@ def main(argv=None):
             from .session_http import request, serve
             if args.action == "serve":
                 command = shutil.which(args.codex) or args.codex
-                return serve(args.project, [command], port=args.port, record=args.record)
+                return serve(args.project, [command], port=args.port, record=args.record, claude_cli=args.claude)
             payload = {}
             if args.action == "create":
                 payload = dict(name=args.name, responsibility=args.responsibility, provider=args.provider,
-                               sandbox=args.sandbox, project=str(args.project.resolve()))
+                               sandbox=args.sandbox, permission_mode=args.permission_mode, project=str(args.project.resolve()))
             elif args.action == "send":
                 payload = dict(ident=args.ident, key=args.key or uuid.uuid4().hex,
                                body=_read_body(args), kind=args.kind, entry="agent")
@@ -626,7 +630,8 @@ def main(argv=None):
                 payload = dict(channel=str(args.channel), main_name=args.main_name, reviewer_name=args.reviewer_name,
                                local_role=args.local_role, task=args.task)
             elif args.action == "decide":
-                payload = dict(ident=args.ident, decision_id=args.decision_id, choice=args.choice)
+                choice = {"answers": json.loads(args.answers_file.read_text(encoding="utf-8"))} if args.answers_file else args.choice
+                payload = dict(ident=args.ident, decision_id=args.decision_id, choice=choice)
             elif args.action == "interrupt":
                 payload = dict(ident=args.ident)
             elif args.action == "resume":

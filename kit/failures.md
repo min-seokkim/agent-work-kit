@@ -354,7 +354,7 @@ Generated from the guards' own declarations: each guide section ends with a "Pre
 | F22 Observations, assumptions and interpretation are mixed | work-types.md Common rules; work-types.md Data preparation and analysis | none | none |
 | F23 Contradicting sources are averaged | work-types.md Research | none | `research (inject)` |
 | F24 A tool's success is taken as the result | workflow.md Check a frozen version; delivery.md Identify what is delivered; delivery.md Confirm it in its intended context; delivery.md Failure and recovery; work-types.md Environment setup; work-types.md Operating an application; sessions.md Start the controller; sessions.md Send and read work; sessions.md Read existing channel history; sessions.md Retain execution evidence | `awkit session`, `awkit pipeline`, `awkit publish` | `delivery (inject)` |
-| F25 Instructions for another version are applied | work-types.md Environment setup | `awkit doctor`, `awkit hook kit-version` | `kit-version (inject)` |
+| F25 Instructions for another version are applied | work-types.md Environment setup; sessions.md Start the controller | `awkit doctor`, `awkit hook kit-version`, `awkit session` | `kit-version (inject)` |
 | F26 Checks interfere through shared resources | checking.md Shared resources and processes | none | none |
 | F27 A one-off request becomes a standing automation | work-types.md Automation | none | none |
 | F28 The wrong level of autonomy | workflow.md Define the task; work-types.md Learning | none | none |

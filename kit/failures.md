@@ -150,7 +150,7 @@ Translationese, mixed sentence endings, noun chains; the agent's own Korean guid
 
 Long human-oriented documents for a tool whose user is an agent, or agent details in what people read. A document for one reader is made by rewording one written for another.
 - Evidence: observed in awkit's development. Five human-oriented documents under `docs/` that neither the owner nor agents needed in that form (restructured in `8f93b7b`). Owner's records: tracking codes (`AB-001`, `S1` to `U8`) throughout documents people read; commit IDs and evidence references in a report for non-developers; the abbreviation ADR in an administrative form; a status report for stakeholders built from developer documents with the wording changed ("LLMs just copy the development documents"); a resume that read like a technical report; one developer's Windows and Edge setup written as everyone's.
-- Countermeasure: decide the reader, what they must understand or decide, and the kind of document first; write from that, using other documents only as sources of facts. Keep tracking codes where the agent needs them and out of the text people read.
+- Countermeasure: decide the reader, what they must understand, decide or do, and the kind of document first; choose the organization for that purpose while preserving source meaning and adopted expression. Keep tracking codes where the agent needs them and out of the text people read.
 - Check: Kind: guidance. prose.
 
 #### F30. Facts, attribution or certainty change while writing.
@@ -186,7 +186,7 @@ The agent reports that it drafted in English, translated and ran review passes; 
 
 Conversational phrasing, the user's feelings or the conversation itself appear in a document written for someone else.
 - Evidence: owner's records. A note for an administrative discussion repeated the owner's complaint as its argument ("don't be a parrot of what I say"); development documents used "the user" as a subject ("reflecting the mail server restriction the user reported") instead of stating the decision.
-- Countermeasure: treat the user's words as material; write what the reader needs to understand or decide, and state decisions and reasons directly.
+- Countermeasure: treat conversational remarks as source material for the reader's task; preserve wording when it is a quotation, protected expression or adopted choice. State decisions and reasons directly when the text calls for them.
 - Check: Kind: guidance. prose.
 
 ### Revising approved work
@@ -232,9 +232,9 @@ The model, permissions or work claimed by a subagent are not what happened.
 
 #### F21. Handoffs carry too much or too little.
 
-The whole conversation or repository is passed, or a decision the subagent needs is missing.
+Unrelated conversation or repository material is passed, or required original material or a decision the subagent needs is missing.
 - Evidence: needs evidence (size limits come from 55 handoffs in one project).
-- Countermeasure: four-part handoff with size limits; `NEEDS_CONTEXT` status.
+- Countermeasure: four-part handoff with starting sizes for the brief; authorized access to required originals with explicit inspection coverage and access limits; `NEEDS_CONTEXT` status.
 - Check: Kind: inject. prose.
 
 ### Data and analysis

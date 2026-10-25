@@ -1,13 +1,12 @@
 # Korean Writing Guide
 
-Use this guide with the [Writing Guide](writing.md) when writing or reviewing Korean text for people: documents, UI text, CLI output, notifications, handoffs, and commit and PR descriptions. The Writing Guide covers the reader, the preservation list, plain style, corrections and the completion check; this guide adds what is specific to Korean. Preserve code identifiers and machine-readable formats. The instructions are in English; Korean wording examples remain in Korean. The two grades in the Writing Guide apply: a reply that stays in the conversation keeps the endings, the pattern list and Describe actions and is read once before sending, with no English draft and no preservation list; Korean that leaves the conversation follows the whole writing process below, and only it gets the English draft of step 2.
+Use this guide with the [Writing Guide](writing.md) when writing or reviewing Korean text for people: documents, UI text, CLI output, notifications, handoffs, and commit and PR descriptions. The Writing Guide covers the reader, the preservation list, plain style, corrections and the completion check; this guide adds what is specific to Korean. Preserve code identifiers and machine-readable formats. The instructions are in English; Korean wording examples remain in Korean. The two grades in the Writing Guide apply: a reply that stays in the conversation keeps the endings, the pattern list and Describe actions and is read once before sending, with no draft and no preservation list; Korean that leaves the conversation follows the whole writing process below.
 
 ## Writing process
 
 1. **Decide the reader and list what must be preserved,** as in the Writing Guide.
-2. **Write an actual English draft** of the actions and outcomes the reader needs, not a literal rendering of Korean structure or a list of facts. For a partial edit, draft only the changed passage and affected content.
-3. **Rewrite the meaning in natural Korean.** Do not copy English subjects and word order or translate word by word.
-4. **Review three times, each for one purpose:** facts against the preservation list and source (for implementation claims, also the code and check results); the Korean read on its own, for word order, translation artifacts, repetition and unclear references; and the overall order, duplication, terms and links. This is not three full rewrites. Style scores, comma counts and sentence lengths are not acceptance criteria.
+2. **Draft in natural Korean, directly or through an intermediate language,** according to the reader's purpose and source material. Follow explicit method requirements and preserve protected source expressions. If using an intermediate draft, reconstruct its meaning without copying its word order. For a partial edit, draft only the changed passage and affected content.
+3. **Review three times, each for one purpose:** facts against the preservation list and source (for implementation claims, also the code and check results); the Korean read on its own, for word order, translation artifacts, repetition and unclear references; and the overall order, duplication, terms and links. This is not three full rewrites. Style scores, comma counts and sentence lengths are not acceptance criteria.
 
 Prevents: F14, F33.
 
@@ -31,7 +30,7 @@ Make one claim per sentence and let the next develop it.
 
 **Remove translation artifacts and stock phrases.** Avoid repeated `~에 있어서`, `가지고 있다`, double passives and abstract nouns. Replace `혁신적`, `주목할 만하다` or `시사하는 바가 크다` with verified results. Do not mechanically add `첫째`, `또한`, `나아가` or `A가 아니라 B`. Expand slash- or arrow-separated conditions into sentences.
 
-Before delivery, read the Korean on its own, without the English draft.
+Before delivery, read the Korean on its own, without any intermediate draft.
 
 Prevents: F14, F31.
 

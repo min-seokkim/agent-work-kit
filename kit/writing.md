@@ -22,7 +22,7 @@ Prevents: F11, F15, F29, F30, F34.
 
 ## Write plainly
 
-State the conclusion first, then the evidence. Name who does what and what results. Explain or replace terms the reader does not know. Keep tracking codes (task IDs, commit IDs, decision-record numbers) in records for agents and out of text people read; readers cannot decode them.
+Choose the order that serves the reader's task. For a decision or action, lead with the needed answer and supporting evidence. Preserve a requested or adopted narrative, discovery sequence or open question where it performs the text's intended work. Name who does what and what results. Explain or replace terms the reader does not know. Keep tracking codes (task IDs, commit IDs, decision-record numbers) in records for agents and out of text people read; readers cannot decode them.
 
 Readers recognize these patterns as generated text, so remove them: contrasts against a claim nobody made ("not X but Y"), lead-ins ("here's"), closing lines that repeat the paragraph, slogans and promotional headlines, sales and consulting words, labels that repeat an entry's title, decorative bold, em dashes, and lists of what a project does not do. Keep dates out of current guidance and file names; they belong to historical records.
 

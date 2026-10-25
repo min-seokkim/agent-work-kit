@@ -36,6 +36,8 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Added
 
+- Writing guidance lets saved Korean text use direct Korean or an intermediate language according to the task and sources, while preserving explicit method requirements and the existing reviews. Organization follows the reader's task, including requested or adopted narrative and open questions. Handoff size guidance applies to the brief and cannot replace required originals with summaries; source access and uninspected coverage must remain explicit.
+
 - Unexpected exceptions caught by `hooks.run` add optional schema 1 context for the process, loaded modules and traceback identifiers to the existing local error row. Bounded collection excludes input, argv, environment, source and locals, while preserving decisions, reason trimming, legacy rows and report counts. Paths can identify users/projects; sanitize before sharing. Startup/import failures remain outside this handler.
 - `session` optionally uses claude-agent-sdk==0.2.174 with one retained ClaudeSDKClient per owned conversation. Human controls and the agent CLI share native-context assignments, input UUID echoes, origin-aware results and live tool/question decisions. Creation keeps Claude's default approval mode separate from Codex sandbox choices. Exact-ID resume preserves uncertain work and refuses old callback responses; missing native result evidence cannot authorize replay. Managed extensions 1/2 upgrade to3 with nullable native identity and separate Claude input/echo/result fields; core channel1, messages and cursors remain unchanged. Codex-only use needs no SDK. CI checks the optional package/API and bundled executable on Windows/Linux without authentication or model calls.
 

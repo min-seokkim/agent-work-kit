@@ -80,11 +80,11 @@ Use the four sections of the [task handoff](templates/task.md) in this order: go
 
 | Item | Starting limit |
 |---|---|
-| Exploration handoff | 2KB, including evidence |
+| Exploration handoff | 2KB, including source references |
 | Implementation or judgment handoff | 5KB |
 | Result | 30 lines; put larger tables or reproduction material in a temporary file of at most 8KB and return its path |
 
-Do not send the entire repository, raw logs, completed exploration results or the full conversation. Exclude credentials, environment variables and sensitive information. Narrow large inputs with searches and targeted reads.
+Keep assignment instructions concise. The size guidance limits the brief, not the original material required for the task. Supply authorized source locations or supported attachments and state the coverage the receiver needs to inspect. Do not silently replace required originals with a summary, including when the user requests full-source reading. Keep unrelated material, credentials and environment variables out of the handoff; share sensitive material only within the authorized scope. Report inaccessible or uninspected coverage explicitly.
 
 Start the result with one of the following statuses. Then list files examined, checks run and conclusions. Separate anything that remains unverified.
 

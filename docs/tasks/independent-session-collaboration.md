@@ -129,6 +129,14 @@ One supported proxy attempt for a metadata-only check exited 1 with OS error 100
 
 M-099 preparation, returned in R-058, found that full doctor collection exceeds the selected-endpoint scope. The narrower daemon-version candidate can observe endpoint health but cannot identify the selected conversation; its inspected backend path has conditional PID cleanup and helper-process side effects. The source-only report is `.awkit/handoffs/collaboration-obligations/executor/provider-diagnostic-preparation/report.md`; public revision/version agreement does not independently certify installed-binary provenance. No live diagnostic ran, the prior proxy failure remains unresolved, and a supported next observation remains a research decision.
 
+### M-184 native print capability observation
+
+After W0 at `f5363a3`, M-203 transferred the first bounded M-184 observation to the supplemental worker while preserving the former independent actor's identity, conversation and worktree. The [unit-4 record](session-orchestration.md#unit-4-bounded-capability-allocation) owns the native observations, retained recorder failures, cleanup and scope.
+
+Two already-live SDK-staged native Claude print recipients were distinguishable through their self-reported native listing references. The selected recipient received the full original request and returned its condition-aware answer after a native idle observation, without a target driver query, steer or owner content relay. A different participant's unrelated message carrying the same request reference stayed separate. This establishes that bounded Windows print surface, without completing an interactive-terminal/IDE attachment or the human/agent picker contract.
+
+The observed incoming fields carried a claimed pipe address, name and body, with no verified PID or conversation UUID. Short references changed on exact-UUID resume. One supported owner-address-only read succeeded through a narrowly authorized native callback in a later generation, without reading its separate token or changing default permissions. It cannot retroactively verify an earlier incoming sender. Planning accepts the capability observation and leaves trustworthy current-generation recipient enrollment/address binding as the next unresolved prerequisite. Automatic attribution, durable selection and broader UI work remain unfinished; no further native probe or W1 work is assigned by this record.
+
 ## Conditional extensions
 
 The expanded third-party comparison below informs the provider reuse plan. It combines primary documentation with selected source and test inspection; no third-party tool was installed or executed. Pinned sources identify the inspected revisions. Upstream test code and reported experiments do not establish operation in this environment. Detailed local evidence is under `.awkit/handoffs/collaboration-obligations/research-delivery/` and `research-planning/`.

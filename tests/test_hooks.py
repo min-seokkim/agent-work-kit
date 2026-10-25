@@ -5,13 +5,16 @@ one. The runner's failure paths (a broken input, a command that runs too long, n
 call and say so in the log, because a hook that fires wrongly costs more trust than a rule that misses.
 """
 
+import io
 import json
+import os
 import shutil
 import subprocess
 import sys
 import tempfile
 import time
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
 from unittest import mock
 
@@ -264,6 +267,218 @@ class FailurePaths(Project):
                                               'command = ["no-such-program-awkit"]\n', encoding="utf-8")
         self.assertIsNone(self.event("Stop", stop_hook_active=False))
         self.assertIn("could not run", self.log()[0]["reason"])
+
+
+class UnexpectedErrorContext(Project):
+    def unexpected(self, **fields):
+        payload = {"hook_event_name": "Stop", "session_id": self.session,
+                   "cwd": str(self.root), **fields}
+        with mock.patch.object(hooks, "_run", side_effect=ModuleNotFoundError("invented missing module")):
+            return hooks.run(json.dumps(payload))
+
+    def test_process_context_is_useful_without_payload_argv_environment_or_locals(self):
+        sentinels = ("PAYLOAD_SECRET", "ENV_SECRET", "ARGV_SECRET", "LOCAL_SECRET")
+
+        def broken(*args):
+            local_value = sentinels[3]
+            self.assertEqual(local_value, "LOCAL_SECRET")
+            raise ModuleNotFoundError("invented missing module")
+
+        payload = {"hook_event_name": "Stop", "session_id": self.session, "cwd": str(self.root),
+                   "prompt": sentinels[0], "tool_input": {"secret": sentinels[0]},
+                   "client": "claimed-client", "permissions": "claimed-permission"}
+        stdout = io.StringIO()
+        with (mock.patch.object(hooks, "_run", side_effect=broken),
+              mock.patch.dict(os.environ, {"AWKIT_TEST_SECRET": sentinels[1]}),
+              mock.patch.object(sys, "argv", [sentinels[2]]), redirect_stdout(stdout)):
+            output = hooks.run(json.dumps(payload))
+        self.assertEqual((output, stdout.getvalue()), ("", ""))
+        [entry] = self.log()
+        self.assertEqual(set(entry), {"time", "session", "event", "rule", "decision", "reason", "context"})
+        self.assertEqual((entry["rule"], entry["decision"]), (None, "error"))
+        self.assertEqual(entry["reason"], repr(ModuleNotFoundError("invented missing module")))
+        context = entry["context"]
+        self.assertEqual(set(context), {"schema", "executable", "python_version", "cwd", "awkit_file",
+                                        "hooks_file", "exception_type", "frames"})
+        self.assertEqual(context["schema"], 1)
+        self.assertEqual(context["executable"], sys.executable[:512])
+        self.assertEqual(context["python_version"], sys.version[:256])
+        self.assertEqual(context["cwd"], os.getcwd()[:512])
+        self.assertNotEqual(context["cwd"], payload["cwd"])
+        self.assertEqual(context["hooks_file"], hooks.__file__[:512])
+        self.assertEqual(context["awkit_file"], sys.modules["awkit"].__file__[:512])
+        self.assertEqual(context["exception_type"], "builtins.ModuleNotFoundError")
+        self.assertTrue(any(frame["function"] == "run" and frame["line"] > 0
+                            for frame in context["frames"]))
+        for value in (*sentinels, "claimed-client", "claimed-permission", payload["cwd"]):
+            self.assertNotIn(value, json.dumps(context))
+
+    def test_nonstring_exception_metadata_is_not_stringified(self):
+        conversions = []
+
+        class SensitiveMetadata:
+            def __str__(self):
+                conversions.append("str")
+                return "DIAGNOSTIC_SECRET"
+
+            def __repr__(self):
+                conversions.append("repr")
+                return "DIAGNOSTIC_SECRET"
+
+        error_type = type("MetadataError", (RuntimeError,), {"__module__": SensitiveMetadata()})
+        with mock.patch.object(hooks, "_run", side_effect=error_type("invented")):
+            self.assertEqual(hooks.run('{"session_id":"s1"}', self.root), "")
+        self.assertEqual(conversions, [])
+        context = self.log()[0]["context"]
+        self.assertIsNone(context["exception_type"])
+        self.assertNotIn("DIAGNOSTIC_SECRET", json.dumps(context))
+        self.assertTrue(context["frames"])
+
+    def test_unavailable_observations_do_not_replace_error_or_frames(self):
+        with (mock.patch.object(hooks.os, "getcwd", side_effect=OSError("unavailable")),
+              mock.patch.object(hooks, "find_root", return_value=self.root),
+              mock.patch.object(sys, "executable", None), mock.patch.object(sys, "version", 42),
+              mock.patch.object(sys.modules["awkit"], "__file__", None),
+              mock.patch.object(hooks, "__file__", None),
+              mock.patch.object(hooks, "_run", side_effect=ModuleNotFoundError("invented"))):
+            # Hold the selected root fixed: isolate collection from existing root resolution.
+            self.assertEqual(hooks.run('{"session_id":"s1","hook_event_name":"Stop"}', self.root), "")
+        [entry] = self.log()
+        for key in ("cwd", "executable", "python_version", "awkit_file", "hooks_file"):
+            self.assertIsNone(entry["context"][key])
+        self.assertEqual(entry["context"]["exception_type"], "builtins.ModuleNotFoundError")
+        self.assertTrue(entry["context"]["frames"])
+
+    def test_collector_failure_retains_one_legacy_reason_and_unavailable_context(self):
+        with mock.patch.object(hooks, "_collect_error_context", side_effect=RuntimeError("collector failed")):
+            self.assertEqual(self.unexpected(), "")
+        [entry] = self.log()
+        self.assertEqual(entry["reason"], repr(ModuleNotFoundError("invented missing module")))
+        self.assertEqual(entry["context"]["schema"], 1)
+        self.assertEqual(entry["context"]["frames"], [])
+        self.assertTrue(all(value is None for key, value in entry["context"].items()
+                            if key not in ("schema", "frames")))
+
+    def test_strings_and_deep_awkit_tracebacks_are_bounded_without_source_reading(self):
+        name = "frame_" + "f" * 200
+        filename = "/synthetic/" + "x" * 1024 + ".py"
+        namespace = {"__name__": "awkit.synthetic_context_test",
+                     "Failure": type("Error" + "e" * 200, (ModuleNotFoundError,),
+                                     {"__module__": "awkit.synthetic_context_test"})}
+        code = (f"def {name}(depth):\n"
+                f"    if depth: return {name}(depth - 1)\n"
+                "    raise Failure('invented')\n")
+        exec(compile(code, filename, "exec"), namespace)
+
+        def broken(*args):
+            namespace[name](80)
+
+        with (mock.patch.object(hooks, "_run", side_effect=broken),
+              mock.patch.object(sys, "executable", "e" * 1024),
+              mock.patch.object(sys, "version", "v" * 1024),
+              mock.patch.object(hooks, "__file__", "h" * 1024),
+              mock.patch.object(sys.modules["awkit"], "__file__", "a" * 1024)):
+            self.assertEqual(hooks.run('{"session_id":"s1"}', self.root), "")
+        context = self.log()[0]["context"]
+        for key in ("executable", "awkit_file", "hooks_file"):
+            self.assertEqual(len(context[key]), 512)
+        self.assertEqual(len(context["python_version"]), 256)
+        self.assertEqual(len(context["exception_type"]), 128)
+        self.assertEqual(len(context["frames"]), 8)
+        for frame in context["frames"]:
+            self.assertEqual(set(frame), {"file", "function", "line"})
+            self.assertEqual((len(frame["file"]), len(frame["function"])), (512, 128))
+            self.assertIs(type(frame["line"]), int)
+            self.assertGreater(frame["line"], 0)
+        self.assertLess(len(json.dumps(context)), 10_000)
+
+    def test_traceback_scan_stops_even_with_a_custom_endless_chain(self):
+        class EndlessTrace:
+            reads = 0
+            tb_frame = mock.Mock(f_globals={"__name__": "awkit.synthetic_context_test"})
+            tb_frame.f_code.co_filename = "synthetic.py"
+            tb_frame.f_code.co_name = "synthetic"
+
+            @property
+            def tb_lineno(self):
+                return self.reads + 1
+
+            @property
+            def tb_next(self):
+                self.reads += 1
+                return self
+
+        trace = EndlessTrace()
+
+        class CustomTraceError(RuntimeError):
+            def __getattribute__(self, name):
+                return trace if name == "__traceback__" else super().__getattribute__(name)
+
+        with mock.patch.object(hooks, "_run", side_effect=CustomTraceError("invented")):
+            self.assertEqual(hooks.run('{"session_id":"s1"}', self.root), "")
+        self.assertEqual(trace.reads, 64)
+        self.assertEqual([frame["line"] for frame in self.log()[0]["context"]["frames"]], list(range(57, 65)))
+        for invalid in (0, -1, True, "LINE_SECRET", 2**63):
+            with self.subTest(line=invalid):
+                trace = mock.Mock(tb_frame=EndlessTrace.tb_frame, tb_lineno=invalid, tb_next=None)
+                with mock.patch.object(hooks, "_run", side_effect=CustomTraceError("invented")):
+                    self.assertEqual(hooks.run('{"session_id":"s1"}', self.root), "")
+                context = self.log()[-1]["context"]
+                self.assertEqual(context["frames"], [])
+                self.assertNotIn("LINE_SECRET", json.dumps(context))
+
+    def test_unavailable_traceback_keeps_other_observations(self):
+        class UntraceableError(RuntimeError):
+            def __getattribute__(self, name):
+                if name == "__traceback__":
+                    raise OSError("trace unavailable")
+                return super().__getattribute__(name)
+
+        with mock.patch.object(hooks, "_run", side_effect=UntraceableError("invented")):
+            self.assertEqual(hooks.run('{"session_id":"s1"}', self.root), "")
+        context = self.log()[0]["context"]
+        self.assertEqual(context["frames"], [])
+        self.assertEqual(context["executable"], sys.executable[:512])
+        self.assertTrue(context["exception_type"])
+
+    def test_unwritable_log_and_logger_failure_still_allow_without_stdout(self):
+        (self.root / ".awkit").write_text("owned fixture file", encoding="utf-8")
+        stdout = io.StringIO()
+        with redirect_stdout(stdout):
+            self.assertEqual(self.unexpected(), "")
+        self.assertEqual(stdout.getvalue(), "")
+        self.assertEqual((self.root / ".awkit").read_text(encoding="utf-8"), "owned fixture file")
+        with (mock.patch.object(hooks, "log", side_effect=RuntimeError("logger failed")) as logger,
+              redirect_stdout(stdout)):
+            self.assertEqual(self.unexpected(), "")
+        self.assertEqual(logger.call_count, 1)
+        self.assertEqual(stdout.getvalue(), "")
+
+    def test_legacy_and_augmented_rows_have_identical_report_semantics(self):
+        hooks.log(self.root, {"session": self.session, "event": "Stop", "rule": None,
+                              "decision": "error", "reason": "legacy"})
+        self.unexpected()
+        self.tool("WebSearch", {"query": "hook contract"})
+        before = hooks.report(self.root)
+        [session] = before["sessions"]
+        self.assertEqual((session["errors"], session["fired"], session["injected"]), (2, 1, 1))
+        entries = self.log()
+        self.assertNotIn("context", entries[0])
+        self.assertIn("context", entries[1])
+        self.assertNotIn("context", entries[2])
+        entries[1].pop("context")
+        (self.root / hooks.LOG_FILE).write_text(
+            "".join(json.dumps(entry) + "\n" for entry in entries), encoding="utf-8")
+        self.assertEqual(hooks.report(self.root), before)
+
+    def test_handled_rule_and_input_errors_keep_their_existing_shapes(self):
+        self.assertEqual(hooks.run("{broken", self.root), "")
+        (self.root / "rules.toml").write_text(
+            'schema = 1\n[[rules]]\nname = "gone"\nkind = "verify"\n'
+            'command = ["no-such-program-awkit"]\n', encoding="utf-8")
+        self.assertIsNone(self.event("Stop"))
+        self.assertEqual(len(self.log()), 2)
+        self.assertTrue(all("context" not in entry for entry in self.log()))
 
 
 class NoRules(Project):

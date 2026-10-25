@@ -54,6 +54,70 @@ The later proposal trial includes a reported Stop-hook `ImportError` for `awkit.
 
 Next, capture a sanitized failing automatic event with the client/version, interpreter and loaded module paths, working directory, execution permissions and traceback. Compare the same invocation in the automatic hook and direct shell, preserving settings and package provenance. Do not reinstall merely to hide the failing state. A correction is accepted only when the original automatic path is reproduced and passes after the change, with unsupported clients or permission contexts still explicit. If reproduction remains unavailable, retain the uncertainty and the minimal next probe instead of claiming restored hooks from a direct import.
 
+### Unexpected hook error context (M-141)
+
+Status: implementation resumed by the owner's explicit commit-and-main-merge request after earlier deferral under M-142/M-145. Base: `116f2c3`; original work from `c3dd1bf` is preserved on local branch `preserved/pre-main-progress` at `29a06d6`. Scope: `hooks.run`'s existing unexpected-exception
+row, relevant hook tests, the hook-log reference, CHANGELOG and this section.
+The generalized planning changes are already integrated in `116f2c3`; this unit preserves that history.
+No real hook settings, native client or historical failure is changed or forced.
+
+R-033 retained a different `awkit.process` ModuleNotFoundError with only summary
+fields. Research R-035 inspected the boundary; neither establishes its stack,
+cause or automatic origin. The older reported `awkit.checks` import failure is
+also unresolved. Read-only metadata and contract review are not a reproduction.
+
+The schema and limits below are fixed before editing implementation. The new
+optional row key is `context`; absence remains valid for legacy rows. On newly
+caught unexpected exceptions it defaults to this schema-1 object:
+
+- `schema`: integer 1.
+- `executable`, `cwd`, `awkit_file`, `hooks_file`: current process executable/cwd
+  and already loaded module origins, each a string of at most 512 characters.
+- `python_version`: current `sys.version`, at most 256 characters.
+- `exception_type`: class module/qualified-name identifier, at most 128 characters.
+- `frames`: at most eight awkit traceback identifiers, each with `file` (512),
+  `function` (128) and positive signed-32-bit integer `line`. Inspect at most 64 traceback links,
+  keeping the last eight matching awkit module frames within that inspected range.
+
+Unavailable scalar fields are null and unavailable frames are an empty list.
+Only string values are retained; no object repr is used for diagnostic values.
+Read already loaded state without importing the missing module, scanning packages
+or resolving provenance. Exclude selected roots and payload-derived client or
+permission labels, payloads/prompts/tool input, argv, environment and sys.path,
+traceback source lines and locals. Process facts do not authenticate the sender,
+automatic origin, installed commit integrity or a child process's environment.
+Paths can identify users/projects: keep logs local and sanitize before sharing.
+The legacy reason keeps its existing 160-character trimming and is not newly
+certified free of sensitive text.
+
+Initialize unavailable context before collection. A collector failure leaves that
+context and the original legacy error reason available for the existing best-effort
+logger. Collection/cwd/log-write failures must not print diagnostics, recurse into
+logging, replace the original error or block the agent. Expected rule errors,
+malformed input and ordinary firing rows keep their existing shapes; output,
+decisions and report counts remain unchanged. Interpreter/executable startup,
+imports before `hooks.run` and its initial cwd lookup remain outside this handler.
+
+Check the actual `_run` exception boundary in isolated fixtures with an invented
+ModuleNotFoundError. Verify one augmented row and empty output, process facts
+versus fake payload claims, excluded secret sentinels, unavailable fields,
+frame/string bounds, collector failures, unwritable logging and report counts
+with legacy rows. Retain expected-rule-error and ordinary-firing shapes. Then run
+existing hook compatibility/kit checks and the cumulative required checks before
+normal dev delivery, Windows/Linux CI and exact installation. Offline capture
+can demonstrate debugging context; it cannot repair either historical failure.
+
+The first focused snapshot `29a3f4ed742ebf9cd98c6d29ab40ccf8198608d2`, run
+`.awkit/reviews/review-zhrt5j3_`, passed lint and thirteen tests. One collection
+fixture failed: globally mocking cwd also broke existing Windows root resolution
+before the injected `_run` boundary. The corrected fixture holds its known root
+fixed while failing context observations. No production root-resolution behavior
+was changed; the initial run remains retained. The reference's hook introduction
+and error/log prose are shortened with existing conditions preserved to fit the
+additive schema contract within the current word limit.
+
+The resumed unit keeps the original collection contract. Its test helper no longer shadows unittest.TestCase.fail, so failed assertions retain their ordinary diagnostics. Self-review also found that an exception class can have non-string module metadata; the collector now leaves that identifier unavailable without invoking its string representation. A sentinel regression checks this exclusion. Implementation self-review distinguishes process observations from payload claims and preserves legacy output/report behavior. Final snapshot, checks, dev/main delivery and installation receipts are retained in `.awkit/handoffs/commit-and-main-merge/delivery.json`. Historical automatic-hook failures remain unresolved; synthetic capture establishes only the documented handler boundary.
+
 ## Selecting the first checked revision
 
 Status: implemented for M-129/M-133; cumulative delivery is recorded in `.awkit/handoffs/first-check-revision/executor/delivery.json`. Base: `3c771e8`. Scope: connection step 3, the reference's scan paragraph, the checking guide's dependency pointer, this record and the unreleased CHANGELOG entry. CLI/source behavior and commit policy are unchanged.

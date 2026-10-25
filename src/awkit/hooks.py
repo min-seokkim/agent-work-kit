@@ -533,12 +533,60 @@ def log(root, entry):
         pass
 
 
+# Bounded observations only; never read hook input, environment, argv or source text.
+_ERROR_CONTEXT_FRAMES = 8
+_ERROR_CONTEXT_SCAN = 64
+
+
+def _context_text(value, limit):
+    return value[:limit] if type(value) is str else None
+
+
+def _exception_identifier(exc):
+    kind = type(exc)
+    module, name = kind.__module__, kind.__qualname__
+    return f"{module}.{name}" if type(module) is str and type(name) is str else None
+
+
+def _collect_error_context(exc, context):
+    observations = (
+        ("executable", lambda: sys.executable, 512),
+        ("python_version", lambda: sys.version, 256),
+        ("cwd", os.getcwd, 512),
+        ("awkit_file", lambda: vars(sys.modules.get("awkit")).get("__file__"), 512),
+        ("hooks_file", lambda: vars(sys.modules.get(__name__)).get("__file__"), 512),
+        ("exception_type", lambda: _exception_identifier(exc), 128),
+    )
+    for key, observe, limit in observations:
+        try:
+            context[key] = _context_text(observe(), limit)
+        except Exception:  # noqa: BLE001 - unavailable context must not replace the original error
+            pass
+    frames = []
+    try:
+        trace = exc.__traceback__
+        for _ in range(_ERROR_CONTEXT_SCAN):
+            if trace is None:
+                break
+            frame = trace.tb_frame
+            module = frame.f_globals.get("__name__")
+            line = trace.tb_lineno
+            if (type(module) is str and (module == "awkit" or module.startswith("awkit."))
+                    and type(line) is int and 0 < line <= 2**31 - 1):
+                frames.append({"file": _context_text(frame.f_code.co_filename, 512),
+                               "function": _context_text(frame.f_code.co_name, 128), "line": line})
+            trace = trace.tb_next
+        context["frames"] = frames[-_ERROR_CONTEXT_FRAMES:]
+    except Exception:  # noqa: BLE001
+        pass
+
+
 # Entry points
 
 
 def run(stdin_text, root=None, skip=(), kit_rules=False, event=None):
-    """Handle one hook event; returns the text to print on stdout (empty when nothing fired). Never raises:
-    every failure allows the call and is logged once. Rules named in `skip` do not run. With `kit_rules`,
+    """Handle one hook event; returns decision text (empty when nothing fired). Caught handler failures
+    allow the call and are logged once. Startup/imports and the initial cwd lookup are outside this handler. Rules named in `skip` do not run. With `kit_rules`,
     a project without rules.toml gets the kit's rules; without it, such a project gets none. `event` is the
     event the handler was registered for, used when the input does not name one."""
     start = Path(root) if root else Path.cwd()
@@ -560,9 +608,16 @@ def run(stdin_text, root=None, skip=(), kit_rules=False, event=None):
             payload = {**payload, "hook_event_name": event}
         return _run(payload, base, skip, kit_rules)
     except Exception as exc:  # noqa: BLE001 - a hook failure must never block the agent
+        context = {"schema": 1, "executable": None, "python_version": None, "cwd": None,
+                   "awkit_file": None, "hooks_file": None, "exception_type": None, "frames": []}
+        try:
+            _collect_error_context(exc, context)
+        except Exception:  # noqa: BLE001 - preserve the original error even if collection breaks
+            pass
         try:
             log(find_root(start), {"session": payload.get("session_id"), "event": payload.get("hook_event_name"),
-                                   "rule": None, "decision": "error", "reason": _trim(repr(exc), 160)})
+                                   "rule": None, "decision": "error", "reason": _trim(repr(exc), 160),
+                                   "context": context})
         except Exception:  # noqa: BLE001
             pass
         return ""

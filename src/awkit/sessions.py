@@ -13,10 +13,12 @@ import uuid
 from datetime import UTC, datetime
 from pathlib import Path
 
+from .channel import REQUESTS
 from .channel_status import observe
 from .codex_session import CodexSession, ProviderError
 from .session_history import HistoryViews
-from .session_store import SessionStore, encoded, now
+from .session_recovery import resume
+from .session_store import SessionStore, now
 
 PREVENTS = {"awkit session": ("F24", "F29")}
 DECISIONS = {"item/commandExecution/requestApproval", "item/fileChange/requestApproval"}
@@ -47,6 +49,7 @@ class SessionController:
         self._mutex = threading.RLock()
         self._creation = threading.Lock()
         self._closed = False
+        self._recovery_attempted = set()
         self._stop = threading.Event()
         self.history = HistoryViews(self.project, self.directory)
         for path in sorted((self.directory / "channels").glob("*.sqlite3")):
@@ -59,6 +62,7 @@ class SessionController:
                     if not self._stores[data["id"]].path.samefile(path):
                         raise ValueError("Conflicting copied channel identity; no delivery is permitted.")
                 else:
+                    store.upgrade()
                     self._stores[data["id"]] = store
             except (OSError, ValueError, sqlite3.Error) as exc:
                 self.errors.append(f"{path.name}: {exc}")
@@ -155,7 +159,7 @@ class SessionController:
     def send(self, ident, *, key, body, kind="question", entry="agent"):
         store = self._store(ident)
         if store.metadata()["generation"] != self.generation:
-            raise ValueError("This conversation belongs to an earlier controller. Resuming it after restart is not supported yet.")
+            raise ValueError("This conversation is reconnecting. Its saved history remains readable.")
         if (self.provider is None or not self.provider.alive or not store.metadata()["native_id"]
                 or store.metadata()["state"] == "unknown"):
             raise ValueError("Provider connection or conversation state is unavailable; the assignment has not been submitted.")
@@ -165,6 +169,29 @@ class SessionController:
                     raise ValueError("This client key already names a message for a different recipient.")
             row = store.post(key, body, kind=kind, entry=entry)
         return dict(session=store.metadata()["id"], key=key, message=row, state="stored")
+
+    def resume(self, ident):
+        store = self._store(ident)
+        with self._creation:
+            self.provider_error = None
+            if self.provider is not None and not self.provider.alive:
+                self.provider.close()
+                self.provider = None
+                self.provider_error = None
+                # Native request IDs are scoped to this connection, not the HTTP process.
+                self.generation = str(uuid.uuid4())
+                self._recovery_attempted.clear()
+            if store.metadata()["generation"] == self.generation and store.metadata()["state"] != "unknown":
+                return store.snapshot()
+            self._recovery_attempted.add(store.metadata()["id"])
+            try:
+                resume(self, store)
+            except (OSError, ValueError, KeyError, TypeError, sqlite3.Error, ProviderError) as exc:
+                store.update(state="unknown", observed_at=now(), source="resume unavailable; history retained", error=str(exc))
+            return store.snapshot()
+
+    def cancel(self, ident, request_id):
+        return self._store(ident).cancel(request_id)
 
     def register_history(self, **args):
         path = self.project / Path(args.get("channel", ""))
@@ -185,10 +212,14 @@ class SessionController:
             for store in stores:
                 try:
                     meta = store.metadata()
+                    if meta["generation"] != self.generation and meta["id"] not in self._recovery_attempted:
+                        self.resume(meta["id"])
+                        meta = store.metadata()
                     if meta["generation"] != self.generation or meta["state"] not in ("idle", "waiting for idle") or not meta["native_id"]:
                         continue
                     snapshot = store.snapshot()
                     attempted = {row["request_id"] for row in snapshot["attempts"]}
+                    attempted.update(row["request_id"] for row in snapshot["cancellations"])
                     if not any(ident not in attempted for ident in snapshot["unanswered"]):
                         continue
                     provider = self.provider
@@ -208,7 +239,8 @@ class SessionController:
                     if claim is None:
                         continue
                     result = provider.call("turn/start", {
-                        "threadId": claim["native_id"], "input": [{"type": "text", "text": claim["request"]["body"]}]},
+                        "threadId": claim["native_id"], "clientUserMessageId": claim["id"],
+                        "input": [{"type": "text", "text": claim["request"]["body"]}]},
                         on_request=lambda rpc_id, target=store: target.rpc_intent(self.generation, rpc_id))
                     turn_id = result["turn"]["id"]
                     store.bind_turn(self.generation, turn_id)
@@ -232,9 +264,8 @@ class SessionController:
                     store.uncertain(self.generation, params.get("reason", "Provider connection lost"))
             return
         if method == "serverRequest/resolved":
-            ident = f"{self.generation}:{encoded(params.get('requestId'))}"
             for store in stores:
-                store.decision_state(ident, "resolved")
+                store.resolve_decisions(self.generation, params.get("requestId"), params.get("threadId"))
             return
         native_id = params.get("threadId", params.get("thread", {}).get("id"))
         store = next((value for value in stores if value.metadata().get("native_id") == native_id
@@ -294,6 +325,7 @@ class SessionController:
         active = store.active(self.generation)
         if active is None or not active["turn_id"] or self.provider is None or not self.provider.alive:
             raise ValueError("There is no observed live turn to interrupt on this connection.")
+        store.interruption(self.generation, active["turn_id"])
         self.provider.call("turn/interrupt", {"threadId": active["native_id"], "turnId": active["turn_id"]})
         return dict(state="interrupt requested", task_result="unverified")
 
@@ -306,11 +338,32 @@ class SessionController:
             meta = snapshot["session"]
             connected = bool(self.provider and self.provider.alive and meta["generation"] == self.generation)
             age = (datetime.now(UTC) - datetime.fromisoformat(meta["observed_at"])).total_seconds()
-            can_send = connected and bool(meta["native_id"]) and not snapshot["closed"] and meta["state"] != "unknown"
+            can_send = (connected and bool(meta["native_id"]) and not snapshot["closed"]
+                        and meta["state"] in ("idle", "waiting for idle", "running", "accepted", "decision needed", "submitting"))
             reason = ("This channel is closed." if snapshot["closed"] else
-                      "Conversation state is uncertain; automatic replay/recovery is unavailable." if connected else
-                      "Connection unavailable. Resuming a saved conversation after restart is not supported yet.")
+                      "Conversation state is uncertain. Inspect unfinished work; reconnecting never resends uncertain work." if connected else
+                      "Reconnecting the saved conversation, or connection unavailable. History remains readable.")
+            if not can_send and meta.get("error"):
+                reason += " " + str(meta["error"])
+            for decision in snapshot["decisions"]:
+                decision["can_answer"] = connected and decision["generation"] == self.generation and decision["state"] == "pending"
+                decision["request_id"] = next((row["request_id"] for row in snapshot["attempts"]
+                                               if row["turn_id"] == decision["params"].get("turnId")), None)
+            dispositions = []
+            for request_id in (row["id"] for row in snapshot["messages"] if row["kind"] in REQUESTS):
+                attempt = next((row for row in snapshot["attempts"] if row["request_id"] == request_id), None)
+                cancellation = next((row for row in snapshot["cancellations"] if row["request_id"] == request_id), None)
+                label = ("cancelled before dispatch" if cancellation and cancellation["disposition"] == "before-dispatch" else
+                         "queued; no dispatch attempt" if attempt is None else
+                         "delivery unresolved; not retried" if attempt["state"] in ("unresolved", "uncertain") else
+                         "interruption requested; outcome pending" if attempt.get("interruption_requested") and attempt["state"] not in ("failed", "no-reply") else
+                         "provider " + str(attempt["outcome"]) + "; no reply. Send a new assignment if further work is needed."
+                         if attempt["state"] in ("failed", "no-reply") else
+                         "provider " + str(attempt["outcome"]) + "; reply returned" if attempt["state"] == "returned" else "provider work pending")
+                dispositions.append(dict(request_id=request_id, state=label, cancellation=cancellation,
+                                         can_cancel=attempt is None and cancellation is None))
             snapshot.update(connected=connected, can_send=can_send,
+                            dispositions=dispositions, can_resume=bool(meta["native_id"]) and not can_send,
                             execution_state=meta["state"] if connected and age < 60 else "unknown",
                             parties={"main": "Coordinator", "reviewer": meta["name"]},
                             control_reason="" if can_send else reason)
@@ -332,6 +385,19 @@ class SessionController:
                             same = False
                         if same:
                             links[relation["id"]] = view["session"]["id"]
+                names = {}
+                for relation in report["relationships"]:
+                    view = next((value for value in views if value["session"]["id"] == links.get(relation["id"])), None)
+                    if view:
+                        local = relation["local_role"]
+                        for identity, role in ((report["session"], local), (relation["counterpart"], "reviewer" if local == "main" else "main")):
+                            names.setdefault(identity, set()).add(view["parties"][role])
+                for view in views:
+                    if view["session"].get("native_id"):
+                        names.setdefault(view["session"]["native_id"], set()).add(view["session"]["name"])
+                for obligation in report["obligations"]:
+                    candidates = names.get(obligation["responsible_session"], set())
+                    obligation["display_name"] = next(iter(candidates)) if len(candidates) == 1 else None
                 declarations = dict(report=report, exit_code=exit_code, view_links=links)
             except (OSError, ValueError, sqlite3.Error) as exc:
                 declarations = dict(error=str(exc))
@@ -339,7 +405,7 @@ class SessionController:
                     provider_error=self.provider_error, diagnostics=self.errors[-10:], declarations=declarations,
                     capabilities={"managed_codex": True,
                                   "codex_executable_available": bool(shutil.which(self.command[0])),
-                                  "restart_resume": False, "claude": False, "ide_attachment": False})
+                                  "restart_resume": True, "claude": False, "ide_attachment": False})
 
     def close(self):
         self._stop.set()

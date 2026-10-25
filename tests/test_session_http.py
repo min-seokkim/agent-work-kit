@@ -138,15 +138,19 @@ class SessionHTTPTests(unittest.TestCase):
         reply = channel.post("reviewer", "main", "re", "Returned result", reply_to=first)
         registered = self.call("register", channel=str(path), main_name="Planning", reviewer_name="Implementation")
         record = self.project / "task.json"
-        record.write_text(json.dumps(dict(schema=1, session="Planning", relationships=[dict(
-            id="implementation", channel=str(path), local_role="main", counterpart="Implementation")],
+        record.write_text(json.dumps(dict(schema=1, session="planning-native", relationships=[dict(
+            id="implementation", channel=str(path), local_role="main", counterpart="implementation-native")],
             obligations=[dict(id="handle-result", source=dict(relationship="implementation", message=first),
-                              responsible_session="Planning", action="integrate returned result", state="pending",
-                              evidence=[dict(relationship="implementation", message=reply)])])), encoding="utf-8")
+                              responsible_session="planning-native", action="integrate returned result", state="pending",
+                              evidence=[dict(relationship="implementation", message=reply)]),
+                         dict(id="unknown-owner", source=dict(relationship="implementation", message=first),
+                              responsible_session="unregistered-native", action="retain the unknown owner", state="pending")])), encoding="utf-8")
         self.controller.record = record
         before = {file: file.read_bytes() for file in (record, path)}
         state = self.call("status")
         self.assertEqual(state["declarations"]["report"]["obligations"][0]["state"], "pending")
+        self.assertEqual(state["declarations"]["report"]["obligations"][0]["display_name"], "Planning")
+        self.assertIsNone(state["declarations"]["report"]["obligations"][1]["display_name"])
         self.assertEqual(state["declarations"]["view_links"]["implementation"], registered["id"])
         self.assertEqual(state["sessions"][0]["unanswered"], [])
         self.assertEqual(state["sessions"][0]["messages"][1]["body"], "Returned result")

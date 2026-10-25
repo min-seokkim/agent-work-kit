@@ -5,6 +5,7 @@ import hashlib
 import os
 import sqlite3
 import tempfile
+import threading
 import unittest
 from contextlib import closing
 from pathlib import Path
@@ -22,6 +23,33 @@ class SessionStoreTests(unittest.TestCase):
                                          responsibility="Compare invented facts", generation="generation-a",
                                          permissions={"requested": "read-only"})
         self.store.update(native_id="native-a", state="idle")
+
+    def test_cancel_and_dispatch_reservation_serialize_on_the_same_database(self):
+        request = self.store.post("cancel-race", "A single contested assignment")
+        barrier = threading.Barrier(2)
+
+        def cancel():
+            alias = SessionStore(self.store.path)
+            barrier.wait()
+            return alias.cancel(request["id"])
+
+        def claim():
+            alias = SessionStore(self.store.path)
+            barrier.wait()
+            return alias.claim("generation-a")
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+            cancelled, claimed = pool.submit(cancel), pool.submit(claim)
+            disposition, attempt = cancelled.result(), claimed.result()
+        view = self.store.snapshot()
+        if disposition["disposition"] == "before-dispatch":
+            self.assertIsNone(attempt)
+            self.assertEqual(view["attempts"], [])
+        else:
+            self.assertEqual(attempt["request"]["id"], request["id"])
+            self.assertEqual(len(view["attempts"]), 1)
+        self.assertEqual(len(view["cancellations"]), 1)
+        self.assertEqual(view["messages"], [request])
 
     def test_duplicate_client_submission_is_one_authoritative_message(self):
         def post(_):

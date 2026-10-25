@@ -196,6 +196,11 @@ def _parser():
     session_decide.add_argument("--choice", required=True, choices=("accept", "acceptForSession", "decline", "cancel"))
     session_interrupt = session_commands.add_parser("interrupt", help="request interruption of the observed native turn")
     session_interrupt.add_argument("ident")
+    session_resume = session_commands.add_parser("resume", help="retry exact-ID reconnection; never replay uncertain work")
+    session_resume.add_argument("ident")
+    session_cancel = session_commands.add_parser("cancel", help="cancel an unsent assignment or retain a later stop request")
+    session_cancel.add_argument("ident")
+    session_cancel.add_argument("--request", required=True, dest="request_id")
     session_commands.add_parser("stop", help="stop this controller and its owned provider; persisted sessions remain")
 
     pipeline = groups.add_parser("pipeline", help="extra for web projects: run delivery commands and verify the live release",
@@ -624,6 +629,10 @@ def main(argv=None):
                 payload = dict(ident=args.ident, decision_id=args.decision_id, choice=args.choice)
             elif args.action == "interrupt":
                 payload = dict(ident=args.ident)
+            elif args.action == "resume":
+                payload = dict(ident=args.ident)
+            elif args.action == "cancel":
+                payload = dict(ident=args.ident, request_id=args.request_id)
             result = request(args.project, args.action, payload)
             print(json.dumps(dict(schema=1, **result)))
             return 1 if args.action == "create" and result["session"]["state"] == "unknown" else 0

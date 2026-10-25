@@ -4,14 +4,19 @@ import json
 import os
 import sys
 import uuid
+from pathlib import Path
 
 
 def main():
     if "--version" in sys.argv:
         print("offline-session-fixture 1")
         return
-    threads = {}
+    history = Path.cwd() / ".offline-native.json"
+    threads = json.loads(history.read_text()) if history.exists() else {}
     pending = {}
+
+    def save():
+        history.write_text(json.dumps(threads))
 
     def emit(value):
         print(json.dumps(value), flush=True)
@@ -20,9 +25,13 @@ def main():
         emit(dict(method=method, params=params))
 
     def finish(thread_id, turn_id, text, status="completed"):
+        turn = next(turn for turn in threads[thread_id]["turns"] if turn["id"] == turn_id)
+        turn["items"].append(dict(id=turn_id + "-answer", type="agentMessage", phase="final_answer", text=text))
+        turn["status"] = status
+        threads[thread_id]["status"] = {"type": "idle"}
+        save()
         event("item/completed", threadId=thread_id, turnId=turn_id,
               item=dict(id=turn_id + "-answer", type="agentMessage", phase="final_answer", text=text))
-        threads[thread_id]["status"] = {"type": "idle"}
         event("turn/completed", threadId=thread_id, turn=dict(id=turn_id, status=status, items=[], error=None))
 
     for line in sys.stdin:
@@ -39,12 +48,27 @@ def main():
             continue
         elif method == "thread/start":
             thread_id = "fixture-native-" + uuid.uuid4().hex
-            thread = dict(id=thread_id, status={"type": "idle"}, memory="", count=0)
+            thread = dict(id=thread_id, status={"type": "idle"}, memory="", count=0, turns=[])
             threads[thread_id] = thread
+            save()
             emit(dict(id=ident, result=dict(thread=thread, cwd=params["cwd"], model="offline fixture",
                                            modelProvider="fixture", approvalPolicy=params["approvalPolicy"],
                                            approvalsReviewer=params["approvalsReviewer"],
-                                           sandbox={"type": params["sandbox"]})))
+                                           sandbox={"type": {"read-only": "readOnly", "workspace-write": "workspaceWrite"}[params["sandbox"]]})))
+        elif method == "thread/resume":
+            if (Path.cwd() / ".offline-resume-error").exists():
+                emit(dict(id=ident, error=dict(code=-32000, message="Active owner conflict; fixture refuses resume")))
+                continue
+            thread = threads[params["threadId"]]
+            thread["status"] = {"type": "idle"}
+            save()
+            scope = dict(sandbox={"type": "readOnly"}, approvalPolicy=params["approvalPolicy"], approvalsReviewer=params["approvalsReviewer"])
+            if (Path.cwd() / ".offline-permission-change").exists():
+                scope["approvalPolicy"] = "never"
+            emit(dict(id=ident, result=dict(thread=thread, cwd=str(Path.cwd()), model="offline fixture",
+                                           modelProvider="fixture", **scope)))
+        elif method == "thread/turns/list":
+            emit(dict(id=ident, result=dict(data=threads[params["threadId"]]["turns"], nextCursor=None)))
         elif method == "thread/read":
             emit(dict(id=ident, result=dict(thread=threads[params["threadId"]])))
         elif method == "turn/start":
@@ -56,7 +80,21 @@ def main():
             thread["count"] += 1
             thread["status"] = {"type": "active"}
             turn_id = f"{thread_id}-turn-{thread['count']}"
+            turn = dict(id=turn_id, status="inProgress", items=[dict(type="userMessage", id=turn_id + "-user",
+                        clientId=params.get("clientUserMessageId"), content=params["input"])])
+            thread["turns"].append(turn)
+            save()
             response = dict(id=ident, result=dict(turn=dict(id=turn_id, status="inProgress")))
+            if text in ("LOST_RESPONSE", "MISSING_RECORD", "AMBIGUOUS_RESPONSE"):
+                turn["status"] = "completed"
+                turn["items"].append(dict(type="agentMessage", id=turn_id + "-answer", text="Recovered: " + text))
+                if text == "AMBIGUOUS_RESPONSE":
+                    turn["items"].append(dict(turn["items"][0], id=turn_id + "-duplicate"))
+                thread["status"] = {"type": "idle"}
+                save()
+                if text == "MISSING_RECORD":
+                    emit(response)
+                os._exit(8)
             if text != "EARLY":
                 emit(response)
             event("turn/started", threadId=thread_id, turn=dict(id=turn_id, status="inProgress"))
@@ -65,6 +103,8 @@ def main():
                 emit(dict(id=71, method="item/commandExecution/requestApproval",
                           params=dict(threadId=thread_id, turnId=turn_id, itemId="command-1",
                                       command="offline fixture only", availableDecisions=["accept", "decline", "cancel"])))
+                continue
+            if text == "HOLD":
                 continue
             answer = "Remembered: " + thread["memory"] if text == "recall" else "Fixture reply: " + text
             if not thread["memory"]:

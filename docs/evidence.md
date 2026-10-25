@@ -80,3 +80,7 @@ Controller restart, approval recovery, other providers and human usability
 acceptance remain outside that observation; final technical delivery has its own
 receipt. The [planning-role incident](tasks/planning-role-drift.md) remains open for
 behavioral observation and is not a runtime guard delivered by this feature.
+
+## Managed conversation recovery
+
+The [unit-2 record](tasks/session-orchestration.md#unit-2-recovery-and-current-work-reading) separates a real same-native-ID Windows restart and persisted client correlation from deterministic offline fault tests, actual-history interface reading and human acceptance. Its retained execution package owns final snapshot/check, delivery and installation receipts. No uncertain task was replayed in the observed case; this does not establish exactly-once effects or old approval callback recovery. Existing Codex IDE ownership and other providers remain outside that observation. The [other-project collection analysis](tasks/real-data-trial.md#other-project-observed-collection-analysis) is a separate reported real-use case; the managed-session checks do not validate its data or establish causal kit benefit.

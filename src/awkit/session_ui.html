@@ -14,7 +14,8 @@ header{background:var(--paper);border-bottom:1px solid var(--line);padding:1.3re
 .brand{font-weight:750;letter-spacing:-.03em;font-size:1.45rem}.subtle,.meta{color:var(--muted);font-size:.86rem}.project{margin-left:auto;max-width:52%;overflow-wrap:anywhere}
 h1,h2,h3,p{margin-top:0}h1{font-size:1.35rem;margin-bottom:.15rem}h2{font-size:1.05rem}h3{font-size:1rem}
 .toolbar{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}.strip{max-width:1440px;margin:auto;padding:.8rem 1.2rem;display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;min-height:3.4rem}
-.strip button{font-size:.84rem;padding:.3rem .65rem}.strip .quiet{color:var(--muted);font-size:.9rem}
+#latest{position:fixed;right:1.2rem;bottom:1rem;z-index:5;box-shadow:0 3px 12px #172b3a30;background:var(--paper)}
+.strip button{font-size:.84rem;padding:.3rem .65rem}.strip .quiet{color:var(--muted);font-size:.9rem}.strip details{max-width:30rem;overflow-wrap:anywhere;font-size:.84rem}.strip summary{cursor:pointer}.strip pre{max-height:20rem;overflow:auto}
 main{max-width:1440px;margin:0 auto;padding:0 1.2rem 2rem;display:grid;grid-template-columns:290px minmax(0,1fr);gap:1.2rem;align-items:start}
 aside,.conversation{border:1px solid var(--line);background:var(--paper);border-radius:10px}
 aside{padding:1rem;position:sticky;top:1rem;max-height:calc(100dvh - 2rem);overflow:auto}.list{display:grid;gap:.55rem}
@@ -46,7 +47,7 @@ a{color:var(--accent)}.small{font-size:.83rem}.hidden{display:none!important}
 <section class="conversation" aria-label="Selected conversation">
 <div class="conversation-head"><button id="back" class="back">← Sessions &amp; histories</button><h1 id="selected-name">Choose a conversation</h1>
 <p id="selected-purpose" class="subtle"></p><p id="observation" class="small"></p>
-<div class="toolbar"><button id="interrupt" disabled>Interrupt turn</button><button id="resume" disabled>Resume same conversation</button></div>
+<div class="toolbar"><button id="latest" disabled hidden>Latest</button><button id="interrupt" disabled>Interrupt turn</button><button id="resume" disabled>Resume same conversation</button></div>
 <p id="control-reason" class="reason"></p>
 <details><summary>Permissions and connection</summary><div id="permissions"></div></details>
 <details><summary>Technical details</summary><pre id="technical"></pre></details></div>
@@ -75,11 +76,16 @@ const byId = id => document.getElementById(id);
 const fragment = new URLSearchParams(location.hash.slice(1));
 let token = fragment.get('token') || sessionStorage.getItem('awkit-session-token') || '';
 if (token) { sessionStorage.setItem('awkit-session-token', token); history.replaceState(null, '', location.pathname); }
-let state = null, selected = null, loading = false, signature = '', draftKey = null;
+let state = null, selected = null, loading = false, signature = '', draftKey = null, navigation = 0;
 const drafts = new Map(), limits = new Map();
 function node(tag, text, cls) { const value = document.createElement(tag); if (text !== undefined) value.textContent = text; if (cls) value.className = cls; return value; }
 function banner(text) { byId('banner').textContent = text || ''; }
 function current() { return state && state.sessions.find(view => view.session.id === selected); }
+function awaiting(view) {
+  const settled = new Set((view.attempts || []).filter(row => ['returned','failed','no-reply'].includes(row.state)).map(row => row.request_id));
+  for (const row of view.cancellations || []) if (row.disposition === 'before-dispatch') settled.add(row.request_id);
+  return view.unanswered.filter(id => !settled.has(id));
+}
 function time(value) { return value ? new Date(value).toLocaleString() : 'not observed'; }
 async function api(action, args) {
   const response = await fetch(action === 'status' ? '/api/status' : '/api/command', {
@@ -90,12 +96,29 @@ async function api(action, args) {
   if (!response.ok || result.error) throw new Error(result.error || 'Controller request failed.');
   return result.result;
 }
-function select(id) {
+function select(id, target=null) {
   if (selected) drafts.set(selected, {body:byId('body').value,key:draftKey,needsReply:byId('needs-reply').checked});
   selected = id; signature = '';
   const saved = drafts.get(id) || {body:'',key:null,needsReply:true};
   byId('body').value = saved.body; draftKey = saved.key; byId('needs-reply').checked = saved.needsReply;
   document.body.classList.add('conversation-open'); render();
+  if (target) revealMessage(target); else latest();
+}
+function latest() {
+  if (!current()) return;
+  const id = selected, ticket = ++navigation;
+  requestAnimationFrame(() => { if (selected !== id || ticket !== navigation) return; const cards = byId('messages').querySelectorAll('.message'); if (cards.length) cards[cards.length - 1].scrollIntoView({block:'end'}); });
+}
+function readingAnchor() {
+  const cards = byId('messages').querySelectorAll('.message');
+  for (const card of cards) { const rect = card.getBoundingClientRect(); if (rect.bottom > 0 && rect.top < innerHeight) return {session:selected,id:card.id,top:rect.top}; }
+  return {session:selected,scroll:window.scrollY};
+}
+function restoreReading(anchor) {
+  if (selected !== anchor.session) return;
+  const card = anchor.id && byId(anchor.id);
+  if (card) window.scrollBy(0,card.getBoundingClientRect().top-anchor.top);
+  else if (anchor.scroll !== undefined) window.scrollTo(0,anchor.scroll);
 }
 function linkBody(parent, text) {
   const pattern = /https?:\/\/[^\s<>"']+/g;
@@ -109,8 +132,9 @@ function linkBody(parent, text) {
 }
 function revealMessage(id) {
   const view = current(); if (!view) return;
+  const ticket = ++navigation;
   limits.set(selected, view.messages.length); signature = ''; render();
-  requestAnimationFrame(() => { const target = byId('message-' + id); if (target) target.scrollIntoView({block:'start'}); });
+  requestAnimationFrame(() => { if (ticket !== navigation) return; const target = byId('message-' + id); if (target) target.scrollIntoView({block:'start'}); });
 }
 function render() {
   if (!state) return;
@@ -123,37 +147,48 @@ function render() {
   for (const view of state.sessions) {
     const m = view.session, button = node('button'); button.type = 'button'; button.className = 'session'; button.setAttribute('aria-current', String(m.id === selected));
     button.append(node('strong',m.name),node('span',m.provider + (m.history ? ' · read only' : ''),'meta'),node('span',m.responsibility || 'No task label','meta'),node('span',view.execution_state,'state'));
-    const unanswered = view.messages.find(row => view.unanswered.includes(row.id));
+    const unanswered = view.messages.find(row => awaiting(view).includes(row.id));
     if (unanswered) button.append(node('span','Awaiting reply: ' + unanswered.body.slice(0,95),'assignment'));
     button.onclick = () => select(m.id); list.append(button);
   }
-  const pending = byId('pending'); pending.replaceChildren();
+  const pending = byId('pending');
+  const expanded = new Set(Array.from(pending.querySelectorAll('details[open]')).map(value => value.dataset.action));
+  pending.replaceChildren();
   let count = 0;
   for (const view of state.sessions) {
-    const decisions = view.decisions.filter(row => ['pending','sending','sent','uncertain'].includes(row.state));
-    for (const [label, amount] of [['provider decision',decisions.length],['reply awaited',view.unanswered.length]]) {
+    const decisions = view.decisions.filter(row => ['pending','sending','sent','uncertain','route unavailable'].includes(row.state));
+    for (const [label, amount] of [['provider decision',decisions.length],['reply awaited',awaiting(view).length]]) {
       if (amount) { const button = node('button',view.session.name + ' · ' + amount + ' ' + label); button.onclick = () => select(view.session.id); pending.append(button); count += amount; }
     }
   }
   const declarations = state.declarations && state.declarations.report;
   for (const obligation of (declarations && declarations.obligations || []).filter(row => row.state === 'pending')) {
-    const button = node('button','Declared action · ' + obligation.responsible_session + ' · ' + obligation.action);
     const id = state.declarations.view_links && state.declarations.view_links[obligation.source.relationship];
+    const view = state.sessions.find(value => value.session.id === id);
+    const name = obligation.display_name || 'Unknown participant';
+    const preview = obligation.action.length > 105 ? obligation.action.slice(0,105) + '…' : obligation.action;
+    const detail = node('details'), summary = node('summary',name + (view ? ' · ' + view.session.name : '') + ' · ' + preview);
+    detail.dataset.action = obligation.id; detail.open = expanded.has(obligation.id);
+    detail.append(summary,node('pre',JSON.stringify(obligation,null,2)));
+    const button = node('button','Open source');
     button.disabled = !id; if (!id) button.title = 'Open the corresponding channel history to read this declared action.';
-    button.onclick = () => { if (id) { select(id); revealMessage(obligation.source.message); } };
-    pending.append(button); count++;
+    button.onclick = () => { if (id) select(id,obligation.source.message); };
+    detail.append(button); pending.append(detail); count++;
   }
   if (state.declarations && state.declarations.error) { pending.append(node('span','Declared actions unavailable: ' + state.declarations.error,'quiet')); count++; }
   if (!count) pending.append(node('span','No recorded pending decisions, unanswered requests or declared actions.','quiet'));
   const view = current();
   if (!view) return;
   const m = view.session;
+  byId('latest').disabled = !view.messages.length;
+  byId('latest').hidden = !view.messages.length;
   byId('selected-name').textContent = m.name;
   byId('selected-purpose').textContent = m.provider + ' · ' + (m.responsibility || 'No task label');
   byId('observation').textContent = m.history ? 'Read-only channel history · read ' + time(m.observed_at) :
     (view.connected ? 'Connection available' : 'Connection unavailable') + ' · State ' + view.execution_state +
     ' · Last observed ' + m.state + ' at ' + time(m.observed_at) + ' (' + m.source + ')';
-  byId('control-reason').textContent = view.control_reason || 'Resume after controller restart is not supported yet.';
+  byId('control-reason').textContent = view.control_reason || 'History is retained. Closing this view does not stop provider work.';
+  byId('resume').disabled = !view.can_resume;
   const active = view.attempts.find(row => ['admitting','accepted','executing','uncertain'].includes(row.state));
   byId('interrupt').disabled = !view.connected || !active || !active.turn_id;
   byId('body').disabled = !view.can_send; byId('send').disabled = !view.can_send;
@@ -161,22 +196,29 @@ function render() {
   byId('send-reason').textContent = view.can_send ? 'Requests start when this conversation is observed idle. Informational notices do not start a turn.' : view.control_reason;
   const permission = byId('permissions'); permission.replaceChildren();
   permission.append(node('p',m.history ? 'Native permission scope is unavailable; this is stored history only.' : 'Actual scope returned by the provider.','reason'), node('pre',JSON.stringify(m.permissions,null,2)));
+  if (m.returned_scope) permission.append(node('p','Reconnection returned a different scope. Saved permissions remain above; queued work is held.','reason'),node('pre',JSON.stringify(m.returned_scope,null,2)));
   if (m.startup_context) permission.append(node('p','Responsibility supplied at creation: ' + m.startup_context.responsibility + ' (' + m.startup_context.admission + '). This is instruction input, not a compliance check.','reason'));
-  byId('technical').textContent = JSON.stringify({channel:view.channel,native_conversation:m.native_id,returned_identity:m.returned_native_id,generation:m.generation,client:m.client,startup_context:m.startup_context,attempts:view.attempts,events:view.events,diagnostics:state.diagnostics},null,2);
-  const key = JSON.stringify({id:selected,messages:view.messages,decisions:view.decisions,attempts:view.attempts,limit:limits.get(selected),declared:declarations});
+  byId('technical').textContent = JSON.stringify({channel:view.channel,native_conversation:m.native_id,returned_identity:m.returned_native_id,generation:m.generation,client:m.client,startup_context:m.startup_context,posts:view.posts,cancellations:view.cancellations,attempts:view.attempts,events:view.events,diagnostics:state.diagnostics},null,2);
+  const key = JSON.stringify({id:selected,messages:view.messages,decisions:view.decisions,attempts:view.attempts,dispositions:view.dispositions,connected:view.connected,limit:limits.get(selected),declared:declarations});
   if (key === signature) return; signature = key;
   const decisionBox = byId('decisions'); decisionBox.replaceChildren();
   for (const decision of view.decisions.filter(row => row.state !== 'resolved')) {
     const box = node('section',undefined,'decision'); box.append(node('h2','Provider decision · ' + decision.state));
+    if (decision.request_id) {
+      const assignment = view.messages.find(row => row.id === decision.request_id);
+      const source = node('a','Assignment: ' + (assignment ? assignment.body.slice(0,100) : 'referenced request unavailable'),'relation'); source.href = '#message-' + decision.request_id;
+      source.onclick = event => { event.preventDefault(); revealMessage(decision.request_id); }; box.append(source);
+    }
     box.append(node('pre',JSON.stringify(decision.params,null,2)));
     const buttons = node('div',undefined,'toolbar');
     const labels = {accept:'Allow once',acceptForSession:'Allow for this session',decline:'Decline',cancel:'Cancel turn'};
     for (const choice of decision.choices) {
-      const button = node('button',labels[choice] || choice); button.disabled = !view.connected || decision.state !== 'pending';
+      const button = node('button',labels[choice] || choice); button.disabled = !decision.can_answer;
       button.onclick = async () => { try { await api('decide',{ident:m.id,decision_id:decision.id,choice:choice}); await refresh(); } catch (error) { banner(error.message); } };
       buttons.append(button);
     }
     box.append(buttons);
+    if (!decision.can_answer) box.append(node('p','This original decision route is unavailable. Review its assignment below; reconnect or request interruption only through an observed live turn. No previous approval will be reused.','reason'));
     if (!decision.choices.length) box.append(node('p','This request cannot be answered here. It remains pending on its originating connection.','reason'));
     decisionBox.append(box);
   }
@@ -197,6 +239,16 @@ function render() {
       relation.onclick = event => { event.preventDefault(); revealMessage(message.reply_to); }; card.append(relation);
     }
     const body = node('div',undefined,'body'); linkBody(body,message.body); card.append(body);
+    const disposition = (view.dispositions || []).find(row => row.request_id === message.id);
+    if (disposition) {
+      card.append(node('p',disposition.state,'handling'));
+      if (disposition.cancellation && disposition.cancellation.disposition === 'after-dispatch') card.append(node('p','Stop requested after dispatch; delivery and provider outcome remain recorded.','reason'));
+      if (disposition.can_cancel) {
+        const cancel = node('button','Cancel before dispatch');
+        cancel.onclick = async () => { try { await api('cancel',{ident:m.id,request_id:message.id}); await refresh(); } catch (error) { banner(error.message); } };
+        card.append(cancel);
+      }
+    }
     if (message.kind === 're') {
       const related = (declarations && declarations.obligations || []).filter(row => {
         const target = state.declarations.view_links && state.declarations.view_links[row.source.relationship];
@@ -211,7 +263,7 @@ async function refresh() {
   if (loading) return;
   loading = true;
   try {
-    state = await api('status'); render();
+    const result = await api('status'); const anchor = readingAnchor(); state = result; render(); restoreReading(anchor);
     if (state.provider_error) banner(state.provider_error);
   } catch (error) {
     banner('Connection unavailable: ' + error.message);
@@ -253,6 +305,8 @@ byId('history-form').onsubmit = async event => {
   finally { byId('history-submit').disabled = false; }
 };
 byId('interrupt').onclick = async () => { if (!current()) return; try { await api('interrupt',{ident:selected}); banner('Interruption requested; waiting for the provider outcome.'); await refresh(); } catch (error) { banner(error.message); } };
+byId('latest').onclick = latest;
+byId('resume').onclick = async () => { if (!current()) return; try { byId('resume').disabled = true; await api('resume',{ident:selected}); await refresh(); } catch (error) { banner(error.message); } };
 if (!token) banner('Use the capability URL printed by awkit session serve to open this project.');
 refresh(); setInterval(refresh,1500);
 </script>

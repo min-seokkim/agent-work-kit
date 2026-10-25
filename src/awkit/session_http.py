@@ -99,8 +99,12 @@ class SessionHandler(BaseHTTPRequestHandler):
                 result = controller.decide(**args)
             elif action == "interrupt":
                 result = controller.interrupt(**args)
+            elif action == "resume":
+                result = controller.resume(**args)
+            elif action == "cancel":
+                result = controller.cancel(**args)
             elif action == "stop" and not args:
-                result = dict(state="controller stopping", recovery="Old native identities remain; restart recovery is unavailable in unit 1.")
+                result = dict(state="controller stopping", recovery="History and unfinished work remain. Stopping does not establish task cancellation or success.")
                 threading.Thread(target=self.server.shutdown, daemon=True).start()
             else:
                 raise ValueError("Unsupported controller action.")
@@ -177,7 +181,7 @@ def serve(project, command, *, port=0, record=None):
             server.server_close()
         controller.close()
         try:
-            if json.loads(path.read_text())["generation"] == controller.generation:
+            if server and json.loads(path.read_text())["token"] == server.token:
                 path.unlink()
         except (OSError, ValueError, KeyError):
             pass

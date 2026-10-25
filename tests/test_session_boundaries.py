@@ -42,7 +42,7 @@ class SessionBoundaryTests(unittest.TestCase):
             time.sleep(0.025)
         self.fail(str(self.controller.status()))
 
-    def test_restart_retains_identity_but_does_not_claim_resume_or_replay(self):
+    def test_restart_reconnects_same_identity_without_dispatching_history(self):
         first = self.controller.create(name="Research", responsibility="Invented work")["session"]
         self.controller.close()
         reopened = SessionController(self.project, self.command)
@@ -53,8 +53,16 @@ class SessionBoundaryTests(unittest.TestCase):
         self.assertEqual(view["execution_state"], "unknown")
         self.assertFalse(view["connected"])
         self.assertIsNone(reopened.provider)
-        with self.assertRaisesRegex(ValueError, "earlier controller"):
-            reopened.send(first["id"], key="no-replay", body="Do not launch a replacement")
+        deadline = time.monotonic() + 6
+        while time.monotonic() < deadline:
+            view = reopened.status()["sessions"][0]
+            if view["can_send"]:
+                break
+            time.sleep(0.025)
+        self.assertTrue(view["can_send"], view)
+        self.assertEqual(view["session"]["native_id"], first["native_id"])
+        self.assertEqual(view["messages"], [])
+        self.assertEqual(view["attempts"], [])
 
     def test_missing_provider_does_not_prevent_reading_registered_history(self):
         self.controller.close()

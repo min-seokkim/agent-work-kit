@@ -279,8 +279,13 @@ class ClaudeLifetimeTests(unittest.TestCase):
         self.assertEqual(old["choices"], ["allow", "deny"])
         first.cancel()
         deadline = time.monotonic() + 3
-        while client._pending and time.monotonic() < deadline:
+        old_row = old
+        while time.monotonic() < deadline:
+            old_row = next(row for row in self.store.snapshot()["decisions"] if row["id"] == old["id"])
+            if old_row["state"] == "route unavailable":
+                break
             time.sleep(0.01)
+        self.assertEqual(old_row["state"], "route unavailable")
         second = asyncio.run_coroutine_threadsafe(client._permission("Read", {"path": "another.txt"}, context), client._loop)
         new = self.wait_for_decision()
         self.assertNotEqual(new["id"], old["id"])

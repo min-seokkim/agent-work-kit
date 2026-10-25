@@ -77,7 +77,19 @@ Implementation changes the current owning guides and matching failure descriptio
 
 This is the first selected writing change after the assigned communication work, followed by the public review-and-revision package. The owner-selected Korean engineering writing case retains its research priority and may refine the change. Independent-session continuation and the missing phrase-grouping comparison remain bounded candidates, not concurrent experiments.
 
-Planning M-189/M-190 stopped queued execution after preserving this decision. W0 and the subsequent W1 package remain unstarted. A later resume requires a new allocation; no guide behavior changes in this planning integration.
+Planning M-189/M-190 stopped queued execution after preserving this decision; W0 and the subsequent W1 package were unstarted at that closure. The later M-201 allocation transfers W0 delivery to the supplemental writing worker. The original independent implementation session retains its communication assignment and native identity. W1 remains unstarted.
+
+#### W0 implementation and application
+
+Implemented in `0e33ff6` on base `fa3d50d`: saved Korean text may use direct Korean or an intermediate language for its task and sources; organization follows the reader's purpose; concise assignment briefs retain access to required originals. F15, F21 and F34 countermeasures match the narrowed methods. Existing source fidelity, correction carry-forward, explicit user precedence, attribution, section coverage and completion safeguards remain. No new command, workflow or quality gate was added.
+
+Research R-118/R-120 settled the bounded method decision and supplied a fixed invented source-expression packet. Its manifest SHA256 is `ba4af4567a55fcfc6ce3c632cc23b3575719c3976b864747b2540176bde57ef3`. A fresh participant received the candidate guides and allocated inputs sequentially, with evaluator expectations withheld. All actual outputs and access notes remain under `.awkit/workspaces/writing-applicability/.awkit/fixture/`; `evaluation.md` owns the detailed semantic findings and limits.
+
+The participant repaired both explanatory passages by permitted source reuse, retained the exact adopted closing, and returned both passages unchanged after an illustrative clarification about the first. The later postcard passage retained the unresolved facts and source progression without rewriting earlier text. The existing administrative contrast changed only its authorized sentence: the inspection worker verifies both categories before the intake worker may mark completion. Permission, missing-item state, records and other text remained. No participant content failure or extra correction was observed. The separate override example was not executed; the administrative wrapper's explicit method override was applied.
+
+Source paths supplied the complete required originals; inspection is participant-declared, not independently audited from a native transcript. The participant reported direct Korean drafting. These same-context results establish only this invented application; they do not establish a language-method winner, causal benefit, independent persistence, real-author acceptance or fewer reminders. The source scenes and flattened draft were constructed, not observed private or participant failures. No private source was accessed or copied.
+
+The guide snapshot `b59d548` passed Ruff and 441 tests with eight skips on Windows/Python 3.14.7; its tree matches `0e33ff6`. Changed guides and retained fixture outputs received agent semantic reading and local rendered inspection. The first scope-comparison script failed because PowerShell altered Korean literals sent through stdin; a UTF-8 file comparison confirmed the intended scope without changing participant output. The W0 delivery receipt at `.awkit/handoffs/product-research/w0-delivery-receipt.json` records the integrated revision, later documentation checks, Windows/Linux CI and exact-commit installation results. Technical delivery does not close W1 packaging or the real-user outcome work.
 
 ## Implementation sequence
 

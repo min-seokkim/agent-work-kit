@@ -21,6 +21,8 @@ def _step_error():
 
 REFERENCE = ("Formats, rules and exit codes are in agent-work-kit/reference.md "
              "(kit/reference.md in the awkit repository).")
+DECISION_CHOICES = ("accept", "acceptForSession", "decline", "cancel", "allow", "deny")
+PREVENTS = {"awkit session decide": ("F24", "F29")}
 
 
 def _parser():
@@ -197,9 +199,11 @@ def _parser():
     session_register.add_argument("--task", default="", help="optional task label; no task state is created")
     session_decide = session_commands.add_parser("decide", help="answer an actual pending provider request on its connection")
     session_decide.add_argument("ident")
-    session_decide.add_argument("--decision", required=True, dest="decision_id")
-    decision_answer = session_decide.add_mutually_exclusive_group(required=True)
-    decision_answer.add_argument("--choice", choices=("accept", "acceptForSession", "decline", "cancel", "allow", "deny"))
+    decision_source = session_decide.add_mutually_exclusive_group(required=True)
+    decision_source.add_argument("--decision", dest="decision_id")
+    decision_source.add_argument("--input-file", type=Path, help="complete decision JSON in UTF-8; - reads stdin; cannot mix with choice/answers arguments")
+    decision_answer = session_decide.add_mutually_exclusive_group()
+    decision_answer.add_argument("--choice", choices=DECISION_CHOICES)
     decision_answer.add_argument("--answers-file", type=Path, help="Claude question answers JSON object keyed by exact question text")
     session_interrupt = session_commands.add_parser("interrupt", help="request interruption of the observed native turn")
     session_interrupt.add_argument("ident")
@@ -285,6 +289,51 @@ def _read_body(args):
     if args.body_file is not None:
         return args.body_file.read_text(encoding="utf-8-sig")
     return sys.stdin.read()
+
+
+def _decision_object(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"Duplicate decision input key: {key}")
+        result[key] = value
+    return result
+
+
+def _decision_constant(value):
+    raise ValueError(f"Invalid JSON constant in decision input: {value}")
+
+
+def _read_decision(args):
+    if args.input_file is None:
+        if args.choice is None and args.answers_file is None:
+            raise ValueError("--decision requires --choice or --answers-file.")
+        choice = {"answers": json.loads(args.answers_file.read_text(encoding="utf-8"))} if args.answers_file else args.choice
+        return dict(ident=args.ident, decision_id=args.decision_id, choice=choice)
+    if args.choice is not None or args.answers_file is not None:
+        raise ValueError("--input-file cannot be mixed with --choice or --answers-file.")
+    if str(args.input_file) == "-":
+        content = getattr(sys.stdin, "buffer", sys.stdin).read()
+        text = content.decode("utf-8-sig") if isinstance(content, bytes) else content.removeprefix("\ufeff")
+    else:
+        text = args.input_file.read_text(encoding="utf-8-sig")
+    try:
+        data = json.loads(text, object_pairs_hook=_decision_object, parse_constant=_decision_constant)
+    except RecursionError as exc:
+        raise ValueError("Decision JSON nesting exceeds parser support.") from exc
+    if not isinstance(data, dict) or set(data) != {"decision_id", "choice"}:
+        raise ValueError("Decision input must contain only decision_id and choice; the session stays the CLI target.")
+    if not isinstance(data["decision_id"], str) or not data["decision_id"].strip():
+        raise ValueError("Decision input requires a nonempty exact decision_id string.")
+    choice = data["choice"]
+    if isinstance(choice, str):
+        if choice not in DECISION_CHOICES:
+            raise ValueError("Decision input requires an offered choice supported by decide.")
+    elif (not isinstance(choice, dict) or set(choice) != {"answers"} or not isinstance(choice["answers"], dict)
+          or not all(isinstance(value, str) or isinstance(value, list) and all(isinstance(item, str) for item in value)
+                     for value in choice["answers"].values())):
+        raise ValueError("Question choice must contain answers keyed by exact question text, with string or string-list values.")
+    return dict(ident=args.ident, **data)
 
 
 def _report_tracking(record, what="the new folder"):
@@ -635,8 +684,7 @@ def main(argv=None):
                 payload = dict(channel=str(args.channel), main_name=args.main_name, reviewer_name=args.reviewer_name,
                                local_role=args.local_role, task=args.task)
             elif args.action == "decide":
-                choice = {"answers": json.loads(args.answers_file.read_text(encoding="utf-8"))} if args.answers_file else args.choice
-                payload = dict(ident=args.ident, decision_id=args.decision_id, choice=choice)
+                payload = _read_decision(args)
             elif args.action == "interrupt":
                 payload = dict(ident=args.ident)
             elif args.action == "resume":

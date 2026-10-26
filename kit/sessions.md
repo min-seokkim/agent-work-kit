@@ -62,6 +62,21 @@ Status and command results use JSON schema 1. Exit 0 means the command returned 
 
 Prevents: F24, F29.
 
+## Submit a decision file
+
+Use a current offered decision from the selected conversation's status. Keep its complete ID opaque and choose a response under the existing authority. JSON contains exactly decision_id and choice. For an explicitly selected Claude denial, serialize the selected status record without reconstructing its ID:
+
+```powershell
+@{decision_id=$awkitDecision.id; choice='deny'} | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath .awkit/decision.json -Encoding UTF8
+awkit session --project . decide Research --input-file .awkit/decision.json
+```
+
+Here $awkitDecision is the selected live decision for Research; deny must be offered. Codex uses its own offered values, such as decline. For question answers, choice is the existing object `{"answers":{"Exact question text":"Answer"}}`; every original question still needs its exact text.
+
+Use --input-file - for UTF-8 stdin. Files accept UTF-8 with or without BOM; stdin accepts the same bytes. Do not mix --input-file with --decision, --choice or --answers-file. The existing argument route remains supported. File input cannot change the CLI-selected session. Malformed shapes and duplicate JSON keys are refused before dispatch. The existing handler retains target, connection, generation, offered-choice and once-only checks. A recorded submission remains separate from native resolution; inspect uncertainty before further action.
+
+Prevents: F24, F29.
+
 ## Read existing channel history
 
 Choose Open channel history in the screen, or register an existing project channel:

@@ -99,9 +99,10 @@ def main():
             if text != "EARLY":
                 emit(response)
             event("turn/started", threadId=thread_id, turn=dict(id=turn_id, status="inProgress"))
-            if text == "ASK_APPROVAL":
-                pending[71] = thread_id, turn_id
-                emit(dict(id=71, method="item/commandExecution/requestApproval",
+            if text in ("ASK_APPROVAL", "ASK_QUOTED_APPROVAL"):
+                callback = "sdk-callback-fixture" if text == "ASK_QUOTED_APPROVAL" else 71
+                pending[callback] = thread_id, turn_id
+                emit(dict(id=callback, method="item/commandExecution/requestApproval",
                           params=dict(threadId=thread_id, turnId=turn_id, itemId="command-1",
                                       command="offline fixture only", availableDecisions=["accept", "decline", "cancel"])))
                 continue

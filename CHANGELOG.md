@@ -6,6 +6,10 @@ Behavior changes per version. Items to check when moving from an earlier version
 
 Planned as the first public release. 0.2.0 existed only as the version in the source and was never tagged or released. From 0.3.0 the package goes to PyPI and GitHub releases, once the release conditions in [docs/release.md](docs/release.md#release) are met. Changes until then are added here.
 
+### Commands
+
+- Session decide accepts --input-file PATH, or - for UTF-8 stdin, containing the exact decision_id and choice. UTF-8 BOM is supported. Mixed argument/file input and malformed or ambiguous JSON are refused before dispatch. The selected session, existing decision handler, offered choices, permission semantics, JSON result schema and exit meanings remain unchanged; --decision with --choice or --answers-file still works.
+
 ### Guidance
 
 - The session guide shows the existing CLI creation command before sending the first assignment, while retaining creation and follow-up through the human screen.

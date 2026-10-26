@@ -26,10 +26,13 @@ Prevents: F24, F25, F29.
 
 ## Send and read work
 
-Give the first assignment in the human screen, then use the same running owner from another agent:
+Keep the controller started above running. From another terminal, create Research, send an assignment and read its status:
 
-    awkit session --project . send Research --key request-2 --body "Continue using the facts from the previous request."
+    awkit session --project . create Research --responsibility "Check sources and report findings." --provider codex --sandbox read-only
+    awkit session --project . send Research --key request-1 --body "Check the project's source list and report gaps."
     awkit session --project . status
+
+You can also create Research and give its first assignment in the human screen, then use the same running owner from another agent for follow-ups. For Claude creation, use --provider claude --permission-mode default and omit --sandbox.
 
 Use a session name or local ID. Names are unique within this project. Send reads UTF-8 --body-file or stdin when --body is absent. Choose a fresh client key for each new submission. Reusing the key recovers the same stored message; changing its body, kind or recipient is refused. An omitted key is generated and returned. A transport timeout remains uncertain; inspect status with the retained key before repeating an action.
 

@@ -56,7 +56,7 @@ class SessionStore:
         self.channel = Channel(self.path)
 
     @classmethod
-    def create(cls, directory, *, name, project, responsibility, generation, permissions, provider="codex"):
+    def create(cls, directory, *, name, project, responsibility, generation, permissions, provider="codex", enrollment=None):
         directory = Path(directory)
         directory.mkdir(parents=True, exist_ok=True)
         ident = str(uuid.uuid4())
@@ -69,11 +69,14 @@ class SessionStore:
                     responsibility=responsibility, native_id=None, generation=generation,
                     permissions=permissions, state="creating", observed_at=now(),
                     source="local creation intent", error=None)
+        if enrollment is not None:
+            data["enrollment"] = enrollment
+            data["startup_context"] = None
         with channel.transaction() as conn:
             for statement in SCHEMA.split(";"):
                 if statement.strip():
                     conn.execute(statement)
-            conn.execute("INSERT INTO awkit_session VALUES (1,3,?,?)", (ident, encoded(data)))
+            conn.execute("INSERT INTO awkit_session VALUES (1,?,?,?)", (4 if enrollment is not None else 3, ident, encoded(data)))
         return cls(path)
 
     @staticmethod
@@ -82,9 +85,13 @@ class SessionStore:
             row = conn.execute("SELECT schema,id,data FROM awkit_session WHERE singleton=1").fetchone()
         except sqlite3.OperationalError as exc:
             raise ValueError("This is not a managed session channel.") from exc
-        if row is None or row["schema"] not in (1, 2, 3):
+        if row is None or row["schema"] not in (1, 2, 3, 4):
             raise ValueError("Unsupported managed session extension.")
         data = json.loads(row["data"])
+        if row["schema"] != 4 and data.get("enrollment") is not None:
+            raise ValueError("Enrolled Codex conversations require extension 4.")
+        if row["schema"] == 4 and (data.get("provider") != "codex" or not isinstance(data.get("enrollment"), dict)):
+            raise ValueError("Invalid enrolled Codex metadata.")
         if data.get("id") != row["id"] or str(uuid.UUID(row["id"])) != row["id"]:
             raise ValueError("Invalid stored session/channel identity.")
         return data

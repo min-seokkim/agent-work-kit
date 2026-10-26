@@ -40,7 +40,7 @@ a{color:var(--accent)}.small{font-size:.83rem}.hidden{display:none!important}
 </head>
 <body>
 <header><div class="brand">awkit <span class="subtle">/ sessions</span></div><div id="project" class="project">Connecting to the local project…</div>
-<div class="toolbar"><button id="open-history">Open channel history</button><button id="open-create" class="primary">Create session</button></div></header>
+<div class="toolbar"><button id="open-history">Open channel history</button><button id="open-enroll">Use existing Codex conversation</button><button id="open-create" class="primary">Create session</button></div></header>
 <div id="banner" class="banner" role="status" aria-live="polite"></div>
 <div id="pending" class="strip" aria-label="Project actions"></div>
 <main><aside><h2>Sessions &amp; histories</h2><div id="list" class="list"></div><p class="reason">Opening a conversation does not acknowledge or accept its messages.</p></aside>
@@ -70,6 +70,12 @@ a{color:var(--accent)}.small{font-size:.83rem}.hidden{display:none!important}
 <details><summary>Stored role mapping</summary><p class="reason">The first participant uses the channel's existing main role; the second uses reviewer. These labels do not assign a new native conversation.</p>
 <label>Local role<select id="local-role"><option value="main">main · first participant</option><option value="reviewer">reviewer · second participant</option></select></label></details>
 <div class="dialog-actions"><button type="button" data-close="history-dialog">Cancel</button><button class="primary" id="history-submit">Open history</button></div></form></dialog>
+<dialog id="enroll-dialog"><form id="enroll-form"><h2>Use an existing Codex conversation</h2>
+<p>Enter the exact native thread ID of an authorized idle conversation in this project. Enrollment sends no assignment. Its original instructions and native permissions remain.</p>
+<label>Name<input id="enroll-name" required maxlength="200" placeholder="Research"></label>
+<label>Native thread ID<input id="enroll-thread" required placeholder="Exact native UUID"></label>
+<p class="reason">Requires the verified local Codex runtime and the same Codex home. An active owner, unknown scope or unsupported direct input prevents sending.</p>
+<div class="dialog-actions"><button type="button" data-close="enroll-dialog">Cancel</button><button class="primary" id="enroll-submit">Enroll conversation</button></div></form></dialog>
 <script>
 'use strict';
 const byId = id => document.getElementById(id);
@@ -148,7 +154,7 @@ function render() {
   if (!state.sessions.length) list.append(node('p','No sessions or channel histories yet.','subtle'));
   for (const view of state.sessions) {
     const m = view.session, button = node('button'); button.type = 'button'; button.className = 'session'; button.setAttribute('aria-current', String(m.id === selected));
-    button.append(node('strong',m.name),node('span',m.provider + (m.history ? ' · read only' : ''),'meta'),node('span',m.responsibility || 'No task label','meta'),node('span',view.execution_state,'state'));
+    button.append(node('strong',m.name),node('span',m.provider + (m.enrollment ? ' · existing conversation' : m.history ? ' · read only' : ''),'meta'),node('span',m.responsibility || 'No task label','meta'),node('span',view.execution_state,'state'));
     const unanswered = view.messages.find(row => awaiting(view).includes(row.id));
     if (unanswered) button.append(node('span','Awaiting reply: ' + unanswered.body.slice(0,95),'assignment'));
     button.onclick = () => select(m.id); list.append(button);
@@ -200,7 +206,7 @@ function render() {
   permission.append(node('p',m.history ? 'Native permission scope is unavailable; this is stored history only.' : m.provider === 'claude' ? 'Submitted Claude mode and partial native observations. Complete effective rules and Windows sandbox enforcement remain unverified.' : 'Actual scope returned by the provider.','reason'), node('pre',JSON.stringify(m.permissions,null,2)));
   if (m.returned_scope) permission.append(node('p','Reconnection returned a different scope. Saved permissions remain above; queued work is held.','reason'),node('pre',JSON.stringify(m.returned_scope,null,2)));
   if (m.startup_context) permission.append(node('p','Responsibility supplied at creation: ' + m.startup_context.responsibility + ' (' + m.startup_context.admission + '). This is instruction input, not a compliance check.','reason'));
-  byId('technical').textContent = JSON.stringify({channel:view.channel,native_conversation:m.native_id,returned_identity:m.returned_native_id,generation:m.generation,client:m.client,startup_context:m.startup_context,recovery_evidence:m.recovery_evidence,posts:view.posts,cancellations:view.cancellations,attempts:view.attempts,events:view.events,diagnostics:state.diagnostics},null,2);
+  byId('technical').textContent = JSON.stringify({channel:view.channel,native_conversation:m.native_id,selected_native_conversation:m.enrollment && m.enrollment.thread_id,enrollment:m.enrollment,admission_observation:m.admission_observation,returned_identity:m.returned_native_id,generation:m.generation,client:m.client,startup_context:m.startup_context,recovery_evidence:m.recovery_evidence,posts:view.posts,cancellations:view.cancellations,attempts:view.attempts,events:view.events,diagnostics:state.diagnostics},null,2);
   const key = JSON.stringify({id:selected,messages:view.messages,decisions:view.decisions,attempts:view.attempts,dispositions:view.dispositions,connected:view.connected,limit:limits.get(selected),declared:declarations});
   if (key === signature) return; signature = key;
   const decisionBox = byId('decisions'); decisionBox.replaceChildren();
@@ -299,6 +305,7 @@ function providerDraft() {
 byId('provider').onchange = () => { byId('sandbox').value = 'read-only'; providerDraft(); };
 byId('open-create').onclick = () => { providerDraft(); byId('create-dialog').showModal(); };
 byId('open-history').onclick = () => byId('history-dialog').showModal();
+byId('open-enroll').onclick = () => byId('enroll-dialog').showModal();
 for (const button of document.querySelectorAll('[data-close]')) button.onclick = () => byId(button.dataset.close).close();
 byId('back').onclick = () => document.body.classList.remove('conversation-open');
 byId('needs-reply').onchange = () => { byId('send').textContent = byId('needs-reply').checked ? 'Send request' : 'Store notice'; };
@@ -330,6 +337,15 @@ byId('history-form').onsubmit = async event => {
     byId('history-dialog').close(); await refresh(); select(result.id); banner('Opened channel history read-only.');
   } catch (error) { banner(error.message); }
   finally { byId('history-submit').disabled = false; }
+};
+byId('enroll-form').onsubmit = async event => {
+  event.preventDefault(); byId('enroll-submit').disabled = true;
+  try {
+    const result = await api('enroll',{name:byId('enroll-name').value,thread_id:byId('enroll-thread').value});
+    byId('enroll-dialog').close(); await refresh(); select(result.session.id);
+    banner(result.session.error || 'Enrolled ' + result.session.name + '. No assignment was sent.');
+  } catch (error) { banner(error.message); }
+  finally { byId('enroll-submit').disabled = false; }
 };
 byId('interrupt').onclick = async () => { if (!current()) return; try { await api('interrupt',{ident:selected}); banner('Interruption requested; waiting for the provider outcome.'); await refresh(); } catch (error) { banner(error.message); } };
 byId('latest').onclick = latest;

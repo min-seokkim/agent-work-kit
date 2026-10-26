@@ -91,6 +91,8 @@ class SessionHandler(BaseHTTPRequestHandler):
             controller = self.server.controller
             if action == "create":
                 result = controller.create(**args)
+            elif action == "enroll":
+                result = controller.enroll(**args)
             elif action == "send":
                 result = controller.send(**args)
             elif action == "register":

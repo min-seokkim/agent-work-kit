@@ -177,6 +177,9 @@ def _parser():
     session_create.add_argument("--provider", choices=("codex", "claude"), default="codex")
     session_create.add_argument("--sandbox", choices=("read-only", "workspace-write"), help="Codex scope (default: read-only)")
     session_create.add_argument("--permission-mode", choices=("default",), help="Claude native mode (default: default)")
+    session_enroll = session_commands.add_parser("enroll", help="enroll an explicit idle local Codex thread; send no assignment")
+    session_enroll.add_argument("name")
+    session_enroll.add_argument("--thread-id", required=True)
     session_send = session_commands.add_parser("send", help="store an assignment; the owner starts an idle turn automatically")
     session_send.add_argument("ident", help="managed session name or ID")
     session_send.add_argument("--key", help="reuse this client key to recover the same stored submission; never auto-resend")
@@ -623,6 +626,8 @@ def main(argv=None):
             if args.action == "create":
                 payload = dict(name=args.name, responsibility=args.responsibility, provider=args.provider,
                                sandbox=args.sandbox, permission_mode=args.permission_mode, project=str(args.project.resolve()))
+            elif args.action == "enroll":
+                payload = dict(name=args.name, thread_id=args.thread_id)
             elif args.action == "send":
                 payload = dict(ident=args.ident, key=args.key or uuid.uuid4().hex,
                                body=_read_body(args), kind=args.kind, entry="agent")
@@ -640,7 +645,7 @@ def main(argv=None):
                 payload = dict(ident=args.ident, request_id=args.request_id)
             result = request(args.project, args.action, payload)
             print(json.dumps(dict(schema=1, **result)))
-            return 1 if args.action == "create" and result["session"]["state"] == "unknown" else 0
+            return 1 if args.action in ("create", "enroll") and result["session"]["state"] == "unknown" else 0
 
         if args.group == "channel":
             if args.action == "status":

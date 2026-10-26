@@ -16,7 +16,7 @@ class ProviderError(RuntimeError):
 
 
 class CodexSession:
-    def __init__(self, command, project, callback, *, timeout=30):
+    def __init__(self, command, project, callback, *, timeout=30, experimental=False):
         self.callback = callback
         self.timeout = timeout
         self.failure = None
@@ -35,8 +35,10 @@ class CodexSession:
         for thread in self._threads:
             thread.start()
         try:
-            self.initialization = self.call("initialize", {"clientInfo": {
-                "name": "awkit", "title": "Agent Work Kit", "version": __version__}})
+            params = {"clientInfo": {"name": "awkit", "title": "Agent Work Kit", "version": __version__}}
+            if experimental:
+                params["capabilities"] = {"experimentalApi": True}
+            self.initialization = self.call("initialize", params)
             self.notify("initialized", {})
         except BaseException:
             self.close()

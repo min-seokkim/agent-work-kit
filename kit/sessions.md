@@ -1,6 +1,6 @@
 # Session controls
 
-Use one project-local controller to create owned Codex or Claude conversations, exchange work through the human screen or agent CLI, and read explicitly registered channel history. Keep stored messages, provider execution and result handling separate; a returned reply is not evidence that its work was accepted.
+Use one project-local controller to create owned Codex or Claude conversations, enroll an explicitly selected supported Codex conversation, exchange work through the human screen or agent CLI, and read explicitly registered channel history. Keep stored messages, provider execution and result handling separate; a returned reply is not evidence that its work was accepted.
 
 ## Start the controller
 
@@ -21,6 +21,20 @@ One controller owns a project at a time. A conflicting owner is refused without 
     awkit session --project . stop
 
 Saved identities and channel exchanges remain. Restarting the controller automatically reconnects each saved owned conversation by exact native ID. Closing the browser view only closes the view. Stopping the controller establishes neither task cancellation nor success.
+
+Prevents: F24, F25, F29.
+
+## Enroll a selected Codex conversation
+
+Start the controller first. Choose Use existing Codex conversation in its screen, or supply a name and the exact native thread UUID:
+
+    awkit session --project . enroll Research --thread-id NATIVE-THREAD-UUID
+
+Enrollment sends no assignment. After successful admission, use the ordinary send/status commands below. The name is a local label; enrollment and subsequent recovery submit no role, base instructions or permission overrides. Native context stays in the selected conversation; old transcript text is not copied into the channel.
+
+Enrollment pins Windows x86_64 Codex 0.164.0-alpha.11.1 to executable SHA-256 `4fd2f057bad603bf53dc202457ffd0c3591de62e867a8b01e73816e3fbce5a73`; wrappers, extra launch arguments and other binaries are refused. It requires the same Codex home and local sessions store, exact current project, idle availability, direct-input permission and interpretable native sandbox/approval/reviewer fields. A dedicated private App Server must acquire the native writer lock through exact-ID resume. Close the other owner normally before retrying an ownership refusal. Missing required policy, changed policy/runtime/home, child-input restrictions and admission errors hold work without replacing the conversation. Live IDE attachment and conversation discovery remain unavailable.
+
+The controller retains and compares every returned policy field before sending or recovering: sandbox, approval policy/reviewer, runtime workspace roots and active profile. Optional provenance is recorded as supplied; null and key absence remain distinct. An unexposed profile does not invalidate known required scope, and no profile is inferred or configured. Read-only/workspace-write sandbox details must be complete. Inspect a refusal in status; resume retries explicitly after the cause changes. Pending uncertainty is retained without replay.
 
 Prevents: F24, F25, F29.
 
@@ -68,6 +82,8 @@ Codex recovery preserves the saved effective permission policy and compares the 
 
 Claude resumes only the already confirmed owned ID and project, retaining native context without transcript repasting. It compares the reported default permission mode; complete effective rules remain unverified. A locally recorded correlated result can recover its original linked reply. Public native history omits origin and terminal-result evidence, so missing results remain unresolved; a surviving input or absent history cannot authorize replay. A new request after observed idle remains distinct from that earlier uncertainty. Reconnecting one provider cannot revive another connection's decisions.
 
-Old disconnected approval callbacks remain unresolved with their request and cannot receive responses. Only a fresh current provider callback establishes a live decision route; saved approvals are never reused. Keep actual inputs, responses, identities, permissions and intervention counts. Offline faults, live-provider recovery, screen inspection and human acceptance establish different scopes. Existing IDE attachment and native existing-peer selection remain unsupported. No uncertain attempt is replayed automatically.
+Enrolled Codex channels use extension 4 with selected identity, runtime admission and the complete retained native policy. Extensions 1/2/3 keep their existing migration behavior and managed-creation instructions. Older controllers reject extension 4; core channel schema stays 1.
+
+Old disconnected approval callbacks remain unresolved with their request and cannot receive responses. Only a fresh current provider callback establishes a live decision route; saved approvals are never reused. Keep actual inputs, responses, identities, permissions and intervention counts. Offline faults, live-provider recovery, screen inspection and human acceptance establish different scopes. Existing IDE attachment and native peer discovery remain unsupported. No uncertain attempt is replayed automatically.
 
 Prevents: F24, F29.

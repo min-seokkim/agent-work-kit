@@ -23,11 +23,7 @@ def pages(provider, method, params):
     raise ProviderError("History pagination limit reached; reconciliation is incomplete.")
 
 
-def resume(controller, store):
-    meta = store.metadata()
-    native_id = meta.get("native_id")
-    if not native_id:
-        raise ValueError("No admitted native identity exists. The uncertain creation has not been replaced.")
+def recover_completed(store):
     # A completed event persisted before a local crash is sufficient to publish its original reply.
     for attempt in store.snapshot()["attempts"]:
         if attempt["state"] in ("returned", "failed", "no-reply") or not attempt["turn_id"]:
@@ -37,6 +33,14 @@ def resume(controller, store):
             if method == "turn/completed" and turn.get("status") in TERMINAL:
                 store.finish(attempt["generation"], turn["id"], turn["status"],
                              store.final_text(turn["id"], turn.get("items", [])), turn.get("error"))
+
+
+def resume(controller, store):
+    meta = store.metadata()
+    native_id = meta.get("native_id")
+    if not native_id:
+        raise ValueError("No admitted native identity exists. The uncertain creation has not been replaced.")
+    recover_completed(store)
     store.reconnect(controller.generation)
     store.update(generation=controller.generation, state="reconnecting", source="exact-ID resume requested",
                  observed_at=now(), error=None)
@@ -61,6 +65,14 @@ def resume(controller, store):
     store.update(returned_scope=None)
     store.update(client=controller.client, permissions=dict(
         {key: result[key] for key in ("cwd", "sandbox", "approvalPolicy", "approvalsReviewer")}, source="thread/resume response"))
+    reconcile(controller, store, provider, thread=thread)
+
+
+def reconcile(controller, store, provider, *, thread=None):
+    """Recover only this channel's recorded attempts on its admitted native owner."""
+    meta = store.metadata()
+    native_id, generation = meta["native_id"], meta["generation"]
+    thread = thread or {"status": {"type": "idle"}}
     attempts = [row for row in store.snapshot()["attempts"] if row["state"] == "unresolved"]
     if attempts:
         turns = pages(provider, "thread/turns/list", dict(threadId=native_id, limit=100, sortDirection="asc", itemsView="full"))
@@ -84,20 +96,20 @@ def resume(controller, store):
             turn = matches[0]
             used.add(turn["id"])
             if turn["status"] in TERMINAL:
-                store.recover_turn(controller.generation, attempt["id"], turn["id"])
+                store.recover_turn(generation, attempt["id"], turn["id"])
                 retained = dict(id=turn["id"], status=turn["status"], items=[item for item in turn.get("items", [])
                                 if item.get("type") != "reasoning"])
-                store.event(controller.generation, "awkit/recoveredTurn", dict(threadId=native_id, turn=retained))
-                store.finish(controller.generation, turn["id"], turn["status"],
+                store.event(generation, "awkit/recoveredTurn", dict(threadId=native_id, turn=retained))
+                store.finish(generation, turn["id"], turn["status"],
                              store.final_text(turn["id"], turn.get("items", [])), turn.get("error"))
             elif turn["status"] == "inProgress" and thread.get("status", {}).get("type") == "active":
-                store.recover_turn(controller.generation, attempt["id"], turn["id"], running=True)
+                store.recover_turn(generation, attempt["id"], turn["id"], running=True)
                 for method, params in store.turn_events(turn["id"]):
                     controller._apply_turn(store, method, params)
     # Observe after history: a stale active history entry is not proof of a live turn.
     observed = provider.call("thread/read", {"threadId": native_id})["thread"]
     if observed["id"] != native_id or observed.get("status", {}).get("type") not in ("idle", "active"):
         raise ValueError("Provider has not established the resumed conversation's current availability.")
-    active = store.active(controller.generation)
+    active = store.active(generation)
     store.update(state="running" if active else "idle" if observed["status"]["type"] == "idle" else "waiting for idle",
                  source="exact-ID resume and history reconciliation", observed_at=now(), error=None)

@@ -2,6 +2,7 @@
 
 import io
 import json
+import os
 import sqlite3
 import sys
 import tempfile
@@ -235,3 +236,22 @@ class TurnUpdateTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertEqual(json.loads(output.getvalue())["state"], "acknowledged")
         self.assertEqual([row["entry"] for row in self.store.turn_updates()], ["human", "agent"])
+
+    def test_offline_protocol_uses_utf8_under_legacy_stdio_codepage(self):
+        self.controller.close()
+        project = self.project / "legacy-codepage"
+        project.mkdir()
+        with patch.dict(os.environ, {"PYTHONUTF8": "0", "PYTHONIOENCODING": "cp949:surrogateescape"}):
+            self.controller = SessionController(project, self.command)
+            self.addCleanup(self.controller.close)
+            self.controller.create(name="Worker", responsibility="Legacy-codepage offline fixture")
+        self.store = self.controller._store("Worker")
+        self.store.update(client=dict(version=VERSION, executable_sha256=EXECUTABLE_SHA256))
+        self.message = self.controller.send("Worker", key="original", body="HOLD")["message"]
+        self.active = self.wait(lambda view: view["update_target"] is not None)["update_target"]
+        body = "Unicode correction: \uac00\uc0c1 \uc218\uc815."
+        result = self.controller.update_turn("Worker", **self.args(body))
+        self.assertEqual(result["state"], "acknowledged")
+        final = self.wait(lambda view: len(view["messages"]) == 2)
+        self.assertEqual(final["turn_updates"][0]["body"], body)
+        self.assertEqual(final["messages"][-1]["body"], "Updated same turn: " + body)

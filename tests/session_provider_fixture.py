@@ -35,8 +35,8 @@ def main():
               item=dict(id=turn_id + "-answer", type="agentMessage", phase="final_answer", text=text))
         event("turn/completed", threadId=thread_id, turn=dict(id=turn_id, status=status, items=[], error=None))
 
-    for line in sys.stdin:
-        message = json.loads(line)
+    for line in sys.stdin.buffer:
+        message = json.loads(line.decode("utf-8"))
         method, params = message.get("method"), message.get("params", {})
         ident = message.get("id")
         if method is None and ident in pending:

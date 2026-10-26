@@ -33,7 +33,7 @@ Fill the four sections below for each assignment. For a short task, one sentence
 - Checks already run and reusable results:
 - Writing guidance: [Writing Guide](../writing.md); [Korean Writing Guide](../korean-writing.md) for Korean
 - Audience, purpose and facts to preserve:
-- Draft and fact-check locations; include English and Korean drafts for Korean writing:
+- Actual draft and fact-check locations; include an intermediate draft when used:
 
 ## Scope
 

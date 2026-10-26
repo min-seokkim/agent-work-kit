@@ -1,6 +1,8 @@
 # Document coverage and author intent
 
-Use this optional example to repeat bounded reading and writing tasks with an invented weather-station project. The private writing project that prompted the work was not inspected. Prior executions and their limits are in the [task record](../../docs/tasks/document-intent-trial.md); this package supplies materials for another run.
+Use these optional examples for bounded reading and writing tasks. The original routes use an invented weather-station project; the review and successive-revision route uses a fictional archive and equipment-lending room. The private writing project that prompted the work was not inspected. Prior executions and their limits are in the [task record](../../docs/tasks/document-intent-trial.md); this package supplies materials for another run.
+
+For review or a later local edit, start with [review and successive revision](revision/README.md). Its entry supplies staged inputs, output retention and an optional historical walkthrough. The preparation below applies to the original weather-station routes.
 
 ## Prepare a run
 

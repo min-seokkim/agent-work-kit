@@ -1,0 +1,1 @@
+Keep the existing receipt number and inspection record. When a storage location has been assigned, enter its actual shelf code in the field labeled "반납품 보관 위치". If no location has yet been assigned, enter "미정" in that field.

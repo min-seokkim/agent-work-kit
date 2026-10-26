@@ -6,6 +6,16 @@ Behavior changes per version. Items to check when moving from an earlier version
 
 Planned as the first public release. 0.2.0 existed only as the version in the source and was never tagged or released. From 0.3.0 the package goes to PyPI and GitHub releases, once the release conditions in [docs/release.md](docs/release.md#release) are met. Changes until then are added here.
 
+### Guidance
+
+- The session guide shows the existing CLI creation command before sending the first assignment, while retaining creation and follow-up through the human screen.
+
+- The task handoff template requests actual drafts and any intermediate draft used, preserving the Korean guide's drafting-method choice.
+
+### Examples
+
+- The document-intent example adds a public review-only route and staged local revisions, with fictional sources, evaluator criteria and actual historical outputs. The later request uses each run's actual first result; current drafting-method choice remains available.
+
 ### Incompatible changes
 
 - Managed session extension 3 adds nullable observed native identity and separate Claude caller-UUID, echo and result-UUID fields. Versions 1/2 migrate under the controller lock; older controllers reject extension 3. Core channel schema 1 remains unchanged. Status adds claude_runtime capability details while retaining the boolean claude field.

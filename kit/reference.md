@@ -476,4 +476,4 @@ After `running`, `uncertain`, `rollback-failed` or `failed-unrecovered`, every d
 
 ## Sessions
 
-See [sessions](sessions.md), including [Codex enrollment](sessions.md#enroll-a-selected-codex-conversation). `decide NAME --input-file PATH` reads complete UTF-8 decision JSON; `-` reads stdin. [Format and existing arguments](sessions.md#submit-a-decision-file).
+See [sessions](sessions.md): [enrollment](sessions.md#enroll-a-selected-codex-conversation). `decide NAME --input-file PATH` reads UTF-8 JSON (`-`: stdin); [format](sessions.md#submit-a-decision-file). [Active updates](sessions.md#update-an-active-turn): request, expected turn, key; no replay.

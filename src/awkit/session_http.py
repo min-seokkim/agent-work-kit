@@ -95,6 +95,8 @@ class SessionHandler(BaseHTTPRequestHandler):
                 result = controller.enroll(**args)
             elif action == "send":
                 result = controller.send(**args)
+            elif action == "update":
+                result = controller.update_turn(**args)
             elif action == "register":
                 result = controller.register_history(**args)
             elif action == "decide":

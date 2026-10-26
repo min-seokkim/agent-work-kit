@@ -36,6 +36,7 @@ dialog{width:min(560px,calc(100% - 2rem));border:1px solid var(--line);border-ra
 dialog h2{font-size:1.2rem}.dialog-actions{display:flex;justify-content:flex-end;gap:.6rem;margin-top:1rem}.split{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
 a{color:var(--accent)}.small{font-size:.83rem}.hidden{display:none!important}
 @media(max-width:760px){header{padding:1rem}.project{margin-left:0;max-width:100%;width:100%;font-size:.8rem}main{display:block;padding:0 .65rem 1.2rem}.strip{padding:.65rem}aside{position:static;max-height:none}.conversation{min-height:65vh}.back{display:inline-flex}body.conversation-open aside{display:none}body:not(.conversation-open) .conversation{display:none}.conversation-head,.compose{padding:1rem}.messages{padding:.8rem}.message{padding:.85rem}.split{grid-template-columns:1fr}.decision{margin:.8rem}}
+#update-target{overflow-wrap:anywhere}#update-original{white-space:pre-wrap;overflow-wrap:anywhere;max-height:12rem;overflow:auto}
 </style>
 </head>
 <body>
@@ -76,8 +77,14 @@ a{color:var(--accent)}.small{font-size:.83rem}.hidden{display:none!important}
 <label>Native thread ID<input id="enroll-thread" required placeholder="Exact native UUID"></label>
 <p class="reason">Requires the verified local Codex runtime and the same Codex home. An active owner, unknown scope or unsupported direct input prevents sending.</p>
 <div class="dialog-actions"><button type="button" data-close="enroll-dialog">Cancel</button><button class="primary" id="enroll-submit">Enroll conversation</button></div></form></dialog>
+<dialog id="update-dialog"><form id="update-form"><h2>Update this active turn</h2>
+<p id="update-target"></p><pre id="update-original"></pre>
+<p class="reason">This input targets the exact observed turn. Native acknowledgement does not establish adoption. Existing work may already have taken effect.</p>
+<label>Correction or update<textarea id="update-body" required></textarea></label>
+<div class="dialog-actions"><button type="button" data-close="update-dialog">Cancel</button><button id="update-submit" class="primary">Send to this turn</button></div></form></dialog>
 <script>
 'use strict';
+let updateDraft = null;
 const byId = id => document.getElementById(id);
 const fragment = new URLSearchParams(location.hash.slice(1));
 let token = fragment.get('token') || sessionStorage.getItem('awkit-session-token') || '';
@@ -207,7 +214,7 @@ function render() {
   if (m.returned_scope) permission.append(node('p','Reconnection returned a different scope. Saved permissions remain above; queued work is held.','reason'),node('pre',JSON.stringify(m.returned_scope,null,2)));
   if (m.startup_context) permission.append(node('p','Responsibility supplied at creation: ' + m.startup_context.responsibility + ' (' + m.startup_context.admission + '). This is instruction input, not a compliance check.','reason'));
   byId('technical').textContent = JSON.stringify({channel:view.channel,native_conversation:m.native_id,selected_native_conversation:m.enrollment && m.enrollment.thread_id,enrollment:m.enrollment,admission_observation:m.admission_observation,returned_identity:m.returned_native_id,generation:m.generation,client:m.client,startup_context:m.startup_context,recovery_evidence:m.recovery_evidence,posts:view.posts,cancellations:view.cancellations,attempts:view.attempts,events:view.events,diagnostics:state.diagnostics},null,2);
-  const key = JSON.stringify({id:selected,messages:view.messages,decisions:view.decisions,attempts:view.attempts,dispositions:view.dispositions,connected:view.connected,limit:limits.get(selected),declared:declarations});
+  const key = JSON.stringify({id:selected,messages:view.messages,decisions:view.decisions,attempts:view.attempts,dispositions:view.dispositions,turn_updates:view.turn_updates,update_target:view.update_target,connected:view.connected,limit:limits.get(selected),declared:declarations});
   if (key === signature) return; signature = key;
   const decisionBox = byId('decisions'); decisionBox.replaceChildren();
   for (const decision of view.decisions.filter(row => row.state !== 'resolved')) {
@@ -261,6 +268,23 @@ function render() {
       relation.onclick = event => { event.preventDefault(); revealMessage(message.reply_to); }; card.append(relation);
     }
     const body = node('div',undefined,'body'); linkBody(body,message.body); card.append(body);
+    if (view.connected && view.update_target && view.update_target.request_id === message.id) {
+      const target = {...view.update_target}, update = node('button','Update this active turn');
+      update.onclick = () => {
+        updateDraft = {ident:m.id,request_id:target.request_id,expected_turn_id:target.expected_turn_id,key:crypto.randomUUID(),entry:'human'};
+        byId('update-target').textContent = 'Conversation: ' + m.name + ' · Project: ' + state.project + ' · Native: ' + target.native_id + ' · Assignment: ' + target.request_id + ' · Expected turn: ' + target.expected_turn_id + ' · Observed: ' + time(target.observed_at);
+        byId('update-original').textContent = message.body; byId('update-body').value = ''; byId('update-dialog').showModal();
+      };
+      card.append(update);
+    }
+    for (const input of (view.turn_updates || []).filter(row => row.request_id === message.id)) {
+      const update = node('section',undefined,'notice');
+      update.append(node('p','Update from ' + view.parties.main + ' · ' + input.entry + ' · ' + input.state + ' · ' + time(input.created),'meta'),
+        node('p','Target turn: ' + input.expected_turn_id + ' · ' + input.source,'reason'));
+      const text = node('div',undefined,'body'); linkBody(text,input.body); update.append(text);
+      if (input.error) update.append(node('p',input.error,'reason'));
+      card.append(update);
+    }
     const disposition = (view.dispositions || []).find(row => row.request_id === message.id);
     if (disposition) {
       card.append(node('p',disposition.state,'handling'));
@@ -319,6 +343,17 @@ byId('compose').onsubmit = async event => {
     drafts.delete(id); if (selected === id) { byId('body').value = ''; draftKey = null; } banner('Message stored for ' + view.session.name + '.'); await refresh();
   } catch (error) { banner(error.message + ' Client key: ' + key + '. Inspect the conversation before repeating an uncertain send.'); }
   finally { if (current()) byId('send').disabled = !current().can_send; }
+};
+byId('update-form').onsubmit = async event => {
+  event.preventDefault(); if (!updateDraft) return;
+  byId('update-submit').disabled = true;
+  const intent = {...updateDraft,body:byId('update-body').value};
+  try {
+    const result = await api('update',intent);
+    banner('Update ' + result.state + '. Output adoption remains unverified. Key: ' + intent.key + (result.update.error ? ' · ' + result.update.error : ''));
+    byId('update-dialog').close(); await refresh();
+  } catch (error) { banner(error.message + ' Update key: ' + intent.key + '. Inspect the retained attempt before retrying; the key cannot send it again.'); }
+  finally { byId('update-submit').disabled = false; }
 };
 byId('create-form').onsubmit = async event => {
   event.preventDefault(); byId('create-submit').disabled = true;

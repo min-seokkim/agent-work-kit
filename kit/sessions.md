@@ -62,6 +62,20 @@ Status and command results use JSON schema 1. Exit 0 means the command returned 
 
 Prevents: F24, F29.
 
+## Update an active turn
+
+Select a Codex conversation's update_target from status, read its original assignment, and supply both that request ID and observed native turn ID:
+
+    awkit session --project . update Worker --request M-001 --expected-turn-id NATIVE-TURN-ID --key correction-1 --body-file correction.txt
+
+The human action appears beside that original active assignment. Its dialog shows conversation, project, assignment and exact observed turn; background refresh does not retarget the open draft. Supply --body, a UTF-8/BOM --body-file or stdin. Updates use the verified runtime identified under enrollment and the existing owned connection. Unsupported providers/runtime or unavailable observations refuse.
+
+The controller durably records a fresh caller key, complete body, source and exact target before native input, then submits required expectedTurnId to turn/steer. A stale/ended turn refuses; nothing moves to another turn or the ordinary queue. Reusing an update key recovers the same local attempt without another provider call; a different body/target or reuse as send/notice is refused. Existing message keys cannot name updates. Response loss stays uncertain through restart without replay. Inspect status before further action.
+
+Updates remain attached to the original assignment; its final reply retains its original relationship and author. Native acknowledgement establishes receipt, not adoption or rollback of earlier work. Read the final output separately. Existing send still queues an assignment for idle; notice still stores information without native input. Update exit0 means acknowledged, exit1 means retained refusal/uncertainty, and exit2 means invalid input or unavailable control.
+
+Prevents: F24, F25, F29.
+
 ## Submit a decision file
 
 Use a current offered decision from the selected conversation's status. Keep its complete ID opaque and choose a response under the existing authority. JSON contains exactly decision_id and choice. For an explicitly selected Claude denial, serialize the selected status record without reconstructing its ID:

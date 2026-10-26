@@ -190,6 +190,14 @@ def _parser():
     session_body = session_send.add_mutually_exclusive_group()
     session_body.add_argument("--body")
     session_body.add_argument("--body-file", type=Path)
+    session_update = session_commands.add_parser("update", help="update one exact active Codex assignment; never queue or replay")
+    session_update.add_argument("ident")
+    session_update.add_argument("--request", required=True, dest="request_id")
+    session_update.add_argument("--expected-turn-id", required=True)
+    session_update.add_argument("--key", required=True)
+    update_body = session_update.add_mutually_exclusive_group()
+    update_body.add_argument("--body")
+    update_body.add_argument("--body-file", type=Path)
     session_commands.add_parser("status", help="read complete exchanges, actual observations and capabilities as JSON")
     session_register = session_commands.add_parser("register", help="open an existing pairwise channel read-only")
     session_register.add_argument("--channel", type=Path, required=True)
@@ -680,6 +688,9 @@ def main(argv=None):
             elif args.action == "send":
                 payload = dict(ident=args.ident, key=args.key or uuid.uuid4().hex,
                                body=_read_body(args), kind=args.kind, entry="agent")
+            elif args.action == "update":
+                payload = dict(ident=args.ident, key=args.key, request_id=args.request_id,
+                               expected_turn_id=args.expected_turn_id, body=_read_body(args), entry="agent")
             elif args.action == "register":
                 payload = dict(channel=str(args.channel), main_name=args.main_name, reviewer_name=args.reviewer_name,
                                local_role=args.local_role, task=args.task)
@@ -693,6 +704,8 @@ def main(argv=None):
                 payload = dict(ident=args.ident, request_id=args.request_id)
             result = request(args.project, args.action, payload)
             print(json.dumps(dict(schema=1, **result)))
+            if args.action == "update":
+                return 0 if result["state"] == "acknowledged" else 1
             return 1 if args.action in ("create", "enroll") and result["session"]["state"] == "unknown" else 0
 
         if args.group == "channel":

@@ -71,7 +71,20 @@ def main():
         elif method == "thread/turns/list":
             emit(dict(id=ident, result=dict(data=threads[params["threadId"]]["turns"], nextCursor=None)))
         elif method == "thread/read":
-            emit(dict(id=ident, result=dict(thread=threads[params["threadId"]])))
+            emit(dict(id=ident, result=dict(thread=dict(threads[params["threadId"]], cwd=str(Path.cwd()), canAcceptDirectInput=True))))
+        elif method == "turn/steer":
+            thread_id = params["threadId"]
+            thread = threads[thread_id]
+            active = next((turn for turn in thread["turns"] if turn["status"] == "inProgress"), None)
+            if active is None or active["id"] != params["expectedTurnId"]:
+                emit(dict(id=ident, error=dict(code=-32600, message="expected turn mismatch")))
+                continue
+            text = params["input"][0]["text"]
+            if text == "LOSE_UPDATE_RESPONSE":
+                os._exit(9)
+            emit(dict(id=ident, result=dict(turnId=active["id"])))
+            if text != "KEEP_HOLDING":
+                finish(thread_id, active["id"], "Updated same turn: " + text)
         elif method == "turn/start":
             thread_id = params["threadId"]
             thread = threads[thread_id]

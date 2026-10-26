@@ -216,6 +216,47 @@ class SessionStore:
                          "VALUES (?,?,?,?,?,?,?,?)", (key, generation, method, params.get("threadId"),
                                                      params.get("turnId", turn.get("id")), item.get("id"), now(), payload))
 
+    def turn_updates(self):
+        """Local intent/result events; these are not independent channel assignments."""
+        with self.channel.transaction(write=False) as conn:
+            return self._turn_updates(conn)
+
+    @staticmethod
+    def _turn_updates(conn):
+        intents = {}
+        for row in conn.execute("SELECT method,payload FROM awkit_events WHERE method IN "
+                                "('awkit/turnUpdateIntent','awkit/turnUpdateResult') ORDER BY seq"):
+            value = json.loads(row["payload"])
+            if row["method"] == "awkit/turnUpdateIntent":
+                intents[value["id"]] = value
+            elif value["id"] in intents:
+                intents[value["id"]].update(value)
+        return list(intents.values())
+
+    def turn_update_intent(self, generation, *, key, request_id, expected_turn_id, body, entry):
+        if not isinstance(key, str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,200}", key):
+            raise ValueError("An update key contains 1 to 200 letters, digits, underscores or hyphens.")
+        if entry not in ("agent", "human"):
+            raise ValueError("Unsupported update entry.")
+        self.channel._validate_post("main", "reviewer", "notice", body)
+        with self.channel.transaction() as conn:
+            meta = self._metadata(conn)
+            active = self._active(conn, generation)
+            if (meta["provider"] != "codex" or meta["generation"] != generation or active is None
+                    or active["state"] not in ("accepted", "executing") or not expected_turn_id
+                    or active["turn_id"] != expected_turn_id or active["request_id"] != request_id
+                    or active["native_id"] != meta["native_id"]
+                    or conn.execute("SELECT 1 FROM messages WHERE kind='close'").fetchone()):
+                raise ValueError("Select the exact observed active Codex assignment and turn; no update was sent.")
+            value = dict(id=str(uuid.uuid4()), key=key, request_id=request_id, attempt_id=active["id"],
+                         generation=generation, native_id=meta["native_id"], expected_turn_id=expected_turn_id,
+                         body=body, entry=entry, created=now(), state="uncertain",
+                         source="durable intent; native admission not established")
+            conn.execute("INSERT INTO awkit_events(key,generation,method,thread_id,turn_id,at,payload) "
+                         "VALUES (?,?,?,?,?,?,?)", ("local:turn-update:" + key, generation, "awkit/turnUpdateIntent",
+                         meta["native_id"], expected_turn_id, value["created"], encoded(value)))
+            return value
+
     def finish(self, generation, turn_id, outcome, text, error=None):
         with self.channel.transaction() as conn:
             row = conn.execute("SELECT * FROM awkit_delivery WHERE generation=? AND turn_id=?",
@@ -345,6 +386,7 @@ class SessionStore:
                           and row["kind"] in REQUESTS and row["id"] not in replied]
             return dict(session=self._metadata(conn), channel=str(self.path), messages=messages,
                         attempts=attempts, decisions=decisions, events=events, unanswered=unanswered,
+                        turn_updates=self._turn_updates(conn),
                         cancellations=cancellations, posts=posts, extension_schema=version,
                         closed=any(row["kind"] == "close" for row in messages))
 

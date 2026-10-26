@@ -15,6 +15,15 @@ class ProviderError(RuntimeError):
     pass
 
 
+class ProviderRejected(ProviderError):
+    """A native JSON-RPC error response, distinct from transport uncertainty."""
+
+    def __init__(self, message, error=None):
+        super().__init__(message)
+        self.error = error
+        self.code = error.get("code") if isinstance(error, dict) else None
+
+
 class CodexSession:
     def __init__(self, command, project, callback, *, timeout=30, experimental=False):
         self.callback = callback
@@ -79,6 +88,8 @@ class CodexSession:
             except queue.Empty as exc:
                 raise ProviderError(f"{method} timed out; admission is uncertain and will not be replayed.") from exc
             if "error" in message:
+                if isinstance(message["error"], dict) and isinstance(message["error"].get("code"), int):
+                    raise ProviderRejected(f"{method}: {message['error']}", message["error"])
                 raise ProviderError(f"{method}: {message['error']}")
             return message["result"]
         finally:

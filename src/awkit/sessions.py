@@ -232,6 +232,8 @@ class SessionController:
             raise ValueError("Provider connection or conversation state is unavailable; the assignment has not been submitted.")
         with self._mutex:
             for other in self._stores.values():
+                if any(row["key"] == key for row in other.turn_updates()):
+                    raise ValueError("This caller key already names a turn update; a new assignment needs a fresh key.")
                 if other is not store and other.posted_key(key):
                     raise ValueError("This client key already names a message for a different recipient.")
             row = store.post(key, body, kind=kind, entry=entry)
@@ -294,6 +296,11 @@ class SessionController:
 
     def cancel(self, ident, request_id):
         return self._store(ident).cancel(request_id)
+
+    def update_turn(self, ident, **args):
+        from .session_updates import submit
+
+        return submit(self, ident, **args)
 
     def register_history(self, **args):
         path = self.project / Path(args.get("channel", ""))
@@ -516,6 +523,13 @@ class SessionController:
                             execution_state=meta["state"] if connected and age < 60 else "unknown",
                             parties={"main": "Coordinator", "reviewer": meta["name"]},
                             control_reason="" if can_send else reason)
+            from .session_updates import supported
+
+            active = store.active(generation)
+            snapshot["update_target"] = (dict(request_id=active["request_id"], expected_turn_id=active["turn_id"],
+                native_id=meta["native_id"], observed_at=meta["observed_at"], source=meta["source"])
+                if connected and supported(meta) and not snapshot["closed"] and active and active["turn_id"]
+                and active["state"] in ("accepted", "executing") and meta["state"] in ("running", "accepted", "decision needed") else None)
             views.append(snapshot)
         try:
             views.extend(self.history.snapshots())

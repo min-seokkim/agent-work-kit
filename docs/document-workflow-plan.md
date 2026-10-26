@@ -225,6 +225,14 @@ Proposed first task: a fictional technical system with source notes, a real synt
 
 Public fixtures must contain enough realistic complexity to expose the recorded failures. A private real task can establish usefulness later without publishing its evidence. Save visible intermediate work so the owner can inspect the direction before the entire document is finished; do not turn every stage into a mandatory approval request.
 
+### Standalone report observation
+
+After `b4bf1b2`, a separate bounded task applied the existing source bundle to a Korean decision report for a fictional maintenance lead reading without a presenter. The new assignment retained the source facts while choosing report requirements explicitly; it did not inherit historical slide, native-edit or intermediate-language requirements. The existing research conversation temporarily became its author through ordinary send, then returned to research. Native continuity is recorded separately from document quality in the session task.
+
+The editable Markdown and one-page PDF recommend retaining the 60°C baseline while testing further conditions. They explain why reducing requests from 8 to 5 includes missing the known fault E09, preserve technician responsibility and distinguish the proposal from approval or operation. The author used current writing guidance, direct Korean composition, source comparison and an inspected PDF render. A separate assessor reread all twelve synthetic records and independently rendered and inspected the PDF; no required content or layout repair was found. Planning read the final prose and accepted this bounded method observation. The assessor knew the scenario, so this was informed independent assessment rather than blind evaluation or intended-reader acceptance.
+
+Evidence is retained under `.awkit/handoffs/report-method-trial/`: the executor owns actual output and author checks, and assessment/assessment.md owns the separate semantic and rendered reading. Existing guidance was sufficient for this case. No new renderer, format supplement, mandatory drafting language or quality score is selected. This supplies one phase-E observation, not completion of the contrasting presentation, phases B/C or all phase-E work. Human revision, actual acceptance, saved effort and causal kit benefit remain unverified. Further work needs a selected reader problem rather than another repetition of this successful fixture.
+
 <a id="next-bounded-evidence-example"></a>
 
 ### Bounded evidence example

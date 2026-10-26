@@ -13,7 +13,6 @@ import uuid
 from datetime import UTC, datetime
 from pathlib import Path
 
-from .channel import REQUESTS
 from .channel_status import observe
 from .claude_session import ClaudeSession, availability, recover_local_results
 from .codex_session import CodexSession, ProviderError
@@ -505,21 +504,10 @@ class SessionController:
                 decision["request_id"] = next((row["request_id"] for row in snapshot["attempts"]
                                                if (row["provider_input_id"] == decision["params"].get("provider_input_id")
                                                    if meta["provider"] == "claude" else row["turn_id"] == decision["params"].get("turnId"))), None)
-            dispositions = []
-            for request_id in (row["id"] for row in snapshot["messages"] if row["kind"] in REQUESTS):
-                attempt = next((row for row in snapshot["attempts"] if row["request_id"] == request_id), None)
-                cancellation = next((row for row in snapshot["cancellations"] if row["request_id"] == request_id), None)
-                label = ("cancelled before dispatch" if cancellation and cancellation["disposition"] == "before-dispatch" else
-                         "queued; no dispatch attempt" if attempt is None else
-                         "delivery unresolved; not retried" if attempt["state"] in ("unresolved", "uncertain") else
-                         "interruption requested; outcome pending" if attempt.get("interruption_requested") and attempt["state"] not in ("failed", "no-reply") else
-                         "provider " + str(attempt["outcome"]) + "; no reply. Send a new assignment if further work is needed."
-                         if attempt["state"] in ("failed", "no-reply") else
-                         "provider " + str(attempt["outcome"]) + "; reply returned" if attempt["state"] == "returned" else "provider work pending")
-                dispositions.append(dict(request_id=request_id, state=label, cancellation=cancellation,
-                                         can_cancel=attempt is None and cancellation is None))
+            from .session_reading import dispositions
+
             snapshot.update(connected=connected, can_send=can_send,
-                            dispositions=dispositions, can_resume=bool(meta["native_id"] or meta.get("enrollment")) and not can_send,
+                            dispositions=dispositions(snapshot), can_resume=bool(meta["native_id"] or meta.get("enrollment")) and not can_send,
                             execution_state=meta["state"] if connected and age < 60 else "unknown",
                             parties={"main": "Coordinator", "reviewer": meta["name"]},
                             control_reason="" if can_send else reason)
@@ -564,6 +552,10 @@ class SessionController:
                 declarations = dict(report=report, exit_code=exit_code, view_links=links)
             except (OSError, ValueError, sqlite3.Error) as exc:
                 declarations = dict(error=str(exc))
+        from .session_reading import project
+
+        for view in views:
+            project(view, declarations)
         claude = availability()
         return dict(project=str(self.project), generation=self.generation, sessions=views,
                     provider_error=self.provider_error, diagnostics=self.errors[-10:], declarations=declarations,

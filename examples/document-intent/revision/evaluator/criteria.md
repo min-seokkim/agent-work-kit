@@ -16,8 +16,14 @@ The storage section uses the exact field label "반납품 보관 위치". It rec
 
 Compare all text outside the storage body with the selected actual first result. Preserve the inspection/intake roles, both-item condition, verification order, permission and missing-item state. The earlier terminology preference stays local: replacing "반납품" in the new exact field label with "장비" is an error. The added storage record does not make completion depend on location assignment or introduce another approval actor.
 
+## Independent continuation, when selected
+
+Inspect the project entry, the producer-created record as it stood at handoff, the retained first-stage results and the receiver's updated record and result. Check the baseline path and identity the receiver located, then judge its stage-2 change against that selected result and the participant sources. Preserve first attempts and the producer's original state so an updated record cannot conceal what was available at handoff.
+
+Record any extra location hint, operator repair, unavailable state or prior exposure. Distinguish producer omission, inaccessible files and receiver misuse only where the evidence supports that distinction. A truthful missing-state report does not establish completed continuation. Record observed source-access evidence separately from retained bytes and semantic reading; access metadata alone does not establish comprehension or complete access coverage.
+
 ## Record the result
 
 Distinguish a missing public input from misapplication of an available input. Report the requested improvement, unintended changes, repeated corrections and any extra explanation the participant needed. A first-stage failure remains visible even if the second stage carries it forward. Judge correction against the same source and preserve each prior candidate. If an intermediate draft was used, compare its meaning too; the method itself is not a success condition.
 
-Separate identity and scope checks from source-relative reading, Korean-language reading, rendered inspection and actual human acceptance. Name the evaluator and the method used. A valid unchanged assessment and a legitimate local edit are both useful results. Success supports this bounded, ordinary-context exercise only; independent continuation, lasting preference retention, cost savings and causal guide benefit remain untested.
+Separate identity and scope checks from source-relative reading, Korean-language reading, rendered inspection and actual human acceptance. Name the evaluator and the method used. A valid unchanged assessment and a legitimate local edit are both useful results. Success supports the route actually exercised. An ordinary same-context run leaves independent continuation untested; a selected independent run supports only its observed local handoff. Lasting preference retention, cost savings, provider-general reliability and causal guide benefit remain untested.

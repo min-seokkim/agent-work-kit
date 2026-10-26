@@ -62,6 +62,18 @@ Status and command results use JSON schema 1. Exit 0 means the command returned 
 
 Prevents: F24, F29.
 
+## Read current work
+
+Use ordinary status or the selected conversation's assignment overview. Lead new assignments with the requested output, then add context and limits, so their recorded excerpts identify the work without a generated summary. Read the complete original through its link.
+
+current_work shows outstanding assignments, explicitly pending handling and the latest settled outcome; dispositions retains every request. Local reservation and submission intent are separate from native acknowledgement and a returned reply. Handling stays unrecorded unless an explicit declaration supplies its action and state; an unavailable declaration source stays unavailable. Stored channel requests describe history, not a native queue or current recipient.
+
+Each supported Codex attempt has at most one public_update: its latest retained completed agent-message commentary, with time, request/attempt, turn, native conversation and associated connection generation. Later tools cannot hide it outside the general 30-event window. Final replies, other turns/conversations, unrelated generations and private reasoning never substitute. Claude coverage is unverified. Missing supported commentary is explicit. This text does not establish current activity, correctness or completion; stale native observations remain unknown and failed attempts remain failed.
+
+decision_summary separates responses_needed, submitted_unconfirmed and unavailable. A recorded response awaiting native confirmation is not another response task. Use the existing detailed can_answer controls and offered choices; later work or idle cannot confirm a callback. Reading dispatches nothing, changes no cursor and marks no result handled.
+
+Prevents: F24, F29.
+
 ## Update an active turn
 
 Select a Codex conversation's update_target from status, read its original assignment, and supply both that request ID and observed native turn ID:

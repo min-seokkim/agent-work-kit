@@ -369,8 +369,11 @@ class SessionStore:
 
     def snapshot(self):
         with self.channel.transaction(write=False) as conn:
+            meta = self._metadata(conn)
             messages = [dict(row) for row in conn.execute("SELECT * FROM messages ORDER BY seq")]
             attempts = [dict(row) for row in conn.execute("SELECT * FROM awkit_delivery ORDER BY created")]
+            for attempt in attempts:
+                attempt["public_update"] = self._public_update(conn, meta, attempt)
             version = conn.execute("SELECT schema FROM awkit_session WHERE singleton=1").fetchone()[0]
             cancellations = [dict(row) for row in conn.execute("SELECT * FROM awkit_cancellations")] if version >= 2 else []
             posts = [dict(row) for row in conn.execute("SELECT * FROM awkit_posts ORDER BY created")]
@@ -384,11 +387,31 @@ class SessionStore:
             replied = {row["reply_to"] for row in messages if row["sender"] == "reviewer"}
             unanswered = [row["id"] for row in messages if row["receiver"] == "reviewer"
                           and row["kind"] in REQUESTS and row["id"] not in replied]
-            return dict(session=self._metadata(conn), channel=str(self.path), messages=messages,
+            return dict(session=meta, channel=str(self.path), messages=messages,
                         attempts=attempts, decisions=decisions, events=events, unanswered=unanswered,
                         turn_updates=self._turn_updates(conn),
                         cancellations=cancellations, posts=posts, extension_schema=version,
                         closed=any(row["kind"] == "close" for row in messages))
+
+    @staticmethod
+    def _public_update(conn, meta, attempt):
+        """One retained public commentary item, never a final answer or native transcript."""
+        if (meta["provider"] != "codex" or not attempt["turn_id"] or not attempt["native_id"]
+                or attempt["native_id"] != meta["native_id"]):
+            return None
+        row = conn.execute(
+            "SELECT seq,generation,thread_id,turn_id,item_id,at,json_extract(payload,'$.item.text') AS text "
+            "FROM awkit_events WHERE method='item/completed' AND thread_id=? AND turn_id=? "
+            "AND generation IN (?,?) AND json_extract(payload,'$.item.type')='agentMessage' "
+            "AND json_extract(payload,'$.item.phase')='commentary' "
+            "AND json_type(payload,'$.item.text')='text' "
+            "AND length(trim(json_extract(payload,'$.item.text')))>0 ORDER BY seq DESC LIMIT 1",
+            (attempt["native_id"], attempt["turn_id"], attempt["generation"],
+             attempt.get("origin_generation") or attempt["generation"])).fetchone()
+        if row is None:
+            return None
+        return dict(row, request_id=attempt["request_id"], attempt_id=attempt["id"],
+                    source="retained item/completed agentMessage commentary")
 
     def active(self, generation):
         with self.channel.transaction(write=False) as conn:

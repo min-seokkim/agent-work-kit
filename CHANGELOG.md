@@ -8,6 +8,8 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Commands
 
+- Session status adds current_work, decision_summary and one public_update per correlated Codex attempt from retained completed public commentary. The general event window stays30. Agent/human reading separates local reservation/submission, native acknowledgement, linked replies and explicit handling; stale activity remains unknown. Respondable decisions are counted separately from submitted/native-unconfirmed callbacks and unavailable routes. No provider input, callback response, cursor movement or storage migration occurs on read; existing controls and exact-turn updates remain.
+
 - Session update supplies an explicitly selected existing Codex assignment/expected native turn through turn/steer on the verified runtime. Agent and human routes persist intent/body/target/caller key before input; duplicate keys recover without replay, and ended/mismatched turns refuse without fallback. Status adds turn_updates and update_target. Existing core schema1/extensions3/4 store explicit local intent/dispatch/result event types without migration or new channel assignments. Original request/result links and send/notice/decision behavior remain. Native acknowledgement is separate from output adoption; restart retains uncertain updates. Exit0 acknowledges an update, exit1 retains refusal/uncertainty and exit2 reports input/control errors.
 
 - Session decide accepts --input-file PATH, or - for UTF-8 stdin, containing the exact decision_id and choice. UTF-8 BOM is supported. Mixed argument/file input and malformed or ambiguous JSON are refused before dispatch. The selected session, existing decision handler, offered choices, permission semantics, JSON result schema and exit meanings remain unchanged; --decision with --choice or --answers-file still works.
@@ -19,6 +21,8 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 - The task handoff template requests actual drafts and any intermediate draft used, preserving the Korean guide's drafting-method choice.
 
 ### Examples
+
+- The public revision example adds an optional route across independent sessions. The producer leaves its own task record reachable from the project entry; the receiver verifies and revises the actual retained result. A fresh Codex-to-Claude use found no required public-direction repair. The task record separates informed assessment and retained operational failures from technical delivery, human acceptance and efficiency claims.
 
 - The document-intent example adds a public review-only route and staged local revisions, with fictional sources, evaluator criteria and actual historical outputs. The later request uses each run's actual first result; current drafting-method choice remains available.
 

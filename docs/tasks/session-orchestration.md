@@ -1,5 +1,19 @@
 # Create, resume and follow independent sessions
 
+## Current-work reading
+
+The selected current-work-reading-unit contract builds on delivered exact-turn updates in `7714166`. The existing original request/reply links, update dialog, handling declarations and once-only decision controls remain. A read-only projection adds current_work and decision_summary to ordinary status and shows the assignment disposition, latest public update and handling beside the selected work. Local reservation/submission is separate from native acknowledgement, returned replies and current activity. Only declared actions establish handling; missing declarations stay unrecorded and unreadable sources stay unavailable. Stored-channel requests cannot establish a current native queue.
+
+Each Codex attempt projects one latest completed public agent-message commentary from its exact retained thread/turn and originating or recovered connection generation. It carries the event time and original request/attempt association, independently of the unchanged30-event window. Other turns, conversations, unrelated generations, final answers and private reasoning cannot fill it. Claude public-commentary coverage is unverified. Public claims do not override stale unknown activity, terminal failure, cancellation or provider uncertainty. No storage migration, provider call, dispatch, cursor movement or handling acknowledgement is added by reading.
+
+The retained Claude presentation case has nine recorded responses with can_answer=false and no native confirmation. Source projection of that actual retained status establishes zero responses needed and nine submitted/native-unconfirmed records without changing them. Unavailable routes remain separate. The detailed offered choices, disabled historical controls and current pending controls retain their behavior. Later tools, idle and final replies do not resolve callbacks. Neither the retained case nor offline fixtures replay a completed callback.
+
+The root-approved W2 patch is integrated without changing its trial-frozen public README/criteria. Its task record and CHANGELOG distinguish the fresh informed continuation assessment, first operational failures and later technical delivery. The new planner-current-reading patch against `7714166` is separate from the already delivered older planner-docs patch; its two root-owned files are hash-verified and backed up for safe alignment. Planner source/mechanical checks do not establish rendering of these new excerpts.
+
+Eleven focused fixtures cover ordinary HTTP/CLI, mixed dispositions, active-first reading with older uncertainty retained, explicit older handling, read-only bytes/cursors, exact public commentary beyond 30 tool events, generation/turn/conversation exclusion, unsupported Claude coverage and failed partial progress. An ordinary query of the ongoing OriginalImplementation supplied its actual recorded attempt and native unknown observation; source projection of that exact retained channel recovered public updates without turning them into proof of current activity. This is source/ordinary-use evidence, not an installed new API or rendered observation.
+
+The browser-rejection-boundary record still has no relayed owner authorization. No CUA retry, alternate actor or control path is used. New-screen desktop/narrow inspection and human acceptance remain unverified; source, HTTP/CLI fixtures and retained ordinary-use evidence are reported separately in `.awkit/workspaces/current-work-reading/.awkit/current-work-reading/`. Picker implementation is deferred from this run.
+
 <a id="explicit-local-codex-enrollment-candidate"></a>
 
 ## Delivered local Codex enrollment and recovery

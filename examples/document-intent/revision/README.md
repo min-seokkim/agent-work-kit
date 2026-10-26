@@ -16,6 +16,17 @@ Read [the review request and passage](participant/review.md). Save the assessmen
 
 Use your project's existing task record for file identities, method, guide revision, comparison and limits. For file comparison, Git accepts complete local paths: `git diff --no-index -- "path/to/stage-1.md" "path/to/stage-2.md"` (exit 1 means differences). In PowerShell, `Get-FileHash -Algorithm SHA256 -LiteralPath "path/to/stage-1.md"` records the baseline identity. Substitute actual paths; neither command judges meaning. No custom run format is required.
 
+## Continue in a separate session (optional)
+
+To split successive revision across independent sessions, use your project's ordinary entry and current task record. In an isolated example project, these may be `README.md`, `docs/tasks/equipment-return.md` and `runs/equipment-return/`. The producer creates the record if it is absent; the receiver continues in the producer's run directory. Keep the copied example and linked guides' relative paths intact.
+
+1. Producer: perform step 1 of Successive revision only. Save the actual full result and required notes, then create or update your own current task record using the project's [checkpoint guidance](../../../kit/protocol.md#resume-after-interruption), with its [template](../../../kit/templates/checkpoint.md) as the fallback. Make that record reachable from the ordinary project entry. Stop before reading stage 2, evaluator material or walkthroughs.
+2. Receiver: start a separate conversation at the project entry. Follow its current record to locate and verify the actual result and relevant inputs, then perform step 2 of Successive revision and update that same record. Use the existing baseline-identity and retention instructions. If necessary state cannot be located, report what is missing. Do not replace producer state with a transcript, walkthrough output or operator-written handoff.
+
+Preserve the producer's record as it stood at handoff in ordinary history or an unchanged evidence copy before the receiver updates it; keep one current record. If files move between projects, preserve their bytes and working relative links. Record relocation without rewriting the producer's handoff for the receiver.
+
+Keep evaluator material and walkthroughs unread until both stages are saved. Then the receiver follows step 3 of Successive revision unless a separate evaluator is assigned. Record any extra location hint or repair needed to continue, and disclose prior exposure. A report of missing state is useful evidence; it does not establish successful continuation.
+
 ## Inspect a completed execution
 
 The optional [historical walkthrough](walkthrough/README.md) supplies actual earlier outputs and their provenance. It used the then-current intermediate-language instruction. It is an example to inspect after practice, not a replacement for your run's stage-1 result or a required phrasing. Agent reading, mechanical comparisons, rendered inspection and real-reader acceptance are separate observations. This exercise alone establishes no lasting memory, fewer owner reminders, language-method superiority or causal benefit.

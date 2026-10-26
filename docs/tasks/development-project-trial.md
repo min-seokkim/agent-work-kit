@@ -80,3 +80,9 @@ and conservative comparison were observed awkit capabilities. These observations
 do not establish that awkit caused the improvement or saved effort. Historical
 repair is a separate unselected change; no diagnostic feature follows from this
 successful local unit.
+
+## Rechecking a historical parser finding
+
+After `7415afa`, planning selected a remaining fenced-envelope item from the HUD project's historical record for bounded diagnosis. Research compared valid plain JSON, JSON-fenced and plain-fenced inputs through the existing parser and one-character streaming path. They produced equivalent results; malformed JSON and missing required design information remained rejected. The selected failure did not reproduce, and existing source/tests already covered that case.
+
+No application implementation or awkit feature is selected from this result. The application's prior uncommitted work stayed unchanged; detailed fixtures, preservation identities and findings remain in that application. The sanitized disposition is retained in `.awkit/handoffs/product-research/hud-envelope-followup.md`. This resolves the selected historical lead for planning, not all generation paths, live model behavior, actual interface behavior or the entire application backlog. Planning consumed research's result without repeating the code diagnosis or checks.

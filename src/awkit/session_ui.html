@@ -15,7 +15,7 @@ header{background:var(--paper);border-bottom:1px solid var(--line);padding:1.3re
 h1,h2,h3,p{margin-top:0}h1{font-size:1.35rem;margin-bottom:.15rem}h2{font-size:1.05rem}h3{font-size:1rem}
 .toolbar{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}.strip{max-width:1440px;margin:auto;padding:.8rem 1.2rem;display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;min-height:3.4rem}
 #latest{position:fixed;right:1.2rem;bottom:1rem;z-index:5;box-shadow:0 3px 12px #172b3a30;background:var(--paper)}
-.strip button{font-size:.84rem;padding:.3rem .65rem}.strip .quiet{color:var(--muted);font-size:.9rem}.strip details{max-width:30rem;overflow-wrap:anywhere;font-size:.84rem}.strip summary{cursor:pointer}.strip pre{max-height:20rem;overflow:auto}
+.strip button{font-size:.84rem;padding:.3rem .65rem;max-width:100%;overflow-wrap:anywhere;text-align:left}.strip .quiet{color:var(--muted);font-size:.9rem}.strip details{max-width:30rem;overflow-wrap:anywhere;font-size:.84rem}.strip summary{cursor:pointer}.strip pre{max-height:20rem;overflow:auto}
 main{max-width:1440px;margin:0 auto;padding:0 1.2rem 2rem;display:grid;grid-template-columns:290px minmax(0,1fr);gap:1.2rem;align-items:start}
 aside,.conversation{border:1px solid var(--line);background:var(--paper);border-radius:10px}
 aside{padding:1rem;position:sticky;top:1rem;max-height:calc(100dvh - 2rem);overflow:auto}.list{display:grid;gap:.55rem}
@@ -37,6 +37,7 @@ dialog h2{font-size:1.2rem}.dialog-actions{display:flex;justify-content:flex-end
 a{color:var(--accent)}.small{font-size:.83rem}.hidden{display:none!important}
 @media(max-width:760px){header{padding:1rem}.project{margin-left:0;max-width:100%;width:100%;font-size:.8rem}main{display:block;padding:0 .65rem 1.2rem}.strip{padding:.65rem}aside{position:static;max-height:none}.conversation{min-height:65vh}.back{display:inline-flex}body.conversation-open aside{display:none}body:not(.conversation-open) .conversation{display:none}.conversation-head,.compose{padding:1rem}.messages{padding:.8rem}.message{padding:.85rem}.split{grid-template-columns:1fr}.decision{margin:.8rem}}
 #update-target{overflow-wrap:anywhere}#update-original{white-space:pre-wrap;overflow-wrap:anywhere;max-height:12rem;overflow:auto}
+.work-overview{padding:1rem 1.2rem;border-bottom:1px solid var(--line)}.work-item{border:1px solid var(--line);border-radius:7px;padding:.8rem;margin-top:.7rem;min-width:0;overflow-wrap:anywhere}.work-item p{margin-bottom:.45rem}.work-item .public-text{white-space:pre-wrap;overflow-wrap:anywhere;max-height:16rem;overflow:auto}.work-item .toolbar a{font-size:.85rem}
 </style>
 </head>
 <body>
@@ -52,8 +53,9 @@ a{color:var(--accent)}.small{font-size:.83rem}.hidden{display:none!important}
 <p id="control-reason" class="reason"></p>
 <details><summary>Permissions and connection</summary><div id="permissions"></div></details>
 <details><summary>Technical details</summary><pre id="technical"></pre></details></div>
+<section id="work" class="work-overview" aria-label="Assignment dispositions and public updates"></section>
 <div id="decisions"></div><div id="messages" class="messages"><div class="empty">Create a session or open existing channel history.</div></div>
-<form id="compose" class="compose"><p id="scope" class="scope"></p><label>Message<textarea id="body" placeholder="Give this session a task…" disabled></textarea></label>
+<form id="compose" class="compose"><p id="scope" class="scope"></p><label>Message<textarea id="body" placeholder="Start with the requested output, then add context and constraints…" disabled></textarea></label>
 <div class="toolbar"><label class="check"><input id="needs-reply" type="checkbox" checked> Request a reply</label><button id="send" class="primary" disabled>Send request</button></div>
 <p id="send-reason" class="reason"></p></form></section></main>
 <dialog id="create-dialog"><form id="create-form"><h2>Create an independent session</h2>
@@ -115,7 +117,9 @@ function select(id, target=null) {
   const saved = drafts.get(id) || {body:'',key:null,needsReply:true};
   byId('body').value = saved.body; draftKey = saved.key; byId('needs-reply').checked = saved.needsReply;
   document.body.classList.add('conversation-open'); render();
-  if (target) revealMessage(target); else latest();
+  if (target) revealMessage(target);
+  else if (current() && !current().session.history && (current().current_work || []).length) requestAnimationFrame(() => byId('work').scrollIntoView({block:'start'}));
+  else latest();
 }
 function latest() {
   if (!current()) return;
@@ -149,6 +153,41 @@ function revealMessage(id) {
   limits.set(selected, view.messages.length); signature = ''; render();
   requestAnimationFrame(() => { if (ticket !== navigation) return; const target = byId('message-' + id); if (target) target.scrollIntoView({block:'start'}); });
 }
+function messageLink(text, id) {
+  const link = node('a',text); link.href = '#message-' + id;
+  link.onclick = event => { event.preventDefault(); revealMessage(id); };
+  return link;
+}
+function decisionCounts(view) {
+  if (view.decision_summary) return view.decision_summary;
+  const counts = {responses_needed:0,submitted_unconfirmed:0,unavailable:0};
+  for (const row of view.decisions.filter(value => value.state !== 'resolved')) {
+    counts[row.can_answer ? 'responses_needed' : row.response != null || ['sending','sent'].includes(row.state) ? 'submitted_unconfirmed' : 'unavailable']++;
+  }
+  return counts;
+}
+function renderWork(view) {
+  const box = byId('work'); box.replaceChildren();
+  box.append(node('h2',view.session.history ? 'Recorded channel requests' : 'Assignments and latest outcome'));
+  box.append(node('p',view.session.history ? 'Stored history does not establish a current native queue or recipient.' : 'Native activity is observed separately above. Public text is a retained report, not verification or proof of current activity.','reason'));
+  if (!(view.current_work || []).length) box.append(node('p','No supported assignment reading is available.','reason'));
+  for (const work of view.current_work || []) {
+    const assignment = view.messages.find(row => row.id === work.request_id);
+    const item = node('article',undefined,'work-item'); item.append(node('p',work.state));
+    if (assignment) item.append(node('p',assignment.body.slice(0,220) + (assignment.body.length > 220 ? '…' : ''),'small'));
+    const links = node('div',undefined,'toolbar'); links.append(messageLink('Read original assignment',work.request_id));
+    if (work.reply_id) links.append(messageLink('Read returned reply',work.reply_id));
+    item.append(links);
+    const update = work.public_update;
+    if (update) {
+      item.append(node('p','Latest public update · ' + time(update.at),'meta'),node('div',update.text,'public-text'));
+      const details = node('details'); details.append(node('summary','Public update source'),node('pre',JSON.stringify({source:update.source,request:update.request_id,attempt:update.attempt_id,turn:update.turn_id,conversation:update.thread_id,generation:update.generation},null,2))); item.append(details);
+    } else item.append(node('p',view.session.history ? 'Public commentary is unavailable for stored-channel history.' : 'No supported public commentary recorded for this assignment.','reason'));
+    const declared = work.handling && work.handling.declarations || [];
+    item.append(node('p',declared.length ? 'Declared handling: ' + declared.map(row => row.action + ' · ' + row.state).join('; ') : work.handling && work.handling.state === 'unavailable' ? 'Handling declarations unavailable' : 'Handling: unrecorded','reason'));
+    box.append(item);
+  }
+}
 function render() {
   if (!state) return;
   byId('project').textContent = 'Project · ' + state.project;
@@ -162,8 +201,9 @@ function render() {
   for (const view of state.sessions) {
     const m = view.session, button = node('button'); button.type = 'button'; button.className = 'session'; button.setAttribute('aria-current', String(m.id === selected));
     button.append(node('strong',m.name),node('span',m.provider + (m.enrollment ? ' · existing conversation' : m.history ? ' · read only' : ''),'meta'),node('span',m.responsibility || 'No task label','meta'),node('span',view.execution_state,'state'));
-    const unanswered = view.messages.find(row => awaiting(view).includes(row.id));
-    if (unanswered) button.append(node('span','Awaiting reply: ' + unanswered.body.slice(0,95),'assignment'));
+    const work = (view.current_work || []).find(row => ['admitting','accepted','executing','uncertain','unresolved'].includes(row.dispatch_state)) || (view.current_work || []).find(row => row.dispatch_state === 'queued') || (view.current_work || []).slice(-1)[0];
+    const assignment = work && view.messages.find(row => row.id === work.request_id);
+    if (assignment) button.append(node('span',work.state + ': ' + assignment.body.slice(0,140),'assignment'));
     button.onclick = () => select(m.id); list.append(button);
   }
   const pending = byId('pending');
@@ -171,9 +211,15 @@ function render() {
   pending.replaceChildren();
   let count = 0;
   for (const view of state.sessions) {
-    const decisions = view.decisions.filter(row => ['pending','sending','sent','uncertain','route unavailable'].includes(row.state));
-    for (const [label, amount] of [['provider decision',decisions.length],['reply awaited',awaiting(view).length]]) {
-      if (amount) { const button = node('button',view.session.name + ' · ' + amount + ' ' + label); button.onclick = () => select(view.session.id); pending.append(button); count += amount; }
+    const counts = decisionCounts(view);
+    if (counts && (counts.responses_needed || counts.submitted_unconfirmed || counts.unavailable)) {
+      const button = node('button',view.session.name + ' · ' + counts.responses_needed + ' responses needed · ' + counts.submitted_unconfirmed + ' submitted / native unconfirmed · ' + counts.unavailable + ' unavailable');
+      button.onclick = () => select(view.session.id); pending.append(button); count++;
+    }
+    const amount = awaiting(view).length;
+    if (amount) {
+      const button = node('button',view.session.name + ' · ' + amount + (view.session.history ? ' recorded without reply' : ' reply awaited'));
+      button.onclick = () => select(view.session.id); pending.append(button); count += amount;
     }
   }
   const declarations = state.declarations && state.declarations.report;
@@ -214,8 +260,9 @@ function render() {
   if (m.returned_scope) permission.append(node('p','Reconnection returned a different scope. Saved permissions remain above; queued work is held.','reason'),node('pre',JSON.stringify(m.returned_scope,null,2)));
   if (m.startup_context) permission.append(node('p','Responsibility supplied at creation: ' + m.startup_context.responsibility + ' (' + m.startup_context.admission + '). This is instruction input, not a compliance check.','reason'));
   byId('technical').textContent = JSON.stringify({channel:view.channel,native_conversation:m.native_id,selected_native_conversation:m.enrollment && m.enrollment.thread_id,enrollment:m.enrollment,admission_observation:m.admission_observation,returned_identity:m.returned_native_id,generation:m.generation,client:m.client,startup_context:m.startup_context,recovery_evidence:m.recovery_evidence,posts:view.posts,cancellations:view.cancellations,attempts:view.attempts,events:view.events,diagnostics:state.diagnostics},null,2);
-  const key = JSON.stringify({id:selected,messages:view.messages,decisions:view.decisions,attempts:view.attempts,dispositions:view.dispositions,turn_updates:view.turn_updates,update_target:view.update_target,connected:view.connected,limit:limits.get(selected),declared:declarations});
+  const key = JSON.stringify({id:selected,messages:view.messages,decisions:view.decisions,attempts:view.attempts,current_work:view.current_work,dispositions:view.dispositions,turn_updates:view.turn_updates,update_target:view.update_target,connected:view.connected,limit:limits.get(selected),declared:declarations});
   if (key === signature) return; signature = key;
+  renderWork(view);
   const decisionBox = byId('decisions'); decisionBox.replaceChildren();
   for (const decision of view.decisions.filter(row => row.state !== 'resolved')) {
     const box = node('section',undefined,'decision'); box.append(node('h2','Provider decision · ' + decision.state));
@@ -300,7 +347,7 @@ function render() {
         const target = state.declarations.view_links && state.declarations.view_links[row.source.relationship];
         return target === m.id && [message.id,message.reply_to].includes(row.source.message);
       });
-      card.append(node('p',related.length ? 'Declared handling: ' + related.map(row => row.action + ' · ' + row.state).join('; ') : 'Result handling: unrecorded','handling'));
+      card.append(node('p',related.length ? 'Declared handling: ' + related.map(row => row.action + ' · ' + row.state).join('; ') : state.declarations && state.declarations.error ? 'Result handling unavailable' : 'Result handling: unrecorded','handling'));
     }
     const detail = node('details'); detail.append(node('summary','Message details'),node('pre',JSON.stringify({id:message.id,kind:message.kind,reply_to:message.reply_to,snapshot:message.snap},null,2))); card.append(detail); messages.append(card);
   }
@@ -313,7 +360,7 @@ async function refresh() {
     if (state.provider_error) banner(state.provider_error);
   } catch (error) {
     banner('Connection unavailable: ' + error.message);
-    if (state) { for (const view of state.sessions) { if (!view.session.history) { view.connected = false; view.can_send = false; view.execution_state = 'unknown'; view.control_reason = 'Controller connection unavailable; the last observation remains below.'; } } render(); }
+    if (state) { for (const view of state.sessions) { if (!view.session.history) { view.connected = false; view.can_send = false; view.execution_state = 'unknown'; view.control_reason = 'Controller connection unavailable; the last observation remains below.'; for (const decision of view.decisions) decision.can_answer = false; delete view.decision_summary; } } render(); }
     byId('send').disabled = true; byId('interrupt').disabled = true;
   }
   finally { loading = false; }

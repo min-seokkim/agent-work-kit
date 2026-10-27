@@ -16,6 +16,8 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Guidance
 
+- Development records now open with current conclusions and next actions. The roadmap separates current work, deferred or blocked outcomes and completed units; earlier assignments and evidence remain available in the existing records.
+
 - The session guide shows the existing CLI creation command before sending the first assignment, while retaining creation and follow-up through the human screen.
 
 - The task handoff template requests actual drafts and any intermediate draft used, preserving the Korean guide's drafting-method choice.

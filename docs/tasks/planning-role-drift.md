@@ -1,5 +1,15 @@
 # Planning session repeatedly takes implementation work
 
+## Current status
+
+Deferred behavioral observation. The bounded diagnosis is complete; the existing ownership constraint remains the selected correction. Persistence after continuation has not been demonstrated.
+
+Next action: Observe the next ordinary delivery and natural continuation without another role reminder. A recurrence supplies new evidence; a rewritten checkpoint or replay does not close this incident.
+
+## Earlier scope and evidence
+
+The following sections retain the original assignments and observations. Their stage-specific status statements are historical; use the current status above when resuming.
+
 State: bounded diagnosis complete; behavioral correction remains unverified.
 Owner: product planning for the requirement; research for diagnosis; implementation for any selected change.
 

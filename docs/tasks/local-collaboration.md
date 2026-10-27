@@ -1,5 +1,15 @@
 # Local collaboration trial
 
+## Current status
+
+Completed assigned installation, hook-investigation and Python 3.14 units. Their cumulative delivery and remaining environment limits are recorded in [the planning trial](planning-implementation.md).
+
+Next action: Retain this trial as evidence. Route any new collaboration work through [the session record](session-orchestration.md); the earlier channels and assignments are historical.
+
+## Earlier scope and evidence
+
+The following sections retain the original assignments and observations. Their stage-specific status statements are historical; use the current status above when resuming.
+
 This record owns the trial's assignments, results and remaining work. The task table records each unit's state; setup observations below describe the stages in which they were made. See the [collaboration plan](independent-session-collaboration.md) and [verification record](../evidence.md#verification-record). Local `.awkit/` paths are relative to the repository root.
 
 ## Current local collaboration trial

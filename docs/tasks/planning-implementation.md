@@ -1,5 +1,15 @@
 # Planning and implementation trial
 
+## Current status
+
+Completed original implementation trial, delivered through `31a1599` with Windows/Linux CI. Its bounded corrections and environment limits remain in the delivery record.
+
+Next action: Use [the roadmap](../roadmap.md#task-plans) for current work. Preserve this trial and its failed attempts without treating its old allocations as active assignments.
+
+## Earlier scope and evidence
+
+The following sections retain the original assignments and observations. Their stage-specific status statements are historical; use the current status above when resuming.
+
 Status: the original trial delivered its implementation; final environment and closure outcomes are tracked in the delivery receipt. Base: `12d402a`. The owner authorized a three-hour collaboration between planning and implementation, with no additional session assigned in that trial. The sections below retain its original scope, work and findings. Current responsibilities and work selection are in the [roadmap](../roadmap.md#current-planning-focus).
 
 ## Outcome and ownership

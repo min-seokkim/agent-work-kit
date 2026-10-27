@@ -1,5 +1,15 @@
 # Real data revision trial
 
+## Current status
+
+Completed bounded analysis units. The CI-metadata revision and opt-in added-artifact visibility were delivered; a separate other-project analysis used existing guidance and channels. Frozen-runner use on that external analysis and causal benefit remain unverified.
+
+Next action: Reuse the retained analysis and comparison results. Select any further real-data revision separately; no retrospective runner execution or new data command was assigned.
+
+## Earlier scope and evidence
+
+The following sections retain the original assignments and observations. Their stage-specific status statements are historical; use the current status above when resuming.
+
 Status: M-113 returned the checked revision in R-066; planning retains that result. M-116 implements the bounded comparison-output follow-up; its technical and final combined delivery records are identified below. Parent base: `d04c994`. This task contributes to [roadmap item 5](../roadmap.md#next-work); using this repository's public CI metadata does not complete its separate requirement for data work in another project.
 
 ## Product question

@@ -1,5 +1,15 @@
 # Create, resume and follow independent sessions
 
+## Current status
+
+Deferred extensions after delivered controls. Current-work reading and the optional W2 package shipped in `a2a0c43`, after exact-turn updates in `7714166`. The delivery receipt records 21 passing CI jobs and exact installation; application screen inspection and human acceptance remain unverified.
+
+Next action: Keep the conversation picker deferred until selected. Existing IDE attachment, broader discovery and Claude peer enrollment remain unfinished; do not repeat held native or browser operations without their required authorization or changed prerequisite.
+
+## Earlier scope and evidence
+
+The following sections retain the original assignments and observations. Their stage-specific status statements are historical; use the current status above when resuming.
+
 ## Current-work reading
 
 The selected current-work-reading-unit contract builds on delivered exact-turn updates in `7714166`. The existing original request/reply links, update dialog, handling declarations and once-only decision controls remain. A read-only projection adds current_work and decision_summary to ordinary status and shows the assignment disposition, latest public update and handling beside the selected work. Local reservation/submission is separate from native acknowledgement, returned replies and current activity. Only declared actions establish handling; missing declarations stay unrecorded and unreadable sources stay unavailable. Stored-channel requests cannot establish a current native queue.

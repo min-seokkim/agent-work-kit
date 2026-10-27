@@ -1,5 +1,15 @@
 # Document workflow trial
 
+## Current status
+
+Completed assigned local proposal trial, delivered in `89549b7`. Check/report scope was clarified; no push or installation change was part of that trial. The historical automatic-hook failure remains unresolved.
+
+Next action: Use [writing comparison](writing-comparison.md) for the delivered follow-up and [connection diagnostics](connection-diagnostics.md) for the deferred hook investigation.
+
+## Earlier scope and evidence
+
+The following sections retain the original assignments and observations. Their stage-specific status statements are historical; use the current status above when resuming.
+
 Status: accepted for local delivery. Owner: the main Codex session, with the existing Bimmer session as reviewer. Base: `0f41f0b`. The owner authorized a time-limited collaboration and a final local commit. Closing preparation starts at the agreed deadline; necessary checks and the commit may finish later. Shutdown belongs to the reviewer only after both sessions explicitly report completion. No push or installation change is part of this trial.
 
 ## Goal and scope

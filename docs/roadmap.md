@@ -6,6 +6,87 @@ Remaining work and its completion criteria. Item numbers retain the earlier deve
 
 ## Current planning focus
 
+The navigation refresh organizes the existing development records; its [task record](tasks/documentation-restructure.md#current-status) points to verification and delivery results. Product behavior is delivered through `a2a0c43`; the [development summary](development.md#current-state) identifies its capabilities and limits. Recent bounded writing, session and application trials are retained in their task records.
+
+Further product work requires selecting an unfinished outcome below. The prepared conversation picker remains deferred; the full presentation remains blocked on native control. Writing improvement, fewer repeated instructions and coordination benefit still require real-use evidence. Completed implementations do not close those broader outcomes.
+
+Use each task's opening conclusion and next action before reading its historical assignments. The categories below do not assert that a session is currently executing, authorize a new assignment or replace the task's acceptance criteria. Earlier allocations remain in [the retained planning context](#earlier-planning-context).
+
+## Task plans
+
+Current work is the owner's selected assignment. Deferred records name the condition or decision needed to resume. Completed units retain their evidence and narrower acceptance scope; unmeasured general benefits remain open in the relevant deferred record.
+
+### Current work
+
+- [Development-record navigation](tasks/documentation-restructure.md#current-status): the entry point, task categories and opening conclusions are implemented. Its retained receipt owns verification and delivery state. No further product implementation is assigned by this refresh.
+
+### Deferred and blocked
+
+- [Writing outcomes](tasks/writing-outcome-evaluation.md#current-status): select a real revision or natural continuation that tests preservation and adherence without another reminder.
+- [Session orchestration](tasks/session-orchestration.md#current-status): current controls have shipped; the picker, existing IDE attachment, broader discovery and Claude peer enrollment remain unfinished or deferred.
+- [Independent-session collaboration](tasks/independent-session-collaboration.md#current-status): retain the broader coordination outcome and conditional transport/receipt work; use the session record for implementation state.
+- [Planning-role drift](tasks/planning-role-drift.md#current-status): diagnosis is complete; observe actual role adherence at an ordinary delivery and continuation.
+- [Connection diagnostics](tasks/connection-diagnostics.md#current-status): shipped corrections are retained; the historical automatic-hook cause needs the actual failing invocation.
+- [Document workflow](document-workflow-plan.md#current-status): broader production and human-revision phases await a selected real-use task.
+- [Presentation trial](tasks/presentation-method-trial.md#current-status): blocked before full production until supported native PowerPoint control is available.
+
+### Completed units
+
+| Record | Completed scope; remaining limits stay in the record |
+|---|---|
+| [Writing revision workflow](tasks/writing-revision-workflow.md#current-status) | W0 guidance, W1 public review/revision package and W2 optional public continuation route. |
+| [Existing development-project trial](tasks/development-project-trial.md#current-status) | Local feature and revision trials; the later parser lead selected no change. Application publication and human acceptance are not established. |
+| [Real data revision](tasks/real-data-trial.md#current-status) | CI-metadata revision, added-artifact comparison and a separate other-project analysis; external frozen-runner use remains unexercised. |
+| [Task-start lookup](tasks/task-start-lookup.md#current-status) | Existing lookup procedure and BOM compatibility; the redundant output addition was withdrawn. |
+| [Installed guide paths](tasks/installed-guide-paths.md#current-status) | Package correction, project diagnostic and isolated targeted repair; no real-project migration assigned. |
+| [Snapshot path recipe](tasks/snapshot-path-recipe.md#current-status) | Delivered Windows path-handling recipe and bounded fixture. |
+| [Writing comparison](tasks/writing-comparison.md#current-status) | Accepted conservative comparison report with complete-file policy preserved. |
+| [Scoped document trial](tasks/scoped-document-trial.md#current-status) | Accepted local correction and substantive revision, with review limits retained. |
+| [Planning and implementation trial](tasks/planning-implementation.md#current-status) | Original bounded implementation units and cumulative delivery. |
+| [Usage log compatibility](tasks/usage-log-compatibility.md#current-status) | Delivered format-3 unit; client and counting-unit limits remain explicit. |
+| [Document workflow trial](tasks/workflow-review.md#current-status) | Assigned local proposal trial and scope clarification. |
+| [Document coverage and author intent](tasks/document-intent-trial.md#current-status) | Brief-preservation guidance, bounded trials and public fixture packaging. |
+| [Local collaboration trial](tasks/local-collaboration.md#current-status) | Installation, hook investigation and Python 3.14 units. |
+| [One-shot automation example](tasks/one-shot-automation-example.md#current-status) | Four delivered local mock cases; no production scheduler claim. |
+
+Whether the skills-only bundle helps without executable checks remains part of item 5; its packaging is already recorded as completed item 6a.
+
+## Next work
+
+These retained item numbers identify unresolved outcomes and conditions, not fresh assignments. Completed task-start preparation (item 8) is in [completed units](#completed-units); its broader benefit remains part of item 5.
+
+| Item | Remaining work | Condition or next decision |
+|---|---|---|
+| 1 | Evidence for the remaining failure entries | Owner-record coverage is complete. The twelve entries still marked "needs evidence" require real review, delegation, data or operations cases under item 5, or removal after that evaluation. |
+| 2a | Candidate executable guards | Select a guard only when item 5 demonstrates its failure and existing controls are insufficient. Usage-based enforcement also depends on item 6. Original candidates remain in the historical backlog below. |
+| 5 | Measure real work | Preserve task-bounded repeated instructions, tokens and observed/prevented failures in [evidence](evidence.md#measurement-record). Select a real continuation or revision; existing trials establish narrower results than causal benefit or saved effort. |
+| 6 | Usage against current clients | The format-3 correction is delivered. Further work requires fresh client samples, an explicit counting unit and reliable task boundaries; see [compatibility limits](tasks/usage-log-compatibility.md#current-status). |
+| 9 | Channel receipts | Extend acknowledgement or consumer positions only if actual use requires separating read from handled, or several sessions share one role. |
+| 10 | Transfer to another environment | Choose two real environments before transport work. Preserve request identity, source revision, artifacts, replies and version-mismatch behavior. |
+| 11 | Continue independent sessions | Reuse delivered channels and session controls. The [session record](tasks/session-orchestration.md#current-status) owns remaining selection, IDE attachment and native-coverage requirements; receipt and transport extensions remain conditional. |
+
+## Follow-up from the document trial
+
+This table retains the follow-up rationale from the proposal trial. Delivered units and deferred investigations are classified above; these earlier proposals are not active assignments.
+
+The [trial](tasks/workflow-review.md) supplies one real document case for item 5. `89549b7` clarifies check/report scope; it does not enforce reading quality or classify existing findings. The reviewer reported useful snapshot-based review and handoff, alongside heavy procedure for short changes. Treat that account as experience to investigate, not measured productivity.
+
+| Work | Next bounded result | Completion boundary |
+|---|---|---|
+| Scale document work to the change | The [two-document trial](tasks/scoped-document-trial.md) accepted a one-sentence correction and a substantive revision using scoped evidence reuse. | Reading and rendered inspection caught defects after mechanical passes. The omitted-review checkpoint remained incomplete until inspection. Active time, productivity and intended-reader acceptance remain unmeasured; presentation phases remain open. |
+| Separate old and introduced writing findings | The [bounded report](tasks/writing-comparison.md) is implemented and accepted. Its next use should record actual attribution effort; the earlier proposal trial supplies the observed burden. | Explicit frozen revisions, complete-file reports, occurrence preservation and conservative uncertainty are verified in the candidate. Legacy writing and blocking policy remain unchanged. The task record links cumulative verification and delivery; productivity remains unmeasured. |
+| Diagnose the automatic Stop-hook import failure | Capture the [failing automatic invocation](tasks/connection-diagnostics.md#automatic-hook-import-investigation) and compare the direct shell under identified permissions. | A direct import or matching installation cannot establish restored automatic execution. |
+| Preserve the working collaboration path | Exercise [receipt and closure recovery](tasks/independent-session-collaboration.md#lessons-from-the-proposal-trial) using existing commands. | Delivered and checked versions match, requests are answered, and retries do not repeat external actions. Extra channel infrastructure remains conditional. |
+
+Usage compatibility in item 6 is a prerequisite for quantitative cost or call-limit claims. Hook reproduction can proceed separately. These are planning dependencies; the owner still chooses implementation order. The design decision against expanding `check done` remains in force.
+
+## Earlier planning context
+
+<details>
+<summary>Planning context through a2a0c43</summary>
+
+These allocations and intermediate states are historical. Current task conclusions and resume conditions are indexed above.
+
 Planning selects product work across awkit under the owner's continuing-development instruction. The implementation session owns technical implementation, verification and delivery. Existing writing trials supply evidence alongside development and collaboration use.
 
 The separate research/diagnosis session is registered, as reported in M-106; its startup handoff is under `.awkit/handoffs/product-research/`. Research answers a selected product question with existing capabilities, alternatives, evidence and the next decision. Research and implementation exchange diagnosis and feasibility questions directly; planning receives product choices and outcomes. Planning decides what to build; implementation owns execution. Implementation completed M-099 provider-diagnostic preparation, and research reused that result without transfer or duplicate investigation.
@@ -28,7 +109,7 @@ The earlier M-189/M-190 closure preserved then-unstarted work. Later allocations
 
 The next prepared communication contract is a recognizable, current-project Codex conversation picker through an already authorized native server. Pinned source supports database-only listing; safe reuse still needs response projection, handling of late/error payloads and a settled stderr-retention boundary. Native list responses can contain first-message previews, so an empty-turn response alone is insufficient. Do not start or repair a server merely to populate a list. Implementation is deferred from this run; preserve manual exact-ID enrollment and the remaining discovery limits. The existing session-selection task owns that broader outcome.
 
-## Next work
+### Numbered backlog before navigation refresh
 
 | Item | Work | State, prerequisites and completion criteria |
 |---|---|---|
@@ -41,39 +122,4 @@ The next prepared communication contract is a recognizable, current-project Code
 | 10 | Hand-off to another environment | Export and import of request ID, base revision, retained artifacts and replies, with repeated-input and version-mismatch checks. Remote transport after two real environments are chosen. |
 | 11 | Coordinate independent work sessions | Reuse provider messaging, queues and delegation first; connect Claude and Codex through the [provider integration plan](tasks/independent-session-collaboration.md#reuse-provider-collaboration-features). Owned-worker Codex and host-mediated Codex/Claude round trips passed; existing IDE attachment remains unverified. The offline adapter contract passed 23 focused tests; durable pre-send recording and its caller remain prerequisites for automatic dispatch. Read-only channel status was delivered in `03031d6` after integrated checks, all 17 Windows/Linux CI jobs and exact-commit installation checks. First use covered two registered channels; human output ordering was delivered in `7de0cb8` after attention items appeared behind settled history. Its task record retains unmeasured recovery and productivity limits. Preserve the existing channel and its small setup burden. Completion remains independent assignment, execution, evidence review and follow-up without manual message relay after setup. Items 9 and 10 remain conditional on demonstrated need. |
 
-## Task plans
-
-- [Existing development-project trial](tasks/development-project-trial.md): complete a real application feature, preserve prior work and assess concrete kit help or friction. Research found existing copied-kit adoption in all three inspected WSL projects; missing current markers do not justify reinitialization.
-- [Real data revision](tasks/real-data-trial.md): use existing acceptance and comparison commands on public CI metadata, preserving prior inputs and calculations while observing repeated setup. The separate other-project requirement remains open.
-- [Task-start lookup](tasks/task-start-lookup.md): reuse existing scan/profile and channel status. A proposed output addition was withdrawn after correcting the observation; no new task store or semantic completion inference is assigned.
-- [Existing-project update diagnosis](tasks/installed-guide-paths.md#repair-trial-product-disposition): the diagnostic shipped through `2d41ba1`; an isolated repair used existing capabilities. Real-project repair and automatic migration remain unassigned.
-- [Snapshot path recipe](tasks/snapshot-path-recipe.md): delivered alongside the diagnostic through `2d41ba1`. The documented NUL/direct-argument invocation passed the retained Windows fixture with ordinary Python and pipx; broader platform support remains unverified.
-- [Writing outcomes and repeated instructions](tasks/writing-outcome-evaluation.md): inspect retained revisions and owner corrections for actual quality and awkit contribution; carry accepted corrections into later work through existing kit guidance. Better prose, fewer reminders and causal contribution require separate evidence.
-- [Reviewing and revising existing writing](tasks/writing-revision-workflow.md): apply existing requirements across successive requests; evaluate purpose in the actual body, preserve accepted strengths and test the limits of transferring a local method to another genre. The task record distinguishes delivered exercises, the selected method review and later packaging candidates.
-- [Writing comparison report](tasks/writing-comparison.md): accepted command implementation with conservative correspondence, complete-file findings and preserved exit policy; the task record links delivery receipts.
-- [Scoped document revision trial](tasks/scoped-document-trial.md): one local correction and one substantive revision using current instructions, with source preservation, evidence reuse and omitted-review reporting.
-- [Planning and implementation trial](tasks/planning-implementation.md): bounded assignments from existing plans, product acceptance and feedback from using awkit during implementation.
-- [Usage log compatibility](tasks/usage-log-compatibility.md): reproduced modern-message gap, uncertain turn counts and acceptance criteria for reliable measurement.
-- [Document workflow trial](tasks/workflow-review.md): live proposal-writing evidence, check-scope explanations and collaboration with an existing user session.
-- [Connection diagnostics](tasks/connection-diagnostics.md): reproduced configuration and runtime-origin gaps, implemented diagnostics, and unresolved writing-scope and sandbox-path questions.
-- [Document workflow](document-workflow-plan.md): the separately maintained plan for document creation, with presentations as its first application.
-- [Representative presentation page](tasks/presentation-method-trial.md): a fixed fictional tradeoff tests source preservation, final-file rendering and native object evidence with existing tools before adding an awkit capability.
-- [Document coverage and author intent](tasks/document-intent-trial.md): source-derived brief guidance shipped in `54821fa`; fresh follow-ups preserved a planned-but-undrafted distinction and caught the brief error, while two prose assertions still required correction. The [public fixture](../examples/document-intent/README.md) shipped in `e5e8d17` with Windows/Linux CI and exact installation checks. A new index or change to the Korean drafting default remains unsupported by this bounded evidence.
-- [Independent-session collaboration](tasks/independent-session-collaboration.md): requested outcome, validation order and conditional protocol extensions for item 11.
-- [Local collaboration trial](tasks/local-collaboration.md): installation results, hook findings and the assigned Python 3.14 support work.
-- [Documentation restructuring](tasks/documentation-restructure.md): document ownership and observation of awkit during this task.
-
-Whether the skills-only bundle helps without executable checks remains part of item 5; its packaging is already recorded as completed item 6a.
-
-## Follow-up from the document trial
-
-The [trial](tasks/workflow-review.md) supplies one real document case for item 5. `89549b7` clarifies check/report scope; it does not enforce reading quality or classify existing findings. The reviewer reported useful snapshot-based review and handoff, alongside heavy procedure for short changes. Treat that account as experience to investigate, not measured productivity.
-
-| Work | Next bounded result | Completion boundary |
-|---|---|---|
-| Scale document work to the change | The [two-document trial](tasks/scoped-document-trial.md) accepted a one-sentence correction and a substantive revision using scoped evidence reuse. | Reading and rendered inspection caught defects after mechanical passes. The omitted-review checkpoint remained incomplete until inspection. Active time, productivity and intended-reader acceptance remain unmeasured; presentation phases remain open. |
-| Separate old and introduced writing findings | The [bounded report](tasks/writing-comparison.md) is implemented and accepted. Its next use should record actual attribution effort; the earlier proposal trial supplies the observed burden. | Explicit frozen revisions, complete-file reports, occurrence preservation and conservative uncertainty are verified in the candidate. Legacy writing and blocking policy remain unchanged. The task record links cumulative verification and delivery; productivity remains unmeasured. |
-| Diagnose the automatic Stop-hook import failure | Capture the [failing automatic invocation](tasks/connection-diagnostics.md#automatic-hook-import-investigation) and compare the direct shell under identified permissions. | A direct import or matching installation cannot establish restored automatic execution. |
-| Preserve the working collaboration path | Exercise [receipt and closure recovery](tasks/independent-session-collaboration.md#lessons-from-the-proposal-trial) using existing commands. | Delivered and checked versions match, requests are answered, and retries do not repeat external actions. Extra channel infrastructure remains conditional. |
-
-Usage compatibility in item 6 is a prerequisite for quantitative cost or call-limit claims. Hook reproduction can proceed separately. These are planning dependencies; the owner still chooses implementation order. The design decision against expanding `check done` remains in force.
+</details>

@@ -1,5 +1,15 @@
 # One-shot automation example
 
+## Current status
+
+Completed example, delivered in `5b943d0`. Four local mock cases distinguish configuration, an absent trigger, one effect followed by stopping, and a retained failure.
+
+Next action: Reuse the example when needed. Production scheduling, concurrency and cross-run idempotency require separately selected real work.
+
+## Earlier scope and evidence
+
+The following sections retain the original assignments and observations. Their stage-specific status statements are historical; use the current status above when resuming.
+
 Status: delivered in `5b943d0` for roadmap item 7. The local mock example compares a configured trigger and stopping condition with actual execution records. Its four cases distinguish setup, a missing trigger, one local effect followed by stopping, and a failed action with retained evidence.
 
 ## Existing behavior and boundary

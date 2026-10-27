@@ -1,5 +1,15 @@
 # Connection diagnostics
 
+## Current status
+
+Deferred investigation. Connection diagnostics and first-check guidance have shipped; unexpected-hook error context shipped in `fa3d50d`. The original automatic-hook failure remains unreproduced.
+
+Next action: Resume the automatic-hook investigation only with the failing invocation and its actual runtime context. Reuse the delivered diagnostics and preserve the unresolved historical cause.
+
+## Earlier scope and evidence
+
+The following sections retain the original assignments and observations. Their stage-specific status statements are historical; use the current status above when resuming.
+
 Status: review. Owner: the current Codex session. Base: `4a7cb6a`. The owner requested further case collection and fixes where the evidence is sufficient, then required the local runtime to follow the latest dev commit. Scope: connection diagnostics, guidance and regression checks. Preserve existing project files, check execution semantics, doctor exit codes and finding fields. Deliver through dev and synchronize the local installation after Windows and Linux CI passes, as recorded in AGENTS.md.
 
 ## Evidence and decisions

@@ -1,5 +1,15 @@
 # Installed guide paths
 
+## Current status
+
+Completed correction and isolated repair trial. Package guide paths shipped in `8c4cd7e`; the project diagnostic shipped through `2d41ba1`. Existing capabilities restored the selected fixture reference.
+
+Next action: Reuse the documented targeted repair when authorized. Real-project repair, native reloading and different-version migration remain unassigned; this case selected no general updater.
+
+## Earlier scope and evidence
+
+The following sections retain the original assignments and observations. Their stage-specific status statements are historical; use the current status above when resuming.
+
 Status: the package correction shipped in `8c4cd7e`; the read-only project diagnostic is implemented in `335270b` and delivered through repair commit `2d41ba1`, as reported in `R-048` and the execution receipt below. Preserved malformed project settings remain unrepaired. Original base: `aca1ab9512159ec291e4eef50c71b2e72bb2cb7f`. Planning owns development feedback and scope; implementation owns execution records, verification and delivery under `M-081`. The original implementation session owned the assigned source, tests, CHANGELOG and generated guard mapping. Channel `.awkit/document-feedback-implementation.sqlite3` used main for the planner and reviewer for the implementer; this was informed collaboration, not independent review. M-001 assigned the correction; R-002 returned its candidate.
 
 ## Report and reproduced behavior

@@ -1,5 +1,15 @@
 # Representative presentation page trial
 
+## Current status
+
+Blocked before full presentation production. One corrected page probe was accepted, but M-093 lacks a working native PowerPoint control connection. Full production and human revision remain incomplete.
+
+Next action: Resume only when a supported connection can open, edit, save and reopen a fresh isolated document. Preserve the original source and native-edit requirements.
+
+## Earlier scope and evidence
+
+The following sections retain the original assignments and observations. Their stage-specific status statements are historical; use the current status above when resuming.
+
 Status: one corrected local page probe was accepted in `M-066` after result `R-036`. The M-093 full presentation/native-edit task is blocked before production by the unavailable native control connection reported in R-054. It remains incomplete with its original requirements. Planning owns product requirements and the interpretation of findings; implementation owns isolated execution and verification. No private writing-project content is used.
 
 ## Question and fixed task

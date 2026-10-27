@@ -1,5 +1,15 @@
 # Existing development-project trial
 
+## Current status
+
+Completed local trials. The assigned application feature and discovery-normalization revision were accepted; the later parser lead did not reproduce and selected no change. Application publication, human acceptance and saved effort remain unverified.
+
+Next action: Retain the application-owned source and evidence. Select another real development task only when its outcome is agreed; do not repeat the resolved parser diagnosis.
+
+## Earlier scope and evidence
+
+The following sections retain the original assignments and observations. Their stage-specific status statements are historical; use the current status above when resuming.
+
 Status: R-072 completes M-121 as a local application change. Planning read the final result and app-local verification metadata and accepts completion of the assigned feature trial. Application commit, publication, human acceptance and a productivity improvement are not established. The owner authorized local project changes and requested feedback from actual implementation.
 
 ## Selected work

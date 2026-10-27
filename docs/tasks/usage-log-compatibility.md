@@ -1,5 +1,15 @@
 # Usage log compatibility
 
+## Current status
+
+Completed format-3 compatibility unit, delivered through `31a1599` with Windows/Linux CI. Ambiguous exact counts remain unknown; token completeness and human-input coverage remain separate.
+
+Next action: Select further accounting work only with suitable client samples and a settled counting unit. Fresh live-client coverage, cross-file identity and task-bounded usage remain open.
+
+## Earlier scope and evidence
+
+The following sections retain the original assignments and observations. Their stage-specific status statements are historical; use the current status above when resuming.
+
 Status: implemented and delivered with Windows/Linux CI. Owner: the implementation session in the [planning trial](planning-implementation.md), with contract and acceptance owned by its planner. Evidence base: `89549b7`, extended by discovery at `12d402a`. Scope: Codex human-input accounting, measurement completeness and regression fixtures. The owner delegated bounded implementation selection to the planner for this trial; the approved first unit is below.
 
 ## Reproduced gap and limits

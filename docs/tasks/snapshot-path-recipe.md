@@ -1,5 +1,15 @@
 # Snapshot command path handling
 
+## Current status
+
+Completed documentation unit, delivered through `2d41ba1`. The NUL/direct-argument recipe passed the retained Windows fixture with ordinary Python and pipx; broader platform behavior was not established by that fixture.
+
+Next action: Use the shipped recipe. Retain its platform limit until another selected environment supplies evidence.
+
+## Earlier scope and evidence
+
+The following sections retain the original assignments and observations. Their stage-specific status statements are historical; use the current status above when resuming.
+
 Status: documentation candidate `e8f0529`, accepted in `M-079`, shipped with the [existing-project diagnostic](installed-guide-paths.md#reported-delivery-and-product-consequence) through `2d41ba1`, as reported in `R-048` and the shared receipt. Planning owns scope. Implementation owns execution records, verification and delivery under `M-081`, the named documentation files below and isolated evidence under `.awkit/handoffs/snapshot-path-recipe-preparation/`. The initial Windows CI failure and its test assertion repair remain recorded below; later planning edits are outside that delivered snapshot.
 
 ## Observed problem

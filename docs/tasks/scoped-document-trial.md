@@ -1,5 +1,15 @@
 # Scoped document revision trial
 
+## Current status
+
+Completed document trial. A local correction and substantive revision were accepted with source preservation, scoped evidence reuse and explicit reporting of missing review. Delivery evidence remains below.
+
+Next action: Reuse the demonstrated procedure for a selected revision. Productivity and intended-reader acceptance belong to later real-use evaluation.
+
+## Earlier scope and evidence
+
+The following sections retain the original assignments and observations. Their stage-specific status statements are historical; use the current status above when resuming.
+
 Status: document outputs accepted; cumulative repository delivery is tracked in the receipt below. Base: `ccea298`. The planning session owns scope, source premises, acceptance and repository records. The existing implementation session owns the assigned document outputs and execution evidence. This continues the [document plan](../document-workflow-plan.md#scale-the-work-to-the-change) after the [planning trial](planning-implementation.md). The document assignment adds no product behavior.
 
 ## Outcome and inputs

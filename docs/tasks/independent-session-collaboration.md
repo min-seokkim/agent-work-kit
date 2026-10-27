@@ -1,5 +1,15 @@
 # Independent-session collaboration
 
+## Current status
+
+Deferred broader outcome. Channel status and relationship declarations have shipped; managed-session implementation continues in [session orchestration](session-orchestration.md). Existing IDE attachment and general recovery remain unfinished.
+
+Next action: Use the session record for delivered controls and the conditions for another selected unit. Keep receipt and remote-transport extensions conditional on observed need.
+
+## Earlier scope and evidence
+
+The following sections retain the original assignments and observations. Their stage-specific status statements are historical; use the current status above when resuming.
+
 Status: session creation, resumption, provider integration and a human-readable communication interface are selected for development in the [session orchestration plan](session-orchestration.md). The owner requires reuse of provider capabilities before extending awkit. Local probes establish an owned Codex round trip and a host-mediated Codex/Claude round trip after owner-completed login. Existing IDE attachment and production recovery remain unverified. The coordinating session maintains this plan. See [roadmap item 11](../roadmap.md#next-work), the [design decision](../design.md#decisions) and the [local trial](local-collaboration.md).
 
 ## Independent-session collaboration plan

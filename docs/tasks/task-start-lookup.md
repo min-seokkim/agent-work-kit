@@ -1,5 +1,15 @@
 # Task-start lookup
 
+## Current status
+
+Completed preparation and compatibility follow-up. Existing scan/profile and channel status cover the selected lookup; the redundant output addition was withdrawn. UTF-8 BOM input compatibility shipped in `b070924`.
+
+Next action: Use the existing records pointer and registered channel status. Correct stale task content at its source; a new retrieval command or task store remains unassigned.
+
+## Earlier scope and evidence
+
+The following sections retain the original assignments and observations. Their stage-specific status statements are historical; use the current status above when resuming.
+
 Status: preparation completed in R-051, with its limits retained. M-091 withdraws the scan-output addition assigned in M-090 because R-050 corrected its premise; M-092 confirms that disposition in response to R-052. Existing scan output already includes the configured records reference. No retrieval feature is assigned. M-103 separately assigns the input-compatibility follow-up below. Planning owns this task record and the roadmap.
 
 ## User outcome

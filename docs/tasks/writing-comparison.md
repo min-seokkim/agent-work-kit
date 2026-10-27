@@ -1,5 +1,15 @@
 # Writing comparison report
 
+## Current status
+
+Completed accepted comparison implementation. The report compares explicit frozen revisions conservatively while preserving complete-file findings and exit policy; cumulative delivery is linked below.
+
+Next action: Use the report in a selected real revision and measure attribution effort if needed. The completed command tests do not establish a productivity gain.
+
+## Earlier scope and evidence
+
+The following sections retain the original assignments and observations. Their stage-specific status statements are historical; use the current status above when resuming.
+
 Status: implementation accepted at `aa821a64248103b6ebe3e97c424745106bddc365`; cumulative delivery is tracked in the receipt below. Base: `ccea298`. The planner owns scope, contract acceptance and repository records; the existing implementation session owns the assigned command, tests and reference changes. Channel `.awkit/scoped-document-trial.sqlite3` continues the same pairing. `M-006` assigned the disposable contract experiment, returned in `R-007`; `M-008` assigned the product implementation, returned in `R-010`. Review is informed, not independent.
 
 ## Problem and chosen scope

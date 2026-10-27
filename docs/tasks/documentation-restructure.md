@@ -1,5 +1,23 @@
 # Documentation restructuring
 
+## Current status
+
+The owner-requested navigation refresh is implemented over `a2a0c43`. Development summaries, task categories and current conclusions now precede the retained history; validation and delivery are tracked in the receipt below.
+
+Next action: use the refreshed entry point and task categories. Consult the receipt for completed verification and delivery stages; finish any stage it still records as pending. The [navigation refresh](#current-navigation-refresh) owns this work; earlier split and README records remain historical.
+
+## Current navigation refresh
+
+Base: `a2a0c43`. Owner: the current implementation session. The owner requested the navigation changes after inspecting the accumulated records. Scope: `docs/development.md`, `docs/roadmap.md`, `docs/evidence.md`, the document workflow plan, all 21 existing task records and the unreleased CHANGELOG. No new task document or product behavior is added.
+
+Acceptance: the development summary names shipped session controls and current limits; the roadmap separates current work, deferred/blocked outcomes and completed units; every task opens with a conclusion and next action. Preserve earlier assignments, acceptance conditions, failures, artifact paths and heading anchors. Historical status text must not appear to be a fresh assignment. The prior development overview is retained in the existing evidence record.
+
+Verification and delivery receipts belong in `.awkit/handoffs/documentation-restructure/current-navigation.json`, outside the frozen files. Compare task bodies and moved summaries with the base, check local links and anchors, run writing and frozen `checks.toml` checks, and inspect the changed Markdown rendering. Source reading is implementation self-review; neither a mechanical pass nor historical review establishes human acceptance of this revision. Publication and exact-installation results are recorded in the receipt, without rewriting the checked files to add their own result.
+
+## Earlier scope and evidence
+
+The following sections retain the original assignments and observations. Their stage-specific status statements are historical; use the current status above when resuming.
+
 Status: review. Owner: the current Codex session. Base: `f85a1ec`, with existing uncommitted installation, hook and documentation changes preserved. The document split is prepared for local verification; publication and CI remain pending. The owner requested the split and observation of awkit during the work.
 
 ## Outcome and scope

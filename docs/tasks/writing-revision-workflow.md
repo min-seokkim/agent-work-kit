@@ -1,5 +1,15 @@
 # Reviewing and revising existing writing
 
+## Current status
+
+Completed bounded guide and example units: W0 through `f5363a3`, W1 in `7d49281`, and the optional W2 public route in `a2a0c43`. One fresh cross-provider use needed no content or handoff repair; operational failures remain recorded.
+
+Next action: Reuse the public example and current guides. Further real-user evaluation belongs to [writing outcomes](writing-outcome-evaluation.md); no new writing rule or mandatory handoff framework is selected.
+
+## Earlier scope and evidence
+
+The following sections retain the original assignments and observations. Their stage-specific status statements are historical; use the current status above when resuming.
+
 Status: units 1 and 2 were exercised under M-143/M-145, W0 is delivered through `f5363a3`, and the optional W1 public package is delivered in `7d49281`. A separate local W2 independent continuation met its fixed document requirements. The earlier guide clarification is recorded in the [outcome evaluation](writing-outcome-evaluation.md#drafting-clarification-implementation-and-delivery). These exercises do not establish general writing improvement. Planning owns product choices; research supplies evidence and implementation owns changes, checks and delivery.
 
 ## Outcome

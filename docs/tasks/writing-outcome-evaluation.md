@@ -1,5 +1,15 @@
 # Writing outcomes and repeated instructions
 
+## Current status
+
+Deferred outcome evaluation. Correction-carry-forward and drafting guidance shipped; later passage comparison found limited preservation improvement after further owner intervention. Fewer reminders, lasting adherence and causal kit benefit remain unverified.
+
+Next action: Select an authorized real revision or natural continuation that can test persistence without another reminder. Reuse the retained assessment and keep private source material in its owning project.
+
+## Earlier scope and evidence
+
+The following sections retain the original assignments and observations. Their stage-specific status statements are historical; use the current status above when resuming.
+
 Status: the initial retrospective is recorded and correction-carry-forward guidance shipped in `b273d95`. Planning owns this record, evidence interpretation and product decisions. The implementation session owns assigned technical work, checks and delivery. The owner prioritizes better writing and fewer repeated instructions over completion counts. This task follows the [document intent trial](document-intent-trial.md), whose synthetic results do not establish an effect in actual writing.
 
 ## Scope and method

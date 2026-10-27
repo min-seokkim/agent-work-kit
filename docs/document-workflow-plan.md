@@ -1,5 +1,15 @@
 # Document workflow implementation plan
 
+## Current status
+
+Deferred broader workflow. Bounded document examples and writing revisions have shipped; full presentation production remains [blocked on native control](tasks/presentation-method-trial.md#current-status). [Writing outcomes](tasks/writing-outcome-evaluation.md#current-status) still require evidence of lasting improvement and fewer reminders.
+
+Next action: select the next real-use evaluation, or resume the presentation only when its native-control prerequisite is available. No additional document engine or general format rule is selected.
+
+## Earlier scope and evidence
+
+The plan below retains its original phases, decisions and observations. Use the current status above for the next action.
+
 Status: bounded document trials and evidence examples have shipped, and one corrected representative presentation page was accepted as probe evidence. The immediate priority is [actual writing outcomes and fewer repeated instructions](tasks/writing-outcome-evaluation.md). The owner has chosen a unified document workflow, with presentation materials as its initial planned application. Broader implementation scope, tool adoption and scheduling remain to be decided through the trials below. This document records future work separately from [development.md](development.md), the entry point for the repository's current state, roadmap, task records and verification evidence.
 
 ## Outcome and scope

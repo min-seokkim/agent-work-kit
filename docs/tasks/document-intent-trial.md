@@ -1,5 +1,15 @@
 # Document coverage and author intent trial
 
+## Current status
+
+Completed bounded trials and delivery. Source-derived brief guidance shipped in `54821fa`, and the public fixture shipped in `e5e8d17`. These observations do not establish general writing improvement.
+
+Next action: Reuse the public fixture for a selected evaluation. Track actual writing outcomes in [the outcome record](writing-outcome-evaluation.md), rather than reopening this delivered unit.
+
+## Earlier scope and evidence
+
+The following sections retain the original assignments and observations. Their stage-specific status statements are historical; use the current status above when resuming.
+
 Status: bounded reading and paired drafting completed at base `03031d6`; guidance and evidence example delivered in `54821fa`. Planning owns the fixtures, acceptance criteria and this record. The independent implementation session returned the separate [document-evidence example](../document-workflow-plan.md#next-bounded-evidence-example), accepted for cumulative integration in `M-036`. Its metadata checker does not establish argument coverage or author intent. The trial below tests those questions with existing records and guidance before proposing another feature.
 
 ## Reported problem and scope

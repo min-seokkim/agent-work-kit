@@ -12,9 +12,9 @@ The [writer brief](writer/inputs/brief.md) contains an observed planner error, n
 
 ## Choose a task
 
-- Start with the [scoped reader](prompts/scoped-reader.md). Retain its answer before using the [wider reader](prompts/wider-reader.md) in the same context. Give the [coverage project](coverage/project/) as its root.
+- Start with the [scoped reader](prompts/scoped-reader.md). Retain its answer before using the [wider reader](prompts/wider-reader.md) in the same context. Give the [coverage project](coverage/project) as its root.
 - For retrieval from the outset, give the [project reader](prompts/project-reader.md) a fresh context, the same root and finished-document entry points. Supply no additional file hint or expected answer.
-- Give the [writer](prompts/writer.md) its four [input files](writer/inputs/). Follow current guides unless the owner explicitly assigns a comparison method. Pass exactly one selected line per fresh context:
+- Give the [writer](prompts/writer.md) its four [input files](writer/inputs). Follow current guides unless the owner explicitly assigns a comparison method. Pass exactly one selected line per fresh context:
 
 > Draft directly in Korean for this comparison; retain the first Korean draft and source comparison.
 

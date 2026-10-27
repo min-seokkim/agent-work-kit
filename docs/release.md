@@ -1,13 +1,13 @@
 # Release and verification procedure
 
-Use this when testing, building or publishing Agent Work Kit. Check the [roadmap](roadmap.md) for unfinished prerequisites and the [evidence record](evidence.md#verification-record) for verified environments. Repository working rules remain in [AGENTS.md](../AGENTS.md).
+Use this when testing, building or publishing Agent Work Kit. Check the [roadmap](roadmap.md) for unfinished prerequisites and the [evidence record](history/evidence.md#verification-record) for verified environments. Repository working rules remain in [AGENTS.md](../AGENTS.md).
 
 ## Release
 
 Release conditions, all required before the first tag:
 
 1. The kit is restructured by situation, the extras are moved, and no further change to command names or file locations is planned.
-2. The real tasks in [roadmap item 5](roadmap.md#next-work) have been run and their findings applied.
+2. The real tasks in [roadmap item 5](history/roadmap.md#next-work) have been run and their findings applied.
 3. No change is planned to formats other tools read: check configuration, `result.json`, artifact manifests, usage results.
 
 Until then users install from `dev` with `install.ps1` or `install.sh`, or with `pipx install "git+https://github.com/min-seokkim/agent-work-kit@dev"`. The installers pin the `dev` branch in their default source; change it to the release when one exists.

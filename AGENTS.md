@@ -8,7 +8,7 @@ This file is for agents that change Agent Work Kit itself. Agents that use the k
 |---|---|---|
 | [README.md](README.md), [README.ko.md](README.ko.md) | People | Changing what users are told |
 | [kit/](kit/README.md) | Agents using the kit in their projects; shipped in the package | Changing instructions, templates or the command reference |
-| [docs/development.md](docs/development.md) | Agents developing this repository | Start here for current state and links to design, roadmap, task records, evidence and release procedures |
+| [docs/development.md](docs/development.md) | Agents developing this repository | Start here to resume the selected task; follow its current record to requirements, evidence and delivery state |
 | [kit/failures.md](kit/failures.md) | Agents using the kit, when a guard names an entry as its reason; agents developing this repository, before adding or changing kit text, a hook or a check | Each guard must prevent a listed failure and declare it: a `Prevents:` line in a guide section, `PREVENTS` in the code of a command; then run `python scripts/guard_map.py --write` |
 | [CHANGELOG.md](CHANGELOG.md) | Agents and release notes | Add an entry for every behavior change |
 
@@ -20,7 +20,7 @@ This repository is developed with its own kit. Follow [kit/workflow.md](kit/work
 - Source material and its version: `kit/`, `src/awkit/`, `docs/` on `dev`.
 - Files to change and conditions to preserve: the files a task names; formats other tools read (check configuration, `result.json`, manifests, usage results) change only with a CHANGELOG entry.
 - How completion is checked: `awkit review check <snapshot> --config checks.toml` (Ruff and the test suite in a separate worktree), then CI green on Windows and Linux after pushing.
-- Where results and records go: commits on `dev`; decisions in [docs/design.md](docs/design.md), task state in `docs/tasks/`, and measurements and verification in [docs/evidence.md](docs/evidence.md). [docs/development.md](docs/development.md) is the entry point.
+- Where results and records go: commits on `dev`; decisions in [docs/design.md](docs/design.md), current task state in [docs/tasks/](docs/tasks/README.md), and superseded narrative in [docs/history/](docs/history/README.md). Task records link their verification receipts; [docs/evidence.md](docs/evidence.md) defines storage, lookup and retention. [docs/development.md](docs/development.md) is the entry point.
 
 In a cloud session, `.claude/hooks/session-start.sh` installs a copy of awkit from the session's starting commit, so the hooks and the check runner do not run code that is being changed, and the commit identity hook. To try a changed command before the next session, run it with `PYTHONPATH=src python -m awkit`. Claude Code (`.claude/settings.json`) and Codex (`.codex/hooks.json`) run `awkit hook` on every hook event with the rules in `rules.toml`: a `git commit` with another author or trailers is refused, the first stop with changed files that have no passing check is blocked, an edited Markdown file is checked for writing errors, the first search, push, subagent, Korean edit or request for a document gets one line of the matching guide, and a long Korean reply shaped like a document is blocked once when the session never read the writing guide. `awkit hook report` shows what fired. Elsewhere, install awkit (README) and run `awkit kit hooks --git` once per clone.
 

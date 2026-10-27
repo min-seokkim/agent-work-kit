@@ -26,7 +26,7 @@ The owner selected a planning direction that separates common safeguards from ta
 
 Assess a procedure by its contribution to the usable result as well as its burden. A supported improvement can narrow an obligation, make a step optional or replace a method. Reuse existing records and tools where they help; their existence does not establish fitness for every task. Automated checks establish the properties they inspect. Voice, reasoning and reader understanding require the applicable reading or use evidence.
 
-The [method-selection review](tasks/writing-revision-workflow.md#method-selection-review) owns the writing-specific changes to consider and their acceptance conditions. This decision authorizes planning integration; shipped guidance and enforcement change through a scoped implementation with its own evidence.
+The [method-selection review](history/tasks/writing-revision-workflow.md#method-selection-review) owns the writing-specific changes to consider and their acceptance conditions. This decision authorizes planning integration; shipped guidance and enforcement change through a scoped implementation with its own evidence.
 
 ## Decisions
 
@@ -36,7 +36,7 @@ The [method-selection review](tasks/writing-revision-workflow.md#method-selectio
 | Separate usage observations from exact interaction counts | Format 3 in `7977b35` retains supported human-input observations while leaving an exact count unknown when representation or identity is ambiguous. Token/log coverage is separate. Codex's existing model-context row count is not a unique-turn or API-call count. The [usage contract](tasks/usage-log-compatibility.md) owns migration details and remaining validation. |
 | Require an explicit result contract for bundled hook commands | An unknown command can share a return code with a real violation and consume the rule's one-block state. The [planning trial](tasks/planning-implementation.md) authorizes an opt-in pass/finding/error protocol and bounded adapter, with custom commands preserved. Execution errors must be visible and leave later checks available. Existing project rule copies migrate deliberately, after capability verification; a matching package version is insufficient. |
 | Another repository inside a project is not supported | A clone of awkit, or any other repository, inside a user's project would need submodule handling and checks across several repositories. awkit warns instead (`doctor`, `kit scan`, `check done`) and tells the user to move or ignore it. |
-| Git is required | The review commands work on Git-tracked files. Non-developers get an easy install path instead of a Git-free mode (see [completed setup work](evidence.md#completed-work)). |
+| Git is required | The review commands work on Git-tracked files. Non-developers get an easy install path instead of a Git-free mode (see [completed setup work](history/evidence.md#completed-work)). |
 | Web-only tools are extras | `pipeline`, `publish` and `ui` are useful mainly for web projects. They live in `src/awkit/extras/` with their command names unchanged and are not mentioned in the READMEs. If real use does not need them, they leave the package. |
 | Public project; baseline workflow plus failure guards | See [Scope](#scope). The failure catalogue chooses and measures the guards; agents receive the baseline workflow and the guards, written as what to do. This replaces the earlier plan to split the kit into `dev` and `work` profiles chosen at install time. |
 | One repository, one package | Unchanged. |

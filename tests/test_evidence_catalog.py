@@ -13,7 +13,7 @@ SPEC.loader.exec_module(catalog)
 class EvidenceCatalogueTests(unittest.TestCase):
     def test_shared_missing_unreferenced_and_interrupted_evidence(self):
         with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
+            root = Path(directory).resolve()
             for path, content in {
                 "docs/tasks/one.md": "`.awkit/handoffs/shared/`, `.awkit/handoffs/absent/` and `.awkit/handoffs/note.md`",
                 "docs/history/tasks/two.md": "`.awkit/handoffs/shared/receipt.json`",
@@ -44,12 +44,12 @@ class EvidenceCatalogueTests(unittest.TestCase):
 
     def test_linked_collections_and_outputs_are_never_followed(self):
         with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
+            root = Path(directory).resolve()
             collection = root / ".awkit/handoffs/linked"
             collection.mkdir(parents=True)
             real_linked = catalog.linked
             with patch.object(catalog, "linked", side_effect=lambda path: path == collection or real_linked(path)):
-                result = catalog.catalogue(root)
+                result = catalog.catalogue(root / ".awkit" / "..")
                 self.assertEqual(result["collections"][0]["availability"], "linked")
                 self.assertEqual(result["collections"][0]["files"], 0)
             output = root / ".awkit/evidence"
@@ -61,7 +61,7 @@ class EvidenceCatalogueTests(unittest.TestCase):
 
     def test_malformed_and_unreadable_runs_remain_inspection_issues(self):
         with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
+            root = Path(directory).resolve()
             folder = root / ".awkit/reviews/review-bad"
             folder.mkdir(parents=True)
             (folder / "result.json").write_text("{unfinished", encoding="utf-8")

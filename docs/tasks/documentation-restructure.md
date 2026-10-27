@@ -2,24 +2,26 @@
 
 ## Current status
 
-The owner selected an agent-first development system: short current task records, separate historical records and task-based access to validation evidence. This revision replaces the navigation-only refresh in `90e2557`.
+The owner selected a full rewrite of both READMEs while preserving their existing sections. The development-documentation system is delivered through `26e2d34`; its prior contract is linked below.
 
-Next action: read `.awkit/handoffs/documentation-restructure/structure.json` for the exact snapshot, checks and delivery stages. Finish any pending stage against that revision. Once delivery is complete, select further product work with the owner from the roadmap.
+Next action: inspect `.awkit/handoffs/readme-refresh/rewrite.json` for the exact checked revision and delivery stages. Finish pending checks or delivery before repeating any external operation. The owner requested computer shutdown after the rewrite and commit are complete; record the shutdown request separately from observed power state.
 
-## Scope and acceptance
+## README rewrite
 
-ID: `documentation-restructure`. Owner: the implementing session until delivery. Base: `90e2557`. Scope: development documents, their incoming references, a repository-only evidence catalogue script and its tests. Product commands and raw evidence retain their existing formats and locations.
+ID: `documentation-restructure`. Owner: the implementing session until delivery. Base: `26e2d34`. Scope: `README.md`, `README.ko.md`, the unreleased CHANGELOG and the development entry, roadmap, task directory and this task's current/history records.
 
-Acceptance: an agent can find the selected task, its next action, source requirements and evidence without reading execution history. Preserve prior records, identifiers, heading anchors, failures and qualifications in `docs/history/`. Keep one current record per task. Catalogue local evidence by document references, identify shared and unreferenced collections, and report absent or unreadable sources without inferring a pass. Retain dirty workspaces and run artifacts.
+Preserve all heading text and order, installation commands, requirements, links, licensing and the distinction between instructions, executable checks, verified behavior and intended benefits. Rewrite paragraphs, lists and table entries for a first-time reader. Explain current session controls, reduce repeated descriptions and align the Korean drafting-method claim with the shipped guide. Keep both languages equivalent. The English README draft supplies the full draft for the Korean rewrite.
 
-## Verification and delivery
+Acceptance: factual comparison against the shipped guides, command implementation and installers; separate factual, Korean-language and whole-document readings; rendered inspection; unchanged headings and setup commands; valid local links; writing checks and frozen `checks.toml` checks. Then commit as the owner, push to `dev`, confirm Windows/Linux CI, install the exact commit and compare installed source, kit and managed user skills.
 
-The receipt above records preservation and link checks, catalogue tests, reading and rendered inspection, frozen `checks.toml` results, commit, Windows/Linux CI and exact-installation comparison. Keep it outside the frozen files. Main-agent reading is self-review; mechanical checks and historical reviews do not establish human acceptance of this rewrite.
+Evidence belongs in `.awkit/handoffs/readme-refresh/` under `rewrite-*` names and `rewrite.json`. Preserve earlier receipts. The implementing agent records self-review honestly; no independent or human acceptance is inferred from a command pass. Schedule normal shutdown only after completion, without force-closing applications.
 
-Earlier navigation, cleanup and split receipts remain in `.awkit/handoffs/documentation-restructure/`; this revision uses new filenames. Run `python scripts/evidence_catalog.py` to refresh `.awkit/evidence/index.md` and `catalog.json` from the local checkout. Generated lists describe availability and references; verification claims require the cited run and its snapshot.
+## Delivered documentation system
+
+The prior restructuring separated current task records from historical narrative and added the repository-only evidence catalogue. `.awkit/handoffs/documentation-restructure/structure.json` retains its source preservation, checks, CI, installation and unresolved initial failures. Use [the retained contract](../history/tasks/documentation-restructure.md#documentation-system-delivered-through-26e2d34) for its scope and acceptance conditions.
 
 ## History and evidence
 
-<a id="current-navigation-refresh"></a><a id="earlier-scope-and-evidence"></a><a id="outcome-and-scope"></a><a id="awkit-observations"></a><a id="verification-and-next-action"></a><a id="readme-current-state-refresh"></a>
+<a id="current-navigation-refresh"></a><a id="earlier-scope-and-evidence"></a><a id="outcome-and-scope"></a><a id="awkit-observations"></a><a id="verification-and-next-action"></a><a id="readme-current-state-refresh"></a><a id="scope-and-acceptance"></a><a id="verification-and-delivery"></a>
 
-[Full record and verification history](../history/tasks/documentation-restructure.md) preserves the original scope, decisions, failures and evidence paths. The [evidence guide](../evidence.md) explains how to find retained local artifacts.
+[Earlier document and README work](../history/tasks/documentation-restructure.md) preserves its original scope and qualifications. [Evidence](../evidence.md) explains storage and lookup.

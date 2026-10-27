@@ -4,7 +4,7 @@ Use this directory to locate a task; its record owns the current state and next 
 
 ## Selected assignment
 
-- [Development documentation and evidence](documentation-restructure.md#current-status): the owner-selected restructuring; its receipt owns verification and delivery stages.
+- [README rewrite](documentation-restructure.md#current-status): the owner-selected rewrite preserves existing sections; its receipt owns verification, delivery and the requested shutdown stage.
 
 ## Deferred and blocked
 

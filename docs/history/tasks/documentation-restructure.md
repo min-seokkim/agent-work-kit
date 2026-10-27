@@ -61,3 +61,33 @@ The expanded introduction explains built-in capabilities through the problems th
 The main agent compared facts with the sources, read Korean independently, and checked order and terminology. A read-only `readme_review` subagent found no material issues in the first draft after spot-checking implementation. The owner then corrected its editorial scope as described above; the main agent checked the affected passages. The same reviewer checked the expanded scope against the guides and reference and found no material issues. Both reviews were source-text reviews; the main agent inspected the rendered documents. The reviewer's actual execution model and bounded token usage are unavailable; no efficiency benefit is claimed. Local previews use Marked and headless Edge at 1280 pixels. Screenshots and final receipts record the inspected revision; a local preview does not establish GitHub rendering or human acceptance.
 
 Validation receipts are retained under `.awkit/handoffs/readme-refresh/`, outside the checked files. The initial restricted-shell Python failure was resolved by running the installed CLI with permission; its provenance matched `origin/dev`, as did 26 source files, 29 kit files and 16 user-skill payloads after line-ending normalization. The first preview invocation lacked Node on PATH; the explicit runtime path rendered successfully. The first full run, `review-tp0c_6c5`, could not launch Ruff because it was absent from PATH. Its logs are retained; the replacement uses the existing Ruff installation. Frozen checks and delivery receipts in that folder determine final verification status; this record alone does not establish a pass or publication.
+
+## Documentation system delivered through 26e2d34
+
+> The following task record is preserved from `26e2d34`; the documentation system was delivered in `cb2a385` with a Windows test-path correction in `26e2d34`. Its receipt records the passing rerun and unresolved intermittent Git cleanup failure.
+
+## Documentation restructuring
+
+### Current status
+
+The owner selected an agent-first development system: short current task records, separate historical records and task-based access to validation evidence. This revision replaces the navigation-only refresh in `90e2557`.
+
+Next action: read `.awkit/handoffs/documentation-restructure/structure.json` for the exact snapshot, checks and delivery stages. Finish any pending stage against that revision. Once delivery is complete, select further product work with the owner from the roadmap.
+
+### Scope and acceptance
+
+ID: `documentation-restructure`. Owner: the implementing session until delivery. Base: `90e2557`. Scope: development documents, their incoming references, a repository-only evidence catalogue script and its tests. Product commands and raw evidence retain their existing formats and locations.
+
+Acceptance: an agent can find the selected task, its next action, source requirements and evidence without reading execution history. Preserve prior records, identifiers, heading anchors, failures and qualifications in `docs/history/`. Keep one current record per task. Catalogue local evidence by document references, identify shared and unreferenced collections, and report absent or unreadable sources without inferring a pass. Retain dirty workspaces and run artifacts.
+
+### Verification and delivery
+
+The receipt above records preservation and link checks, catalogue tests, reading and rendered inspection, frozen `checks.toml` results, commit, Windows/Linux CI and exact-installation comparison. Keep it outside the frozen files. Main-agent reading is self-review; mechanical checks and historical reviews do not establish human acceptance of this rewrite.
+
+Earlier navigation, cleanup and split receipts remain in `.awkit/handoffs/documentation-restructure/`; this revision uses new filenames. Run `python scripts/evidence_catalog.py` to refresh `.awkit/evidence/index.md` and `catalog.json` from the local checkout. Generated lists describe availability and references; verification claims require the cited run and its snapshot.
+
+### History and evidence
+
+
+
+[Full record and verification history](documentation-restructure.md) preserves the original scope, decisions, failures and evidence paths. The [evidence guide](../../evidence.md) explains how to find retained local artifacts.

@@ -1,6 +1,6 @@
 # Development
 
-Start here to resume work on Agent Work Kit. The owner's latest selected assignment is [documentation and evidence restructuring](tasks/documentation-restructure.md). Read its next action and delivery receipt before repeating a check, push or installation. Then select any further work with the owner from [the roadmap](roadmap.md).
+Start here to resume work on Agent Work Kit. The owner's latest selected assignment is [the README rewrite](tasks/documentation-restructure.md). Read its next action and delivery receipt before repeating a check, push or installation. Then select any further work with the owner from [the roadmap](roadmap.md).
 
 ## Resume a task
 

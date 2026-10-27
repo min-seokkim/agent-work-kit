@@ -4,7 +4,7 @@ Choose the next unfinished outcome here. The owner selects implementation; an it
 
 ## Current planning focus
 
-The owner selected [development documentation and evidence restructuring](tasks/documentation-restructure.md). Its receipt records delivery stages. Broader product choices remain deferred: real writing outcomes, session coordination and full presentation production need the evidence or prerequisite described in their task records.
+The owner selected [the README rewrite](tasks/documentation-restructure.md). Its receipt records delivery stages. Broader product choices remain deferred: real writing outcomes, session coordination and full presentation production need the evidence or prerequisite described in their task records.
 
 ## Task plans
 

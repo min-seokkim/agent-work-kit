@@ -16,6 +16,8 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Guidance
 
+- The English and Korean READMEs retain their sections with rewritten introductions, task examples and setup explanations. They now describe shipped local session controls and align drafting-method guidance with the current writing guides.
+
 - Development records now separate current task handoffs from versioned history. The evidence guide and repository-only catalogue group local validation collections by task references while preserving raw run paths, failures and incomplete attempts.
 
 - Development records now open with current conclusions and next actions. The roadmap separates current work, deferred or blocked outcomes and completed units; earlier assignments and evidence remain available in the existing records.

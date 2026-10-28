@@ -2,9 +2,9 @@
 
 ## Current status
 
-The owner selected a full rewrite of both READMEs while preserving their existing sections. The development-documentation system is delivered through `26e2d34`; its prior contract is linked below.
+Both README rewrites are delivered in `ece9881`, preserving their existing sections. `.awkit/handoffs/readme-refresh/rewrite.json` records frozen checks, Windows/Linux CI, publication and exact installation. Review was by the implementing agent; independent or human acceptance was not established. The development-documentation system is delivered through `26e2d34`; its prior contract is linked below.
 
-Next action: inspect `.awkit/handoffs/readme-refresh/rewrite.json` for the exact checked revision and delivery stages. Finish pending checks or delivery before repeating any external operation. The owner requested computer shutdown after the rewrite and commit are complete; record the shutdown request separately from observed power state.
+Next action: retain the receipt and continue the selected task from [development](../development.md). The earlier shutdown was scheduled, with power state unobserved. It is a completed request record, not authorization to shut down during a later assignment.
 
 ## README rewrite
 

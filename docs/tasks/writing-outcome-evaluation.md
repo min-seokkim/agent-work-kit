@@ -2,13 +2,15 @@
 
 ## Current status
 
-Deferred outcome evaluation. Correction-carry-forward and drafting guidance shipped; later passage comparison found limited preservation improvement after further owner intervention. Fewer reminders, lasting adherence and causal kit benefit remain unverified.
+The owner selected a real continuation alongside session feature development. The session-guide revision for the [conversation picker](session-orchestration.md#selected-conversation-picker) is evaluated against the existing instructions and source baseline. Earlier correction-carry-forward guidance shipped; its broader benefits remain unverified.
 
-Next action: Select an authorized real revision or natural continuation that can test persistence without another reminder. Reuse the retained assessment and keep private source material in its owning project.
+The initial draft, source comparison and rendered preview are retained in `.awkit/handoffs/session-picker/`; `delivery.json` records the bounded outcome. Existing heading order and guide conditions were preserved. Independent source review found the guide within scope; its one Minor reference word-limit finding was corrected. No further owner writing correction was observed during this continuation.
+
+Next action: observe a later real revision or owner response before extending the conclusion. This informed single continuation and its independent review cannot establish lasting adherence, saved reminders or causal kit benefit. Private source material stays in its owning project.
 
 ## Resume inputs
 
-ID: `writing-outcome-evaluation`. No new implementation is assigned. The current conclusion is carried from `90e2557`; earlier owners and execution bases are retained in the history. Confirm ownership, the working revision and changed files before reopening the task.
+ID: `writing-outcome-evaluation`. Root owns the bounded session-guide continuation at base `ece9881`; the session task owns its product implementation. Earlier owners and execution bases remain historical. No additional writing rule or checker is selected.
 
 - [Scope and method](../history/tasks/writing-outcome-evaluation.md#scope-and-method): retained requirements or evidence for this task.
 - [Remaining evidence](../history/tasks/writing-outcome-evaluation.md#remaining-evidence): retained requirements or evidence for this task.

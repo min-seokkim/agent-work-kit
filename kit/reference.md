@@ -476,4 +476,4 @@ After `running`, `uncertain`, `rollback-failed` or `failed-unrecovered`, every d
 
 ## Sessions
 
-[Sessions](sessions.md): [enrollment](sessions.md#enroll-a-selected-codex-conversation), [decisions](sessions.md#submit-a-decision-file) (UTF-8/BOM; `-`: stdin), [updates](sessions.md#update-an-active-turn) (request, expected turn, key; no replay), [status](sessions.md#read-current-work). Fields: current_work, decision_summary, attempt.public_update. JSON schema 1; 30 events.
+[Sessions](sessions.md): [discovery](sessions.md#find-a-conversation-by-name), [enrollment](sessions.md#enroll-a-selected-codex-conversation), [decisions](sessions.md#submit-a-decision-file) (UTF-8/BOM; `-`: stdin), [updates](sessions.md#update-an-active-turn) (request, expected turn, key; no replay), [status](sessions.md#read-current-work). Fields: current_work, decision_summary, attempt.public_update. JSON schema 1; 30 events.

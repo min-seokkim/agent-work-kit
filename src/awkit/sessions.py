@@ -301,6 +301,11 @@ class SessionController:
 
         return submit(self, ident, **args)
 
+    def discover(self, *, cursor=None, limit=20):
+        from .session_discovery import discover
+
+        return discover(self, cursor=cursor, limit=limit)
+
     def register_history(self, **args):
         path = self.project / Path(args.get("channel", ""))
         with self._mutex:

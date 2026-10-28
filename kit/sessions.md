@@ -10,7 +10,7 @@ Run in the chosen project:
 
 Use --codex PATH to select the installed Codex executable when it is not on PATH. The command prints a private loopback control URL; open that URL in a browser. Keep its capability token local. Control and conversation records live in .awkit/sessions; keep .awkit out of version control through the existing project setup. An unavailable executable disables native creation while existing-history reading remains available. The controller uses documented [Codex App Server](https://learn.chatgpt.com/docs/app-server) stdio and the provider's existing login; it does not configure authentication.
 
-The human screen creates a named session with project, provider, responsibility and requested permissions. The returned native scope is shown separately. Name and responsibility reach the new conversation's startup instructions; normal provider project instructions remain available. Supplied instructions and a displayed role do not establish compliance. This version does not edit the responsibility of a running conversation.
+The human screen creates a named session with project, provider, responsibility and requested permissions. The returned native scope is shown separately. Model observation shows the retained creation/initialization response, not per-turn execution; missing enrollment/history coverage stays unknown. Name and responsibility reach the new conversation's startup instructions; normal provider project instructions remain available. Supplied instructions and a displayed role do not establish compliance. This version does not edit the responsibility of a running conversation.
 
 Claude requires the optional claude extra in the controller's Python environment: install agent-work-kit[claude], or inject claude-agent-sdk==0.2.174 into its existing pipx environment. Use serve --claude PATH for an unmodified native executable, or use the SDK's bundled binary. The official persistent ClaudeSDKClient uses the provider's existing login, full native prompt and user/project/local settings. Missing dependencies, missing executables and native authentication failures stay separate. The integration creates no sign-in service or billing fallback. The native UUID requested at creation remains distinct from the identity confirmed by a provider frame; an unconfirmed creation is not silently replaced.
 
@@ -32,9 +32,23 @@ Start the controller first. Choose Use existing Codex conversation in its screen
 
 Enrollment sends no assignment. After successful admission, use the ordinary send/status commands below. The name is a local label; enrollment and subsequent recovery submit no role, base instructions or permission overrides. Native context stays in the selected conversation; old transcript text is not copied into the channel.
 
-Enrollment pins Windows x86_64 Codex 0.164.0-alpha.11.1 to executable SHA-256 `4fd2f057bad603bf53dc202457ffd0c3591de62e867a8b01e73816e3fbce5a73`; wrappers, extra launch arguments and other binaries are refused. It requires the same Codex home and local sessions store, exact current project, idle availability, direct-input permission and interpretable native sandbox/approval/reviewer fields. A dedicated private App Server must acquire the native writer lock through exact-ID resume. Close the other owner normally before retrying an ownership refusal. Missing required policy, changed policy/runtime/home, child-input restrictions and admission errors hold work without replacing the conversation. Live IDE attachment and conversation discovery remain unavailable.
+Enrollment pins Windows x86_64 Codex 0.164.0-alpha.11.1 to executable SHA-256 `4fd2f057bad603bf53dc202457ffd0c3591de62e867a8b01e73816e3fbce5a73`; wrappers, extra launch arguments and other binaries are refused. It requires the same Codex home and local sessions store, exact current project, idle availability, direct-input permission and interpretable native sandbox/approval/reviewer fields. A dedicated private App Server must acquire the native writer lock through exact-ID resume. Close the other owner normally before retrying an ownership refusal. Missing required policy, changed policy/runtime/home, child-input restrictions and admission errors hold work without replacing the conversation. Live IDE attachment remains unavailable.
 
 The controller retains and compares every returned policy field before sending or recovering: sandbox, approval policy/reviewer, runtime workspace roots and active profile. Optional provenance is recorded as supplied; null and key absence remain distinct. An unexposed profile does not invalidate known required scope, and no profile is inferred or configured. Read-only/workspace-write sandbox details must be complete. Inspect a refusal in status; resume retries explicitly after the cause changes. Pending uncertainty is retained without replay.
+
+Prevents: F24, F25, F29.
+
+## Find a conversation by name
+
+Open Use existing Codex conversation to browse indexed conversations in the current project. Choose a row, check the selected identity and local name, then enroll separately. Selection sends nothing and remains fixed across pages, refresh and refused admission. Manual thread ID entry remains available.
+
+    awkit session --project . discover --limit 20
+
+Pass the returned next_cursor as --cursor with the same limit for another page. Omit it to refresh. Limits are 1–50; cursors expire after five minutes or when their connection changes. Concurrent readers keep separate sequences. An unavailable or expired page requires an explicit refresh; no fallback scan occurs. Exit 0 returns a page, 1 reports unavailable discovery, and 2 reports invalid input or a controller error.
+
+Listing requires an already initialized owned Codex connection matching the enrollment runtime, project and home. It never starts or reconnects a server, resumes a conversation or changes permissions. An empty first launch therefore has no list; deliberate creation or enrollment is a separate action.
+
+Only native names, exact thread IDs, project, creation source, labelled creation/update times and registration facts are returned. Unnamed conversations stay unnamed. Updated time is not current activity; creation source is not current ownership. The database-only current-project query can omit stale or missing indexed records. Native previews cross the transport but are discarded before awkit results, events, durable records or diagnostics, including late replies. Other projects, archived threads, child origins, transcript import and live IDE attachment are outside this route.
 
 Prevents: F24, F25, F29.
 

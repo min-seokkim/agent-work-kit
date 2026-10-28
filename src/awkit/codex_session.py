@@ -7,6 +7,7 @@ import os
 import queue
 import subprocess
 import threading
+from pathlib import Path
 
 from . import __version__
 
@@ -32,6 +33,9 @@ class CodexSession:
         self._closed = False
         self._serial = 0
         self._pending = {}
+        self._discovery = {}
+        self.project = Path(project).resolve(strict=True)
+        self.command = tuple(command)
         self._lock = threading.RLock()
         self._events = queue.Queue()
         self.stderr = ""
@@ -74,11 +78,20 @@ class CodexSession:
         self._write(dict(id=rpc_id, result=result))
 
     def call(self, method, params, *, on_request=None):
+        return self._call(method, params, on_request=on_request)
+
+    def discover_threads(self, params):
+        """Return allowlisted metadata; native discovery errors never escape this boundary."""
+        return self._call("thread/list", params, discovery=True)
+
+    def _call(self, method, params, *, on_request=None, discovery=False):
         response = queue.Queue(maxsize=1)
         with self._lock:
             self._serial += 1
-            ident = f"awkit-{self._serial}"
+            ident = f"awkit-discovery-{self._serial}" if discovery else f"awkit-{self._serial}"
             self._pending[ident] = response
+            if discovery:
+                self._discovery[ident] = (params["cwd"], params.get("limit", 20))
         try:
             if on_request is not None:
                 on_request(ident)  # Persist the request/attempt/RPC binding before any write.
@@ -86,15 +99,30 @@ class CodexSession:
             try:
                 message = response.get(timeout=self.timeout)
             except queue.Empty as exc:
+                if discovery:
+                    raise ProviderError("Conversation discovery is unavailable.") from exc
                 raise ProviderError(f"{method} timed out; admission is uncertain and will not be replayed.") from exc
             if "error" in message:
+                if discovery:
+                    error = message["error"]
+                    if isinstance(error, dict) and error.get("code") in (-32601, -32602):
+                        raise ProviderRejected("Conversation discovery is unsupported on this connection.",
+                                               {"code": error["code"]})
+                    raise ProviderError("Conversation discovery is unavailable.")
                 if isinstance(message["error"], dict) and isinstance(message["error"].get("code"), int):
                     raise ProviderRejected(f"{method}: {message['error']}", message["error"])
                 raise ProviderError(f"{method}: {message['error']}")
             return message["result"]
+        except ProviderRejected:
+            raise
+        except ProviderError:
+            if discovery:
+                raise ProviderError("Conversation discovery is unavailable.") from None
+            raise
         finally:
             with self._lock:
                 self._pending.pop(ident, None)
+                self._discovery.pop(ident, None)
 
     def _fail(self, reason):
         with self._lock:
@@ -119,6 +147,16 @@ class CodexSession:
                 message = json.loads(raw)
                 if not isinstance(message, dict):
                     raise ValueError("Provider frame is not an object")
+                ident = message.get("id")
+                if isinstance(ident, str) and ident.startswith("awkit-discovery-"):
+                    with self._lock:
+                        response = self._pending.get(ident)
+                        if response is not None and ident in self._discovery:
+                            from .session_discovery import project_response
+
+                            if not response.full():
+                                response.put_nowait(project_response(message, *self._discovery[ident]))
+                    continue  # Late discovery replies must never enter ordinary event diagnostics.
                 if "method" in message:
                     self._events.put(message)
                 elif "id" in message:

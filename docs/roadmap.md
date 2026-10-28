@@ -4,7 +4,7 @@ Choose the next unfinished outcome here. The owner selects implementation; an it
 
 ## Current planning focus
 
-The owner selected [the README rewrite](tasks/documentation-restructure.md). Its receipt records delivery stages. Broader product choices remain deferred: real writing outcomes, session coordination and full presentation production need the evidence or prerequisite described in their task records.
+The owner selected autonomous real-use evaluation and continued session development. The [Codex conversation picker](tasks/session-orchestration.md#selected-conversation-picker) is the current implementation unit; its guide revision supplies a real writing continuation. The README rewrite has a completed delivery receipt. Broader coordination, writing-benefit claims and presentation production retain their task-specific prerequisites.
 
 ## Task plans
 

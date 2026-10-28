@@ -1,6 +1,6 @@
 # Development
 
-Start here to resume work on Agent Work Kit. The owner's latest selected assignment is [the README rewrite](tasks/documentation-restructure.md). Read its next action and delivery receipt before repeating a check, push or installation. Then select any further work with the owner from [the roadmap](roadmap.md).
+Start here to resume work on Agent Work Kit. The latest selected assignment is [the Codex conversation picker](tasks/session-orchestration.md#selected-conversation-picker), with independent review and a real writing continuation. Read its next action and evidence before repeating a check, push or installation. The [roadmap](roadmap.md) retains broader unfinished outcomes.
 
 ## Resume a task
 

@@ -168,8 +168,14 @@ class TurnUpdateTests(unittest.TestCase):
         final = self.wait(lambda v: len(v["attempts"]) == 2 and v["attempts"][-1]["state"] == "returned")
         self.assertEqual(final["attempts"][-1]["request_id"], queued["id"])
         self.assertEqual(len(final["attempts"]), 2)
-        with self.assertRaises(ValueError):
-            self.controller.update_turn("Worker", **self.args(key="ended"))
+        before = self.store.snapshot()
+        with patch.object(self.controller.provider, "call") as call:
+            with self.assertRaisesRegex(ValueError, "No active turn is currently observed"):
+                self.controller.update_turn("Worker", **self.args(key="ended"))
+            call.assert_not_called()
+        after = self.store.snapshot()
+        self.assertEqual(after["turn_updates"], before["turn_updates"])
+        self.assertEqual(after["messages"], before["messages"])
 
     def test_lost_response_and_restart_retain_uncertainty_without_replay(self):
         args = self.args("LOSE_UPDATE_RESPONSE")

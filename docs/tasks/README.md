@@ -4,12 +4,12 @@ Use this directory to locate a task; its record owns the current state and next 
 
 ## Selected assignment
 
-- [README rewrite](documentation-restructure.md#current-status): the owner-selected rewrite preserves existing sections; its receipt owns verification, delivery and the requested shutdown stage.
+- [Codex conversation picker](session-orchestration.md#selected-conversation-picker): implementation, native continuation and independent review are recorded; consult its receipt for final delivery stages. The actual guide revision also supplies [writing-outcome evidence](writing-outcome-evaluation.md#current-status).
 
 ## Deferred and blocked
 
-- [Writing outcomes](writing-outcome-evaluation.md#current-status): select a real revision or natural continuation that tests preservation and adherence without another reminder.
-- [Session orchestration](session-orchestration.md#current-status): current controls have shipped; the picker, existing IDE attachment, broader discovery and Claude peer enrollment remain unfinished or deferred.
+- [Writing outcomes](writing-outcome-evaluation.md#current-status): evaluate the selected real continuation; lasting adherence and causal kit benefit remain unverified.
+- [Session orchestration](session-orchestration.md#current-status): existing IDE attachment, broader discovery and Claude peer enrollment remain unfinished beyond the selected picker.
 - [Independent-session collaboration](independent-session-collaboration.md#current-status): retain the broader coordination outcome and conditional transport/receipt work; use the session record for implementation state.
 - [Planning-role drift](planning-role-drift.md#current-status): diagnosis is complete; observe actual role adherence at an ordinary delivery and continuation.
 - [Connection diagnostics](connection-diagnostics.md#current-status): shipped corrections are retained; the historical automatic-hook cause needs the actual failing invocation.
@@ -20,6 +20,7 @@ Use this directory to locate a task; its record owns the current state and next 
 
 | Record | Completed scope; remaining limits stay in the record |
 |---|---|
+| [README rewrite](documentation-restructure.md#current-status) | Both language versions rewritten within their existing sections; the receipt records checks, CI and exact installation. |
 | [Writing revision workflow](writing-revision-workflow.md#current-status) | W0 guidance, W1 public review/revision package and W2 optional public continuation route. |
 | [Existing development-project trial](development-project-trial.md#current-status) | Local feature and revision trials; the later parser lead selected no change. Application publication and human acceptance are not established. |
 | [Real data revision](real-data-trial.md#current-status) | CI-metadata revision, added-artifact comparison and a separate other-project analysis; external frozen-runner use remains unexercised. |

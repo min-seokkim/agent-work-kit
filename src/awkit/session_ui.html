@@ -38,6 +38,7 @@ a{color:var(--accent)}.small{font-size:.83rem}.hidden{display:none!important}
 @media(max-width:760px){header{padding:1rem}.project{margin-left:0;max-width:100%;width:100%;font-size:.8rem}main{display:block;padding:0 .65rem 1.2rem}.strip{padding:.65rem}aside{position:static;max-height:none}.conversation{min-height:65vh}.back{display:inline-flex}body.conversation-open aside{display:none}body:not(.conversation-open) .conversation{display:none}.conversation-head,.compose{padding:1rem}.messages{padding:.8rem}.message{padding:.85rem}.split{grid-template-columns:1fr}.decision{margin:.8rem}}
 #update-target{overflow-wrap:anywhere}#update-original{white-space:pre-wrap;overflow-wrap:anywhere;max-height:12rem;overflow:auto}
 .work-overview{padding:1rem 1.2rem;border-bottom:1px solid var(--line)}.work-item{border:1px solid var(--line);border-radius:7px;padding:.8rem;margin-top:.7rem;min-width:0;overflow-wrap:anywhere}.work-item p{margin-bottom:.45rem}.work-item .public-text{white-space:pre-wrap;overflow-wrap:anywhere;max-height:16rem;overflow:auto}.work-item .toolbar a{font-size:.85rem}
+#enroll-dialog{width:min(760px,calc(100% - 2rem));max-height:90dvh;overflow:auto}.candidates{display:grid;gap:.6rem;margin:1rem 0;max-height:22rem;overflow:auto}.candidate{text-align:left;overflow-wrap:anywhere;width:100%;min-width:0}.candidate strong,.candidate span{display:block}.candidate[aria-pressed=true]{border-color:var(--accent);background:#eaf3f5}.picker-selection{padding:.8rem;background:var(--wash);border-radius:7px;margin:1rem 0;overflow-wrap:anywhere}.picker-selection p{margin:0 0 .3rem}.candidate-id{font-family:ui-monospace,Consolas,monospace;font-size:.75rem}#picker-status{overflow-wrap:anywhere}
 </style>
 </head>
 <body>
@@ -51,6 +52,7 @@ a{color:var(--accent)}.small{font-size:.83rem}.hidden{display:none!important}
 <p id="selected-purpose" class="subtle"></p><p id="observation" class="small"></p>
 <div class="toolbar"><button id="latest" disabled hidden>Latest</button><button id="interrupt" disabled>Interrupt turn</button><button id="resume" disabled>Resume same conversation</button></div>
 <p id="control-reason" class="reason"></p>
+<details><summary>Model observation</summary><div id="model-observation"></div></details>
 <details><summary>Permissions and connection</summary><div id="permissions"></div></details>
 <details><summary>Technical details</summary><pre id="technical"></pre></details></div>
 <section id="work" class="work-overview" aria-label="Assignment dispositions and public updates"></section>
@@ -74,10 +76,15 @@ a{color:var(--accent)}.small{font-size:.83rem}.hidden{display:none!important}
 <label>Local role<select id="local-role"><option value="main">main · first participant</option><option value="reviewer">reviewer · second participant</option></select></label></details>
 <div class="dialog-actions"><button type="button" data-close="history-dialog">Cancel</button><button class="primary" id="history-submit">Open history</button></div></form></dialog>
 <dialog id="enroll-dialog"><form id="enroll-form"><h2>Use an existing Codex conversation</h2>
-<p>Enter the exact native thread ID of an authorized idle conversation in this project. Enrollment sends no assignment. Its original instructions and native permissions remain.</p>
+<p>Choose a conversation in this project, then enroll it separately. Choosing a row sends no assignment and does not resume the conversation.</p>
+<div class="toolbar"><button type="button" id="picker-refresh">Refresh list</button><button type="button" id="picker-more" disabled>More conversations</button></div>
+<p id="picker-status" class="reason" role="status" aria-live="polite"></p>
+<div id="picker-list" class="candidates" aria-label="Existing Codex conversations"></div>
+<div id="picker-selection" class="picker-selection" hidden></div>
 <label>Name<input id="enroll-name" required maxlength="200" placeholder="Research"></label>
-<label>Native thread ID<input id="enroll-thread" required placeholder="Exact native UUID"></label>
-<p class="reason">Requires the verified local Codex runtime and the same Codex home. An active owner, unknown scope or unsupported direct input prevents sending.</p>
+<label>Native thread ID (selected or entered manually)<input id="enroll-thread" required placeholder="Exact native UUID"></label>
+<p class="reason">Names and times come from the native index. Updated time is not live activity, and creation source does not identify the current owner. Indexed conversations may be missing or stale.</p>
+<p class="reason">Enrollment retains the conversation's original instructions and permissions. An active owner, unknown scope or unsupported direct input prevents sending. Enrollment sends no assignment.</p>
 <div class="dialog-actions"><button type="button" data-close="enroll-dialog">Cancel</button><button class="primary" id="enroll-submit">Enroll conversation</button></div></form></dialog>
 <dialog id="update-dialog"><form id="update-form"><h2>Update this active turn</h2>
 <p id="update-target"></p><pre id="update-original"></pre>
@@ -87,6 +94,7 @@ a{color:var(--accent)}.small{font-size:.83rem}.hidden{display:none!important}
 <script>
 'use strict';
 let updateDraft = null;
+let pickerRows = [], pickerChoice = null, pickerCursor = null, pickerRequest = 0;
 const byId = id => document.getElementById(id);
 const fragment = new URLSearchParams(location.hash.slice(1));
 let token = fragment.get('token') || sessionStorage.getItem('awkit-session-token') || '';
@@ -255,6 +263,14 @@ function render() {
   byId('body').disabled = !view.can_send; byId('send').disabled = !view.can_send;
   byId('scope').textContent = 'To: ' + m.name + ' · Project: ' + state.project;
   byId('send-reason').textContent = !view.can_send ? view.control_reason : m.provider === 'claude' && m.state === 'waiting for idle' ? 'Work stays queued until Claude reports native idle. A result alone does not establish idle.' : 'Requests start when this conversation is observed idle. Informational notices do not start a turn.';
+  const model = byId('model-observation'); model.replaceChildren();
+  if (m.history) model.append(node('p','No native model observation is available for stored channel history.','reason'));
+  else if (typeof m.model !== 'string' || !m.model.trim() || m.enrollment) model.append(node('p','Model not recorded. No model is inferred from local settings or another conversation.','reason'));
+  else {
+    model.append(node('p',m.model));
+    model.append(node('p',m.provider === 'claude' ? 'Source: retained Claude native initialization response.' : 'Source: retained Codex conversation-creation response.','reason'));
+    model.append(node('p','This observation does not establish which model executed each later turn.','reason'));
+  }
   const permission = byId('permissions'); permission.replaceChildren();
   permission.append(node('p',m.history ? 'Native permission scope is unavailable; this is stored history only.' : m.provider === 'claude' ? 'Submitted Claude mode and partial native observations. Complete effective rules and Windows sandbox enforcement remain unverified.' : 'Actual scope returned by the provider.','reason'), node('pre',JSON.stringify(m.permissions,null,2)));
   if (m.returned_scope) permission.append(node('p','Reconnection returned a different scope. Saved permissions remain above; queued work is held.','reason'),node('pre',JSON.stringify(m.returned_scope,null,2)));
@@ -373,10 +389,67 @@ function providerDraft() {
   byId('creation-permissions').textContent = claude ? 'Claude uses its native default approval mode and project instructions. Requests that need a decision appear here. This choice does not establish a Codex sandbox or Windows network restriction.' : 'Approval requests go to this screen. The conversation shows the scope actually returned by Codex.';
   byId('provider-reason').textContent = claude ? (state.capabilities.claude_runtime.reason || 'SDK available. Native login and this conversation are checked when connecting.') : (state.capabilities.codex_executable_available ? '' : 'Codex executable unavailable.');
 }
+function pickerTime(value) {
+  if (!Number.isInteger(value)) return 'Unknown';
+  const date = new Date(value * 1000);
+  return Number.isNaN(date.getTime()) ? 'Unknown' : date.toLocaleString();
+}
+function renderPicker() {
+  const list = byId('picker-list'); list.replaceChildren();
+  for (const row of pickerRows) {
+    const button = node('button', undefined, 'candidate'); button.type = 'button';
+    button.dataset.threadId = row.id;
+    button.setAttribute('aria-pressed', String(!!pickerChoice && pickerChoice.id === row.id));
+    button.append(node('strong', row.name || 'Unnamed conversation'));
+    button.append(node('span', row.project, 'meta'));
+    button.append(node('span', 'Created via ' + row.source + (row.registered ? ' · Already registered here' : ''), 'meta'));
+    button.append(node('span', 'Created: ' + pickerTime(row.created_at) + ' · Updated: ' + pickerTime(row.updated_at), 'meta'));
+    button.append(node('span', row.id, 'candidate-id'));
+    button.onclick = () => {
+      pickerChoice = {...row}; byId('enroll-thread').value = row.id;
+      if (!byId('enroll-name').value && row.name) byId('enroll-name').value = row.name.slice(0,200);
+      renderPicker();
+    };
+    list.append(button);
+  }
+  const selection = byId('picker-selection'); selection.replaceChildren(); selection.hidden = !pickerChoice;
+  if (pickerChoice) {
+    selection.append(node('p', 'Selected: ' + (pickerChoice.name || 'Unnamed conversation')),
+      node('p', pickerChoice.project, 'meta'), node('p', pickerChoice.id, 'candidate-id'),
+      node('p', 'This selection stays fixed while you browse or refresh the list.', 'reason'));
+  }
+}
+async function loadPicker(more = false) {
+  const sequence = ++pickerRequest, cursor = more ? pickerCursor : null;
+  if (more && !cursor) return;
+  byId('picker-refresh').disabled = true; byId('picker-more').disabled = true;
+  byId('picker-status').textContent = 'Reading indexed conversations in this project…';
+  try {
+    const result = await api('discover', {cursor, limit:20});
+    if (sequence !== pickerRequest || !byId('enroll-dialog').open) return;
+    pickerRows = result.available ? result.conversations : []; pickerCursor = result.next_cursor;
+    renderPicker();
+    byId('picker-status').textContent = result.available
+      ? (pickerRows.length ? 'Choose a row, then check the name and selected ID before enrolling.' : 'No indexed conversations on this page.')
+      : (result.reason || 'Conversation discovery is unavailable.') + ' You can still enter an authorized thread ID manually.';
+  } catch (error) {
+    if (sequence !== pickerRequest || !byId('enroll-dialog').open) return;
+    pickerRows = []; pickerCursor = null; renderPicker();
+    byId('picker-status').textContent = 'Could not read the conversation list. ' + error.message + ' Manual thread ID entry remains available.';
+  } finally {
+    if (sequence === pickerRequest) {
+      byId('picker-refresh').disabled = false; byId('picker-more').disabled = !pickerCursor;
+    }
+  }
+}
 byId('provider').onchange = () => { byId('sandbox').value = 'read-only'; providerDraft(); };
 byId('open-create').onclick = () => { providerDraft(); byId('create-dialog').showModal(); };
 byId('open-history').onclick = () => byId('history-dialog').showModal();
-byId('open-enroll').onclick = () => byId('enroll-dialog').showModal();
+byId('open-enroll').onclick = () => { byId('enroll-dialog').showModal(); loadPicker(); };
+byId('picker-refresh').onclick = () => loadPicker();
+byId('picker-more').onclick = () => loadPicker(true);
+byId('enroll-thread').oninput = () => { pickerChoice = null; renderPicker(); };
+byId('enroll-dialog').addEventListener('close', () => { pickerRequest++; });
 for (const button of document.querySelectorAll('[data-close]')) button.onclick = () => byId(button.dataset.close).close();
 byId('back').onclick = () => document.body.classList.remove('conversation-open');
 byId('needs-reply').onchange = () => { byId('send').textContent = byId('needs-reply').checked ? 'Send request' : 'Store notice'; };
@@ -424,9 +497,13 @@ byId('enroll-form').onsubmit = async event => {
   event.preventDefault(); byId('enroll-submit').disabled = true;
   try {
     const result = await api('enroll',{name:byId('enroll-name').value,thread_id:byId('enroll-thread').value});
-    byId('enroll-dialog').close(); await refresh(); select(result.session.id);
-    banner(result.session.error || 'Enrolled ' + result.session.name + '. No assignment was sent.');
-  } catch (error) { banner(error.message); }
+    await refresh(); select(result.session.id);
+    if (result.session.state === 'unknown') {
+      byId('picker-status').textContent = (result.session.error || 'Enrollment refused or uncertain.') + ' Your selection and draft remain. Close this dialog to inspect the recorded attempt before retrying.';
+    } else {
+      byId('enroll-dialog').close(); banner('Enrolled ' + result.session.name + '. No assignment was sent.');
+    }
+  } catch (error) { byId('picker-status').textContent = error.message + ' Your selection and draft remain.'; }
   finally { byId('enroll-submit').disabled = false; }
 };
 byId('interrupt').onclick = async () => { if (!current()) return; try { await api('interrupt',{ident:selected}); banner('Interruption requested; waiting for the provider outcome.'); await refresh(); } catch (error) { banner(error.message); } };

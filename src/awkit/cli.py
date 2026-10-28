@@ -182,6 +182,9 @@ def _parser():
     session_enroll = session_commands.add_parser("enroll", help="enroll an explicit idle local Codex thread; send no assignment")
     session_enroll.add_argument("name")
     session_enroll.add_argument("--thread-id", required=True)
+    session_discover = session_commands.add_parser("discover", help="list current-project Codex metadata through an existing eligible connection")
+    session_discover.add_argument("--cursor", help="opaque next cursor from the same discovery sequence")
+    session_discover.add_argument("--limit", type=int, default=20, help="page size from 1 to 50 (default: 20)")
     session_send = session_commands.add_parser("send", help="store an assignment; the owner starts an idle turn automatically")
     session_send.add_argument("ident", help="managed session name or ID")
     session_send.add_argument("--key", help="reuse this client key to recover the same stored submission; never auto-resend")
@@ -685,6 +688,8 @@ def main(argv=None):
                                sandbox=args.sandbox, permission_mode=args.permission_mode, project=str(args.project.resolve()))
             elif args.action == "enroll":
                 payload = dict(name=args.name, thread_id=args.thread_id)
+            elif args.action == "discover":
+                payload = dict(cursor=args.cursor, limit=args.limit)
             elif args.action == "send":
                 payload = dict(ident=args.ident, key=args.key or uuid.uuid4().hex,
                                body=_read_body(args), kind=args.kind, entry="agent")
@@ -706,6 +711,8 @@ def main(argv=None):
             print(json.dumps(dict(schema=1, **result)))
             if args.action == "update":
                 return 0 if result["state"] == "acknowledged" else 1
+            if args.action == "discover":
+                return 0 if result["available"] else 1
             return 1 if args.action in ("create", "enroll") and result["session"]["state"] == "unknown" else 0
 
         if args.group == "channel":

@@ -29,9 +29,12 @@ def submit(controller, ident, *, key, request_id, expected_turn_id, body, entry=
                 return dict(session=store.metadata()["id"], update=existing, state=existing["state"], recovered=True)
         meta = store.metadata()
         provider, generation = controller._connection(store)
-        if (not supported(meta) or provider is None or not provider.alive or meta["generation"] != generation
-                or meta["state"] not in ("running", "accepted", "decision needed")):
+        if not supported(meta):
+            raise ValueError("Exact-turn updates require the verified Codex runtime.")
+        if provider is None or not provider.alive or meta["generation"] != generation:
             raise ValueError("Exact-turn updates require an available owned connection on the verified Codex runtime.")
+        if meta["state"] not in ("running", "accepted", "decision needed"):
+            raise ValueError("No active turn is currently observed for this conversation. Read its latest result before sending a new assignment.")
         intent = store.turn_update_intent(generation, key=key, request_id=request_id,
             expected_turn_id=expected_turn_id, body=body, entry=entry)
     may_have_sent = False

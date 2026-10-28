@@ -2,13 +2,27 @@
 
 ## Current status
 
-Deferred extensions after delivered controls. Current-work reading and the optional W2 package shipped in `a2a0c43`, after exact-turn updates in `7714166`. The delivery receipt records 21 passing CI jobs and exact installation; application screen inspection and human acceptance remain unverified.
+The owner selected autonomous feature development, real-use writing evaluation and independent-session collaboration. The current unit implements recognizable selection of an existing Codex conversation in the current project. Current-work reading shipped in `a2a0c43`; its earlier verification limits remain in the history.
 
-Next action: Keep the conversation picker deferred until selected. Existing IDE attachment, broader discovery and Claude peer enrollment remain unfinished; do not repeat held native or browser operations without their required authorization or changed prerequisite.
+The picker is implemented and exercised with owned fictional conversations: name selection, separate enrollment and a same-context follow-up passed; a different-project control stayed excluded. Independent review found no High or Major issue and one Minor reference word-limit failure, corrected after its frozen check. A later real-use correction distinguishes an already-ended turn from a lost connection. Session details also show retained model observations with their source and limits.
+
+Next action: consult `.awkit/handoffs/session-picker/delivery.json` for the corrected snapshot, check, CI and installation stages before repeating delivery. The receipt distinguishes the independent review's snapshot from subsequent root-reviewed changes. Existing IDE attachment, cross-project discovery and Claude peer enrollment remain outside this unit; human acceptance is unverified.
+
+## Selected conversation picker
+
+Owner: root implementation session. Base: `ece9881`. Scope: discovery transport/controller, CLI/HTTP/UI entry points, focused tests, session guide/reference, CHANGELOG and current task/navigation records. The retained contract is `.awkit/handoffs/product-research/codex-conversation-picker-unit.md`; its source and transport assessments remain linked there.
+
+Reuse an initialized, authorized owned connection with matching pinned runtime, project and native home. Query only the canonical current project through database-only, non-archived ordinary conversation origins. No server startup, reconnect, resume, history import or fallback scan occurs for listing. Keep manual exact-ID enrollment available when the prerequisite is missing.
+
+Project only native names, exact thread IDs, project, creation source, labelled timestamps and existing registration facts. Exclude previews and body fields from awkit results, durable state, events and diagnostics, including errors and late responses. Native wire receipt and private bounded stderr memory are distinct from exported data. Preserve ordinary work diagnostics.
+
+Selecting a row preserves its exact ID across paging, refresh and admission refusal. Enrollment and sending remain separate deliberate operations under existing identity, policy and writer-lock checks. Use fictional owned conversations and a different-project control for native verification; never infer IDE attachment or human acceptance from that trial.
+
+Risk is high for wrong-target selection and body export. The builder supplied backend/tests; root owns integration and delivery; a fresh independent native reviewer assessed snapshot `6aee39a`. The run also evaluates the real session-guide revision against existing preservation and scoped-writing instructions. `.awkit/handoffs/session-picker/run-plan.md` records allocation and acceptance criteria; `delivery.json` distinguishes implementation, checks, screen observations, review and delivery.
 
 ## Resume inputs
 
-ID: `session-orchestration`. No new implementation is assigned. The current conclusion is carried from `90e2557`; earlier owners and execution bases are retained in the history. Confirm ownership, the working revision and changed files before reopening the task.
+ID: `session-orchestration`. The selected picker unit above supersedes the earlier deferred assignment. Historical owners and execution bases do not transfer ownership; confirm current files and receipts before resuming.
 
 - [Product contract](../history/tasks/session-orchestration.md#product-contract): retained requirements or evidence for this task.
 - [Current-work reading](../history/tasks/session-orchestration.md#current-work-reading): retained requirements or evidence for this task.

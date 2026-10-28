@@ -4,7 +4,9 @@ Choose the next unfinished outcome here. The owner selects implementation; an it
 
 ## Current planning focus
 
-The owner selected autonomous real-use evaluation and continued session development. The conversation picker and [Codex creation model selection](tasks/session-orchestration.md#selected-creation-model) have delivery receipts. Optional reasoning effort at creation is the next selected outcome; a focused read of one managed session or request follows if the work window permits its full delivery. The coordinator owns product decisions, and the implementation session owns checks and delivery.
+The owner's latest direction prioritizes comparable Claude support for Codex capabilities and a provider-independent session interface. [Provider parity](tasks/session-orchestration.md#selected-provider-parity) now precedes the deferred single-session status selector. Future provider operations must assess both providers and expose supported differences; earlier Codex-only candidates require reassessment before selection.
+
+The conversation picker and Codex creation model/effort selection have delivery receipts in [session orchestration](tasks/session-orchestration.md#current-status). The coordinator owns product decisions; the implementation session owns checks and delivery. The focused single-session read follows provider parity when separately allocated; exact-request projection remains a later slice.
 
 The guide revision supplies a real writing continuation. The README rewrite has a completed delivery receipt. Broader coordination, writing-benefit claims and presentation production retain their task-specific prerequisites.
 

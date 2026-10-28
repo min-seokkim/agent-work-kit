@@ -177,16 +177,18 @@ def _parser():
     session_create.add_argument("name")
     session_create.add_argument("--responsibility", required=True)
     session_create.add_argument("--provider", choices=("codex", "claude"), default="codex")
-    session_create.add_argument("--model", help="explicit model ID for a new Codex conversation; omitted uses native defaults")
+    session_create.add_argument("--model", help="explicit model ID or provider alias for a new conversation; omitted uses native defaults")
     session_create.add_argument("--reasoning-effort", help="explicit reasoning effort with --model; omitted inherits native configuration")
     session_create.add_argument("--sandbox", choices=("read-only", "workspace-write"), help="Codex scope (default: read-only)")
     session_create.add_argument("--permission-mode", choices=("default",), help="Claude native mode (default: default)")
     session_enroll = session_commands.add_parser("enroll", help="enroll an explicit idle local Codex thread; send no assignment")
     session_enroll.add_argument("name")
     session_enroll.add_argument("--thread-id", required=True)
+    session_enroll.add_argument("--provider", choices=("codex", "claude"), default="codex", help="selected provider; unsupported enrollment returns its reason")
     session_discover = session_commands.add_parser("discover", help="list current-project Codex metadata through an existing eligible connection")
     session_discover.add_argument("--cursor", help="opaque next cursor from the same discovery sequence")
     session_discover.add_argument("--limit", type=int, default=20, help="page size from 1 to 50 (default: 20)")
+    session_discover.add_argument("--provider", choices=("codex", "claude"), default="codex", help="selected provider; unsupported discovery returns its reason")
     session_send = session_commands.add_parser("send", help="store an assignment; the owner starts an idle turn automatically")
     session_send.add_argument("ident", help="managed session name or ID")
     session_send.add_argument("--key", help="reuse this client key to recover the same stored submission; never auto-resend")
@@ -694,8 +696,12 @@ def main(argv=None):
                     payload["reasoning_effort"] = args.reasoning_effort
             elif args.action == "enroll":
                 payload = dict(name=args.name, thread_id=args.thread_id)
+                if args.provider != "codex":
+                    payload["provider"] = args.provider
             elif args.action == "discover":
                 payload = dict(cursor=args.cursor, limit=args.limit)
+                if args.provider != "codex":
+                    payload["provider"] = args.provider
             elif args.action == "send":
                 payload = dict(ident=args.ident, key=args.key or uuid.uuid4().hex,
                                body=_read_body(args), kind=args.kind, entry="agent")

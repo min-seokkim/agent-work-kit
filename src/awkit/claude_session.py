@@ -15,6 +15,7 @@ from dataclasses import asdict, is_dataclass
 from pathlib import Path
 
 from .codex_session import ProviderError
+from .session_models import claude_observe, claude_options, claude_submitted
 from .session_store import now
 
 SDK_VERSION = "0.2.174"
@@ -144,6 +145,7 @@ class ClaudeSession:
             setting_sources=["user", "project", "local"], permission_mode="default",
             extra_args={"replay-user-messages": None}, can_use_tool=self._permission,
             env={"CLAUDE_CODE_EMIT_SESSION_STATE_EVENTS": "1"},
+            **claude_options(meta),
         )
         self._client = ClaudeSDKClient(options)
         try:
@@ -164,6 +166,7 @@ class ClaudeSession:
                                source="SDK initialize; partial native policy receipt",
                                effective_rules="unverified", windows_sandbox="not established")
             self.alive = True
+            claude_submitted(self.store)
             self.store.update(permissions=permissions, client=dict(sdk_version=SDK_VERSION, executable=str(selected_cli),
                               executable_sha256=digest, **self.initialization),
                               state="idle" if info.get("session_state") == "idle" else "unknown",
@@ -241,6 +244,7 @@ class ClaudeSession:
                 meta = self.store.metadata()
                 self.store.update(permissions=dict(meta["permissions"], observed=observed,
                                   source="native system/init; partial policy receipt"), model=data.get("model"), returned_scope=None)
+                claude_observe(self.store, data.get("model"))
             return
         if name == "UserMessage":
             matched = self._current and ident == self._current["id"] and origin and origin.get("kind") == "human"

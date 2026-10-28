@@ -99,7 +99,7 @@ class PickerRoutesTests(unittest.TestCase):
             try:
                 page = browser.new_page(viewport=dict(width=1280, height=1000))
                 page.goto(self.server.url + "/#token=" + self.server.token)
-                page.get_by_role("button", name="Use existing Codex conversation", exact=True).click()
+                page.get_by_role("button", name="Use existing conversation", exact=True).click()
                 expect(page.locator(".candidate")).to_have_count(2)
                 page.locator(".candidate").first.click()
                 expect(page.locator("#enroll-thread")).to_have_value(identities[0])

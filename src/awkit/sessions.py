@@ -16,6 +16,7 @@ from pathlib import Path
 from .channel_status import observe
 from .claude_session import ClaudeSession, availability, recover_local_results
 from .codex_session import CodexSession, ProviderError
+from .session_capabilities import describe
 from .session_history import HistoryViews
 from .session_models import hold, verify_runtime
 from .session_models import observe as observe_model
@@ -141,7 +142,7 @@ class SessionController:
                            source="thread/start parameters", admission="pending")
             store.update(startup_context=startup)
             if model is not None:
-                selection = dict(requested=model, creation=None, latest=None, state="pending")
+                selection = dict(requested=model, creation=None, latest=None, state="pending" if provider == "codex" else "requested")
                 if reasoning_effort is not None:
                     selection["requested_effort"] = reasoning_effort
                 store.update(model_selection=selection)
@@ -202,7 +203,12 @@ class SessionController:
                              client=self.client)
             return store.snapshot()
 
-    def enroll(self, *, name, thread_id):
+    def enroll(self, *, name, thread_id, provider="codex"):
+        if provider not in ("codex", "claude"):
+            raise ValueError("Select Codex or Claude.")
+        capability = describe(provider)["operations"]["enrollment"]
+        if not capability["supported"]:
+            raise ValueError(capability["reason"])
         if not isinstance(name, str) or not name.strip() or len(name) > 200:
             raise ValueError("Session name must contain 1 to 200 characters.")
         if not isinstance(thread_id, str) or str(uuid.UUID(thread_id)) != thread_id:
@@ -333,13 +339,22 @@ class SessionController:
     def update_turn(self, ident, **args):
         from .session_updates import submit
 
-        if not model_ready(self._store(ident).metadata()):
+        meta = self._store(ident).metadata()
+        capability = describe(meta["provider"])["operations"]["active_turn_update"]
+        if not capability["supported"]:
+            raise ValueError(capability["reason"])
+        if not model_ready(meta):
             raise ValueError("The explicit model selection is unverified or mismatched; work remains held.")
         return submit(self, ident, **args)
 
-    def discover(self, *, cursor=None, limit=20):
+    def discover(self, *, cursor=None, limit=20, provider="codex"):
         from .session_discovery import discover
 
+        if provider not in ("codex", "claude"):
+            raise ValueError("Select Codex or Claude.")
+        capability = describe(provider)["operations"]["discovery"]
+        if not capability["supported"]:
+            return dict(available=False, reason=capability["reason"], project=str(self.project), conversations=[], next_cursor=None)
         return discover(self, cursor=cursor, limit=limit)
 
     def register_history(self, **args):
@@ -600,11 +615,16 @@ class SessionController:
         from .session_reading import project
 
         for view in views:
+            view["capabilities"] = describe(view["session"]["provider"])
             project(view, declarations)
         claude = availability()
+        providers = {name: describe(name) for name in ("codex", "claude")}
+        providers["codex"].update(available=bool(shutil.which(self.command[0])), unavailable_reason="Codex executable unavailable.")
+        providers["claude"].update(available=claude["available"], unavailable_reason=claude.get("reason", ""))
         return dict(project=str(self.project), generation=self.generation, sessions=views,
                     provider_error=self.provider_error, diagnostics=self.errors[-10:], declarations=declarations,
                     capabilities={"managed_codex": True,
+                                  "providers": providers,
                                   "codex_executable_available": bool(shutil.which(self.command[0])),
                                   "restart_resume": True, "codex_enrollment": True, "claude": claude["available"],
                                   "claude_runtime": claude, "ide_attachment": False})

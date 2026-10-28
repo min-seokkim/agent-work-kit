@@ -4,7 +4,7 @@ Use this directory to locate a task; its record owns the current state and next 
 
 ## Selected assignment
 
-- [Codex creation reasoning effort](session-orchestration.md#selected-creation-effort): optionally select effort alongside an explicit model and hold work on configuration mismatch. Delivered model selection, the picker and its [writing-outcome evidence](writing-outcome-evaluation.md#current-status) retain separate receipts.
+- [Claude configuration and shared provider controls](session-orchestration.md#selected-provider-parity): comparable supported creation settings, truthful observations and capability-based controls. Delivered Codex model/effort selection, the picker and its [writing-outcome evidence](writing-outcome-evaluation.md#current-status) retain separate receipts.
 
 ## Deferred and blocked
 

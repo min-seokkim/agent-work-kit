@@ -206,7 +206,7 @@ class FakeClient:
         async for frame in frames:
             self.queries.append(frame)
             native = self.options.session_id or self.options.resume
-            await self.queue.put(SystemMessage("init", dict(session_id=native, cwd=self.options.cwd, permissionMode="default")))
+            await self.queue.put(SystemMessage("init", dict(session_id=native, cwd=self.options.cwd, permissionMode="default", model="claude-canonical-fixture")))
             await self.queue.put(SystemMessage("session_state_changed", {"state": "running"}))
             await self.queue.put(UserMessage(frame["uuid"], frame["origin"]))
             await self.queue.put(ResultMessage(native, str(uuid.uuid4()), frame["origin"], frame["message"]["content"]))
@@ -256,10 +256,63 @@ class ClaudeLifetimeTests(unittest.TestCase):
             self.assertEqual(len(self.store.snapshot()["messages"]), 4)
             self.assertNotIn("account", self.store.metadata()["client"])
             self.assertNotIn("allowed_tools", vars(FakeClient.instances[0].options))
+            self.assertFalse(set(vars(FakeClient.instances[0].options)) & {"model", "effort", "fallback_model"})
         finally:
             client.close()
         self.assertTrue(FakeClient.instances[0].disconnected_by_owner)
         self.assertFalse(client.alive)
+
+    def test_explicit_alias_effort_are_submitted_and_reapplied_without_false_matching(self):
+        selection = dict(requested="sonnet", requested_effort="xhigh", creation=None, latest=None, state="requested")
+        self.store.update(model_selection=selection)
+        client = ClaudeSession(self.store)
+        try:
+            options = FakeClient.instances[-1].options
+            self.assertEqual((options.model, options.effort), ("sonnet", "xhigh"))
+            self.assertNotIn("fallback_model", vars(options))
+            self.assertEqual(self.store.metadata()["model_selection"]["state"], "submitted")
+            self.assertIsNone(self.store.metadata()["model_selection"]["latest"])
+            self.store.post("alias-input", "Invented alias input")
+            client.submit(self.store.claim(client.generation))
+            deadline = time.monotonic() + 3
+            while len(self.store.snapshot()["messages"]) < 2 and time.monotonic() < deadline:
+                time.sleep(.01)
+            observed = self.store.metadata()["model_selection"]
+            self.assertEqual(observed["requested"], "sonnet")
+            self.assertEqual(observed["requested_effort"], "xhigh")
+            self.assertEqual(observed["latest"]["model"], "claude-canonical-fixture")
+            self.assertIsNone(observed["latest"]["reasoning_effort"])
+            self.assertEqual(observed["state"], "submitted")
+            self.assertEqual(len(self.store.snapshot()["messages"]), 2)
+        finally:
+            client.close()
+        self.store.reconnect("connection-b")
+        self.store.update(generation="connection-b")
+        resumed = ClaudeSession(self.store, resume=True)
+        self.addCleanup(resumed.close)
+        options = FakeClient.instances[-1].options
+        self.assertEqual(options.resume, self.native)
+        self.assertIsNone(options.session_id)
+        self.assertEqual((options.model, options.effort), ("sonnet", "xhigh"))
+        self.assertEqual(FakeClient.instances[-1].queries, [])
+        self.assertEqual(self.store.metadata()["model_selection"]["creation"], observed["creation"])
+
+    def test_model_only_request_omits_effort_and_initialization_failure_never_falls_back(self):
+        self.store.update(model_selection=dict(requested="sonnet", creation=None, latest=None, state="requested"))
+
+        async def reject(_client):
+            _client.owner = asyncio.current_task()
+            raise RuntimeError("Fictional unavailable model")
+
+        with patch.object(FakeClient, "connect", reject), self.assertRaisesRegex(RuntimeError, "Fictional unavailable"):
+            ClaudeSession(self.store)
+        self.assertEqual(len(FakeClient.instances), 1)
+        options = vars(FakeClient.instances[0].options)
+        self.assertEqual(options["model"], "sonnet")
+        self.assertFalse(set(options) & {"effort", "fallback_model"})
+        self.assertEqual(self.store.metadata()["model_selection"]["requested"], "sonnet")
+        self.assertEqual(self.store.metadata()["state"], "unknown")
+        self.assertEqual(FakeClient.instances[0].queries, [])
 
     def wait_for_decision(self):
         deadline = time.monotonic() + 3

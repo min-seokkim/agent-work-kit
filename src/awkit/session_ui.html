@@ -43,7 +43,7 @@ a{color:var(--accent)}.small{font-size:.83rem}.hidden{display:none!important}
 </head>
 <body>
 <header><div class="brand">awkit <span class="subtle">/ sessions</span></div><div id="project" class="project">Connecting to the local project…</div>
-<div class="toolbar"><button id="open-history">Open channel history</button><button id="open-enroll">Use existing Codex conversation</button><button id="open-create" class="primary">Create session</button></div></header>
+<div class="toolbar"><button id="open-history">Open channel history</button><button id="open-enroll">Use existing conversation</button><button id="open-create" class="primary">Create session</button></div></header>
 <div id="banner" class="banner" role="status" aria-live="polite"></div>
 <div id="pending" class="strip" aria-label="Project actions"></div>
 <main><aside><h2>Sessions &amp; histories</h2><div id="list" class="list"></div><p class="reason">Opening a conversation does not acknowledge or accept its messages.</p></aside>
@@ -52,7 +52,8 @@ a{color:var(--accent)}.small{font-size:.83rem}.hidden{display:none!important}
 <p id="selected-purpose" class="subtle"></p><p id="observation" class="small"></p>
 <div class="toolbar"><button id="latest" disabled hidden>Latest</button><button id="interrupt" disabled>Interrupt turn</button><button id="resume" disabled>Resume same conversation</button></div>
 <p id="control-reason" class="reason"></p>
-<details><summary>Model observation</summary><div id="model-observation"></div></details>
+<details><summary>Configuration</summary><div id="model-observation"></div></details>
+<details><summary>Provider capabilities</summary><div id="provider-capabilities"></div></details>
 <details><summary>Permissions and connection</summary><div id="permissions"></div></details>
 <details><summary>Technical details</summary><pre id="technical"></pre></details></div>
 <section id="work" class="work-overview" aria-label="Assignment dispositions and public updates"></section>
@@ -64,8 +65,8 @@ a{color:var(--accent)}.small{font-size:.83rem}.hidden{display:none!important}
 <label>Project<select id="create-project"></select></label><label>Provider<select id="provider"><option value="codex">Codex</option><option value="claude">Claude</option></select></label><p id="provider-reason" class="reason"></p>
 <label>Name<input id="create-name" required maxlength="200" placeholder="Research"></label>
 <label>Responsibility<textarea id="responsibility" required maxlength="2000" placeholder="What this session is responsible for"></textarea></label>
-<div id="codex-model"><label>Model ID (optional)<input id="create-model" maxlength="200" placeholder="Leave empty for native defaults" aria-describedby="model-reason"></label>
-<label>Reasoning effort (optional, requires Model ID)<input id="create-effort" maxlength="200" placeholder="For example: medium" aria-describedby="model-reason"></label>
+<div id="create-configuration"><label>Model ID or alias (optional)<input id="create-model" maxlength="200" placeholder="Leave empty for native defaults" aria-describedby="model-reason"></label>
+<label>Reasoning effort (optional, requires Model ID)<input id="create-effort" list="create-effort-values" maxlength="200" placeholder="For example: medium" aria-describedby="model-reason"></label><datalist id="create-effort-values"></datalist>
 <p id="model-reason" class="reason">Omitting effort inherits native configuration. Model and effort support depend on native configuration and access; entering them does not verify availability or each turn's execution.</p></div>
 <label id="codex-permissions">Requested permissions<select id="sandbox"><option value="read-only">Read only</option><option value="workspace-write">Write in this workspace</option></select></label>
 <p id="creation-permissions" class="reason">Approval requests go to this screen. The conversation shows the scope actually returned by Codex.</p>
@@ -79,16 +80,19 @@ a{color:var(--accent)}.small{font-size:.83rem}.hidden{display:none!important}
 <details><summary>Stored role mapping</summary><p class="reason">The first participant uses the channel's existing main role; the second uses reviewer. These labels do not assign a new native conversation.</p>
 <label>Local role<select id="local-role"><option value="main">main · first participant</option><option value="reviewer">reviewer · second participant</option></select></label></details>
 <div class="dialog-actions"><button type="button" data-close="history-dialog">Cancel</button><button class="primary" id="history-submit">Open history</button></div></form></dialog>
-<dialog id="enroll-dialog"><form id="enroll-form"><h2>Use an existing Codex conversation</h2>
+<dialog id="enroll-dialog"><form id="enroll-form"><h2>Use an existing conversation</h2>
+<label>Provider<select id="enroll-provider"><option value="codex">Codex</option><option value="claude">Claude</option></select></label>
 <p>Choose a conversation in this project, then enroll it separately. Choosing a row sends no assignment and does not resume the conversation.</p>
 <div class="toolbar"><button type="button" id="picker-refresh">Refresh list</button><button type="button" id="picker-more" disabled>More conversations</button></div>
 <p id="picker-status" class="reason" role="status" aria-live="polite"></p>
-<div id="picker-list" class="candidates" aria-label="Existing Codex conversations"></div>
+<div id="picker-list" class="candidates" aria-label="Existing conversations"></div>
 <div id="picker-selection" class="picker-selection" hidden></div>
+<div id="enroll-fields">
 <label>Name<input id="enroll-name" required maxlength="200" placeholder="Research"></label>
 <label>Native thread ID (selected or entered manually)<input id="enroll-thread" required placeholder="Exact native UUID"></label>
 <p class="reason">Names and times come from the native index. Updated time is not live activity, and creation source does not identify the current owner. Indexed conversations may be missing or stale.</p>
 <p class="reason">Enrollment retains the conversation's original instructions and permissions. An active owner, unknown scope or unsupported direct input prevents sending. Enrollment sends no assignment.</p>
+</div>
 <div class="dialog-actions"><button type="button" data-close="enroll-dialog">Cancel</button><button class="primary" id="enroll-submit">Enroll conversation</button></div></form></dialog>
 <dialog id="update-dialog"><form id="update-form"><h2>Update this active turn</h2>
 <p id="update-target"></p><pre id="update-original"></pre>
@@ -203,9 +207,10 @@ function renderWork(view) {
 function render() {
   if (!state) return;
   byId('project').textContent = 'Project · ' + state.project;
-  const claude = state.capabilities.claude_runtime || {};
-  byId('open-create').disabled = !state.capabilities.codex_executable_available && !claude.available;
-  for (const option of byId('provider').options) option.disabled = option.value === 'claude' ? !claude.available : !state.capabilities.codex_executable_available;
+  const providers = state.capabilities.providers || {};
+  byId('open-create').disabled = !Object.values(providers).some(value => value.available && value.operations.create.supported);
+  byId('open-enroll').disabled = !Object.keys(providers).length;
+  for (const option of byId('provider').options) option.disabled = !providers[option.value] || !providers[option.value].available;
   providerDraft();
   if (!byId('create-project').options.length) { const option = node('option', state.project); option.value = state.project; byId('create-project').append(option); }
   const list = byId('list'); list.replaceChildren();
@@ -253,6 +258,8 @@ function render() {
   const view = current();
   if (!view) return;
   const m = view.session;
+  const operations = view.capabilities && view.capabilities.operations;
+  const supports = action => !operations || !!operations[action].supported;
   byId('latest').disabled = !view.messages.length;
   byId('latest').hidden = !view.messages.length;
   byId('selected-name').textContent = m.name;
@@ -261,31 +268,35 @@ function render() {
     (view.connected ? 'Connection available' : 'Connection unavailable') + ' · State ' + view.execution_state +
     ' · Last observed ' + m.state + ' at ' + time(m.observed_at) + ' (' + m.source + ')';
   byId('control-reason').textContent = view.control_reason || 'History is retained. Closing this view does not stop provider work.';
-  byId('resume').disabled = !view.can_resume;
+  byId('resume').disabled = !supports('resume') || !view.can_resume;
   const active = view.attempts.find(row => ['admitting','accepted','executing','uncertain'].includes(row.state));
-  byId('interrupt').disabled = !view.connected || !active || !(active.turn_id || active.provider_input_id);
-  byId('body').disabled = !view.can_send; byId('send').disabled = !view.can_send;
+  byId('interrupt').disabled = !supports('interrupt') || !view.connected || !active || !(active.turn_id || active.provider_input_id);
+  byId('body').disabled = !supports('send') || !view.can_send; byId('send').disabled = !supports('send') || !view.can_send;
   byId('scope').textContent = 'To: ' + m.name + ' · Project: ' + state.project;
   byId('send-reason').textContent = !view.can_send ? view.control_reason : m.provider === 'claude' && m.state === 'waiting for idle' ? 'Work stays queued until Claude reports native idle. A result alone does not establish idle.' : 'Requests start when this conversation is observed idle. Informational notices do not start a turn.';
   const model = byId('model-observation'); model.replaceChildren();
   if (m.model_selection && !m.enrollment && !m.history) {
     const choice = m.model_selection;
+    const requestOnly = view.capabilities && view.capabilities.model.admission === 'submitted-request';
     model.append(node('p','Requested model: ' + choice.requested));
     model.append(node('p','Requested reasoning effort: ' + (choice.requested_effort == null ? 'Omitted; native inheritance' : choice.requested_effort)));
     if (choice.latest) {
       const observation = choice.latest;
-      model.append(node('p','Returned model: ' + (observation.model || 'Not recorded')),
-        node('p','Provider: ' + (observation.provider || 'Not recorded')),
-        node('p','Reasoning effort: ' + (observation.reasoning_effort == null ? 'Not recorded' : observation.reasoning_effort)),
+      model.append(node('p','Provider-reported model: ' + (observation.model || (requestOnly ? 'Not yet reported' : 'Not recorded'))),
+        node('p',requestOnly ? 'Effective reasoning effort: Unverified' : 'Provider-reported reasoning effort: ' + (observation.reasoning_effort == null ? 'Not recorded' : observation.reasoning_effort)),
         node('p','Source: ' + observation.source,'reason'));
-    } else model.append(node('p','No native model configuration has been recorded.','reason'));
-    if (choice.state !== 'matched') model.append(node('p','Model and configuration selection is not confirmed. Work is held; inspect the recorded error before taking another action.','reason'));
+      if (observation.provider) model.append(node('p','Model service: ' + observation.provider,'reason'));
+    } else model.append(node('p',requestOnly ? 'Provider-reported model: Not yet reported. Effective reasoning effort: Unverified.' : 'No provider configuration has been recorded.','reason'));
+    if (requestOnly) {
+      model.append(node('p',choice.state === 'submitted' ? 'Requested settings submitted; effective configuration is unverified.' : 'Configuration request recorded; submission is not confirmed.','reason'));
+      model.append(node('p',view.capabilities.model.reason + ' ' + view.capabilities.effort.reason,'reason'));
+    } else if (choice.state !== 'matched') model.append(node('p','Model and configuration selection is not confirmed. Work is held; inspect the recorded error before taking another action.','reason'));
     model.append(node('p','Returned configuration does not verify model access or which model executed each turn.','reason'));
   }
   else if (m.history) model.append(node('p','No native model observation is available for stored channel history.','reason'));
-  else if (typeof m.model !== 'string' || !m.model.trim() || m.enrollment) model.append(node('p','Model not recorded. No model is inferred from local settings or another conversation.','reason'));
+  else if (typeof m.model !== 'string' || !m.model.trim() || m.enrollment) model.append(node('p',m.provider === 'claude' ? 'Requested model: Omitted; native defaults. Provider-reported model: Not yet reported.' : 'Model not recorded. No model is inferred from local settings or another conversation.','reason'));
   else {
-    model.append(node('p',m.model));
+    model.append(node('p','Requested model: Omitted; native defaults.'),node('p','Provider-reported model: ' + m.model));
     model.append(node('p',m.provider === 'claude' ? 'Source: retained Claude native initialization response.' : 'Source: retained Codex conversation-creation response.','reason'));
     model.append(node('p','This observation does not establish which model executed each later turn.','reason'));
   }
@@ -293,8 +304,13 @@ function render() {
   permission.append(node('p',m.history ? 'Native permission scope is unavailable; this is stored history only.' : m.provider === 'claude' ? 'Submitted Claude mode and partial native observations. Complete effective rules and Windows sandbox enforcement remain unverified.' : 'Actual scope returned by the provider.','reason'), node('pre',JSON.stringify(m.permissions,null,2)));
   if (m.returned_scope) permission.append(node('p','Reconnection returned a different scope. Saved permissions remain above; queued work is held.','reason'),node('pre',JSON.stringify(m.returned_scope,null,2)));
   if (m.startup_context) permission.append(node('p','Responsibility supplied at creation: ' + m.startup_context.responsibility + ' (' + m.startup_context.admission + '). This is instruction input, not a compliance check.','reason'));
+  const features = byId('provider-capabilities'); features.replaceChildren();
+  if (!m.history && view.capabilities) for (const [key,label] of [['discovery','Existing-conversation discovery'],['enrollment','Enrollment'],['active_turn_update','Active-turn updates']]) {
+    const capability = view.capabilities.operations[key];
+    features.append(node('p',label + ': ' + capability.reason));
+  }
   byId('technical').textContent = JSON.stringify({channel:view.channel,native_conversation:m.native_id,selected_native_conversation:m.enrollment && m.enrollment.thread_id,enrollment:m.enrollment,admission_observation:m.admission_observation,returned_identity:m.returned_native_id,generation:m.generation,client:m.client,startup_context:m.startup_context,recovery_evidence:m.recovery_evidence,posts:view.posts,cancellations:view.cancellations,attempts:view.attempts,events:view.events,diagnostics:state.diagnostics},null,2);
-  const key = JSON.stringify({id:selected,messages:view.messages,decisions:view.decisions,attempts:view.attempts,current_work:view.current_work,dispositions:view.dispositions,turn_updates:view.turn_updates,update_target:view.update_target,connected:view.connected,limit:limits.get(selected),declared:declarations});
+  const key = JSON.stringify({id:selected,messages:view.messages,decisions:view.decisions,attempts:view.attempts,current_work:view.current_work,dispositions:view.dispositions,turn_updates:view.turn_updates,update_target:view.update_target,connected:view.connected,configuration:view.session.model_selection,model:view.session.model,capabilities:view.capabilities,limit:limits.get(selected),declared:declarations});
   if (key === signature) return; signature = key;
   renderWork(view);
   const decisionBox = byId('decisions'); decisionBox.replaceChildren();
@@ -309,7 +325,7 @@ function render() {
     const buttons = node('div',undefined,'toolbar');
     const labels = {accept:'Allow once',acceptForSession:'Allow for this session',decline:'Decline',cancel:'Cancel turn',allow:'Allow once',deny:'Decline'};
     for (const choice of decision.choices) {
-      const button = node('button',labels[choice] || choice); button.disabled = !decision.can_answer;
+      const button = node('button',labels[choice] || choice); button.disabled = !supports('decide') || !decision.can_answer;
       button.onclick = async () => { try { await api('decide',{ident:m.id,decision_id:decision.id,choice:choice}); await refresh(); } catch (error) { banner(error.message); } };
       buttons.append(button);
     }
@@ -318,12 +334,12 @@ function render() {
     if (Array.isArray(questions)) {
       const form = node('form'); const answers = [];
       for (const question of questions) {
-        const label = node('label',question.question); const input = node('input'); input.disabled = !decision.can_answer; input.required = true;
+        const label = node('label',question.question); const input = node('input'); input.disabled = !supports('decide') || !decision.can_answer; input.required = true;
         label.append(input); form.append(label);
         for (const option of question.options || []) form.append(node('p',option.label + ': ' + option.description,'reason'));
         answers.push([question.question,input]);
       }
-      const submit = node('button','Send answers'); submit.disabled = !decision.can_answer; form.append(submit);
+      const submit = node('button','Send answers'); submit.disabled = !supports('decide') || !decision.can_answer; form.append(submit);
       form.onsubmit = async event => { event.preventDefault(); try { await api('decide',{ident:m.id,decision_id:decision.id,choice:{answers:Object.fromEntries(answers.map(([text,input]) => [text,input.value]))}}); await refresh(); } catch (error) { banner(error.message); } };
       box.append(form);
     }
@@ -349,7 +365,7 @@ function render() {
       relation.onclick = event => { event.preventDefault(); revealMessage(message.reply_to); }; card.append(relation);
     }
     const body = node('div',undefined,'body'); linkBody(body,message.body); card.append(body);
-    if (view.connected && view.update_target && view.update_target.request_id === message.id) {
+    if (supports('active_turn_update') && view.connected && view.update_target && view.update_target.request_id === message.id) {
       const target = {...view.update_target}, update = node('button','Update this active turn');
       update.onclick = () => {
         updateDraft = {ident:m.id,request_id:target.request_id,expected_turn_id:target.expected_turn_id,key:crypto.randomUUID(),entry:'human'};
@@ -370,7 +386,7 @@ function render() {
     if (disposition) {
       card.append(node('p',disposition.state,'handling'));
       if (disposition.cancellation && disposition.cancellation.disposition === 'after-dispatch') card.append(node('p','Stop requested after dispatch; delivery and provider outcome remain recorded.','reason'));
-      if (disposition.can_cancel) {
+      if (supports('cancel') && disposition.can_cancel) {
         const cancel = node('button','Cancel before dispatch');
         cancel.onclick = async () => { try { await api('cancel',{ident:m.id,request_id:message.id}); await refresh(); } catch (error) { banner(error.message); } };
         card.append(cancel);
@@ -399,17 +415,28 @@ async function refresh() {
   }
   finally { loading = false; }
 }
+const creationDrafts = new Map();
+let draftProvider = byId('provider').value;
 function providerDraft() {
-  const claude = byId('provider').value === 'claude';
-  byId('codex-permissions').hidden = claude;
-  byId('codex-permissions').classList.toggle('hidden',claude);
-  byId('sandbox').disabled = claude;
-  byId('codex-model').hidden = claude;
-  byId('codex-model').classList.toggle('hidden',claude);
-  byId('create-model').disabled = claude;
-  byId('create-effort').disabled = claude;
-  byId('creation-permissions').textContent = claude ? 'Claude uses its native default approval mode and project instructions. Requests that need a decision appear here. This choice does not establish a Codex sandbox or Windows network restriction.' : 'Approval requests go to this screen. The conversation shows the scope actually returned by Codex.';
-  byId('provider-reason').textContent = claude ? (state.capabilities.claude_runtime.reason || 'SDK available. Native login and this conversation are checked when connecting.') : (state.capabilities.codex_executable_available ? '' : 'Codex executable unavailable.');
+  const provider = byId('provider').value;
+  if (provider !== draftProvider) {
+    creationDrafts.set(draftProvider,{model:byId('create-model').value,effort:byId('create-effort').value});
+    const draft = creationDrafts.get(provider) || {model:'',effort:''};
+    byId('create-model').value = draft.model; byId('create-effort').value = draft.effort;
+    draftProvider = provider;
+  }
+  const capability = state && state.capabilities.providers && state.capabilities.providers[provider];
+  if (!capability) { byId('create-submit').disabled = true; byId('provider-reason').textContent = 'Provider capabilities unavailable. Restart the controller before creating a session.'; return; }
+  const sandbox = capability.permissions.field === 'sandbox';
+  byId('codex-permissions').hidden = !sandbox;
+  byId('codex-permissions').classList.toggle('hidden',!sandbox);
+  byId('sandbox').disabled = !sandbox;
+  byId('create-model').disabled = !capability.model.supported;
+  byId('create-effort').disabled = !capability.effort.supported;
+  byId('create-effort-values').replaceChildren(...(capability.effort.values || []).map(value => { const option = node('option'); option.value = value; return option; }));
+  byId('model-reason').textContent = capability.model.reason + ' ' + capability.effort.reason;
+  byId('creation-permissions').textContent = capability.permissions.reason;
+  byId('provider-reason').textContent = capability.available ? 'Native login and model access are checked when connecting or used.' : capability.unavailable_reason;
 }
 function pickerTime(value) {
   if (!Number.isInteger(value)) return 'Unknown';
@@ -434,8 +461,9 @@ function renderPicker() {
     };
     list.append(button);
   }
-  const selection = byId('picker-selection'); selection.replaceChildren(); selection.hidden = !pickerChoice;
-  if (pickerChoice) {
+  const supported = state.capabilities.providers[byId('enroll-provider').value].operations.enrollment.supported;
+  const selection = byId('picker-selection'); selection.replaceChildren(); selection.hidden = !pickerChoice || !supported;
+  if (pickerChoice && supported) {
     selection.append(node('p', 'Selected: ' + (pickerChoice.name || 'Unnamed conversation')),
       node('p', pickerChoice.project, 'meta'), node('p', pickerChoice.id, 'candidate-id'),
       node('p', 'This selection stays fixed while you browse or refresh the list.', 'reason'));
@@ -443,11 +471,23 @@ function renderPicker() {
 }
 async function loadPicker(more = false) {
   const sequence = ++pickerRequest, cursor = more ? pickerCursor : null;
+  const provider = byId('enroll-provider').value;
+  const capability = state.capabilities.providers[provider].operations;
+  byId('enroll-fields').hidden = !capability.enrollment.supported;
+  byId('enroll-fields').classList.toggle('hidden',!capability.enrollment.supported);
+  byId('enroll-name').disabled = !capability.enrollment.supported;
+  byId('enroll-thread').disabled = !capability.enrollment.supported;
+  byId('enroll-submit').disabled = !capability.enrollment.supported;
+  if (!capability.discovery.supported) {
+    pickerRows = []; pickerCursor = null; renderPicker();
+    byId('picker-status').textContent = capability.discovery.reason + ' ' + capability.enrollment.reason;
+    byId('picker-refresh').disabled = true; byId('picker-more').disabled = true; return;
+  }
   if (more && !cursor) return;
   byId('picker-refresh').disabled = true; byId('picker-more').disabled = true;
   byId('picker-status').textContent = 'Reading indexed conversations in this project…';
   try {
-    const result = await api('discover', {cursor, limit:20});
+    const result = await api('discover', {cursor, limit:20,...(provider === 'codex' ? {} : {provider})});
     if (sequence !== pickerRequest || !byId('enroll-dialog').open) return;
     pickerRows = result.available ? result.conversations : []; pickerCursor = result.next_cursor;
     renderPicker();
@@ -464,7 +504,8 @@ async function loadPicker(more = false) {
     }
   }
 }
-byId('provider').onchange = () => { byId('sandbox').value = 'read-only'; providerDraft(); };
+byId('provider').onchange = () => providerDraft();
+byId('enroll-provider').onchange = () => loadPicker();
 byId('open-create').onclick = () => { byId('create-error').textContent = ''; providerDraft(); byId('create-dialog').showModal(); };
 byId('open-history').onclick = () => byId('history-dialog').showModal();
 byId('open-enroll').onclick = () => { byId('enroll-dialog').showModal(); loadPicker(); };
@@ -502,9 +543,10 @@ byId('create-form').onsubmit = async event => {
   byId('create-error').textContent = '';
   try {
     const provider = byId('provider').value;
-    const permissions = provider === 'claude' ? {permission_mode:'default'} : {sandbox:byId('sandbox').value};
-    const model = provider === 'codex' && byId('create-model').value !== '' ? {model:byId('create-model').value} : {};
-    if (provider === 'codex' && byId('create-effort').value !== '') model.reasoning_effort = byId('create-effort').value;
+    const capability = state.capabilities.providers[provider];
+    const permissions = capability.permissions.field === 'sandbox' ? {sandbox:byId('sandbox').value} : {permission_mode:'default'};
+    const model = capability.model.supported && byId('create-model').value !== '' ? {model:byId('create-model').value} : {};
+    if (capability.effort.supported && byId('create-effort').value !== '') model.reasoning_effort = byId('create-effort').value;
     const result = await api('create',{name:byId('create-name').value,responsibility:byId('responsibility').value,project:state.project,provider,...permissions,...model});
     byId('create-dialog').close(); await refresh(); select(result.session.id); banner(result.session.error || 'Created ' + result.session.name + '.');
   } catch (error) { byId('create-error').textContent = error.message; }
@@ -521,7 +563,8 @@ byId('history-form').onsubmit = async event => {
 byId('enroll-form').onsubmit = async event => {
   event.preventDefault(); byId('enroll-submit').disabled = true;
   try {
-    const result = await api('enroll',{name:byId('enroll-name').value,thread_id:byId('enroll-thread').value});
+    const provider = byId('enroll-provider').value;
+    const result = await api('enroll',{name:byId('enroll-name').value,thread_id:byId('enroll-thread').value,...(provider === 'codex' ? {} : {provider})});
     await refresh(); select(result.session.id);
     if (result.session.state === 'unknown') {
       byId('picker-status').textContent = (result.session.error || 'Enrollment refused or uncertain.') + ' Your selection and draft remain. Close this dialog to inspect the recorded attempt before retrying.';

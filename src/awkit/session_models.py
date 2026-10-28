@@ -1,19 +1,24 @@
-"""Creation-only explicit Codex configuration and conservative recovery admission."""
+"""Explicit provider requests with distinct configuration-observation contracts."""
 
 from pathlib import Path
+
+from .session_capabilities import describe
 
 
 def validate(model, provider, reasoning_effort=None):
     if reasoning_effort is not None:
-        if provider != "codex" or model is None:
-            raise ValueError("Reasoning effort requires an explicit model for a new Codex conversation.")
+        if provider not in ("codex", "claude") or model is None:
+            raise ValueError("Reasoning effort requires an explicit model for a new supported conversation.")
         if (not isinstance(reasoning_effort, str) or not 1 <= len(reasoning_effort) <= 200
                 or not reasoning_effort.isprintable() or any(character.isspace() for character in reasoning_effort)):
             raise ValueError("Reasoning effort must contain 1 to 200 visible non-whitespace characters.")
+        values = describe(provider)["effort"]["values"]
+        if values is not None and reasoning_effort not in values:
+            raise ValueError("This provider supports these reasoning effort values: " + ", ".join(values) + ".")
     if model is None:
         return
-    if provider != "codex":
-        raise ValueError("Explicit model IDs are supported only for new Codex conversations.")
+    if provider not in ("codex", "claude"):
+        raise ValueError("Explicit model IDs require a supported session provider.")
     if (not isinstance(model, str) or not 1 <= len(model) <= 200 or not model.isprintable()
             or any(character.isspace() for character in model)):
         raise ValueError("Model ID must contain 1 to 200 visible non-whitespace characters.")
@@ -31,6 +36,32 @@ def hold(store):
     meta = store.metadata()
     if selected(meta):
         store.update(model_selection=dict(meta["model_selection"], state="held"))
+
+
+def claude_options(meta):
+    """Reapply only the saved request of this awkit-owned Claude session."""
+    selection = meta.get("model_selection")
+    if not selection or meta.get("provider") != "claude" or meta.get("enrollment"):
+        return {}
+    validate(selection["requested"], "claude", selection.get("requested_effort"))
+    options = dict(model=selection["requested"])
+    if "requested_effort" in selection:
+        options["effort"] = selection["requested_effort"]
+    return options
+
+
+def claude_submitted(store):
+    selection = store.metadata().get("model_selection")
+    if selection:
+        store.update(model_selection=dict(selection, state="submitted"))
+
+
+def claude_observe(store, model):
+    selection = store.metadata().get("model_selection")
+    if selection:
+        observation = dict(model=model, provider=None, reasoning_effort=None, source="native system/init")
+        store.update(model_selection=dict(selection, creation=selection.get("creation") or observation,
+                                           latest=observation))
 
 
 def verify_runtime(controller, provider):

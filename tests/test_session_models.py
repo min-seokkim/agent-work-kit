@@ -125,7 +125,7 @@ class SessionModelTests(unittest.TestCase):
         self.assertEqual(self.provider.calls[0][1]["config"], {"model_reasoning_effort": "medium"})
 
     def test_effort_requires_explicit_codex_model_before_any_mutation(self):
-        cases = [dict(reasoning_effort="medium"), dict(model="fictional", reasoning_effort="medium", provider="claude")]
+        cases = [dict(reasoning_effort="medium"), dict(model="fictional", reasoning_effort="custom-effort", provider="claude")]
         cases += [dict(model="fictional", reasoning_effort=value) for value in ("", " ", "not visible", "a\nb", 1, True, "x" * 201)]
         for args in cases:
             with self.subTest(args=args), self.assertRaises(ValueError):
@@ -204,8 +204,6 @@ class SessionModelTests(unittest.TestCase):
         for model in ("", " ", "with space", "line\nbreak", "x" * 201, 3, True):
             with self.subTest(model=model), self.assertRaises(ValueError):
                 self.create(model=model)
-        with self.assertRaises(ValueError):
-            self.create(model="fictional", provider="claude")
         self.assertEqual(self.controller._stores, {})
         self.assertEqual(self.provider.calls, [])
 

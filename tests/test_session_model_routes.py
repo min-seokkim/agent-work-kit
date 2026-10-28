@@ -8,15 +8,65 @@ import threading
 import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from awkit.cli import main
 from awkit.session_http import SessionServer
+from awkit.session_models import claude_observe
 from awkit.session_store import SessionStore
 from awkit.sessions import SessionController
 
 
 class ModelRoutesTests(unittest.TestCase):
+    @unittest.skipUnless(os.environ.get("AWKIT_UI_TEST") == "1", "Set AWKIT_UI_TEST=1 with Playwright and a browser")
+    def test_claude_requested_and_later_reported_values_do_not_claim_matching_effort(self):
+        from playwright.sync_api import expect, sync_playwright
+
+        with tempfile.TemporaryDirectory() as folder:
+            controller = SessionController(Path(folder), [sys.executable, "unused-provider.py"])
+            server = SessionServer(controller)
+            threading.Thread(target=server.serve_forever, daemon=True).start()
+            store = SessionStore.create(controller.directory / "channels", name="Claude fixture", project=Path(folder),
+                responsibility="Invented", generation=controller.generation, permissions={}, provider="claude")
+            meta = store.metadata()
+            store.update(native_id="fictional-owned-claude", state="idle", model_selection=dict(
+                requested="sonnet", requested_effort="medium", creation=None, latest=None, state="submitted"))
+            controller._stores[meta["id"]] = store
+            controller.claude_clients[meta["id"]] = SimpleNamespace(alive=True, generation=controller.generation, close=lambda: None)
+            try:
+                with sync_playwright() as pw:
+                    browser = pw.chromium.launch(channel=os.environ.get("AWKIT_BROWSER_CHANNEL"), headless=True)
+                    try:
+                        page = browser.new_page(viewport=dict(width=1280, height=1000))
+                        page.goto(server.url + "/#token=" + server.token)
+                        page.locator(".session").first.click()
+                        page.get_by_text("Configuration", exact=True).click()
+                        details = page.locator("#model-observation")
+                        expect(details).to_contain_text("Requested model: sonnet")
+                        expect(details).to_contain_text("Not yet reported")
+                        expect(page.locator("#send")).to_be_enabled()
+                        claude_observe(store, "claude-canonical-fixture")
+                        expect(details).to_contain_text("Provider-reported model: claude-canonical-fixture")
+                        expect(details).to_contain_text("Effective reasoning effort: Unverified")
+                        expect(details).not_to_contain_text("Work is held")
+                        expect(details).to_contain_text("Requested model: sonnet")
+                        page.get_by_text("Provider capabilities", exact=True).click()
+                        expect(page.locator("#provider-capabilities")).to_contain_text("Claude active-turn steering is unavailable")
+                        artifacts = os.environ.get("AWKIT_PARITY_ARTIFACTS")
+                        if artifacts:
+                            Path(artifacts).mkdir(parents=True, exist_ok=True)
+                            for width in (1280, 390):
+                                page.set_viewport_size(dict(width=width, height=1000))
+                                self.assertFalse(page.evaluate("document.documentElement.scrollWidth > innerWidth"))
+                                page.screenshot(path=str(Path(artifacts) / f"claude-configuration-{width}.png"), full_page=True)
+                    finally:
+                        browser.close()
+            finally:
+                server.shutdown()
+                server.server_close()
+                controller.close()
+
     def test_cli_preserves_explicit_effort_separately_from_model(self):
         args = ["session", "create", "Reader", "--responsibility", "Invented", "--model", "fictional", "--reasoning-effort", "medium"]
         with patch("awkit.session_http.request", return_value={"session": {"state": "idle"}}) as call:
@@ -24,6 +74,21 @@ class ModelRoutesTests(unittest.TestCase):
                 self.assertEqual(main(args), 0)
         self.assertEqual(call.call_args.args[2]["reasoning_effort"], "medium")
         self.assertEqual(call.call_args.args[2]["model"], "fictional")
+
+    def test_cli_selects_claude_configuration_and_unavailable_actions_explicitly(self):
+        cases = [(["create", "Reader", "--responsibility", "Invented", "--provider", "claude", "--model", "sonnet", "--reasoning-effort", "high"],
+                  "create", {"model": "sonnet", "reasoning_effort": "high"}),
+                 (["discover", "--provider", "claude"], "discover", {}),
+                 (["enroll", "Reader", "--thread-id", "fictional", "--provider", "claude"], "enroll", {})]
+        for args, action, expected in cases:
+            with self.subTest(action=action), patch("awkit.session_http.request", return_value={"available": False, "session": {"state": "idle"}}) as call:
+                with redirect_stdout(io.StringIO()):
+                    main(["session", *args])
+                self.assertEqual(call.call_args.args[1], action)
+                payload = call.call_args.args[2]
+                self.assertEqual(payload["provider"], "claude")
+                for field, value in expected.items():
+                    self.assertEqual(payload[field], value)
 
     def test_cli_omits_default_model_and_preserves_explicit_identifier(self):
         for model in (None, "fixture-model:opaque"):
@@ -89,14 +154,27 @@ class ModelRoutesTests(unittest.TestCase):
                         self.assertEqual(calls[-1]["reasoning_effort"], "medium")
                         expect(page.locator("#create-effort")).to_have_value("medium")
                         page.locator("#provider").select_option("claude")
-                        expect(page.locator("#create-model")).to_be_disabled()
-                        expect(page.locator("#create-effort")).to_be_disabled()
-                        expect(page.locator("#codex-model")).to_be_hidden()
+                        expect(page.locator("#create-model")).to_be_enabled()
+                        expect(page.locator("#create-effort")).to_be_enabled()
+                        expect(page.locator("#create-model")).to_have_value("")
+                        expect(page.locator("#create-effort")).to_have_value("")
                         page.locator("#create-submit").click()
                         expect(page.locator("#create-submit")).to_be_enabled()
                         self.assertEqual(calls[-1]["provider"], "claude")
                         self.assertNotIn("model", calls[-1])
                         self.assertNotIn("reasoning_effort", calls[-1])
+                        page.locator("#create-model").fill("sonnet")
+                        page.locator("#create-effort").fill("high")
+                        page.locator("#create-submit").click()
+                        expect(page.locator("#create-submit")).to_be_enabled()
+                        self.assertEqual(calls[-1]["model"], "sonnet")
+                        self.assertEqual(calls[-1]["reasoning_effort"], "high")
+                        page.locator("#provider").select_option("codex")
+                        expect(page.locator("#create-model")).to_have_value("chosen-model")
+                        expect(page.locator("#create-effort")).to_have_value("medium")
+                        page.locator("#provider").select_option("claude")
+                        expect(page.locator("#create-model")).to_have_value("sonnet")
+                        expect(page.locator("#create-effort")).to_have_value("high")
                         page.locator("#provider").select_option("codex")
                         page.locator("#create-model").fill("")
                         page.locator("#create-effort").fill("")
@@ -107,10 +185,10 @@ class ModelRoutesTests(unittest.TestCase):
                         self.assertNotIn("reasoning_effort", calls[-1])
                         page.locator('[data-close="create-dialog"]').click()
                         page.locator(".session").filter(has=page.locator("strong", has_text="Held model")).click()
-                        page.get_by_text("Model observation", exact=True).click()
+                        page.get_by_text("Configuration", exact=True).click()
                         details = page.locator("#model-observation")
-                        for text in ("Requested model: chosen-model", "Requested reasoning effort: medium", "Returned model: different-model", "changed-provider",
-                                     "Reasoning effort: Not recorded", "Work is held", "does not verify model access"):
+                        for text in ("Requested model: chosen-model", "Requested reasoning effort: medium", "Provider-reported model: different-model", "changed-provider",
+                                     "Provider-reported reasoning effort: Not recorded", "Work is held", "does not verify model access"):
                             expect(details).to_contain_text(text)
                         expect(page.locator("#send")).to_be_disabled()
                         for width in (1280, 390):
@@ -121,6 +199,13 @@ class ModelRoutesTests(unittest.TestCase):
                                 target = Path(artifacts)
                                 target.mkdir(parents=True, exist_ok=True)
                                 page.screenshot(path=str(target / f"model-held-{width}.png"), full_page=True)
+                        self.assertIsNone(controller.provider)
+                        page.get_by_role("button", name="Use existing conversation", exact=True).click()
+                        page.locator("#enroll-provider").select_option("claude")
+                        expect(page.locator("#picker-status")).to_contain_text("Claude conversation discovery is unavailable")
+                        expect(page.locator("#enroll-submit")).to_be_disabled()
+                        expect(page.locator("#enroll-thread")).to_be_disabled()
+                        expect(page.locator("#picker-refresh")).to_be_disabled()
                         self.assertIsNone(controller.provider)
                     finally:
                         browser.close()

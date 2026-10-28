@@ -2,7 +2,17 @@
 
 ## Current status
 
-The owner selected autonomous feature development, real-use writing evaluation and independent-session collaboration. The picker is delivered in `82e2cb3`, model selection in `d2ea950`. The next selected unit adds optional reasoning effort alongside an explicit creation model. Current-work reading shipped in `a2a0c43`; its earlier verification limits remain in the history.
+The owner selected comparable Claude support for Codex capabilities and provider-independent controls. The current unit adds Claude creation model/effort requests and capability-based common interfaces. Codex picker, model selection and optional effort are delivered in `82e2cb3`, `d2ea950` and `c4d4ff8`. Current-work reading shipped in `a2a0c43`; its earlier verification limits remain in the history.
+
+## Selected provider parity
+
+Base: `c4d4ff8`. The coordinator owns product decisions; discovery_builder owns implementation, checks, native verification and complete delivery. The owner's new request continues beyond the earlier autonomous window. `.awkit/handoffs/provider-parity/root-contract.md` is the selected scope; assessment.md and sources.json beside it retain the fresh independent upfront source judgment. Its premium slot is upfront; no separate final judgment is automatically assigned. The [design decision](../design.md#decisions) preserves the project-level parity requirement for later features.
+
+Use the common CLI/HTTP/form for optional creation model and effort requests. Claude accepts IDs/aliases and the pinned effort values, persists the raw request before construction and reapplies explicit settings on owned exact-ID recovery. Its canonical model observation is later and separate; effective effort is unverified. Preserve native permissions, correlation, default omission, no awkit replacement/fallback/replay and Codex's existing exact-pair holds and override-free recovery. Shared controls follow provider capabilities and preserve separate unsent configuration drafts. Claude foreign discovery/enrollment and active-turn steering remain unavailable with explicit reasons.
+
+The scoped native continuation used one fictional Claude conversation and retained three contextual replies across owned exact-ID recovery. Its requested alias and later canonical model remained separate; effort was not claimed as verified. The receipt retains interpreter and browser-cleanup harness failures and the final same-ID reading with zero new input. Agent-operated native/UI observations do not establish intended-user acceptance or every inference's configuration.
+
+Next action: read `.awkit/handoffs/provider-parity/implementation/delivery.json` for the exact checked revision, native fixture observations, optional installed Claude availability, CI, installation and cleanup before repeating work. The session-only status selector remains deferred behind this unit; its ready local contract is `.awkit/handoffs/session-scoped-status/session-only-option.md`. Exact-request projection and first-use connection remain later candidates requiring both-provider assessment. Prior failed capacity and cancelled-before-dispatch records remain unchanged.
 
 The picker is implemented and exercised with owned fictional conversations: name selection, separate enrollment and a same-context follow-up passed; a different-project control stayed excluded. Independent review found no High or Major issue and one Minor reference word-limit failure, corrected after its frozen check. A later real-use correction distinguishes an already-ended turn from a lost connection. Session details also show retained model observations with their source and limits.
 

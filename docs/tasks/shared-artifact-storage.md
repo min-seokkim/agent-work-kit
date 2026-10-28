@@ -2,13 +2,15 @@
 
 ## Current status
 
-Selected for implementation after the owner requested continuation. Source baseline: `f167f42`, which delivered [storage inspection](review-storage.md). Root owns product scope, planning decisions and the planning-review channel. `storage_implementation` owns implementation coordination, technical diagnosis, checks, code-review arrangements and delivery. The unit is high risk because it changes persistent evidence formats and concurrent writes.
+Delivered in `ac10928d02a937f6d3fda4c30643059873b6f900`, from source baseline `f167f42`. [CI run 40718629526](https://github.com/min-seokkim/agent-work-kit/actions/runs/40718629526) passed all 21 Windows/Linux jobs, followed by exact-commit installation and source, kit and user-skill alignment. The preceding [storage inspection](review-storage.md) remains a separate delivered unit. Root owns product scope, planning decisions and the planning-review channel. `storage_implementation` owns implementation coordination, technical diagnosis, checks, code-review arrangements and delivery. The unit is high risk because it changes persistent evidence formats and concurrent writes.
 
 The attached Claude Code reviewer (owner-assigned Opus 5.5) covers planning only on `.awkit/review-shared-artifact-storage.sqlite3`. Earlier code observations, the interrupted check and model-verification limits are retained in the delivery receipt; none establishes cumulative code acceptance.
 
-The core, export and inventory contributions are integrated. A fresh independent code reviewer identified two export defects; their corrections and focused evidence are recorded in the receipt. Next action: complete correction validation and the frozen full check, then Windows/Linux CI and exact installation. The receipt owns the actual completion state of each stage. Root settles planning findings and the delivery-state summary, requests planning final and closes that channel. Planning approval does not replace code acceptance. Keep the main turn open while its requests remain pending; follow the declared roles under [Review Session Collaboration](../../kit/review-session.md).
+The core, export and inventory portions passed independent cumulative code review and frozen check `767f5a7`: Ruff passed, with 663 of 683 tests passing and 20 skipped. The receipt retains the corrected findings and separate delivery stages. Planning review accepted the outcome in `R-011`; its acceptance is distinct from code judgment.
 
-Keep necessary review provenance and execution evidence in `.awkit/handoffs/shared-artifact-storage/implementation/delivery.json`; the channel is an archive. Implementation, checks, independent judgment, publication, installation and actual project adoption retain separate states.
+Next action: the owner selects the observed project's next genuine continuation, its required outputs and retrieval consumers, and the configuration owner. The local input `.awkit/handoffs/shared-artifact-storage/adoption-preparation.md` identifies a current-task collection gap that must be settled before comparing storage options. No target-project change is assigned. Follow [Adoption after technical delivery](#adoption-after-technical-delivery); existing history is unchanged and real-use reduction remains unverified.
+
+Detailed review and execution evidence is in the local `.awkit/handoffs/shared-artifact-storage/implementation/delivery.json`; the channel is its archive. These ignored files are unavailable in a fresh clone. The published commit and CI above establish the completed feature boundary without requiring those local records.
 
 ### Implementation portions and ownership
 
@@ -16,11 +18,12 @@ Keep necessary review provenance and execution evidence in `.awkit/handoffs/shar
 
 | Portion | Implementation owner and files | Technical boundary |
 |---|---|---|
-| Publication and core readers | `storage_implementation`: `src/awkit/artifact_store.py`, `src/awkit/review.py`, `tests/test_shared_artifacts.py` | Corrected portion frozen in `9b355f9`; cumulative code acceptance remains required |
-| Portable export | `shared_storage_research`, acting as an implementation contributor: `src/awkit/review_export.py`, export wiring in `src/awkit/cli.py`, `tests/test_review_export.py` | Integrate and review against corrected core |
-| Inventory | `storage_assessment`, acting as an implementation contributor: `src/awkit/review_storage.py`, `tests/test_review_storage.py` | Cumulative review with shipped guidance and integrated use evidence |
+| Publication and core readers | `storage_implementation`: `src/awkit/artifact_store.py`, `src/awkit/review.py`, `tests/test_shared_artifacts.py` | Included in cumulative acceptance `767f5a7` and delivery `ac10928` |
+| Portable export | `shared_storage_research`, acting as an implementation contributor: `src/awkit/review_export.py`, export wiring in `src/awkit/cli.py`, `tests/test_review_export.py` | Included in cumulative acceptance `767f5a7` and delivery `ac10928` |
+| Inventory | `storage_assessment`, acting as an implementation contributor: `src/awkit/review_storage.py`, `tests/test_review_storage.py` | Included in cumulative acceptance `767f5a7` and delivery `ac10928` |
 
 The primary implementer owns shipped guidance, integration, technical review requests, delivery and the local receipt. At a session cutoff, save a consistent working tree and list reviewed, unreviewed and unfinished portions there. Do not start a Git, CI or installation sequence that cannot finish within the available window.
+
 ## Desired result
 
 Repeated checks can reference one stored copy of identical configured artifact content while retaining each run's own source identity, configuration, status, logs and artifact associations. Select shared storage explicitly for new runs. The existing copied mode remains the default, and existing runs remain readable and unchanged. The [inspection record](review-storage.md#evidence-and-selection) owns the real-use measurements and their limits.

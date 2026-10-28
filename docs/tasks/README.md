@@ -4,7 +4,7 @@ Use this directory to locate a task; its record owns the current state and next 
 
 ## Selected assignment
 
-- [Shared artifact storage](shared-artifact-storage.md): opt-in new runs with collection-local payloads, compatible readers and self-contained export. Root owns product planning; implementation and independent assessment own technical work and delivery. [Storage inspection](review-storage.md), [managed session and exact-request status](session-orchestration.md#selected-session-and-request-status), [local-state exclusion](local-state-exclusion.md) and [provider parity](session-orchestration.md#selected-provider-parity) retain separate receipts.
+- [Evidence-storage adoption](shared-artifact-storage.md#adoption-after-technical-delivery): select the target project's next continuation, required outputs, consumers and configuration owner before comparing storage options. The shared-storage feature is delivered in `ac10928`; no other-project configuration change is assigned. [Storage inspection](review-storage.md), [managed session and exact-request status](session-orchestration.md#selected-session-and-request-status), [local-state exclusion](local-state-exclusion.md) and [provider parity](session-orchestration.md#selected-provider-parity) retain separate receipts.
 
 ## Deferred and blocked
 
@@ -20,6 +20,7 @@ Use this directory to locate a task; its record owns the current state and next 
 
 | Record | Completed scope; remaining limits stay in the record |
 |---|---|
+| [Shared artifact storage](shared-artifact-storage.md#current-status) | Opt-in shared payloads, compatible readers, ordinary export and inventory delivered in `ac10928`; CI and exact installation passed. Existing history is unchanged; project adoption remains a planning decision. |
 | [README rewrite](documentation-restructure.md#current-status) | Both language versions rewritten within their existing sections; the receipt records checks, CI and exact installation. |
 | [Writing revision workflow](writing-revision-workflow.md#current-status) | W0 guidance, W1 public review/revision package and W2 optional public continuation route. |
 | [Existing development-project trial](development-project-trial.md#current-status) | Local feature and revision trials; the later parser lead selected no change. Application publication and human acceptance are not established. |

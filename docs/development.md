@@ -1,6 +1,6 @@
 # Development
 
-Start here to resume work on Agent Work Kit. The selected assignment is [shared artifact storage](tasks/shared-artifact-storage.md), continued at the owner's request. Technical delivery is followed by the task's [planned adoption trial](tasks/shared-artifact-storage.md#adoption-after-technical-delivery), whose outcome is measured new-record growth with usable evidence. The preceding [storage inspection receipt](tasks/review-storage.md) retains its completed delivery stages. Read the relevant task's next action and evidence before repeating a check, push or installation. The [roadmap](roadmap.md) retains broader unfinished outcomes.
+Start here to resume work on Agent Work Kit. [Shared artifact storage](tasks/shared-artifact-storage.md) was delivered in `ac10928`; its task record links the successful CI and installation evidence. The next planning decision is the target project's required evidence and configuration ownership before the [adoption comparison](tasks/shared-artifact-storage.md#adoption-after-technical-delivery). Actual new-record reduction in that project remains unverified. The preceding [storage inspection receipt](tasks/review-storage.md) retains its completed delivery stages. Read the relevant task's next action and evidence before repeating a check, push or installation. The [roadmap](roadmap.md) retains broader unfinished outcomes.
 
 ## Resume a task
 

@@ -4,7 +4,7 @@
 
 Deferred broader outcome. Channel status and relationship declarations have shipped; managed-session implementation continues in [session orchestration](session-orchestration.md). Existing IDE attachment and general recovery remain unfinished.
 
-Next action: complete the selected storage unit first. Then consider the two-environment evaluation below when selecting a continuation trial; the session record owns existing controls and native coverage. Remote transport implementation remains unselected.
+Next action: complete the selected storage unit and establish its bounded adoption plan. The next continuity evaluation should reuse existing host execution and portable artifact export before proposing transport code. The session record owns existing controls and native coverage; remote transport implementation remains unselected.
 
 ## Two-environment evaluation
 
@@ -15,7 +15,16 @@ The coordinator selected an existing desktop execution host and laptop file-acce
 - Retain request identity, source revision, artifacts, replies and version-mismatch handling across an interruption. Query whether the original operation ran before authorizing a retry.
 - Use an existing authorized connection and a disposable trial task. Preserve user credentials and unrelated work. Establish the expected result and cleanup before any mutation trial.
 
-Shared-context entry-point discovery is a separate roadmap candidate. Existing project records remain authoritative, and awkit does not gain permission to write shared memory.
+### Two bounded continuation paths
+
+Evaluate one artifact-review handoff for a file-access-only client and one interrupted request for an execution-capable client. These are proposed real-client trials, not claims that current apps support them.
+
+- A file-access-only client receives a self-contained exported artifact bundle with its run identity and manifest identity. It reviews the exported outputs within a named scope; it does not run Git, SQLite or checks over the shared drive. An authorized host session carries any response into the host's existing workflow, preserving the original reviewer and reviewed bundle identity. Exported artifacts alone do not establish access to the checked source tree or reproduce its execution. Assess this ordinary-file handoff before designing a bridge or another collaboration store.
+- An execution-capable client uses the existing authorized host path, then queries the original request after interruption before any retry. Match host project identity, source revision, request identity and retained result across the two clients. Assess Claude and Codex independently; record unsupported operations rather than assuming app-native remote support.
+
+Success means the intended recipient can recover the same task and evidence without a duplicate side effect. A passing host command alone does not establish client usability. Keep credentials and the live database on the existing host; these trials add no permanent service or synchronization policy.
+
+Shared-context entry-point discovery remains a separate lower-priority candidate. Existing instructions already route sessions to the shared INDEX and project state. Select an extension only after a concrete missed or ambiguous entry point shows what the current route cannot provide. Existing project records remain authoritative, and awkit does not gain permission to write shared memory.
 
 ## Resume inputs
 

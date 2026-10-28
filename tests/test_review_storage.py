@@ -5,6 +5,7 @@ import json
 import os
 import stat
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -12,7 +13,8 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from awkit.cli import main
-from awkit.review import git, storage
+from awkit.review import check, git, storage
+from awkit.review_export import export_run
 from awkit.review_storage import _linked, inspect
 
 
@@ -50,6 +52,38 @@ class StorageTests(unittest.TestCase):
 
     def manifest(self, run):
         return json.loads((run / "artifacts/manifest.json").read_text())
+
+    def shared_record(self, name="review-a", payloads=None, local=None, status="passed"):
+        run = self.run_record(name, status=status)
+        shared = self.store / ".awkit-artifacts"
+        (shared / "objects").mkdir(parents=True, exist_ok=True)
+        self.write(shared / "store.json", dict(schema=1, kind="sha256", collection_id="c" * 32))
+        files, diagnostics = {}, {}
+        for path, data in (payloads or {}).items():
+            digest = hashlib.sha256(data).hexdigest()
+            (shared / "objects" / digest).write_bytes(data)
+            files[path] = dict(size=len(data), sha256=digest)
+        (run / "artifacts").mkdir()
+        for path, data in (local or {}).items():
+            target = run / "artifacts" / path
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(data)
+            diagnostics[path] = dict(size=len(data), sha256=hashlib.sha256(data).hexdigest())
+        result = json.loads((run / "result.json").read_text())
+        result.update(run_id=name, artifact_storage="shared", artifacts=files,
+                      config_sha256=hashlib.sha256((run / "config.toml").read_bytes()).hexdigest())
+        manifest = dict(schema=2, run_id=name, snapshot=result["snapshot"], config_sha256=result["config_sha256"],
+                        subdir=result["subdir"], files=files, local_files=diagnostics,
+                        storage=dict(kind="sha256", collection_id="c" * 32))
+        self.write(run / "artifacts/manifest.json", manifest)
+        self.publish_shared_manifest(run, result)
+        return run
+
+    def publish_shared_manifest(self, run, result=None):
+        result = result or json.loads((run / "result.json").read_text())
+        result["artifact_publication"] = dict(state="complete", collection_id="c" * 32,
+                                               manifest_sha256=hashlib.sha256((run / "artifacts/manifest.json").read_bytes()).hexdigest())
+        self.write(run / "result.json", result)
 
     def state(self, root):
         return {p.relative_to(root).as_posix(): (p.stat().st_mtime_ns, p.read_bytes() if p.is_file() else None)
@@ -362,6 +396,281 @@ class StorageTests(unittest.TestCase):
         self.assertIn("2048 bytes (2.00 KiB)", text)
         self.assertIn("Largest runs:\n", text)
         self.assertIn("runs: 1", text)
+
+    def test_shared_objects_count_once_with_run_local_diagnostics_and_staging(self):
+        self.shared_record("review-a", {"a": b"same", "nested/b": b"same"}, {"failure.txt": b"diagnostic"})
+        self.shared_record("review-b", {"c": b"same", "changed": b"different"}, status="failed")
+        shared = self.store / ".awkit-artifacts"
+        (shared / "staging").mkdir()
+        (shared / "staging/payload-fixture").write_bytes(b"partial")
+        before = self.state(self.store)
+        report = inspect(self.store)
+        self.assertEqual(report, inspect(self.store))
+        self.assertEqual(before, self.state(self.store))
+        self.assertEqual(report["schema"], 2)
+        self.assertTrue(report["complete"])
+        self.assertEqual(report["shared_store"]["observed"]["objects"], dict(bytes=13, files=2))
+        self.assertEqual(report["shared_store"]["observed"]["staging"], dict(bytes=7, files=1))
+        self.assertEqual(report["shared_store"]["observed"]["metadata"]["files"], 1)
+        self.assertEqual(report["runs"][0]["shared_references"], dict(declared_files=2, declared_payload_bytes=8,
+                                                                   counted_files=2, counted_payload_bytes=8))
+        self.assertEqual(report["manifests"]["counted_payload_bytes"], 31)
+        self.assertEqual(report["manifests"]["unique_recorded_payload_bytes"], 23)
+        self.assertEqual(report["manifests"]["duplicate_declared_bytes"], 8)
+        self.assertEqual(report["shared_store"]["referenced_objects"], dict(bytes=13, files=2))
+        self.assertEqual(report["shared_store"]["unreferenced_objects"]["bytes"], 0)
+        self.assertEqual(report["collection_observed"]["total_bytes"],
+                         sum(len(value[1]) for value in before.values() if value[1] is not None))
+        self.assertEqual(report["collection_observed"]["total_bytes"], report["observed"]["total_bytes"]
+                         + report["shared_store"]["observed"]["total_bytes"])
+
+    def test_shared_inventory_reads_metadata_and_config_without_payloads(self):
+        self.shared_record(payloads={"payload": b"same"}, local={"diagnostic.txt": b"local"})
+        actual_open, opened = os.open, []
+
+        def metadata_only(path, *args, **kwargs):
+            name = Path(path).name
+            self.assertIn(name, {"store.json", "result.json", "manifest.json", "config.toml"})
+            opened.append(name)
+            return actual_open(path, *args, **kwargs)
+
+        with patch("awkit.review_storage.os.open", side_effect=metadata_only):
+            report = inspect(self.store)
+        self.assertTrue(report["complete"])
+        self.assertCountEqual(opened, ["store.json", "result.json", "manifest.json", "config.toml"])
+
+    def test_shared_and_legacy_runs_keep_local_totals_and_logical_hash_metrics_distinct(self):
+        legacy = self.run_record("review-copy", {"original": b"same"})
+        self.shared_record("review-shared", {"shared": b"same"})
+        report = inspect(self.store)
+        self.assertTrue(report["complete"])
+        self.assertEqual(report["manifests"]["counted_payload_bytes"], 8)
+        self.assertEqual(report["manifests"]["duplicate_declared_bytes"], 4)
+        self.assertEqual(report["shared_store"]["observed"]["objects"]["bytes"], 4)
+        self.assertEqual(report["runs"][0]["shared_references"]["counted_files"], 0)
+        self.assertEqual((legacy / "artifacts/original").read_bytes(), b"same")
+
+    def test_unreferenced_objects_are_qualified_when_a_run_is_unreadable(self):
+        run = self.shared_record(payloads={"payload": b"used"})
+        orphan = hashlib.sha256(b"orphan").hexdigest()
+        shared = self.store / ".awkit-artifacts"
+        (shared / "objects" / orphan).write_bytes(b"orphan")
+        report = inspect(self.store)
+        self.assertTrue(report["shared_store"]["reference_coverage_complete"])
+        self.assertEqual(report["shared_store"]["unreferenced_objects"], dict(hashes=[orphan], files=1, bytes=6))
+        (run / "artifacts/manifest.json").write_bytes(b"unreadable")
+        report = inspect(self.store)
+        self.assertFalse(report["shared_store"]["reference_coverage_complete"])
+        self.assertEqual(report["shared_store"]["unreferenced_objects"]["bytes"], 10)
+        self.assertTrue(any("not proven reclaimable" in limit for limit in report["limits"]))
+
+    def test_shared_missing_or_wrong_sized_objects_keep_references_and_partial_coverage(self):
+        self.shared_record(payloads={"missing": b"missing", "changed": b"original"})
+        objects = self.store / ".awkit-artifacts/objects"
+        (objects / hashlib.sha256(b"missing").hexdigest()).unlink()
+        (objects / hashlib.sha256(b"original").hexdigest()).write_bytes(b"short")
+        report = inspect(self.store)
+        self.assertFalse(report["complete"])
+        self.assertEqual(report["runs"][0]["shared_references"]["declared_payload_bytes"], 15)
+        self.assertEqual(report["runs"][0]["shared_references"]["counted_payload_bytes"], 0)
+        self.assertEqual(report["shared_store"]["unreferenced_objects"]["files"], 0)
+        self.assertEqual(report["shared_store"]["referenced_objects"], dict(bytes=5, files=1))
+
+    def test_shared_manifest_publication_and_config_hashes_are_required(self):
+        for index, target in enumerate(("config.toml", "artifacts/manifest.json", "publication")):
+            with self.subTest(target=target):
+                run = self.shared_record(f"review-{index}", {"payload": b"same"})
+                if target == "publication":
+                    result = json.loads((run / "result.json").read_text())
+                    result["artifact_publication"]["state"] = "pending"
+                    self.write(run / "result.json", result)
+                else:
+                    with (run / target).open("ab") as stream:
+                        stream.write(b"\n")
+                report = inspect(self.store)
+                current = next(r for r in report["runs"] if r["name"] == run.name)
+                self.assertEqual(current["metadata"]["manifest"], "invalid")
+                self.assertEqual(current["shared_references"]["declared_files"], 0)
+                self.assertFalse(report["shared_store"]["reference_coverage_complete"])
+
+    def test_shared_descriptor_identity_and_missing_descriptor_are_not_guessed(self):
+        self.shared_record(payloads={"payload": b"same"})
+        descriptor = self.store / ".awkit-artifacts/store.json"
+        self.write(descriptor, dict(schema=1, kind="sha256", collection_id="d" * 32))
+        report = inspect(self.store)
+        self.assertFalse(report["complete"])
+        self.assertEqual(report["shared_store"]["unreferenced_objects"]["bytes"], 4)
+        descriptor.unlink()
+        report = inspect(self.store)
+        self.assertEqual(report["shared_store"]["descriptor"], "invalid")
+        self.assertEqual(report["shared_store"]["observed"]["objects"]["bytes"], 4)
+        self.assertFalse(report["shared_store"]["reference_coverage_complete"])
+
+    def test_shared_store_and_object_links_are_skipped(self):
+        self.shared_record(payloads={"payload": b"same"})
+        objects = self.store / ".awkit-artifacts/objects"
+        object_path = objects / hashlib.sha256(b"same").hexdigest()
+        outside = self.root / "outside-payload"
+        outside.write_bytes(b"same")
+        object_path.unlink()
+        try:
+            object_path.symlink_to(outside)
+        except OSError:
+            self.skipTest("creating symlinks is not permitted")
+        report = inspect(self.store)
+        self.assertFalse(report["complete"])
+        self.assertEqual(report["shared_store"]["observed"]["objects"]["bytes"], 0)
+        self.assertEqual(outside.read_bytes(), b"same")
+        self.assertTrue(any(i["code"] == "skipped-link" for i in report["shared_store"]["issues"]))
+
+    def test_shared_store_staging_unknown_names_and_partial_scan_are_visible(self):
+        self.shared_record(payloads={"payload": b"same"})
+        shared = self.store / ".awkit-artifacts"
+        (shared / "objects/not-an-object").write_bytes(b"unknown")
+        (shared / "staging").mkdir()
+        (shared / "staging/descriptor-incomplete").write_bytes(b"partial")
+        report = inspect(self.store)
+        self.assertFalse(report["complete"])
+        self.assertEqual(report["shared_store"]["observed"]["objects"], dict(files=2, bytes=11))
+        self.assertEqual(report["shared_store"]["observed"]["staging"]["bytes"], 7)
+        self.assertEqual(report["shared_store"]["unreferenced_objects"]["bytes"], 0)
+        actual_scan = os.scandir
+
+        def denied(path):
+            if Path(path) == shared / "objects":
+                raise PermissionError("fixture object directory denied")
+            return actual_scan(path)
+
+        with patch("awkit.review_storage.os.scandir", side_effect=denied):
+            report = inspect(self.store)
+        self.assertFalse(report["shared_store"]["reference_coverage_complete"])
+        self.assertEqual(report["shared_store"]["observed"]["objects"]["bytes"], 0)
+
+    def test_empty_and_pending_shared_runs_are_not_confused(self):
+        complete = self.shared_record("review-empty")
+        report = inspect(self.store)
+        self.assertTrue(report["complete"])
+        self.assertEqual(report["shared_store"]["observed"]["objects"], dict(bytes=0, files=0))
+        result = json.loads((complete / "result.json").read_text())
+        result["status"] = "running"
+        self.write(complete / "result.json", result)
+        report = inspect(self.store)
+        self.assertFalse(report["complete"])
+        self.assertFalse(report["shared_store"]["reference_coverage_complete"])
+
+    def test_real_shared_checks_and_moved_collection_are_inspected_without_original_repo(self):
+        repo = self.root / "project"
+        repo.mkdir()
+        git(repo, "init")
+        git(repo, "-c", "user.name=Fixture", "-c", "user.email=fixture@localhost", "commit", "--allow-empty", "-m", "fixture")
+        config = self.root / "shared.toml"
+        code = ("from pathlib import Path; import os; Path('out.txt').write_bytes(b'shared'); "
+                "folder = Path(os.environ['AWKIT_RUN_DIR']) / 'artifacts'; folder.mkdir(); "
+                "(folder / 'diagnostic.txt').write_bytes(b'diagnostic')")
+        config.write_text('schema = 1\nartifact_storage = "shared"\nartifacts = ["out.txt"]\n'
+                          '[[checks]]\nname = "produce"\nargv = ' + json.dumps([sys.executable, "-c", code]), encoding="utf-8")
+        for _ in range(2):
+            result = check(repo, "HEAD", config, self.store)
+            self.assertEqual(result["status"], "passed", result)
+        before = self.state(self.store)
+        report = inspect(self.store)
+        self.assertTrue(report["complete"], report)
+        self.assertEqual(before, self.state(self.store))
+        self.assertEqual(report["shared_store"]["observed"]["objects"], dict(bytes=6, files=1))
+        self.assertEqual(report["manifests"]["counted_payload_bytes"], 32)
+        self.assertTrue(all(r["shared_references"]["counted_payload_bytes"] == 6 for r in report["runs"]))
+        moved = self.root / "moved-collection"
+        self.store.rename(moved)
+        repo.rename(self.root / "unavailable-project")
+        moved_report = inspect(moved)
+        self.assertTrue(moved_report["complete"], moved_report)
+        self.assertEqual(moved_report["collection_observed"], report["collection_observed"])
+        self.assertEqual(moved_report["shared_store"]["unreferenced_objects"]["files"], 0)
+
+    def test_conflicting_shared_sizes_remain_referenced_but_not_countable(self):
+        self.shared_record("review-a", {"a": b"same"})
+        run = self.shared_record("review-b", {"b": b"same"})
+        manifest = self.manifest(run)
+        manifest["files"]["b"]["size"] = 8
+        self.write(run / "artifacts/manifest.json", manifest)
+        result = json.loads((run / "result.json").read_text())
+        result["artifacts"] = manifest["files"]
+        self.publish_shared_manifest(run, result)
+        report = inspect(self.store)
+        self.assertFalse(report["complete"])
+        self.assertEqual(report["manifests"]["counted_payload_bytes"], 0)
+        self.assertEqual(report["shared_store"]["unreferenced_objects"]["files"], 0)
+        self.assertEqual(report["shared_store"]["referenced_objects"], dict(bytes=4, files=1))
+
+    @unittest.skipUnless(os.name == "nt", "Windows managed namespace aliases")
+    def test_windows_managed_names_keep_complete_metadata_and_byte_counts(self):
+        run = self.shared_record(payloads={"payload": b"same"}, local={"diagnostic.txt": b"local"})
+        before = inspect(self.store)
+        for name in ("result.json", "config.toml", "artifacts/manifest.json", "artifacts"):
+            path = run / name
+            path.rename(path.with_name(path.name.upper()))
+        observed = self.state(self.store)
+        report = inspect(self.store)
+        self.assertTrue(report["complete"], report)
+        self.assertEqual(self.state(self.store), observed)
+        self.assertEqual(report["observed"], before["observed"])
+        self.assertEqual(report["manifests"], before["manifests"])
+        self.assertEqual(report["shared_store"]["unreferenced_objects"]["files"], 0)
+
+    def test_exported_identity_and_renamed_bundle_use_metadata_without_payload_reads(self):
+        source = self.shared_record(payloads={"payload": b"same"}, local={"diagnostic.txt": b"local"})
+        destination = self.store / "review-exported"
+        export_run(source, destination)
+        renamed = self.store / "review-renamed"
+        destination.rename(renamed)
+        before = self.state(self.store)
+        actual_open, opened = os.open, []
+
+        def metadata_only(path, *args, **kwargs):
+            name = Path(path).name
+            self.assertIn(name, {"store.json", "result.json", "manifest.json", "config.toml", "provenance.json",
+                                 "original-result.json", "original-manifest.json"})
+            opened.append(name)
+            return actual_open(path, *args, **kwargs)
+
+        with patch("awkit.review_storage.os.open", side_effect=metadata_only):
+            report = inspect(self.store)
+        self.assertTrue(report["complete"], report)
+        self.assertEqual(before, self.state(self.store))
+        exported = next(r for r in report["runs"] if r["name"] == renamed.name)
+        self.assertEqual(exported["metadata"]["manifest"], "valid")
+        self.assertTrue(exported["metadata"]["exported"])
+        self.assertEqual(exported["shared_references"]["counted_files"], 0)
+        self.assertEqual(exported["metadata"]["counted_payload_bytes"], 9)
+        self.assertEqual(report["shared_store"]["observed"]["objects"]["bytes"], 4)
+        self.assertIn("provenance.json", opened)
+
+    def test_export_marker_cannot_bypass_provenance_association(self):
+        source = self.shared_record(payloads={"payload": b"same"})
+        exported = self.store / "review-exported"
+        export_run(source, exported)
+        provenance = exported / ".awkit-export/provenance.json"
+        original = provenance.read_bytes()
+        for data in (original + b"\n", b"{}"):
+            with self.subTest(data=data[:10]):
+                provenance.write_bytes(data)
+                report = inspect(self.store)
+                run = next(r for r in report["runs"] if r["name"] == exported.name)
+                self.assertFalse(run["complete"])
+                self.assertEqual(run["metadata"]["counted_files"], 0)
+                self.assertTrue(any(i["code"] == "invalid-export-metadata" for i in run["issues"]))
+        provenance.write_bytes(original)
+        result = json.loads((exported / "result.json").read_text())
+        result["artifact_export"] = None
+        self.write(exported / "result.json", result)
+        self.assertFalse(inspect(self.store)["complete"])
+
+    def test_unmarked_legacy_run_still_requires_its_physical_identity(self):
+        run = self.run_record(payloads={"a": b"a"})
+        run.rename(self.store / "review-other")
+        report = inspect(self.store)
+        self.assertFalse(report["complete"])
+        self.assertEqual(report["runs"][0]["metadata"]["result"], "invalid")
 
 
 if __name__ == "__main__":

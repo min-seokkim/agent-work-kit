@@ -261,6 +261,9 @@ def _parser():
     storage.add_argument("--json", action="store_true", help="print observed sizes, metadata coverage and unverified hash accounting as JSON")
     confirm = review_commands.add_parser("verify", help="rehash a run's retained artifacts against its manifest; exit 0 when all match")
     confirm.add_argument("run_dir", type=Path, help="run folder printed by `review check`")
+    export = review_commands.add_parser("export", help="export verified run evidence as independent ordinary files")
+    export.add_argument("run_dir", type=Path, help="complete run folder to export")
+    export.add_argument("--output", type=Path, required=True, help="new bundle directory; must not exist")
     keep = review_commands.add_parser("accept", help="keep a verified run's artifacts as the accepted version")
     keep.add_argument("run_dir", type=Path, help="run folder printed by `review check`")
     keep.add_argument("--label", default="accepted", help="name of the accepted version (default: accepted)")
@@ -662,6 +665,10 @@ def main(argv=None):
                 report = verify_run(args.run_dir)
                 print(json.dumps(report, ensure_ascii=False, indent=2))
                 return 0 if report["verified"] else 1
+            if args.action == "export":
+                from .review_export import export_run
+                print(json.dumps(export_run(args.run_dir, args.output), ensure_ascii=False, indent=2))
+                return 0
             if args.action == "accept":
                 print(json.dumps(accept(args.repo, args.run_dir, args.label), ensure_ascii=False, indent=2))
                 return 0

@@ -29,9 +29,10 @@ def git(repo, *args, env=None):
 IDENTITY = ("-c", "user.name=Agent Work Kit", "-c", "user.email=awkit@localhost")
 
 # The failure catalogue entries (kit/failures.md) each command guards against.
-PREVENTS = {"awkit review snapshot": ("F17",), "awkit review check": ("F2", "F17"),
+PREVENTS = {"awkit review snapshot": ("F17",), "awkit review check": ("F2", "F7", "F17", "F26"),
             "awkit review accept": ("F16",), "awkit review compare": ("F16",),
             "awkit review storage": ("F6", "F7"),
+            "awkit review export": ("F7", "F16", "F17"),
             "awkit kit init --commit and kit example (commit only what they wrote)": ("F8", "F9")}
 
 
@@ -243,6 +244,10 @@ def collect_artifacts(worktree, run, patterns, required):
 
 def verify(run_dir):
     """Compare the artifacts retained by `check` with the manifest written at that time."""
+    from .artifact_store import shared_run
+    shared = shared_run(run_dir)
+    if shared is not None:
+        return shared.verify()
     run = Path(run_dir).resolve()
     record_path = run / "result.json"
     if not record_path.is_file():
@@ -315,13 +320,15 @@ def accept(repo, run_dir, label="accepted"):
     """Keep a verified run's retained artifacts under .awkit/accepted/<label> for later comparison."""
     if not isinstance(label, str) or not LABEL.fullmatch(label):
         raise ValueError("A label uses letters, digits, dots, underscores and hyphens, up to 80 characters.")
-    report = verify(run_dir)
+    from .artifact_store import shared_run
+    shared = shared_run(run_dir)
+    report = shared.verify() if shared is not None else verify(run_dir)
     if not report["artifacts"]:
         raise ValueError("The run retained no artifacts; list them under `artifacts` in the check configuration.")
     if not report["verified"]:
         raise ValueError("The run's retained artifacts no longer match its manifest, so they cannot be accepted.")
     run = Path(run_dir).resolve()
-    manifest = json.loads((run / "artifacts" / "manifest.json").read_text(encoding="utf-8"))
+    manifest = shared.manifest if shared is not None else json.loads((run / "artifacts" / "manifest.json").read_text(encoding="utf-8"))
     root = accepted_root(repo)
     from .local_state import prepare
     prepare(toplevel(repo), root / label, recursive=True)
@@ -336,7 +343,11 @@ def accept(repo, run_dir, label="accepted"):
         staging = root / f".{label}.{os.getpid()}.tmp"
         if staging.exists():
             shutil.rmtree(staging)
-        shutil.copytree(run / "artifacts", staging)
+        if shared is None:
+            shutil.copytree(run / "artifacts", staging)
+        else:
+            staging.mkdir()
+            shared.materialize(staging)
         atomic_json(staging / "accepted.json", record)
         previous = root / f".{label}.previous"
         if previous.exists():
@@ -407,7 +418,10 @@ def compare(repo, label="accepted", run_dir=None, diff=False, include_added=Fals
     if not record_path.is_file():
         raise ValueError(f"No accepted version named {label!r}. Run `awkit review accept` first.")
     record = json.loads(record_path.read_text(encoding="utf-8"))
+    shared = None
     if run_dir is not None:
+        from .artifact_store import shared_run
+        shared = shared_run(run_dir, legacy_compare=True)
         source = Path(run_dir).resolve() / "artifacts"
         if not source.is_dir():
             raise ValueError(f"The run folder has no retained artifacts: {run_dir}")
@@ -418,13 +432,33 @@ def compare(repo, label="accepted", run_dir=None, diff=False, include_added=Fals
     report = {"label": label, "accepted_at": record.get("accepted_at"), "accepted_snapshot": record.get("snapshot"),
               "compared": origin, "files": []}
     if include_added:
-        report["added_artifacts"] = _added_artifacts(source, record["files"])
+        if shared is None:
+            report["added_artifacts"] = _added_artifacts(source, record["files"])
+        else:
+            report["added_artifacts"] = dict(source=str(source / "manifest.json"),
+                scope="recorded paths only; contents not verified",
+                files=[dict(path=name) for name in sorted((set(shared.files) | set(shared.local)) - set(record["files"]))])
     for relative, entry in sorted(record["files"].items()):
         rel = PurePosixPath(relative)
         accepted_file = folder / rel
         current = source / rel
         item = {"path": relative, "status": "same"}
-        if current.is_symlink() or not current.is_file():
+        if shared is not None:
+            from .artifact_store import SafeRoot
+            from .artifact_store import relative as safe_relative
+            safe_relative(relative)
+            if relative not in shared.files and relative not in shared.local:
+                item["status"] = "missing"
+            else:
+                try:
+                    data = shared.read(relative, local=relative in shared.local)
+                    if hashlib.sha256(data).hexdigest() != entry.get("sha256"):
+                        item["status"] = "changed"
+                        if diff and accepted_file.is_file():
+                            item["diff"] = _text_diff(SafeRoot(folder).read(relative), data, relative)
+                except (OSError, ValueError) as exc:
+                    item.update(status="integrity-error", integrity_error=str(exc))
+        elif current.is_symlink() or not current.is_file():
             item["status"] = "missing"
         else:
             data = current.read_bytes()
@@ -433,6 +467,8 @@ def compare(repo, label="accepted", run_dir=None, diff=False, include_added=Fals
                 if diff and accepted_file.is_file():
                     item["diff"] = _text_diff(accepted_file.read_bytes(), data, relative)
         report["files"].append(item)
+    if shared is not None:
+        shared.unchanged()
     report["unchanged"] = all(item["status"] == "same" for item in report["files"])
     if run_dir is None and any(item["status"] == "missing" for item in report["files"]):
         report["note"] = ("A file the check produced exists only in the worktree it ran in, not in the working "
@@ -444,6 +480,8 @@ def validate_settings(settings):
     """Validate check configuration without executing commands or creating a worktree."""
     if type(settings.get("schema")) is not int or settings["schema"] != 1:
         raise ValueError("The check configuration needs schema = 1.")
+    if settings.get("artifact_storage", "copy") not in ("copy", "shared"):
+        raise ValueError('artifact_storage must be "copy" or "shared".')
     timeout = settings.get("timeout_seconds", 300)
     if isinstance(timeout, bool) or not isinstance(timeout, (int, float)) or not 0 < timeout <= 86400:
         raise ValueError("timeout_seconds must be above 0 and at most 86400.")
@@ -484,11 +522,19 @@ def check(repo, revision, config, runs_root=None, keep=False):
     from .local_state import prepare
     prepare(repo if runs_root == repo / ".awkit" / "reviews" else project, root)
     root.mkdir(parents=True, exist_ok=True)
+    mode = settings.get("artifact_storage", "copy")
+    store = None
+    if mode == "shared":
+        from .artifact_store import ObjectStore
+        store = ObjectStore(root, create=True)
     run = Path(tempfile.mkdtemp(prefix="review-", dir=root))
     worktree = run / "worktree"
     base = worktree / subdir
     result = {"snapshot": commit, "config_sha256": hashlib.sha256(raw).hexdigest(), "subdir": subdir,
-              "run_dir": str(run), "worktree": str(worktree), "status": "running", "steps": []}
+              "run_dir": str(run), "worktree": str(worktree), "status": "running", "steps": [],
+              "artifact_storage": mode}
+    if store is not None:
+        result.update(run_id=run.name, artifact_publication=dict(state="pending", collection_id=store.collection_id))
     def save():
         atomic_json(run / "result.json", result)
     values = {"{worktree}": str(worktree), "{run_dir}": str(run), "{run_id}": run.name,
@@ -537,21 +583,42 @@ def check(repo, revision, config, runs_root=None, keep=False):
             and all(s["status"] == "passed" for s in result["steps"])) else "failed"
         if any(s["status"] == "timeout" for s in result["steps"]):
             result["status"] = "uncertain"
-        if patterns or required:
-            files, missing, skipped = collect_artifacts(base, run, patterns, required)
+        if patterns or required or store is not None:
+            if store is None:
+                files, missing, skipped = collect_artifacts(base, run, patterns, required)
+            else:
+                from .artifact_store import ArtifactCollision, SafeRoot, collect, encode
+                files, missing, skipped, local = collect(base, run, patterns, required, store)
             result["artifacts"] = files
             result["missing_artifacts"] = missing
             if skipped:
                 result["skipped_artifacts"] = skipped
             manifest = {"schema": 1, "snapshot": commit, "config_sha256": result["config_sha256"],
                         "subdir": subdir, "run_id": run.name, "files": files}
-            atomic_json(run / "artifacts" / "manifest.json", manifest)
+            if store is None:
+                atomic_json(run / "artifacts" / "manifest.json", manifest)
+            else:
+                manifest.update(schema=2, storage=dict(kind="sha256", collection_id=store.collection_id), local_files=local)
+                encoded = encode(manifest)
+                store.unchanged()
+                try:
+                    SafeRoot(run).write_new("artifacts/manifest.json", encoded)
+                except FileExistsError as exc:
+                    raise ArtifactCollision(["manifest.json"], "Direct output collides with the managed artifact manifest") from exc
+                result["artifact_publication"].update(state="complete", manifest_sha256=hashlib.sha256(encoded).hexdigest())
             if missing and result["status"] == "passed":
                 result["status"] = "failed"
-    except BaseException:
+    except BaseException as exc:
+        from .artifact_store import ArtifactCollision
         preserve = True
-        result["status"] = "uncertain"
-        raise
+        collision = store is not None and isinstance(exc, ArtifactCollision)
+        result["status"] = "failed" if collision else "uncertain"
+        if store is not None:
+            result["artifact_publication"].update(state="incomplete", error=str(exc) or type(exc).__name__)
+            if collision:
+                result["artifact_publication"]["collisions"] = exc.paths
+        if not collision:
+            raise
     finally:
         if added and not preserve:
             try:

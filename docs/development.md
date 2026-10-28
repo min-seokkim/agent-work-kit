@@ -1,6 +1,6 @@
 # Development
 
-Start here to resume work on Agent Work Kit. The selected assignment is [review storage inspection](tasks/review-storage.md), chosen by the coordinator under the owner's delegated planning authority. The preceding [session-status receipt](tasks/session-orchestration.md#selected-session-and-request-status) retains its own delivery stages. Read the relevant task's next action and evidence before repeating a check, push or installation. The [roadmap](roadmap.md) retains broader unfinished outcomes.
+Start here to resume work on Agent Work Kit. The selected assignment is [shared artifact storage](tasks/shared-artifact-storage.md), continued at the owner's request. Technical delivery is followed by the task's [planned adoption trial](tasks/shared-artifact-storage.md#adoption-after-technical-delivery), whose outcome is measured new-record growth with usable evidence. The preceding [storage inspection receipt](tasks/review-storage.md) retains its completed delivery stages. Read the relevant task's next action and evidence before repeating a check, push or installation. The [roadmap](roadmap.md) retains broader unfinished outcomes.
 
 ## Resume a task
 

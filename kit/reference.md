@@ -144,13 +144,14 @@ Git display quoting caused the non-ASCII fixture failure; spaced paths stayed in
 
 `awkit review [--repo DIR] check REVISION --config FILE [--runs-root DIR] [--keep]`
 
-`REVISION` is a full commit ID or `HEAD`. A fresh worktree runs setup, checks and artifact collection, then is removed. Configuration comes from outside the snapshot; its SHA-256 is recorded. Trust its source: it names programs to execute.
+`REVISION` is a full commit ID or `HEAD`. Checks use a disposable worktree. Configuration is read outside the snapshot, hashed, and executes programs; trust its source.
 
 ```toml
 schema = 1
 timeout_seconds = 300            # per step, default 300, at most 86400
 artifacts = ["dist/*.whl", "reports/**/*.html"]
 required_artifacts = ["dist/*.whl"]
+artifact_storage = "copy"         # default; "shared" stores identical payloads once per collection
 
 [env]                            # added to the inherited environment
 APP_MODE = "test"
@@ -168,7 +169,7 @@ argv = ["python", "-m", "pytest", "-q"]
 - Step names are distinct; `argv` is an argument array, without a shell.
 - `cwd` defaults to the base folder (see Git tracking). Absolute paths, `..`, `.git` and empty paths are refused before running. A `cwd` that is missing or resolves outside the worktree fails that step.
 - Placeholders in `argv` and `env` values: `{python}` (the interpreter running awkit, not necessarily the project's), `{worktree}`, `{run_dir}`, `{run_id}`. Steps also get `AWKIT_WORKTREE`, `AWKIT_RUN_DIR`, `AWKIT_RUN_ID`.
-- Artifact patterns are relative to the base folder and accept `*`, `?`, `**`. Matches are copied after all steps, even when checks failed. Links and paths outside the worktree are skipped and listed under `skipped_artifacts`. A `required_artifacts` pattern with no match turns a passing run into `failed`.
+- Artifact patterns are relative to the base folder and accept `*`, `?`, `**`. Matches are retained after all steps, even when checks failed. Links and paths outside the worktree are skipped and listed under `skipped_artifacts`. A `required_artifacts` pattern with no match turns a passing run into `failed`.
 - Timeout/interruption kills the step's process tree, records `uncertain` and keeps the worktree. The runner does not stop remote work.
 - Exit 0 passes, including tests weakened through removed assertions, skipped/deleted tests or edited expectations. Review test diffs separately; `check done` shares this limit.
 - Worktrees share DBs, ports, sockets and devices. Allocate them per `{run_id}` in the project's commands.
@@ -184,13 +185,15 @@ Run folder: repository `.awkit/reviews/`, locally excluded from Git when needed;
 
 `status` is `passed`, `failed`, `uncertain` (a timeout) or `cleanup-failed`. Exit codes: 0 passed, 1 failed or uncertain, 2 configuration or Git error.
 
+`"shared"` affects new runs; deletion does not generally reclaim objects. Prior shared runs still need compatible readers/store after switching to `"copy"`; export before removing that dependency. See [portability](artifact-storage.md).
+
 ### storage
 
 `awkit review [--repo DIR] storage [--runs-root DIR] [--json]`
 
-Inspects direct `review-*` directories without writes, initialization, deletion or following linked/reparse descendants. Default: Git top-level `.awkit/reviews`; an explicit root needs no Git repository. A missing default returns `absent` without creating it.
+Reads direct `review-*` directories, skipping linked/reparse descendants. Default: Git top-level `.awkit/reviews`; missing means `absent` without creation. An explicit root needs no Git repository.
 
-Text and schema-1 JSON report logical sizes by run/category, recorded statuses, largest runs, metadata coverage and errors. Manifest-declared, counted, unique-hash and duplicate-declaration bytes remain separate from observed sizes. Hashes are unverified; counts require valid matching identities, safe declarations and observed sizes. Conflicting hash sizes exclude every affected declaration. The live walk is non-atomic; estimates establish neither allocated disk use nor recoverable space.
+Schema-2 output separates run-local, shared and total logical bytes, per-run references, statuses and coverage. Shared objects count once. Hash estimates are unverified; conflicts are excluded. Unreferenced bytes are not proven reclaimable. See [inspection limits](artifact-storage.md#move-and-inspect-a-collection).
 
 Exits: 0 complete/absent, 1 partial coverage, 2 missing explicit root or unavailable root/invocation. Failed review statuses alone do not fail inventory.
 
@@ -202,9 +205,13 @@ Exits: 0 complete/absent, 1 partial coverage, 2 missing explicit root or unavail
 | `review accept RUN_DIR [--label L]` | Verifies the run, then copies its artifacts to `.awkit/accepted/<label>/` (default `accepted`) with `accepted.json` recording run, commit, config hash and hashes. Replaces an earlier version with the same label. One accept at a time per repository (lock `.awkit/accept.lock.sqlite3`). | accepted |
 | `review compare [--label L] [--run RUN_DIR] [--diff] [--include-added]` | Compares each accepted file with the working tree, or with a run's artifacts given `--run`: `same`, `changed`, `missing`. `--diff` adds unified diffs for changed text files. | every file is `same` |
 
-Absent generated files show `missing` with a `note`; use `--run`. Hash equality proves unchanged bytes, not correctness.
+`--include-added` requires `--run` and lists declared candidate paths absent from acceptance without reading their bytes. Additions do not affect `unchanged`; invalid inventory exits 2. See [reader behavior](artifact-storage.md#direct-output-and-materialization).
 
-`--include-added` requires `--run`: `added_artifacts` lists candidate-manifest paths absent from acceptance, with source/scope. It excludes unrecorded files, verifies no content and adds no diffs. Invalid/unavailable inventory exits 2. Additions leave `unchanged` and exits 0/1 determined by accepted files. Default output remains unchanged.
+Shared comparison returns `integrity-error` without unverified diffs. Added inventory includes declared local diagnostics; acceptance materializes independent configured artifacts.
+
+### export
+
+`awkit review export RUN --output DEST` creates a schema-1 bundle at a nonexistent destination, preserving original metadata under provenance and excluding worktrees. Incomplete or corrupt evidence fails. See [export guarantees](artifact-storage.md#export).
 
 ## check
 

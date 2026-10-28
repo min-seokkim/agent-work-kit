@@ -103,8 +103,9 @@ class SessionController:
             self.provider_error = str(exc)
             raise ProviderError(self.provider_error) from exc
 
-    def create(self, *, name, responsibility, project=None, provider="codex", sandbox=None, permission_mode=None, model=None):
-        validate_model(model, provider)
+    def create(self, *, name, responsibility, project=None, provider="codex", sandbox=None, permission_mode=None,
+               model=None, reasoning_effort=None):
+        validate_model(model, provider, reasoning_effort)
         if provider not in ("codex", "claude"):
             raise ValueError("Select Codex or Claude.")
         if provider == "claude" and (sandbox is not None or permission_mode not in (None, "default")):
@@ -140,7 +141,10 @@ class SessionController:
                            source="thread/start parameters", admission="pending")
             store.update(startup_context=startup)
             if model is not None:
-                store.update(model_selection=dict(requested=model, creation=None, latest=None, state="pending"))
+                selection = dict(requested=model, creation=None, latest=None, state="pending")
+                if reasoning_effort is not None:
+                    selection["requested_effort"] = reasoning_effort
+                store.update(model_selection=selection)
             if provider == "claude":
                 store.update(requested_native_id=str(uuid.uuid4()),
                              startup_context=dict(startup, source="Claude native preset with role append"))
@@ -159,6 +163,8 @@ class SessionController:
                     "developerInstructions": startup["developer_instructions"]}
                 if model is not None:
                     params["model"] = model
+                if reasoning_effort is not None:
+                    params["config"] = {"model_reasoning_effort": reasoning_effort}
                 result = client.call("thread/start", params)
                 if model is not None and not isinstance(result, dict):
                     raise ValueError("Native creation returned no configuration observation; work remains held.")
@@ -189,7 +195,7 @@ class SessionController:
                              model_provider=result.get("modelProvider"), client=self.client, state=state,
                              observed_at=now(), source="thread/start response", error=None)
                 if model is not None and not model_ready(store.metadata()):
-                    raise ValueError("Returned Codex model/provider does not match the explicit creation selection; work remains held.")
+                    raise ValueError("Returned Codex configuration does not match the explicit creation selection; work remains held.")
             except (OSError, ValueError, KeyError, TypeError, ProviderError) as exc:
                 hold(store)
                 store.update(state="unknown", observed_at=now(), source="thread/start failure or uncertainty", error=str(exc),
@@ -532,7 +538,7 @@ class SessionController:
             age = (datetime.now(UTC) - datetime.fromisoformat(meta["observed_at"])).total_seconds()
             can_send = (connected and model_ready(meta) and bool(meta["native_id"] or meta.get("requested_native_id")) and not snapshot["closed"]
                         and meta["state"] in ("idle", "waiting for idle", "running", "accepted", "decision needed", "submitting"))
-            reason = ("The requested Codex model/provider is unverified or differs from its creation receipt. Work remains held."
+            reason = ("The requested Codex configuration is unverified or differs from its creation receipt. Work remains held."
                       if not model_ready(meta) else "This channel is closed." if snapshot["closed"] else
                       "Conversation state is uncertain. Inspect unfinished work; reconnecting never resends uncertain work." if connected else
                       "Reconnecting the saved conversation, or connection unavailable. History remains readable.")

@@ -3,7 +3,13 @@
 from pathlib import Path
 
 
-def validate(model, provider):
+def validate(model, provider, reasoning_effort=None):
+    if reasoning_effort is not None:
+        if provider != "codex" or model is None:
+            raise ValueError("Reasoning effort requires an explicit model for a new Codex conversation.")
+        if (not isinstance(reasoning_effort, str) or not 1 <= len(reasoning_effort) <= 200
+                or not reasoning_effort.isprintable() or any(character.isspace() for character in reasoning_effort)):
+            raise ValueError("Reasoning effort must contain 1 to 200 visible non-whitespace characters.")
     if model is None:
         return
     if provider != "codex":
@@ -52,9 +58,11 @@ def observe(store, result, *, creation):
                and isinstance(observation["provider"], str) and bool(observation["provider"].strip())
                and isinstance(expected, dict) and expected.get("model") == selection["requested"]
                and observation["provider"] == expected.get("provider"))
+    if "requested_effort" in selection:
+        matched = matched and observation["reasoning_effort"] == selection["requested_effort"]
     updated = dict(selection, latest=observation, state="matched" if matched else "held")
     if creation:
         updated["creation"] = observation
     store.update(model_selection=updated)
     if not matched:
-        raise ValueError("Returned Codex model/provider does not match the explicit creation selection; work remains held.")
+        raise ValueError("Returned Codex configuration does not match the explicit creation selection; work remains held.")

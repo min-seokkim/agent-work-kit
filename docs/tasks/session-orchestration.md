@@ -2,7 +2,7 @@
 
 ## Current status
 
-The owner selected autonomous feature development, real-use writing evaluation and independent-session collaboration. The picker is published in `82e2cb3`; its receipt owns CI and installation status. The next selected unit is explicit model selection for a newly created Codex conversation. Current-work reading shipped in `a2a0c43`; its earlier verification limits remain in the history.
+The owner selected autonomous feature development, real-use writing evaluation and independent-session collaboration. The picker is delivered in `82e2cb3`, model selection in `d2ea950`. The next selected unit adds optional reasoning effort alongside an explicit creation model. Current-work reading shipped in `a2a0c43`; its earlier verification limits remain in the history.
 
 The picker is implemented and exercised with owned fictional conversations: name selection, separate enrollment and a same-context follow-up passed; a different-project control stayed excluded. Independent review found no High or Major issue and one Minor reference word-limit failure, corrected after its frozen check. A later real-use correction distinguishes an already-ended turn from a lost connection. Session details also show retained model observations with their source and limits.
 
@@ -15,6 +15,14 @@ Independent review of `89aad433` found a Major queue-dispatch race despite the p
 Base: `82e2cb3`. OriginalImplementation owns the remaining implementation, verification, independent-review coordination and delivery. The coordinator selects product scope; the original standard-tier builder supplied backend/tests, and ModelReviewer owns independent judgment. `.awkit/handoffs/session-model-selection/contract.md` defines metadata and checks; the source assessment is `.awkit/handoffs/session-picker/model-selection-research/contract.md`, returned as OriginalResearch R-013 for M-014. The ownership transfer is retained in `implementation-handoff.md` beside the delivery receipt.
 
 Accept an optional exact model ID only when creating a new Codex conversation on the verified runtime. Keep native defaults when omitted. Persist the request before creation and retain returned identity/configuration separately. Hold work on a missing or mismatched creation model, or resumed model/provider, without replay, replacement or forced correction. Resume and ordinary turns omit model-related overrides. Existing policy and identity checks remain; default/legacy records and enrollment receive no new model constraint. Do not add effort selection, a model catalogue, Claude selection or cost/per-turn execution claims.
+
+## Selected creation effort
+
+Base: `d2ea950`. The coordinator selects product scope; discovery_builder owns implementation, checks, independent-review coordination and delivery after OriginalImplementation's capacity failure. The preceding model unit's receipt records independent Major closure, the passing 532-test frozen check, Windows/Linux CI and exact installation with no source/kit/skill mismatch. Do not repeat its native trial.
+
+The selected contract is `.awkit/handoffs/session-effort-selection/decision.md`; pinned source feasibility is `.awkit/handoffs/session-model-selection/effort-feasibility/assessment.md`. Accept optional opaque reasoning effort only with an explicit Codex creation model. Persist requested effort separately, send only native model_reasoning_effort configuration at creation, and compare returned effort before admission and recovery. Omission leaves model-only/default inheritance unchanged. Resume and turns supply no overrides; existing transactional hold guards also protect queued and active-turn input after an effort mismatch.
+
+Focused controller and CLI/browser fixtures pass. One separate fictional gpt-6.1-sol/medium conversation retained its exact identity, pair and context through two turns, restart and a third reply. Desktop and narrow screenshots show the requested/returned values and retained creation-error draft. These are agent-operated observations, not intended-user acceptance or proof of each inference's configuration. `.awkit/handoffs/session-effort-selection/delivery.json` owns the exact frozen check, independent judgment, CI and installation stages; consult it before repeating delivery. Conditional focused-status work remains separate and starts only after this unit is delivered.
 
 ## Selected conversation picker
 

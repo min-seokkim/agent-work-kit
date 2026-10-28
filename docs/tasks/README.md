@@ -4,7 +4,7 @@ Use this directory to locate a task; its record owns the current state and next 
 
 ## Selected assignment
 
-- [Codex creation model selection](session-orchestration.md#selected-creation-model): add an explicit creation model and hold work on configuration mismatch. The preceding picker and its [writing-outcome evidence](writing-outcome-evaluation.md#current-status) retain separate receipts.
+- [Codex creation reasoning effort](session-orchestration.md#selected-creation-effort): optionally select effort alongside an explicit model and hold work on configuration mismatch. Delivered model selection, the picker and its [writing-outcome evidence](writing-outcome-evaluation.md#current-status) retain separate receipts.
 
 ## Deferred and blocked
 

@@ -17,6 +17,14 @@ from awkit.sessions import SessionController
 
 
 class ModelRoutesTests(unittest.TestCase):
+    def test_cli_preserves_explicit_effort_separately_from_model(self):
+        args = ["session", "create", "Reader", "--responsibility", "Invented", "--model", "fictional", "--reasoning-effort", "medium"]
+        with patch("awkit.session_http.request", return_value={"session": {"state": "idle"}}) as call:
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(main(args), 0)
+        self.assertEqual(call.call_args.args[2]["reasoning_effort"], "medium")
+        self.assertEqual(call.call_args.args[2]["model"], "fictional")
+
     def test_cli_omits_default_model_and_preserves_explicit_identifier(self):
         for model in (None, "fixture-model:opaque"):
             args = ["session", "create", "Reader", "--responsibility", "Read invented facts"]
@@ -48,7 +56,7 @@ class ModelRoutesTests(unittest.TestCase):
             controller.create = create
             store = SessionStore.create(controller.directory / "channels", name="Held model", project=Path(folder),
                 responsibility="Fixture", generation=controller.generation, permissions={})
-            store.update(model_selection=dict(requested="chosen-model", creation=dict(model="chosen-model", provider="original"),
+            store.update(model_selection=dict(requested="chosen-model", requested_effort="medium", creation=dict(model="chosen-model", provider="original"),
                 latest=dict(model="different-model", provider="changed-provider", reasoning_effort=None, source="thread/resume response"),
                 state="held"), error="Resumed model differs; no queued work dispatched.")
             controller._stores[store.metadata()["id"]] = store
@@ -62,6 +70,7 @@ class ModelRoutesTests(unittest.TestCase):
                         page.locator("#create-name").fill("Fixture reader")
                         page.locator("#responsibility").fill("Read invented facts")
                         page.locator("#create-model").fill("chosen-model")
+                        page.locator("#create-effort").fill("medium")
                         page.locator("#create-submit").click()
                         expect(page.locator("#create-error")).to_be_visible()
                         expect(page.locator("#create-error")).to_contain_text("Fixture: creation not performed")
@@ -77,24 +86,30 @@ class ModelRoutesTests(unittest.TestCase):
                                 page.screenshot(path=str(target / f"model-create-error-{width}.png"), full_page=True)
                             page.set_viewport_size(dict(width=1280, height=1000))
                         self.assertEqual(calls[-1]["model"], "chosen-model")
+                        self.assertEqual(calls[-1]["reasoning_effort"], "medium")
+                        expect(page.locator("#create-effort")).to_have_value("medium")
                         page.locator("#provider").select_option("claude")
                         expect(page.locator("#create-model")).to_be_disabled()
+                        expect(page.locator("#create-effort")).to_be_disabled()
                         expect(page.locator("#codex-model")).to_be_hidden()
                         page.locator("#create-submit").click()
                         expect(page.locator("#create-submit")).to_be_enabled()
                         self.assertEqual(calls[-1]["provider"], "claude")
                         self.assertNotIn("model", calls[-1])
+                        self.assertNotIn("reasoning_effort", calls[-1])
                         page.locator("#provider").select_option("codex")
                         page.locator("#create-model").fill("")
+                        page.locator("#create-effort").fill("")
                         page.locator("#create-submit").click()
                         expect(page.locator("#create-submit")).to_be_enabled()
                         self.assertEqual(calls[-1]["provider"], "codex")
                         self.assertNotIn("model", calls[-1])
+                        self.assertNotIn("reasoning_effort", calls[-1])
                         page.locator('[data-close="create-dialog"]').click()
                         page.locator(".session").filter(has=page.locator("strong", has_text="Held model")).click()
                         page.get_by_text("Model observation", exact=True).click()
                         details = page.locator("#model-observation")
-                        for text in ("Requested model: chosen-model", "Returned model: different-model", "changed-provider",
+                        for text in ("Requested model: chosen-model", "Requested reasoning effort: medium", "Returned model: different-model", "changed-provider",
                                      "Reasoning effort: Not recorded", "Work is held", "does not verify model access"):
                             expect(details).to_contain_text(text)
                         expect(page.locator("#send")).to_be_disabled()

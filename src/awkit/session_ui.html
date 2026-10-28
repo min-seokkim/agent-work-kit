@@ -65,7 +65,8 @@ a{color:var(--accent)}.small{font-size:.83rem}.hidden{display:none!important}
 <label>Name<input id="create-name" required maxlength="200" placeholder="Research"></label>
 <label>Responsibility<textarea id="responsibility" required maxlength="2000" placeholder="What this session is responsible for"></textarea></label>
 <div id="codex-model"><label>Model ID (optional)<input id="create-model" maxlength="200" placeholder="Leave empty for native defaults" aria-describedby="model-reason"></label>
-<p id="model-reason" class="reason">An explicit ID requires the verified Codex runtime. Model access is checked by the provider when used. This does not select reasoning effort or establish which model executes each turn.</p></div>
+<label>Reasoning effort (optional, requires Model ID)<input id="create-effort" maxlength="200" placeholder="For example: medium" aria-describedby="model-reason"></label>
+<p id="model-reason" class="reason">Omitting effort inherits native configuration. Model and effort support depend on native configuration and access; entering them does not verify availability or each turn's execution.</p></div>
 <label id="codex-permissions">Requested permissions<select id="sandbox"><option value="read-only">Read only</option><option value="workspace-write">Write in this workspace</option></select></label>
 <p id="creation-permissions" class="reason">Approval requests go to this screen. The conversation shows the scope actually returned by Codex.</p>
 <p id="create-error" class="reason" role="alert"></p>
@@ -270,6 +271,7 @@ function render() {
   if (m.model_selection && !m.enrollment && !m.history) {
     const choice = m.model_selection;
     model.append(node('p','Requested model: ' + choice.requested));
+    model.append(node('p','Requested reasoning effort: ' + (choice.requested_effort == null ? 'Omitted; native inheritance' : choice.requested_effort)));
     if (choice.latest) {
       const observation = choice.latest;
       model.append(node('p','Returned model: ' + (observation.model || 'Not recorded')),
@@ -277,7 +279,7 @@ function render() {
         node('p','Reasoning effort: ' + (observation.reasoning_effort == null ? 'Not recorded' : observation.reasoning_effort)),
         node('p','Source: ' + observation.source,'reason'));
     } else model.append(node('p','No native model configuration has been recorded.','reason'));
-    if (choice.state !== 'matched') model.append(node('p','Model selection is not confirmed. Work is held; inspect the recorded error before taking another action.','reason'));
+    if (choice.state !== 'matched') model.append(node('p','Model and configuration selection is not confirmed. Work is held; inspect the recorded error before taking another action.','reason'));
     model.append(node('p','Returned configuration does not verify model access or which model executed each turn.','reason'));
   }
   else if (m.history) model.append(node('p','No native model observation is available for stored channel history.','reason'));
@@ -405,6 +407,7 @@ function providerDraft() {
   byId('codex-model').hidden = claude;
   byId('codex-model').classList.toggle('hidden',claude);
   byId('create-model').disabled = claude;
+  byId('create-effort').disabled = claude;
   byId('creation-permissions').textContent = claude ? 'Claude uses its native default approval mode and project instructions. Requests that need a decision appear here. This choice does not establish a Codex sandbox or Windows network restriction.' : 'Approval requests go to this screen. The conversation shows the scope actually returned by Codex.';
   byId('provider-reason').textContent = claude ? (state.capabilities.claude_runtime.reason || 'SDK available. Native login and this conversation are checked when connecting.') : (state.capabilities.codex_executable_available ? '' : 'Codex executable unavailable.');
 }
@@ -501,6 +504,7 @@ byId('create-form').onsubmit = async event => {
     const provider = byId('provider').value;
     const permissions = provider === 'claude' ? {permission_mode:'default'} : {sandbox:byId('sandbox').value};
     const model = provider === 'codex' && byId('create-model').value !== '' ? {model:byId('create-model').value} : {};
+    if (provider === 'codex' && byId('create-effort').value !== '') model.reasoning_effort = byId('create-effort').value;
     const result = await api('create',{name:byId('create-name').value,responsibility:byId('responsibility').value,project:state.project,provider,...permissions,...model});
     byId('create-dialog').close(); await refresh(); select(result.session.id); banner(result.session.error || 'Created ' + result.session.name + '.');
   } catch (error) { byId('create-error').textContent = error.message; }

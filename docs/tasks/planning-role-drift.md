@@ -2,13 +2,15 @@
 
 ## Current status
 
-Deferred behavioral observation. The bounded diagnosis is complete; the existing ownership constraint remains the selected correction. Persistence after continuation has not been demonstrated.
+Behavioral observation remains open. During the model-selection unit, the owner told the current coordinator to delegate verification and return to product selection. The coordinator transferred implementation, review coordination and delivery to OriginalImplementation in M-007, then selected optional creation effort in M-008. These assignments establish ownership; they do not demonstrate persistence after continuation.
 
-Next action: Observe the next ordinary delivery and natural continuation without another role reminder. A recurrence supplies new evidence; a rewritten checkpoint or replay does not close this incident.
+OriginalImplementation then failed with a native capacity error after reporting a push. The coordinator confirmed that its two queued follow-ups were cancelled before dispatch and transferred delivery and implementation to discovery_builder. The coordinator retained product selection and did not repeat CI or installation checks. This continuation is one observation, not proof of lasting adherence.
+
+Next action: consume the implementer's ordinary delivery report and decide the next product scope without independently repeating checks, CI or installation audits. Observe natural continuation without another owner reminder. A recurrence supplies new evidence; a rewritten checkpoint or replay does not close this incident.
 
 ## Resume inputs
 
-ID: `planning-role-drift`. No new implementation is assigned. The current conclusion is carried from `90e2557`; earlier owners and execution bases are retained in the history. Confirm ownership, the working revision and changed files before reopening the task.
+ID: `planning-role-drift`. The current coordinator owns product decisions; discovery_builder succeeds OriginalImplementation as execution and delivery owner. `.awkit/handoffs/session-model-selection/implementation-handoff.md` records the original transfer; `.awkit/handoffs/session-effort-selection/decision.md` records the next product selection. The earlier native channel retains the capacity failure, before-dispatch cancellations and transfer notice M-011. No new rule or enforcement feature is assigned. The earlier diagnosis and owners remain in the history.
 
 - [Observed behavior](../history/tasks/planning-role-drift.md#observed-behavior): retained requirements or evidence for this task.
 - [Planning disposition](../history/tasks/planning-role-drift.md#planning-disposition): retained requirements or evidence for this task.

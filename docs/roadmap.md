@@ -4,7 +4,9 @@ Choose the next unfinished outcome here. The owner selects implementation; an it
 
 ## Current planning focus
 
-The owner selected autonomous real-use evaluation and continued session development. [Codex creation model selection](tasks/session-orchestration.md#selected-creation-model) follows the published conversation picker; the guide revision supplies a real writing continuation. The README rewrite has a completed delivery receipt. Broader coordination, writing-benefit claims and presentation production retain their task-specific prerequisites.
+The owner selected autonomous real-use evaluation and continued session development. The conversation picker and [Codex creation model selection](tasks/session-orchestration.md#selected-creation-model) have delivery receipts. Optional reasoning effort at creation is the next selected outcome; a focused read of one managed session or request follows if the work window permits its full delivery. The coordinator owns product decisions, and the implementation session owns checks and delivery.
+
+The guide revision supplies a real writing continuation. The README rewrite has a completed delivery receipt. Broader coordination, writing-benefit claims and presentation production retain their task-specific prerequisites.
 
 ## Task plans
 

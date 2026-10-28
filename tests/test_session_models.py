@@ -38,7 +38,7 @@ class ModelProvider:
             if self.reject_start:
                 raise ProviderRejected("fixture rejected model", {"code": -1})
             self.state.update(id="fixture-thread", model=params.get("model", "native-default"), provider="fixture-provider",
-                              memory="", count=0)
+                              memory="", count=0, effort=params.get("config", {}).get("model_reasoning_effort"))
             if self.lose_response:
                 raise ProviderError("fixture response lost")
             return self.result(self.start_overrides)
@@ -71,7 +71,7 @@ class ModelProvider:
     def result(self, overrides):
         return dict(thread=dict(id=self.state["id"], status={"type": "idle"}), cwd=str(self.project),
                     sandbox={"type": "readOnly"}, approvalPolicy="on-request", approvalsReviewer="user",
-                    model=self.state["model"], modelProvider=self.state["provider"], reasoningEffort=None) | overrides
+                    model=self.state["model"], modelProvider=self.state["provider"], reasoningEffort=self.state.get("effort")) | overrides
 
     def close(self):
         self.alive = False
@@ -111,6 +111,79 @@ class SessionModelTests(unittest.TestCase):
         self.assertEqual(meta["model"], "native-default")
         self.assertEqual(set(self.provider.calls[0][1]), {"cwd", "sandbox", "approvalPolicy", "approvalsReviewer",
                                                         "serviceName", "developerInstructions"})
+
+    def test_explicit_effort_is_durable_and_uses_only_the_selected_config_key(self):
+        def before():
+            selection = next(iter(self.controller._stores.values())).metadata()["model_selection"]
+            self.assertEqual(selection["requested_effort"], "medium")
+            self.assertEqual(selection["state"], "pending")
+
+        self.provider.before_start = before
+        meta = self.create(model="fictional", reasoning_effort="medium")
+        self.assertEqual(meta["model_selection"]["state"], "matched")
+        self.assertEqual(meta["model_selection"]["creation"]["reasoning_effort"], "medium")
+        self.assertEqual(self.provider.calls[0][1]["config"], {"model_reasoning_effort": "medium"})
+
+    def test_effort_requires_explicit_codex_model_before_any_mutation(self):
+        cases = [dict(reasoning_effort="medium"), dict(model="fictional", reasoning_effort="medium", provider="claude")]
+        cases += [dict(model="fictional", reasoning_effort=value) for value in ("", " ", "not visible", "a\nb", 1, True, "x" * 201)]
+        for args in cases:
+            with self.subTest(args=args), self.assertRaises(ValueError):
+                self.create(**args)
+        self.assertEqual(self.provider.calls, [])
+        self.assertEqual(self.controller._stores, {})
+
+    def test_missing_or_different_creation_effort_holds_with_native_receipt(self):
+        self.provider.start_overrides = {"reasoningEffort": None}
+        meta = self.create(model="fictional", reasoning_effort="medium")
+        self.assertEqual(meta["model_selection"]["state"], "held")
+        self.assertEqual(meta["native_id"], "fixture-thread")
+        self.assertIsNone(meta["model_selection"]["latest"]["reasoning_effort"])
+        with self.assertRaisesRegex(ValueError, "held"):
+            self.controller.send(meta["id"], key="must-stay-held", body="Invented")
+
+    def test_effort_pair_survives_restart_without_resume_or_turn_overrides(self):
+        meta = self.create(model="fictional", reasoning_effort="medium")
+        self.controller.send(meta["id"], key="memory", body="Invented effort token")
+        self.wait_for(meta["id"], lambda value: len(value["messages"]) == 2)
+        self.controller.close()
+        self.make_controller()
+        resumed = self.controller.resume(meta["id"])["session"]
+        self.assertEqual(resumed["model_selection"]["latest"]["reasoning_effort"], "medium")
+        self.controller.send(meta["id"], key="recall", body="recall")
+        result = self.wait_for(meta["id"], lambda value: len(value["messages"]) == 4)
+        self.assertEqual(result["messages"][-1]["body"], "Invented effort token")
+        self.assertEqual(result["session"]["native_id"], meta["native_id"])
+        for method, params in self.provider.calls:
+            self.assertFalse(set(params) & {"model", "config", "reasoningEffort", "modelProvider"}, method)
+
+    def test_effort_mismatch_holds_queued_work_despite_idle_callback_and_blocks_steer(self):
+        meta = self.create(model="fictional", reasoning_effort="medium")
+        store = self.controller._store(meta["id"])
+        store.update(state="unknown")
+        queued = store.post("queued-pair", "Must remain queued")["id"]
+        self.provider.resume_overrides = {"reasoningEffort": "high"}
+        self.provider.calls.clear()
+        resumed = self.controller.resume(meta["id"])["session"]
+        self.assertEqual(resumed["model_selection"]["state"], "held")
+        self.assertEqual(resumed["model_selection"]["latest"]["reasoning_effort"], "high")
+        self.assertEqual(resumed["model_selection"]["creation"]["reasoning_effort"], "medium")
+        store.update(state="idle")  # A late native completion may update availability independently.
+        time.sleep(.4)
+        self.assertEqual(store.snapshot()["attempts"], [])
+        self.assertIn(queued, store.snapshot()["unanswered"])
+        with self.assertRaisesRegex(ValueError, "held"):
+            self.controller.update_turn(meta["id"], key="steer", request_id=queued, expected_turn_id="old", body="Invented")
+        self.assertEqual([method for method, _ in self.provider.calls], ["thread/resume"])
+
+    def test_model_only_resume_keeps_native_effort_inheritance_unconstrained(self):
+        meta = self.create(model="fictional")
+        self.controller._store(meta["id"]).update(state="unknown")
+        self.provider.resume_overrides = {"reasoningEffort": "custom-effort"}
+        resumed = self.controller.resume(meta["id"])["session"]
+        self.assertEqual(resumed["model_selection"]["state"], "matched")
+        self.assertNotIn("requested_effort", resumed["model_selection"])
+        self.assertEqual(resumed["model_selection"]["latest"]["reasoning_effort"], "custom-effort")
 
     def test_explicit_intent_is_durable_before_native_input_and_receipt_is_separate(self):
         def before():

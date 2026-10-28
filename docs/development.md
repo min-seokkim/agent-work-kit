@@ -1,6 +1,6 @@
 # Development
 
-Start here to resume work on Agent Work Kit. The latest selected assignment is [Codex creation model selection](tasks/session-orchestration.md#selected-creation-model), following the published conversation picker and real writing continuation. Read its next action and evidence before repeating a check, push or installation. The [roadmap](roadmap.md) retains broader unfinished outcomes.
+Start here to resume work on Agent Work Kit. The latest selected assignment is [Codex creation reasoning effort](tasks/session-orchestration.md#selected-creation-effort), following delivered model selection and the conversation picker. Read its next action and evidence before repeating a check, push or installation. The [roadmap](roadmap.md) retains broader unfinished outcomes.
 
 ## Resume a task
 

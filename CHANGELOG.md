@@ -8,6 +8,8 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Commands
 
+- Session create adds optional --reasoning-effort with an explicit Codex model, also available in the form. The request is retained separately and sent only as native model_reasoning_effort configuration at creation. Explicit effort mismatches hold work through the existing transactional admission guards across resume; model-only/default records keep native inheritance. Resume and turns receive no overrides. This does not establish model availability or per-turn execution configuration.
+
 - Session create accepts an optional Codex-only model ID on the verified runtime. Explicit selections retain the request and native model/provider/effort observations separately; creation or resume mismatches hold work without fallback. Queue claims and native input admission check that hold transactionally, so late activity callbacks cannot release it. Resume and ordinary turns supply no model overrides. Legacy/default creation, Claude and enrollment behavior remain unchanged. The screen exposes the optional input and latest configuration without claiming model access, fixed effort or per-turn execution; validation errors remain visible inside the creation form with its draft. Selection metadata is an optional existing-store extension; no migration.
 
 - The session screen shows retained native model observations with their creation/initialization source, leaving enrolled or history-only coverage unknown. It makes no per-turn execution claim and changes no model selection or policy. Exact-turn update errors distinguish an unavailable runtime/connection from a conversation with no observed active turn; ended work is still refused before native input.

@@ -1,6 +1,6 @@
 # Development
 
-Start here to resume work on Agent Work Kit. The latest selected assignment is [automatic exclusion of managed local state](tasks/local-state-exclusion.md), following delivered provider parity. Read its next action and evidence before repeating a check, push or installation. The [roadmap](roadmap.md) retains broader unfinished outcomes.
+Start here to resume work on Agent Work Kit. The latest selected assignment is [managed session and exact-request status](tasks/session-orchestration.md#selected-session-and-request-status), following delivered local-state exclusion and provider parity. Read its next action and evidence before repeating a check, push or installation. The [roadmap](roadmap.md) retains broader unfinished outcomes.
 
 ## Resume a task
 

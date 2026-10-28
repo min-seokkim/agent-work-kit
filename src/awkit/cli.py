@@ -205,7 +205,9 @@ def _parser():
     update_body = session_update.add_mutually_exclusive_group()
     update_body.add_argument("--body")
     update_body.add_argument("--body-file", type=Path)
-    session_commands.add_parser("status", help="read complete exchanges, actual observations and capabilities as JSON")
+    session_status = session_commands.add_parser("status", help="read all sessions, one managed session or one exact request as JSON")
+    session_status.add_argument("--session", dest="status_session", action="append", help="exact local managed session name or ID")
+    session_status.add_argument("--request", dest="status_request", action="append", help="exact stored input ID; requires --session")
     session_register = session_commands.add_parser("register", help="open an existing pairwise channel read-only")
     session_register.add_argument("--channel", type=Path, required=True)
     session_register.add_argument("--main-name", required=True, help="human name for the channel's existing main party")
@@ -687,7 +689,10 @@ def main(argv=None):
                 command = shutil.which(args.codex) or args.codex
                 return serve(args.project, [command], port=args.port, record=args.record, claude_cli=args.claude)
             payload = {}
-            if args.action == "create":
+            if args.action == "status":
+                from .session_reading import selectors
+                payload = selectors({key: value for key, value in (("session", args.status_session), ("request", args.status_request)) if value is not None})
+            elif args.action == "create":
                 payload = dict(name=args.name, responsibility=args.responsibility, provider=args.provider,
                                sandbox=args.sandbox, permission_mode=args.permission_mode, project=str(args.project.resolve()))
                 if args.model is not None:

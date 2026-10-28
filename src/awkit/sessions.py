@@ -543,14 +543,40 @@ class SessionController:
         provider.call("turn/interrupt", {"threadId": active["native_id"], "turnId": active["turn_id"]})
         return dict(state="interrupt requested", task_result="unverified")
 
-    def status(self):
-        with self._mutex:
-            stores = list(self._stores.values())
+    def status(self, *, session=None, request=None):
+        from .session_reading import SelectorError, decision_request, exact_request, selectors
+
+        selection = selectors({key: value for key, value in (("session", session), ("request", request)) if value is not None})
+        session, request = selection.get("session"), selection.get("request")
+        if selection:
+            try:
+                stores = [self._store(selection["session"])]
+            except ValueError as exc:
+                aliases = self.history.registrations()
+                if any(value.get("id") == session or session in value.get("parties", {}).values() for value in aliases):
+                    raise SelectorError("History-only aliases are not managed session selectors.") from exc
+                with self._mutex:
+                    native = any(value.metadata().get("native_id") == session for value in self._stores.values())
+                if native:
+                    raise SelectorError("Select the local managed session name or ID, not its native conversation ID.") from exc
+                raise SelectorError("No unique managed session matches that local name or ID.") from exc
+        else:
+            with self._mutex:
+                stores = list(self._stores.values())
         views = []
         for store in stores:
             snapshot = store.snapshot()
             meta = snapshot["session"]
-            provider, generation = self._connection(store)
+            if request is not None:
+                if meta.get("enrollment"):
+                    provider = self.enrolled_clients.get(meta["id"])
+                elif meta["provider"] == "claude":
+                    provider = self.claude_clients.get(meta["id"])
+                else:
+                    provider = self.provider
+                generation = provider.generation if provider and (meta.get("enrollment") or meta["provider"] == "claude") else self.generation
+            else:
+                provider, generation = self._connection(store)
             connected = bool(provider and provider.alive and meta["generation"] == generation)
             age = (datetime.now(UTC) - datetime.fromisoformat(meta["observed_at"])).total_seconds()
             can_send = (connected and model_ready(meta) and bool(meta["native_id"] or meta.get("requested_native_id")) and not snapshot["closed"]
@@ -563,9 +589,7 @@ class SessionController:
                 reason += " " + str(meta["error"])
             for decision in snapshot["decisions"]:
                 decision["can_answer"] = connected and decision["generation"] == generation and decision["state"] == "pending"
-                decision["request_id"] = next((row["request_id"] for row in snapshot["attempts"]
-                                               if (row["provider_input_id"] == decision["params"].get("provider_input_id")
-                                                   if meta["provider"] == "claude" else row["turn_id"] == decision["params"].get("turnId"))), None)
+                decision["request_id"] = decision_request(snapshot, decision)
             from .session_reading import dispositions
 
             snapshot.update(connected=connected, can_send=can_send,
@@ -575,16 +599,27 @@ class SessionController:
                             control_reason="" if can_send else reason)
             from .session_updates import supported
 
-            active = store.active(generation)
+            if request is not None:
+                candidates = [row for row in snapshot["attempts"] if row["generation"] == generation
+                              and row["state"] in ("admitting", "accepted", "executing", "uncertain")]
+                active = candidates[0] if len(candidates) == 1 else None
+                snapshot["configuration_held"] = not model_ready(meta)
+                snapshot["scoped_control_reason"] = ("Requested configuration held." if not model_ready(meta) else
+                                                      "Channel closed." if snapshot["closed"] else
+                                                      "Connection or native execution unverified." if not connected else
+                                                      "Use the selected request's retained facts separately from session activity.")
+            else:
+                active = store.active(generation)
             snapshot["update_target"] = (dict(request_id=active["request_id"], expected_turn_id=active["turn_id"],
                 native_id=meta["native_id"], observed_at=meta["observed_at"], source=meta["source"])
                 if connected and model_ready(meta) and supported(meta) and not snapshot["closed"] and active and active["turn_id"]
                 and active["state"] in ("accepted", "executing") and meta["state"] in ("running", "accepted", "decision needed") else None)
             views.append(snapshot)
-        try:
-            views.extend(self.history.snapshots())
-        except (OSError, ValueError, KeyError, sqlite3.Error) as exc:
-            self.errors.append(f"History registration unavailable: {exc}")
+        if not selection:
+            try:
+                views.extend(self.history.snapshots())
+            except (OSError, ValueError, KeyError, sqlite3.Error) as exc:
+                self.errors.append(f"History registration unavailable: {exc}")
         declarations = None
         if self.record:
             try:
@@ -619,6 +654,13 @@ class SessionController:
         for view in views:
             view["capabilities"] = describe(view["session"]["provider"])
             project(view, declarations)
+        if selection:
+            selected = views[0]
+            identity = dict(session_id=selected["session"]["id"])
+            if request is not None:
+                selected = exact_request(selected, request, declarations)
+                identity["request_id"] = request
+            return dict(project=str(self.project), generation=self.generation, selection=identity, sessions=[selected])
         claude = availability()
         providers = {name: describe(name) for name in ("codex", "claude")}
         providers["codex"].update(available=bool(shutil.which(self.command[0])), unavailable_reason="Codex executable unavailable.")

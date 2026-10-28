@@ -4,7 +4,7 @@ Use this directory to locate a task; its record owns the current state and next 
 
 ## Selected assignment
 
-- [Automatic exclusion of managed local state](local-state-exclusion.md): protect direct project-state writers without requiring kit initialization. [Provider parity](session-orchestration.md#selected-provider-parity), Codex model/effort selection, the picker and its [writing-outcome evidence](writing-outcome-evaluation.md#current-status) retain separate receipts.
+- [Managed session and exact-request status](session-orchestration.md#selected-session-and-request-status): combined CLI/HTTP selection and retained-fact projection. [Local-state exclusion](local-state-exclusion.md), [provider parity](session-orchestration.md#selected-provider-parity), Codex model/effort selection, the picker and its [writing-outcome evidence](writing-outcome-evaluation.md#current-status) retain separate receipts.
 
 ## Deferred and blocked
 

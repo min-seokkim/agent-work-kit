@@ -4,7 +4,7 @@ Choose the next unfinished outcome here. The owner selects implementation; an it
 
 ## Current planning focus
 
-The owner selected [automatic exclusion of managed project state](tasks/local-state-exclusion.md) after delivered [provider parity](tasks/session-orchestration.md#selected-provider-parity). A provider-neutral session/request status read follows that delivery under its separately finalized contract. Future provider operations must assess both providers and expose supported differences; earlier Codex-only candidates require reassessment before selection.
+The owner selected the combined [managed session and exact-request status](tasks/session-orchestration.md#selected-session-and-request-status) unit after delivered [local-state exclusion](tasks/local-state-exclusion.md) and [provider parity](tasks/session-orchestration.md#selected-provider-parity). Its receipt owns delivery; no later feature is selected. Future provider operations must assess both providers and expose supported differences; earlier Codex-only candidates require reassessment before selection.
 
 The provider-parity, conversation-picker and Codex creation-model/effort receipts are in [session orchestration](tasks/session-orchestration.md#current-status). The coordinator owns product decisions; the implementation session owns checks and delivery.
 

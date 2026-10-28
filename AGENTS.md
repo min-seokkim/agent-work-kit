@@ -1,5 +1,7 @@
 # Instructions for agents developing this repository
 
+Read your tool's local global instructions first if you have not read them in this session. The [common operating rules](https://github.com/min-seokkim/agent-dotfiles/blob/main/AGENTS.md) provide the shared baseline; this file defines repository-specific requirements.
+
 This file is for agents that change Agent Work Kit itself. Agents that use the kit in another project read the skills `awkit kit skills` writes in the user folder, `awkit kit guide NAME`, or a copied `agent-work-kit/` folder, starting with [kit/README.md](kit/README.md).
 
 ## What each document is for

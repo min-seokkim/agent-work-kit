@@ -2,7 +2,15 @@
 
 ## Current status
 
-The owner selected comparable Claude support for Codex capabilities and provider-independent controls. The current unit adds Claude creation model/effort requests and capability-based common interfaces. Codex picker, model selection and optional effort are delivered in `82e2cb3`, `d2ea950` and `c4d4ff8`. Current-work reading shipped in `a2a0c43`; its earlier verification limits remain in the history.
+The owner selected combined managed-session and exact-request status after delivered provider parity and local-state exclusion. The implementation adds shared CLI/HTTP selectors and a pure retained-snapshot projection for both providers. The receipt below owns its exact checks and delivery stage. Broader IDE attachment, foreign Claude enrollment and first-use connection remain separate candidates.
+
+## Selected session and request status
+
+The coordinator owns product scope; status_delivery owns implementation, checks and delivery. The authoritative scope is `.awkit/handoffs/session-scoped-status/implementation-contract.md`; request-assessment.md beside it supplies the consumed upfront judgment. This combined unit supersedes the earlier session-only/exact-request split and expired work-window gate. No further feature is selected.
+
+Use `awkit session --project . status --session NAME_OR_ID [--request M-007]`, or HTTP session/request query selectors. Local managed identities are distinct from native IDs and history aliases. Exact mode returns the original input and explicitly associated records, including valid reply-only descendants, without unrelated bodies or raw events. Request lifecycle stays separate from current session activity; commentary, cancellation intent and returned text do not establish semantic acceptance or interruption. Ambiguous associations remain explicit coverage limitations.
+
+Next action: consume `.awkit/handoffs/session-scoped-status/implementation/delivery.json` for the frozen check, published revision, Windows/Linux CI, exact installed alignment and cleanup before repeating work. Retained-provider fixtures cover selectors, scoped bodies, correlation, lifecycle, concurrent reads and no-mutation behavior. Native provider trials are unnecessary for this local projection and intended-user acceptance remains unverified.
 
 ## Selected provider parity
 
@@ -12,7 +20,7 @@ Use the common CLI/HTTP/form for optional creation model and effort requests. Cl
 
 The scoped native continuation used one fictional Claude conversation and retained three contextual replies across owned exact-ID recovery. Its requested alias and later canonical model remained separate; effort was not claimed as verified. The receipt retains interpreter and browser-cleanup harness failures and the final same-ID reading with zero new input. Agent-operated native/UI observations do not establish intended-user acceptance or every inference's configuration.
 
-Next action: read `.awkit/handoffs/provider-parity/implementation/delivery.json` for the exact checked revision, native fixture observations, optional installed Claude availability, CI, installation and cleanup before repeating work. The session-only status selector remains deferred behind this unit; its ready local contract is `.awkit/handoffs/session-scoped-status/session-only-option.md`. Exact-request projection and first-use connection remain later candidates requiring both-provider assessment. Prior failed capacity and cancelled-before-dispatch records remain unchanged.
+Provider parity is delivered. Read `.awkit/handoffs/provider-parity/implementation/delivery.json` for its checked revision, native fixture observations, optional installed Claude availability, CI, installation and cleanup before repeating work. The combined status unit above supersedes the older split-selector candidate. First-use connection remains a later candidate requiring both-provider assessment. Prior failed capacity and cancelled-before-dispatch records remain unchanged.
 
 The picker is implemented and exercised with owned fictional conversations: name selection, separate enrollment and a same-context follow-up passed; a different-project control stayed excluded. Independent review found no High or Major issue and one Minor reference word-limit failure, corrected after its frozen check. A later real-use correction distinguishes an already-ended turn from a lost connection. Session details also show retained model observations with their source and limits.
 

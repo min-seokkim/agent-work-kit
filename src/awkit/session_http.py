@@ -65,9 +65,13 @@ class SessionHandler(BaseHTTPRequestHandler):
         if path == "/":
             self._reply(200, files("awkit").joinpath("session_ui.html").read_bytes(), "text/html; charset=utf-8")
         elif path == "/api/status" and self._authorized():
+            from .session_reading import SelectorError, selectors
             try:
-                self._reply(200, dict(schema=1, result=self.server.controller.status()))
-            except (OSError, ValueError, sqlite3.Error) as exc:
+                query = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query, keep_blank_values=True)
+                self._reply(200, dict(schema=1, result=self.server.controller.status(**selectors(query))))
+            except SelectorError as exc:
+                self._reply(400, dict(schema=1, error=str(exc)))
+            except (OSError, ValueError, KeyError, TypeError, sqlite3.Error) as exc:
                 self._reply(503, dict(schema=1, error=str(exc)))
         elif path != "/api/status":
             self._reply(404, dict(schema=1, error="Unknown controller route."))
@@ -133,10 +137,15 @@ def endpoint(project):
 
 
 def request(project, action="status", args=None):
+    if action == "status":
+        from .session_reading import selectors
+        args = selectors({} if args is None else args)
     data = endpoint(project)
     headers = dict(Authorization="Bearer " + data["token"])
     body = None
     route = "/api/status"
+    if action == "status" and args:
+        route += "?" + urllib.parse.urlencode(args)
     if action != "status":
         route = "/api/command"
         headers["Content-Type"] = "application/json"

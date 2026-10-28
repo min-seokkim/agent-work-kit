@@ -86,7 +86,11 @@ Prevents: F24, F29.
 
 ## Read current work
 
-Use ordinary status or the selected conversation's assignment overview. Lead new assignments with the requested output, then add context and limits, so their recorded excerpts identify the work without a generated summary. Read the complete original through its link.
+Use status --session NAME_OR_ID for one managed conversation, or add --request M-007 for one original main-to-reviewer request. HTTP /api/status accepts the same session and request query selectors. Request selection requires an explicit local session name or ID; native conversation IDs and history-only aliases are unsupported. Omit both selectors for the existing complete view. Blank, repeated, unknown and unsupported selectors fail explicitly.
+
+Exact reads return one retained snapshot: the input, explicitly linked attempts, replies/rebuttals, cancellation, posts, updates and controls. Reply-only descendants follow stored links; independent inputs stay separate. Native disposition, direct replies and attempt-bound replies remain distinct. A stop request does not prove interruption, commentary reports progress and semantic acceptance stays unverified. Missing or ambiguous control associations appear in coverage limitations. Session activity is a separate observation; a queued input stays queued while another executes.
+
+Lead new assignments with the requested output, then context and limits, so recorded excerpts identify the work. Read the complete original through its link.
 
 current_work shows outstanding assignments, explicitly pending handling and the latest settled outcome; dispositions retains every request. Local reservation and submission intent are separate from native acknowledgement and a returned reply. Handling stays unrecorded unless an explicit declaration supplies its action and state; an unavailable declaration source stays unavailable. Stored channel requests describe history, not a native queue or current recipient.
 

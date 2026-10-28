@@ -84,6 +84,9 @@ class Pipeline:
 
     @contextmanager
     def locked(self):
+        from ..local_state import prepare
+        for name in ("lock.sqlite3", "last-run.json", "history.json"):
+            prepare(self.project, self.state / name)
         self.state.mkdir(parents=True, exist_ok=True)
         conn = sqlite3.connect(self.state / "lock.sqlite3", timeout=0)
         try:

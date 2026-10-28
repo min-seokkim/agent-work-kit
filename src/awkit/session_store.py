@@ -51,21 +51,23 @@ class SessionStore:
         try:
             if conn.execute("PRAGMA user_version").fetchone()[0] != 1:
                 raise ValueError("Managed channels require the existing core schema 1.")
-            self._metadata(conn)
+            metadata = self._metadata(conn)
         finally:
             conn.close()
-        self.channel = Channel(self.path)
+        self.channel = Channel(self.path, project=metadata["project"])
 
     @classmethod
     def create(cls, directory, *, name, project, responsibility, generation, permissions, provider="codex", enrollment=None):
         directory = Path(directory)
+        from .local_state import prepare
+        prepare(project, directory)
         directory.mkdir(parents=True, exist_ok=True)
         ident = str(uuid.uuid4())
         path = directory / f"{ident}.sqlite3"
         # Exclusive creation prevents replacement of an existing channel.
         with path.open("xb"):
             pass
-        channel = Channel(path)
+        channel = Channel(path, project=project)
         data = dict(id=ident, name=name, provider=provider, project=str(Path(project).resolve()),
                     responsibility=responsibility, native_id=None, generation=generation,
                     permissions=permissions, state="creating", observed_at=now(),

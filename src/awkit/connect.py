@@ -117,12 +117,15 @@ class Changes:
         before = path.read_bytes() if path.is_file() else None
         if before == data:
             return False
+        self._protect()
         key = self.key(path)
         entry = self.data["files"].get(key)
         if entry is None:
             entry = {"action": action, "before": sha(before), **extra}
             if before is not None:
                 backup = self.top / BACKUP / key.replace(":", "_").lstrip("/")
+                from .local_state import prepare
+                prepare(self.top, backup, bypass=not self.exclude)
                 backup.parent.mkdir(parents=True, exist_ok=True)
                 backup.write_bytes(before)
                 entry["backup"] = backup.relative_to(self.top).as_posix()
@@ -145,15 +148,20 @@ class Changes:
             return None
         from .kit_install import kit_source
         self.data.update(kit_source())
+        self._protect()
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        if self.exclude and (self.top / ".git").exists():
+        self.path.write_text(json.dumps(self.data, indent=2) + "\n", encoding="utf-8")
+        return self.path
+
+    def _protect(self):
+        if self.exclude:
             from .kit_hooks import exclude_local
+            from .local_state import validate_output
+            validate_output(self.top, self.path)
             entry = exclude_local(self.top, ".awkit/", BACKUP / "git-info-exclude")
             if entry:
                 self.data["excluded"] = entry
                 self.excluded_now = True
-        self.path.write_text(json.dumps(self.data, indent=2) + "\n", encoding="utf-8")
-        return self.path
 
 
 def _exclude_file(top):
@@ -595,10 +603,3 @@ def _unexclude(top, entry=None):
         from .kit_hooks import restore_exclude
         restore_exclude(top, entry)
         return
-    exclude = _exclude_file(top)
-    if exclude is None or not exclude.is_file():
-        return
-    lines = exclude.read_bytes().splitlines(keepends=True)
-    kept = [line for line in lines if line.strip() != b".awkit/"]
-    if len(kept) != len(lines):
-        exclude.write_bytes(b"".join(kept))

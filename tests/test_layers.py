@@ -200,7 +200,7 @@ class ProjectLayer(Isolated):
             hooks = StandInHooks()
             with mock.patch.object(connect, "run_kit_hooks", hooks):
                 connect.init(root)
-                self.assertEqual(exclude.read_bytes(), before + b".awkit/" + newline)
+                self.assertEqual(exclude.read_bytes(), before + b"/.awkit/" + newline)
                 connect.remove(root, keep_records=False)
             self.assertEqual(exclude.read_bytes(), before)
 

@@ -273,6 +273,8 @@ def done(folder, runs_root=None, session=None, mark=False, replace=True):
     if mark:
         if not replace and baseline_path.is_file():
             return {"ok": True, "status": "kept", "tree": tree}
+        from .local_state import prepare
+        prepare(top, baseline_path)
         baseline_path.parent.mkdir(parents=True, exist_ok=True)
         baseline_path.write_text(json.dumps({"tree": tree}), encoding="utf-8")
         return {"ok": True, "status": "marked", "tree": tree}

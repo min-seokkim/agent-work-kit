@@ -4,9 +4,9 @@ Choose the next unfinished outcome here. The owner selects implementation; an it
 
 ## Current planning focus
 
-The owner's latest direction prioritizes comparable Claude support for Codex capabilities and a provider-independent session interface. [Provider parity](tasks/session-orchestration.md#selected-provider-parity) now precedes the deferred single-session status selector. Future provider operations must assess both providers and expose supported differences; earlier Codex-only candidates require reassessment before selection.
+The owner selected [automatic exclusion of managed project state](tasks/local-state-exclusion.md) after delivered [provider parity](tasks/session-orchestration.md#selected-provider-parity). A provider-neutral session/request status read follows that delivery under its separately finalized contract. Future provider operations must assess both providers and expose supported differences; earlier Codex-only candidates require reassessment before selection.
 
-The conversation picker and Codex creation model/effort selection have delivery receipts in [session orchestration](tasks/session-orchestration.md#current-status). The coordinator owns product decisions; the implementation session owns checks and delivery. The focused single-session read follows provider parity when separately allocated; exact-request projection remains a later slice.
+The provider-parity, conversation-picker and Codex creation-model/effort receipts are in [session orchestration](tasks/session-orchestration.md#current-status). The coordinator owns product decisions; the implementation session owns checks and delivery.
 
 The guide revision supplies a real writing continuation. The README rewrite has a completed delivery receipt. Broader coordination, writing-benefit claims and presentation production retain their task-specific prerequisites.
 

@@ -16,6 +16,7 @@ from pathlib import Path
 from .channel_status import observe
 from .claude_session import ClaudeSession, availability, recover_local_results
 from .codex_session import CodexSession, ProviderError
+from .local_state import prepare
 from .session_capabilities import describe
 from .session_history import HistoryViews
 from .session_models import hold, verify_runtime
@@ -36,6 +37,7 @@ class SessionController:
         if not self.project.is_dir():
             raise ValueError("The selected project is not a directory.")
         self.directory = self.project / ".awkit/sessions"
+        prepare(self.project, self.directory / "controller.lock.sqlite3")
         self.directory.mkdir(parents=True, exist_ok=True)
         self.lock = sqlite3.connect(self.directory / "controller.lock.sqlite3", timeout=0)
         try:

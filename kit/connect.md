@@ -17,6 +17,14 @@ Hook settings created by this install stay out of ordinary commit candidates thr
 
 `awkit kit remove` takes out the `[kit]` table and, through `kit hooks --remove`, the hooks, their exclude rules and `rules.toml`; the `.awkit/` rule stays while check records remain. Unchanged original files are restored byte for byte, and later user edits stay. `kit remove --user` deletes the skills from the user folder. For a newer kit, update awkit and run `awkit kit skills` again: it regenerates the skills and leaves `checks.toml` as it is. With a folder copied by an earlier awkit (`kit init --copy`), the profile is `templates/project.md` in that folder; `awkit doctor` says when the folder can go.
 
+<a id="managed-project-state"></a>
+
+Commands writing a project's `.awkit/` establish effective clone-local Git exclusion without requiring `kit init`. They resolve Git's info/exclude path, append a project-relative anchored rule only when needed and verify actual ignoring. Shared `.gitignore` files and the index remain unchanged. Subdirectory projects protect their own managed directory. Concurrent awkit additions and restoration share a bounded lock; a busy lock is reported without deleting another writer's lock.
+
+An explicit writer stops before managed payload, SQLite or provider startup if inspection, exclusion or effective ignoring fails. Higher-priority `.gitignore` negations can prevent protection. An already tracked selected write target also stops the operation; resolve its tracking explicitly or select an untracked output. Unrelated tracked files remain untouched. Hooks report the storage error on stderr and skip persistence while retaining their host response and allow/block decision.
+
+Outside Git, writes remain usable. Per-call `--no-git` setup and user-home installation keep their existing policy. Arbitrary external outputs receive no ignore rule. Read-only status/report calls create no exclusion or state. Retained runtime records keep effective exclusion; setup removal restores only its recorded rule when the managed directory is removable. Runtime-added rules have no inferred setup ownership.
+
 Ask before touching credentials, remote targets or settings outside the project folder.
 
-Prevents: F7, F9, F11, F12, F29.
+Prevents: F7, F9, F11, F12, F24, F29.

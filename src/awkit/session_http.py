@@ -163,10 +163,13 @@ def request(project, action="status", args=None):
 def serve(project, command, *, port=0, record=None, claude_cli=None):
     if not 0 <= port <= 65535:
         raise ValueError("The loopback port must be between 0 and 65535.")
+    from .local_state import prepare
+    prepare(project, Path(project).resolve() / ".awkit/sessions/controller.json")
     controller = SessionController(project, command, record=record, claude_cli=claude_cli)
     server = None
     path = controller.directory / "controller.json"
     try:
+        prepare(controller.project, path)
         server = SessionServer(controller, port=port)
         data = dict(schema=1, project=str(controller.project), generation=controller.generation,
                     url=server.url, token=server.token, pid=os.getpid())

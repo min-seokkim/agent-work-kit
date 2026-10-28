@@ -31,6 +31,7 @@ class HistoryViews:
             return data["views"]
 
     def register(self, channel, main_name, reviewer_name, *, local_role="main", task=""):
+        from .local_state import prepare
         selected = Path(channel)
         path = (self.project / selected).resolve(strict=True)
         if not path.is_relative_to(self.project) or not path.is_file():
@@ -59,6 +60,7 @@ class HistoryViews:
                         raise ValueError("This channel alias already has different participant labels or a role mapping.")
                     return existing
             values.append(value)
+            prepare(self.project, self.path)
             self.path.parent.mkdir(parents=True, exist_ok=True)
             with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=self.path.parent,
                                              prefix="views-", suffix=".tmp", delete=False) as handle:

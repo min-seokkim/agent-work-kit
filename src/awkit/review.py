@@ -278,16 +278,8 @@ def exclude_locally(top, pattern):
 
     The exclude file stays on this machine, so the user's .gitignore and history are untouched. A
     pattern ending in "/" is a folder."""
-    probe = pattern + "x" if pattern.endswith("/") else pattern
-    if not _probe(top, "check-ignore", "-q", "--no-index", probe).returncode:
-        return
-    exclude = Path(git(top, "rev-parse", "--git-path", "info/exclude"))
-    exclude = exclude if exclude.is_absolute() else Path(top) / exclude
-    exclude.parent.mkdir(parents=True, exist_ok=True)
-    # Bytes, so the file keeps its own line endings: text mode would rewrite every line with CRLF on Windows.
-    data = exclude.read_bytes() if exclude.is_file() else b""
-    newline = b"\r\n" if b"\r\n" in data else b"\n"
-    exclude.write_bytes(data + (b"" if not data or data.endswith(b"\n") else newline) + pattern.encode("utf-8") + newline)
+    from .local_state import add_rule
+    add_rule(top, pattern.strip("/"), directory=pattern.endswith("/"))
 
 
 def accepted_root(repo):
@@ -323,6 +315,10 @@ def accept(repo, run_dir, label="accepted"):
     run = Path(run_dir).resolve()
     manifest = json.loads((run / "artifacts" / "manifest.json").read_text(encoding="utf-8"))
     root = accepted_root(repo)
+    from .local_state import prepare
+    prepare(toplevel(repo), root / label, recursive=True)
+    prepare(toplevel(repo), root.parent / "accept.lock.sqlite3")
+    prepare(toplevel(repo), root / f".{label}.{os.getpid()}.tmp", recursive=True)
     root.mkdir(parents=True, exist_ok=True)
     target = root / label
     record = {"schema": 1, "label": label, "accepted_at": stamp(), "run_dir": str(run),
@@ -467,6 +463,7 @@ def validate_settings(settings):
 def check(repo, revision, config, runs_root=None, keep=False):
     if revision != "HEAD" and not re.fullmatch(r"(?:[a-f0-9]{40}|[a-f0-9]{64})", revision):
         raise ValueError("Give the full ID of the Git commit to check, or HEAD.")
+    project = Path(repo).resolve()
     repo, subdir = located(repo)
     commit = git(repo, "rev-parse", "--verify", revision + "^{commit}")
     raw = Path(config).read_bytes()
@@ -474,9 +471,10 @@ def check(repo, revision, config, runs_root=None, keep=False):
     timeout, checks, setup, custom_env, patterns, required = validate_settings(settings)
     if runs_root is None:
         # Run records belong to the project they checked; .awkit is excluded from Git locally.
-        exclude_locally(repo, ".awkit/")
         runs_root = repo / ".awkit" / "reviews"
     root = Path(runs_root).resolve()
+    from .local_state import prepare
+    prepare(repo if runs_root == repo / ".awkit" / "reviews" else project, root)
     root.mkdir(parents=True, exist_ok=True)
     run = Path(tempfile.mkdtemp(prefix="review-", dir=root))
     worktree = run / "worktree"

@@ -501,22 +501,23 @@ def _load_state(root, session):
             "logged": state.get("logged") if isinstance(state.get("logged"), list) else []}
 
 
-def _prepare(root):
-    """Create .awkit and keep it out of Git on this machine the first time the runner writes there."""
+def _prepare(root, output=None):
+    """Skip unsafe persistence while leaving host allow/block decisions intact."""
+    from .local_state import ExclusionError, prepare
     folder = root / ".awkit"
-    if folder.is_dir():
-        return
-    folder.mkdir(parents=True, exist_ok=True)
-    if (root / ".git").exists():
-        try:
-            from .review import exclude_locally
-            exclude_locally(root, ".awkit/")
-        except Exception:  # noqa: BLE001 - the log must never stop a tool call
-            pass
+    try:
+        prepare(root, output)
+        folder.mkdir(parents=True, exist_ok=True)
+        return True
+    except (ExclusionError, OSError) as exc:
+        print(f"awkit hook: local state not saved: {exc}", file=sys.stderr)
+        return False
 
 
 def _save_state(root, session, state):
     path = _state_path(root, session)
+    if not _prepare(root, path):
+        return
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(f"{path.name}.{os.getpid()}.tmp")
     temporary.write_text(json.dumps(state), encoding="utf-8")
@@ -525,7 +526,8 @@ def _save_state(root, session, state):
 
 def log(root, entry):
     try:
-        _prepare(root)
+        if not _prepare(root, root / LOG_FILE):
+            return
         line = {"time": datetime.now(UTC).isoformat(timespec="seconds"), **entry}
         with open(root / LOG_FILE, "a", encoding="utf-8") as stream:
             stream.write(json.dumps(line, ensure_ascii=False) + "\n")
@@ -672,7 +674,6 @@ def _run(payload, root, skip=(), kit_rules=False):
         log(root, {"session": call.session or None, "event": call.event, "tool": call.tool or None,
                    "rule": firing.rule, "decision": firing.decision})
     if json.dumps(state, sort_keys=True) != before:
-        _prepare(root)
         _save_state(root, call.session, state)
     output = render(call.event, firings)
     return json.dumps(output, ensure_ascii=False) if output else ""

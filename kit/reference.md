@@ -50,7 +50,7 @@ The section goes at the end of `AGENTS.md` and of `CLAUDE.md` (or `.claude/CLAUD
 
 `session_words` counts the section in each instruction file the agent loads every session and the descriptions of awkit's skills, which agents keep in context to choose a skill; skill bodies load only when used.
 
-What awkit writes: `.awkit/`, the skill files it generated (marked `<!-- awkit:generated`), its section of the instruction files, its handlers in the hook settings and its line or hook in the Git hooks folder. Running `review` and `hook` also adds `.awkit/` to `.git/info/exclude`. Nothing else in the project is written; memory and record files (`MEMORY.md`, `.beads/`, `.planning/`, automatic memory) are only read. `tests/test_connect.py` checks this on every run.
+What awkit writes: `.awkit/`, the skill files it generated (marked `<!-- awkit:generated`), its section of the instruction files, its handlers in the hook settings and its line or hook in the Git hooks folder. Managed-state writers [verify clone-local exclusion](connect.md#managed-project-state). Nothing else in the project is written; memory and record files (`MEMORY.md`, `.beads/`, `.planning/`, automatic memory) are only read. `tests/test_connect.py` checks this on every run.
 
 ### Removing
 

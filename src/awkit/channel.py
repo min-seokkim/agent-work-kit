@@ -11,6 +11,8 @@ from contextlib import contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
 
+from .local_state import prepare
+
 # The failure catalogue entries (kit/failures.md) this command guards against: reviews of an unnamed
 # version, and rebuttals without end.
 PREVENTS = {"awkit channel": ("F17", "F18"), "awkit channel status": ("F29",)}
@@ -33,8 +35,9 @@ SCHEMA = """
 
 
 class Channel:
-    def __init__(self, path: Path):
+    def __init__(self, path: Path, *, project=None):
         self.path = Path(path)
+        self.project = Path.cwd() if project is None else Path(project)
         self._ready = False
 
     def _prepare(self, conn):
@@ -60,6 +63,15 @@ class Channel:
     @contextmanager
     def transaction(self, write=True):
         """Writers take the lock up front; readers use a shared lock and never block each other."""
+        needs_write = write or not self.path.is_file()
+        if not needs_write and not self._ready:
+            probe = sqlite3.connect(self.path.resolve().as_uri() + "?mode=ro", uri=True)
+            try:
+                needs_write = probe.execute("PRAGMA user_version").fetchone()[0] == 0
+            finally:
+                probe.close()
+        if needs_write:
+            prepare(self.project, self.path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         conn = sqlite3.connect(self.path, timeout=15, isolation_level=None)
         conn.row_factory = sqlite3.Row

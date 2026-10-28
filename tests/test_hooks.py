@@ -335,7 +335,8 @@ class UnexpectedErrorContext(Project):
         self.assertTrue(context["frames"])
 
     def test_unavailable_observations_do_not_replace_error_or_frames(self):
-        with (mock.patch.object(hooks.os, "getcwd", side_effect=OSError("unavailable")),
+        with (mock.patch.object(hooks, "os", mock.Mock(wraps=os)),
+              mock.patch.object(hooks.os, "getcwd", side_effect=OSError("unavailable")),
               mock.patch.object(hooks, "find_root", return_value=self.root),
               mock.patch.object(sys, "executable", None), mock.patch.object(sys, "version", 42),
               mock.patch.object(sys.modules["awkit"], "__file__", None),

@@ -101,12 +101,15 @@ class Record:
         before = path.read_bytes() if path.is_file() else None
         if before == data:
             return False
+        self._exclude()
         key = self.key(path)
         entry = self.data["files"].get(key)
         if entry is None:
             entry = {"action": action, "before": _sha(before)}
             if before is not None:
                 backup = self.top / BACKUP / key.replace(":", "_").lstrip("/")
+                from .local_state import prepare
+                prepare(self.top, backup)
                 backup.parent.mkdir(parents=True, exist_ok=True)
                 backup.write_bytes(before)
                 entry["backup"] = backup.relative_to(self.top).as_posix()
@@ -132,6 +135,8 @@ class Record:
         if not self.changed:
             return
         path = self.top / RECORD
+        from .local_state import prepare
+        prepare(self.top, path)
         path.parent.mkdir(parents=True, exist_ok=True)
         if not self.had_awkit:
             self.data["created_awkit"] = True
@@ -140,6 +145,8 @@ class Record:
     def _exclude(self):
         """Keep .awkit/ out of Git through .git/info/exclude, unless something ignores it already, keeping the
         file's bytes and line endings so `--remove` can restore them."""
+        from .local_state import validate_output
+        validate_output(self.top, self.top / RECORD)
         entry = exclude_local(self.top, ".awkit/", BACKUP / "git-info-exclude")
         if entry:
             self.data["excluded"] = entry
@@ -166,60 +173,23 @@ class Record:
 
 def exclude_local(top, pattern, backup):
     """Append one local ignore rule and record the bytes needed to undo just that addition."""
-    from .review import _probe
-    target = pattern.lstrip("/") + ("x" if pattern.endswith("/") else "")
-    if not _probe(top, "check-ignore", "-q", "--no-index", target).returncode:
+    from .local_state import add_rule, repository
+    root = repository(top)
+    if root is None:
         return None
-    exclude = _exclude_file(top)
-    if exclude is None:
-        return None
-    before = exclude.read_bytes() if exclude.is_file() else None
-    data = before or b""
-    newline = b"\r\n" if b"\r\n" in data else b"\n"
-    line = pattern.encode("utf-8") + newline
-    after = data + (b"" if not data or data.endswith(b"\n") else newline) + line
-    entry = {"pattern": pattern, "before": _sha(before), "after": _sha(after), "line": line.hex()}
-    if before is not None:
-        path = top / backup
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_bytes(before)
-        entry["backup"] = backup.as_posix()
-    exclude.parent.mkdir(parents=True, exist_ok=True)
-    exclude.write_bytes(after)
-    return entry
+    relative = (Path(top).resolve() / pattern.lstrip("/")).relative_to(root).as_posix()
+    return add_rule(root, relative, directory=pattern.endswith("/"), backup=backup, project=top)
 
 
 def restore_exclude(top, entry):
     """Restore unchanged bytes, or remove only the recorded rule while retaining later user edits."""
-    exclude = _exclude_file(top)
-    if not exclude or not exclude.is_file():
-        return
-    backup = top / entry["backup"] if entry.get("backup") else None
-    original = backup.read_bytes() if backup and backup.is_file() else None
-    current = exclude.read_bytes()
-    if _sha(current) == entry.get("after") and _sha(original) == entry.get("before"):
-        if original is None:
-            exclude.unlink()
-        else:
-            exclude.write_bytes(original)
-        return
-    lines = current.splitlines(keepends=True)
-    pattern = entry.get("pattern", ".awkit/").encode("utf-8")
-    own_line = bytes.fromhex(entry["line"]) if entry.get("line") else None
-    matches = [i for i, line in enumerate(lines) if line == own_line or (own_line is None and line.strip() == pattern)]
-    # Duplicate or edited rules cannot be attributed safely to awkit. Leave them for the user.
-    if len(matches) == 1:
-        del lines[matches[0]]
-        exclude.write_bytes(b"".join(lines))
+    from .local_state import restore
+    restore(top, entry)
 
 
 def _exclude_file(top):
-    from .review import git
-    try:
-        path = Path(git(top, "rev-parse", "--git-path", "info/exclude"))
-    except Exception:  # noqa: BLE001 - not a repository
-        return None
-    return path if path.is_absolute() else Path(top) / path
+    from .local_state import exclude_file, repository
+    return exclude_file(top) if repository(top) is not None else None
 
 
 def _top(folder):

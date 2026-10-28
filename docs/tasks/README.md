@@ -4,7 +4,7 @@ Use this directory to locate a task; its record owns the current state and next 
 
 ## Selected assignment
 
-- [Claude configuration and shared provider controls](session-orchestration.md#selected-provider-parity): comparable supported creation settings, truthful observations and capability-based controls. Delivered Codex model/effort selection, the picker and its [writing-outcome evidence](writing-outcome-evaluation.md#current-status) retain separate receipts.
+- [Automatic exclusion of managed local state](local-state-exclusion.md): protect direct project-state writers without requiring kit initialization. [Provider parity](session-orchestration.md#selected-provider-parity), Codex model/effort selection, the picker and its [writing-outcome evidence](writing-outcome-evaluation.md#current-status) retain separate receipts.
 
 ## Deferred and blocked
 

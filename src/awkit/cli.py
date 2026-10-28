@@ -177,6 +177,7 @@ def _parser():
     session_create.add_argument("name")
     session_create.add_argument("--responsibility", required=True)
     session_create.add_argument("--provider", choices=("codex", "claude"), default="codex")
+    session_create.add_argument("--model", help="explicit model ID for a new Codex conversation; omitted uses native defaults")
     session_create.add_argument("--sandbox", choices=("read-only", "workspace-write"), help="Codex scope (default: read-only)")
     session_create.add_argument("--permission-mode", choices=("default",), help="Claude native mode (default: default)")
     session_enroll = session_commands.add_parser("enroll", help="enroll an explicit idle local Codex thread; send no assignment")
@@ -686,6 +687,8 @@ def main(argv=None):
             if args.action == "create":
                 payload = dict(name=args.name, responsibility=args.responsibility, provider=args.provider,
                                sandbox=args.sandbox, permission_mode=args.permission_mode, project=str(args.project.resolve()))
+                if args.model is not None:
+                    payload["model"] = args.model
             elif args.action == "enroll":
                 payload = dict(name=args.name, thread_id=args.thread_id)
             elif args.action == "discover":

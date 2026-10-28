@@ -42,7 +42,7 @@ def submit(controller, ident, *, key, request_id, expected_turn_id, body, entry=
     def dispatch(rpc_id):
         nonlocal may_have_sent
         store.event(generation, "awkit/turnUpdateDispatch", dict(id=intent["id"], rpc_id=rpc_id,
-            threadId=meta["native_id"], turnId=expected_turn_id))
+            threadId=meta["native_id"], turnId=expected_turn_id), model_admission=True)
         may_have_sent = True
 
     outcome = dict(id=intent["id"])

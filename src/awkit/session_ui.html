@@ -64,8 +64,11 @@ a{color:var(--accent)}.small{font-size:.83rem}.hidden{display:none!important}
 <label>Project<select id="create-project"></select></label><label>Provider<select id="provider"><option value="codex">Codex</option><option value="claude">Claude</option></select></label><p id="provider-reason" class="reason"></p>
 <label>Name<input id="create-name" required maxlength="200" placeholder="Research"></label>
 <label>Responsibility<textarea id="responsibility" required maxlength="2000" placeholder="What this session is responsible for"></textarea></label>
+<div id="codex-model"><label>Model ID (optional)<input id="create-model" maxlength="200" placeholder="Leave empty for native defaults" aria-describedby="model-reason"></label>
+<p id="model-reason" class="reason">An explicit ID requires the verified Codex runtime. Model access is checked by the provider when used. This does not select reasoning effort or establish which model executes each turn.</p></div>
 <label id="codex-permissions">Requested permissions<select id="sandbox"><option value="read-only">Read only</option><option value="workspace-write">Write in this workspace</option></select></label>
 <p id="creation-permissions" class="reason">Approval requests go to this screen. The conversation shows the scope actually returned by Codex.</p>
+<p id="create-error" class="reason" role="alert"></p>
 <div class="dialog-actions"><button type="button" data-close="create-dialog">Cancel</button><button class="primary" id="create-submit">Create session</button></div></form></dialog>
 <dialog id="history-dialog"><form id="history-form"><h2>Open existing channel history</h2>
 <p class="subtle">Read a pairwise channel without connecting to its native sessions or changing its messages.</p>
@@ -264,7 +267,20 @@ function render() {
   byId('scope').textContent = 'To: ' + m.name + ' · Project: ' + state.project;
   byId('send-reason').textContent = !view.can_send ? view.control_reason : m.provider === 'claude' && m.state === 'waiting for idle' ? 'Work stays queued until Claude reports native idle. A result alone does not establish idle.' : 'Requests start when this conversation is observed idle. Informational notices do not start a turn.';
   const model = byId('model-observation'); model.replaceChildren();
-  if (m.history) model.append(node('p','No native model observation is available for stored channel history.','reason'));
+  if (m.model_selection && !m.enrollment && !m.history) {
+    const choice = m.model_selection;
+    model.append(node('p','Requested model: ' + choice.requested));
+    if (choice.latest) {
+      const observation = choice.latest;
+      model.append(node('p','Returned model: ' + (observation.model || 'Not recorded')),
+        node('p','Provider: ' + (observation.provider || 'Not recorded')),
+        node('p','Reasoning effort: ' + (observation.reasoning_effort == null ? 'Not recorded' : observation.reasoning_effort)),
+        node('p','Source: ' + observation.source,'reason'));
+    } else model.append(node('p','No native model configuration has been recorded.','reason'));
+    if (choice.state !== 'matched') model.append(node('p','Model selection is not confirmed. Work is held; inspect the recorded error before taking another action.','reason'));
+    model.append(node('p','Returned configuration does not verify model access or which model executed each turn.','reason'));
+  }
+  else if (m.history) model.append(node('p','No native model observation is available for stored channel history.','reason'));
   else if (typeof m.model !== 'string' || !m.model.trim() || m.enrollment) model.append(node('p','Model not recorded. No model is inferred from local settings or another conversation.','reason'));
   else {
     model.append(node('p',m.model));
@@ -386,6 +402,9 @@ function providerDraft() {
   byId('codex-permissions').hidden = claude;
   byId('codex-permissions').classList.toggle('hidden',claude);
   byId('sandbox').disabled = claude;
+  byId('codex-model').hidden = claude;
+  byId('codex-model').classList.toggle('hidden',claude);
+  byId('create-model').disabled = claude;
   byId('creation-permissions').textContent = claude ? 'Claude uses its native default approval mode and project instructions. Requests that need a decision appear here. This choice does not establish a Codex sandbox or Windows network restriction.' : 'Approval requests go to this screen. The conversation shows the scope actually returned by Codex.';
   byId('provider-reason').textContent = claude ? (state.capabilities.claude_runtime.reason || 'SDK available. Native login and this conversation are checked when connecting.') : (state.capabilities.codex_executable_available ? '' : 'Codex executable unavailable.');
 }
@@ -443,7 +462,7 @@ async function loadPicker(more = false) {
   }
 }
 byId('provider').onchange = () => { byId('sandbox').value = 'read-only'; providerDraft(); };
-byId('open-create').onclick = () => { providerDraft(); byId('create-dialog').showModal(); };
+byId('open-create').onclick = () => { byId('create-error').textContent = ''; providerDraft(); byId('create-dialog').showModal(); };
 byId('open-history').onclick = () => byId('history-dialog').showModal();
 byId('open-enroll').onclick = () => { byId('enroll-dialog').showModal(); loadPicker(); };
 byId('picker-refresh').onclick = () => loadPicker();
@@ -477,12 +496,14 @@ byId('update-form').onsubmit = async event => {
 };
 byId('create-form').onsubmit = async event => {
   event.preventDefault(); byId('create-submit').disabled = true;
+  byId('create-error').textContent = '';
   try {
     const provider = byId('provider').value;
     const permissions = provider === 'claude' ? {permission_mode:'default'} : {sandbox:byId('sandbox').value};
-    const result = await api('create',{name:byId('create-name').value,responsibility:byId('responsibility').value,project:state.project,provider,...permissions});
+    const model = provider === 'codex' && byId('create-model').value !== '' ? {model:byId('create-model').value} : {};
+    const result = await api('create',{name:byId('create-name').value,responsibility:byId('responsibility').value,project:state.project,provider,...permissions,...model});
     byId('create-dialog').close(); await refresh(); select(result.session.id); banner(result.session.error || 'Created ' + result.session.name + '.');
-  } catch (error) { banner(error.message); }
+  } catch (error) { byId('create-error').textContent = error.message; }
   finally { byId('create-submit').disabled = false; }
 };
 byId('history-form').onsubmit = async event => {

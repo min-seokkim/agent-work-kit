@@ -2,11 +2,19 @@
 
 ## Current status
 
-The owner selected autonomous feature development, real-use writing evaluation and independent-session collaboration. The current unit implements recognizable selection of an existing Codex conversation in the current project. Current-work reading shipped in `a2a0c43`; its earlier verification limits remain in the history.
+The owner selected autonomous feature development, real-use writing evaluation and independent-session collaboration. The picker is published in `82e2cb3`; its receipt owns CI and installation status. The next selected unit is explicit model selection for a newly created Codex conversation. Current-work reading shipped in `a2a0c43`; its earlier verification limits remain in the history.
 
 The picker is implemented and exercised with owned fictional conversations: name selection, separate enrollment and a same-context follow-up passed; a different-project control stayed excluded. Independent review found no High or Major issue and one Minor reference word-limit failure, corrected after its frozen check. A later real-use correction distinguishes an already-ended turn from a lost connection. Session details also show retained model observations with their source and limits.
 
-Next action: consult `.awkit/handoffs/session-picker/delivery.json` for the corrected snapshot, check, CI and installation stages before repeating delivery. The receipt distinguishes the independent review's snapshot from subsequent root-reviewed changes. Existing IDE attachment, cross-project discovery and Claude peer enrollment remain outside this unit; human acceptance is unverified.
+Model selection is implemented. A fictional native conversation retained its configured model, exact identity and context across two turns, restart and a third turn. Fixture checks cover held mismatches and unchanged default/enrollment behavior. Next action: consult `.awkit/handoffs/session-model-selection/delivery.json` for independent review, frozen checks, CI and installation stages before repeating delivery. `.awkit/handoffs/session-picker/delivery.json` retains the preceding unit's completed stages. Existing IDE attachment, cross-project discovery and Claude peer enrollment remain outside these units; human acceptance is unverified.
+
+Independent review of `89aad433` found a Major queue-dispatch race despite the passing full suite. The coordinator reproduced the missing admission guards with four regressions that fail on that snapshot, then added readiness checks after resume and inside SQLite claim/update-intent/RPC-admission transactions. The corrected focused suite passes; the receipt owns the second judgment, final frozen check and delivery status. The original finding and check remain retained. No later feature is included in that correction.
+
+## Selected creation model
+
+Base: `82e2cb3`. OriginalImplementation owns the remaining implementation, verification, independent-review coordination and delivery. The coordinator selects product scope; the original standard-tier builder supplied backend/tests, and ModelReviewer owns independent judgment. `.awkit/handoffs/session-model-selection/contract.md` defines metadata and checks; the source assessment is `.awkit/handoffs/session-picker/model-selection-research/contract.md`, returned as OriginalResearch R-013 for M-014. The ownership transfer is retained in `implementation-handoff.md` beside the delivery receipt.
+
+Accept an optional exact model ID only when creating a new Codex conversation on the verified runtime. Keep native defaults when omitted. Persist the request before creation and retain returned identity/configuration separately. Hold work on a missing or mismatched creation model, or resumed model/provider, without replay, replacement or forced correction. Resume and ordinary turns omit model-related overrides. Existing policy and identity checks remain; default/legacy records and enrollment receive no new model constraint. Do not add effort selection, a model catalogue, Claude selection or cost/per-turn execution claims.
 
 ## Selected conversation picker
 

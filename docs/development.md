@@ -1,6 +1,6 @@
 # Development
 
-Start here to resume work on Agent Work Kit. The latest selected assignment is [the Codex conversation picker](tasks/session-orchestration.md#selected-conversation-picker), with independent review and a real writing continuation. Read its next action and evidence before repeating a check, push or installation. The [roadmap](roadmap.md) retains broader unfinished outcomes.
+Start here to resume work on Agent Work Kit. The latest selected assignment is [Codex creation model selection](tasks/session-orchestration.md#selected-creation-model), following the published conversation picker and real writing continuation. Read its next action and evidence before repeating a check, push or installation. The [roadmap](roadmap.md) retains broader unfinished outcomes.
 
 ## Resume a task
 
@@ -23,7 +23,7 @@ Start here to resume work on Agent Work Kit. The latest selected assignment is [
 
 ## Current state
 
-The delivered product baseline is `a2a0c43`; `90e2557` refreshed development navigation. Version 0.3.0 remains unreleased. Shipped behavior is described in the [command reference](../kit/reference.md) and [session guide](../kit/sessions.md). The task directory distinguishes delivered units from unverified broader outcomes.
+Version 0.3.0 remains unreleased. Each task's receipt identifies its published commit, checks, CI and installation rather than treating an older planning baseline as the current product. Shipped behavior is described in the [command reference](../kit/reference.md) and [session guide](../kit/sessions.md). The task directory distinguishes delivered units from unverified broader outcomes.
 
 ## Maintaining records
 

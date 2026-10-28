@@ -17,6 +17,10 @@ from .channel_status import observe
 from .claude_session import ClaudeSession, availability, recover_local_results
 from .codex_session import CodexSession, ProviderError
 from .session_history import HistoryViews
+from .session_models import hold, verify_runtime
+from .session_models import observe as observe_model
+from .session_models import ready as model_ready
+from .session_models import validate as validate_model
 from .session_recovery import resume
 from .session_store import SessionStore, now
 
@@ -99,7 +103,8 @@ class SessionController:
             self.provider_error = str(exc)
             raise ProviderError(self.provider_error) from exc
 
-    def create(self, *, name, responsibility, project=None, provider="codex", sandbox=None, permission_mode=None):
+    def create(self, *, name, responsibility, project=None, provider="codex", sandbox=None, permission_mode=None, model=None):
+        validate_model(model, provider)
         if provider not in ("codex", "claude"):
             raise ValueError("Select Codex or Claude.")
         if provider == "claude" and (sandbox is not None or permission_mode not in (None, "default")):
@@ -134,6 +139,8 @@ class SessionController:
                            developer_instructions=f"Your assigned role is {name.strip()}. Responsibility: {responsibility.strip()}",
                            source="thread/start parameters", admission="pending")
             store.update(startup_context=startup)
+            if model is not None:
+                store.update(model_selection=dict(requested=model, creation=None, latest=None, state="pending"))
             if provider == "claude":
                 store.update(requested_native_id=str(uuid.uuid4()),
                              startup_context=dict(startup, source="Claude native preset with role append"))
@@ -143,10 +150,25 @@ class SessionController:
                     store.update(state="unknown", error=str(exc), source="Claude initialization unavailable", observed_at=now())
                 return store.snapshot()
             try:
-                result = self._owned_provider().call("thread/start", {
+                client = self._owned_provider()
+                if model is not None:
+                    verify_runtime(self, client)
+                params = {
                     "cwd": str(self.project), "sandbox": sandbox, "approvalPolicy": "on-request",
                     "approvalsReviewer": "user", "serviceName": "awkit",
-                    "developerInstructions": startup["developer_instructions"]})
+                    "developerInstructions": startup["developer_instructions"]}
+                if model is not None:
+                    params["model"] = model
+                result = client.call("thread/start", params)
+                if model is not None and not isinstance(result, dict):
+                    raise ValueError("Native creation returned no configuration observation; work remains held.")
+                if model is not None:
+                    # Preserve actual configuration even if identity/policy admission later fails.
+                    store.update(model=result.get("model"), model_provider=result.get("modelProvider"))
+                    try:
+                        observe_model(store, result, creation=True)
+                    except ValueError:
+                        pass  # Retain the returned identity through the existing safety checks first.
                 thread = result["thread"]
                 native_id = thread["id"]
                 if not isinstance(native_id, str) or not native_id:
@@ -166,7 +188,10 @@ class SessionController:
                 store.update(native_id=native_id, permissions=permissions, model=result.get("model"),
                              model_provider=result.get("modelProvider"), client=self.client, state=state,
                              observed_at=now(), source="thread/start response", error=None)
+                if model is not None and not model_ready(store.metadata()):
+                    raise ValueError("Returned Codex model/provider does not match the explicit creation selection; work remains held.")
             except (OSError, ValueError, KeyError, TypeError, ProviderError) as exc:
+                hold(store)
                 store.update(state="unknown", observed_at=now(), source="thread/start failure or uncertainty", error=str(exc),
                              client=self.client)
             return store.snapshot()
@@ -223,6 +248,8 @@ class SessionController:
     def send(self, ident, *, key, body, kind="question", entry="agent"):
         store = self._store(ident)
         meta = store.metadata()
+        if not model_ready(meta):
+            raise ValueError("The explicit model selection is unverified or mismatched; work remains held.")
         provider, generation = self._connection(store)
         if meta["generation"] != generation:
             raise ValueError("This conversation is reconnecting. Its saved history remains readable.")
@@ -280,6 +307,7 @@ class SessionController:
             try:
                 resume(self, store)
             except (OSError, ValueError, KeyError, TypeError, sqlite3.Error, ProviderError) as exc:
+                hold(store)
                 store.update(state="unknown", observed_at=now(), source="resume unavailable; history retained", error=str(exc))
             return store.snapshot()
 
@@ -299,6 +327,8 @@ class SessionController:
     def update_turn(self, ident, **args):
         from .session_updates import submit
 
+        if not model_ready(self._store(ident).metadata()):
+            raise ValueError("The explicit model selection is unverified or mismatched; work remains held.")
         return submit(self, ident, **args)
 
     def discover(self, *, cursor=None, limit=20):
@@ -325,6 +355,8 @@ class SessionController:
             for store in stores:
                 try:
                     meta = store.metadata()
+                    if not model_ready(meta):
+                        continue
                     if meta["provider"] == "claude":
                         if meta["id"] not in self.claude_clients and meta["id"] not in self._recovery_attempted:
                             self.resume(meta["id"])
@@ -342,7 +374,8 @@ class SessionController:
                         self.resume(meta["id"])
                         meta = store.metadata()
                     provider, generation = self._connection(store)
-                    if meta["generation"] != generation or meta["state"] not in ("idle", "waiting for idle") or not meta["native_id"]:
+                    if (not model_ready(meta) or meta["generation"] != generation
+                            or meta["state"] not in ("idle", "waiting for idle") or not meta["native_id"]):
                         continue
                     snapshot = store.snapshot()
                     attempted = {row["request_id"] for row in snapshot["attempts"]}
@@ -497,9 +530,10 @@ class SessionController:
             provider, generation = self._connection(store)
             connected = bool(provider and provider.alive and meta["generation"] == generation)
             age = (datetime.now(UTC) - datetime.fromisoformat(meta["observed_at"])).total_seconds()
-            can_send = (connected and bool(meta["native_id"] or meta.get("requested_native_id")) and not snapshot["closed"]
+            can_send = (connected and model_ready(meta) and bool(meta["native_id"] or meta.get("requested_native_id")) and not snapshot["closed"]
                         and meta["state"] in ("idle", "waiting for idle", "running", "accepted", "decision needed", "submitting"))
-            reason = ("This channel is closed." if snapshot["closed"] else
+            reason = ("The requested Codex model/provider is unverified or differs from its creation receipt. Work remains held."
+                      if not model_ready(meta) else "This channel is closed." if snapshot["closed"] else
                       "Conversation state is uncertain. Inspect unfinished work; reconnecting never resends uncertain work." if connected else
                       "Reconnecting the saved conversation, or connection unavailable. History remains readable.")
             if not can_send and meta.get("error"):
@@ -521,7 +555,7 @@ class SessionController:
             active = store.active(generation)
             snapshot["update_target"] = (dict(request_id=active["request_id"], expected_turn_id=active["turn_id"],
                 native_id=meta["native_id"], observed_at=meta["observed_at"], source=meta["source"])
-                if connected and supported(meta) and not snapshot["closed"] and active and active["turn_id"]
+                if connected and model_ready(meta) and supported(meta) and not snapshot["closed"] and active and active["turn_id"]
                 and active["state"] in ("accepted", "executing") and meta["state"] in ("running", "accepted", "decision needed") else None)
             views.append(snapshot)
         try:

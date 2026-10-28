@@ -11,6 +11,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from .channel import REQUESTS, Channel
+from .session_models import ready as model_ready
 
 SCHEMA = """
 CREATE TABLE awkit_session (singleton INTEGER PRIMARY KEY CHECK(singleton=1),
@@ -154,7 +155,7 @@ class SessionStore:
         """Reserve one idle request durably before the provider can see it."""
         with self.channel.transaction() as conn:
             data = self._metadata(conn)
-            if (data["generation"] != generation or data["state"] != "idle"
+            if (not model_ready(data) or data["generation"] != generation or data["state"] != "idle"
                     or not (data["native_id"] or data.get("requested_native_id"))):
                 return None
             if self._active(conn, generation) is not None:
@@ -206,12 +207,14 @@ class SessionStore:
                              (str(error), now(), row["id"]))
             self._update(conn, state="unknown", observed_at=now(), source="connection/RPC uncertainty", error=str(error))
 
-    def event(self, generation, method, params):
+    def event(self, generation, method, params, *, model_admission=False):
         payload = encoded(params)
         key = hashlib.sha256(encoded([generation, method, params]).encode()).hexdigest()
         item = params.get("item", {})
         turn = params.get("turn", {})
         with self.channel.transaction() as conn:
+            if model_admission and not model_ready(self._metadata(conn)):
+                raise ValueError("The explicit model selection is held; no native input was admitted.")
             conn.execute("INSERT OR IGNORE INTO awkit_events(key,generation,method,thread_id,turn_id,item_id,at,payload) "
                          "VALUES (?,?,?,?,?,?,?,?)", (key, generation, method, params.get("threadId"),
                                                      params.get("turnId", turn.get("id")), item.get("id"), now(), payload))
@@ -241,6 +244,8 @@ class SessionStore:
         self.channel._validate_post("main", "reviewer", "notice", body)
         with self.channel.transaction() as conn:
             meta = self._metadata(conn)
+            if not model_ready(meta):
+                raise ValueError("The explicit model selection is held; no update intent was recorded.")
             active = self._active(conn, generation)
             if (meta["provider"] != "codex" or meta["generation"] != generation or active is None
                     or active["state"] not in ("accepted", "executing") or not expected_turn_id
@@ -420,6 +425,8 @@ class SessionStore:
 
     def rpc_intent(self, generation, rpc_id):
         with self.channel.transaction() as conn:
+            if not model_ready(self._metadata(conn)):
+                raise ValueError("The explicit model selection is held; no native input was admitted.")
             row = self._active(conn, generation)
             if row is None or row["state"] != "admitting":
                 raise ValueError("No matching reserved send intent.")

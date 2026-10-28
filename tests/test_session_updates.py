@@ -104,10 +104,10 @@ class TurnUpdateTests(unittest.TestCase):
                 self.controller.update_turn("Worker", **self.args())
             call.assert_not_called()
         original_event = self.store.event
-        def failed_dispatch(generation, method, params):
+        def failed_dispatch(generation, method, params, **kwargs):
             if method == "awkit/turnUpdateDispatch":
                 raise sqlite3.OperationalError("injected pre-write RPC persistence failure")
-            return original_event(generation, method, params)
+            return original_event(generation, method, params, **kwargs)
         with patch.object(self.store, "event", side_effect=failed_dispatch), \
                 patch.object(self.controller.provider, "_write", wraps=self.controller.provider._write) as write:
             with self.assertRaises(sqlite3.Error):

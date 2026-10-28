@@ -4,7 +4,7 @@ Use this directory to locate a task; its record owns the current state and next 
 
 ## Selected assignment
 
-- [Codex conversation picker](session-orchestration.md#selected-conversation-picker): implementation, native continuation and independent review are recorded; consult its receipt for final delivery stages. The actual guide revision also supplies [writing-outcome evidence](writing-outcome-evaluation.md#current-status).
+- [Codex creation model selection](session-orchestration.md#selected-creation-model): add an explicit creation model and hold work on configuration mismatch. The preceding picker and its [writing-outcome evidence](writing-outcome-evaluation.md#current-status) retain separate receipts.
 
 ## Deferred and blocked
 

@@ -3,6 +3,8 @@
 from pathlib import Path
 
 from .codex_session import ProviderError
+from .session_models import observe as observe_model
+from .session_models import selected, verify_runtime
 from .session_store import now
 
 TERMINAL = {"completed", "failed", "interrupted"}
@@ -51,9 +53,13 @@ def resume(controller, store):
     if sandbox not in ("read-only", "workspace-write"):
         raise ValueError("Saved permission scope cannot be resumed safely by this controller.")
     provider = controller._owned_provider()
+    if selected(meta):
+        verify_runtime(controller, provider)
     result = provider.call("thread/resume", dict(threadId=native_id, cwd=str(controller.project),
         sandbox=sandbox, approvalPolicy=permissions["approvalPolicy"], approvalsReviewer=permissions["approvalsReviewer"], excludeTurns=True,
         developerInstructions=meta["startup_context"]["developer_instructions"]))
+    if selected(meta):
+        observe_model(store, result, creation=False)
     thread = result["thread"]
     if thread["id"] != native_id or Path(result["cwd"]).resolve() != controller.project:
         raise ValueError("Resume returned a different conversation or project. No replacement has been bound.")

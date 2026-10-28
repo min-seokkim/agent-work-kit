@@ -20,10 +20,136 @@ from awkit.sessions import SessionController
 
 class ModelRoutesTests(unittest.TestCase):
     @unittest.skipUnless(os.environ.get("AWKIT_UI_TEST") == "1", "Set AWKIT_UI_TEST=1 with Playwright and a browser")
+    def test_fresh_claude_only_choice_and_polling_keep_creation_inflight_lock(self):
+        from playwright.sync_api import expect, sync_playwright
+
+        with tempfile.TemporaryDirectory() as folder, patch("awkit.sessions.availability", return_value={"available": True}):
+            controller = SessionController(Path(folder), ["missing-fictional-codex"])
+            server = SessionServer(controller)
+            threading.Thread(target=server.serve_forever, daemon=True).start()
+            entered, release = threading.Event(), threading.Event()
+            calls = []
+
+            def create(**args):
+                calls.append(args)
+                entered.set()
+                if not release.wait(8):
+                    raise ValueError("Fixture release timed out")
+                raise ValueError("Fixture: no native creation performed")
+
+            controller.create = create
+            try:
+                with sync_playwright() as pw:
+                    browser = pw.chromium.launch(channel=os.environ.get("AWKIT_BROWSER_CHANNEL"), headless=True)
+                    try:
+                        page = browser.new_page()
+                        page.goto(server.url + "/#token=" + server.token)
+                        page.get_by_role("button", name="Create session", exact=True).first.click()
+                        expect(page.locator("#provider")).to_have_value("claude")
+                        expect(page.locator("#provider option[value=codex]")).to_have_js_property("disabled", True)
+                        expect(page.locator("#create-submit")).to_be_enabled()
+                        self.assertEqual(calls, [])
+                        page.locator("#create-name").fill("Available provider")
+                        page.locator("#responsibility").fill("Invented fixture")
+                        page.locator("#create-submit").click()
+                        self.assertTrue(entered.wait(2))
+                        page.wait_for_timeout(1800)  # The 1500ms status poll runs while creation is pending.
+                        expect(page.locator("#create-submit")).to_be_disabled()
+                        self.assertEqual(len(calls), 1)
+                        self.assertEqual(calls[0]["provider"], "claude")
+                        release.set()
+                        expect(page.locator("#create-error")).to_contain_text("no native creation performed")
+                        expect(page.locator("#create-submit")).to_be_enabled()
+                    finally:
+                        browser.close()
+            finally:
+                release.set()
+                server.shutdown()
+                server.server_close()
+                controller.close()
+
+    @unittest.skipUnless(os.environ.get("AWKIT_UI_TEST") == "1", "Set AWKIT_UI_TEST=1 with Playwright and a browser")
+    def test_single_codex_and_neither_available_have_explicit_creation_states(self):
+        from playwright.sync_api import expect, sync_playwright
+
+        with sync_playwright() as pw:
+            browser = pw.chromium.launch(channel=os.environ.get("AWKIT_BROWSER_CHANNEL"), headless=True)
+            try:
+                for codex_available in (True, False):
+                    with self.subTest(codex_available=codex_available), tempfile.TemporaryDirectory() as folder, patch(
+                            "awkit.sessions.availability", return_value={"available": False, "reason": "Claude dependency unavailable"}):
+                        controller = SessionController(folder, [sys.executable if codex_available else "missing-fictional-codex"])
+                        server = SessionServer(controller)
+                        threading.Thread(target=server.serve_forever, daemon=True).start()
+                        try:
+                            page = browser.new_page()
+                            page.goto(server.url + "/#token=" + server.token)
+                            if codex_available:
+                                page.get_by_role("button", name="Create session", exact=True).first.click()
+                                expect(page.locator("#provider")).to_have_value("codex")
+                                expect(page.locator("#provider option[value=claude]")).to_have_js_property("disabled", True)
+                                expect(page.locator("#create-submit")).to_be_enabled()
+                            else:
+                                expect(page.locator("#open-create")).to_be_disabled()
+                                expect(page.locator("#creation-availability")).to_contain_text("No session provider is available")
+                                expect(page.locator("#creation-availability")).to_contain_text("Claude dependency unavailable")
+                                expect(page.locator("#open-history")).to_be_enabled()
+                            self.assertFalse(controller._stores)
+                            self.assertIsNone(controller.provider)
+                            page.close()
+                        finally:
+                            server.shutdown()
+                            server.server_close()
+                            controller.close()
+            finally:
+                browser.close()
+
+    @unittest.skipUnless(os.environ.get("AWKIT_UI_TEST") == "1", "Set AWKIT_UI_TEST=1 with Playwright and a browser")
+    def test_saved_provider_and_draft_survive_availability_change_until_explicit_choice(self):
+        from playwright.sync_api import expect, sync_playwright
+
+        with tempfile.TemporaryDirectory() as folder, patch("awkit.sessions.availability", return_value={"available": True}):
+            controller = SessionController(folder, [sys.executable])
+            server = SessionServer(controller)
+            threading.Thread(target=server.serve_forever, daemon=True).start()
+            try:
+                with sync_playwright() as pw:
+                    browser = pw.chromium.launch(channel=os.environ.get("AWKIT_BROWSER_CHANNEL"), headless=True)
+                    try:
+                        page = browser.new_page()
+                        page.goto(server.url + "/#token=" + server.token)
+                        page.get_by_role("button", name="Create session", exact=True).first.click()
+                        page.locator("#provider").select_option("codex")
+                        page.locator("#create-model").fill("saved-codex-model")
+                        page.locator("#create-effort").fill("custom-codex-effort")
+                        controller.command = ["missing-fictional-codex"]
+                        expect(page.locator("#provider-reason")).to_contain_text("Codex executable unavailable")
+                        expect(page.locator("#provider")).to_have_value("codex")
+                        expect(page.locator("#create-submit")).to_be_disabled()
+                        expect(page.locator("#create-model")).to_have_value("saved-codex-model")
+                        page.locator("#provider").select_option("claude")
+                        expect(page.locator("#create-model")).to_have_value("")
+                        page.locator("#create-model").fill("sonnet")
+                        controller.command = [sys.executable]
+                        expect(page.locator("#provider option[value=codex]")).to_have_js_property("disabled", False)
+                        expect(page.locator("#provider")).to_have_value("claude")
+                        page.locator("#provider").select_option("codex")
+                        expect(page.locator("#create-model")).to_have_value("saved-codex-model")
+                        expect(page.locator("#create-effort")).to_have_value("custom-codex-effort")
+                        self.assertFalse(controller._stores)
+                        self.assertIsNone(controller.provider)
+                    finally:
+                        browser.close()
+            finally:
+                server.shutdown()
+                server.server_close()
+                controller.close()
+
+    @unittest.skipUnless(os.environ.get("AWKIT_UI_TEST") == "1", "Set AWKIT_UI_TEST=1 with Playwright and a browser")
     def test_claude_requested_and_later_reported_values_do_not_claim_matching_effort(self):
         from playwright.sync_api import expect, sync_playwright
 
-        with tempfile.TemporaryDirectory() as folder:
+        with tempfile.TemporaryDirectory() as folder, patch("awkit.sessions.availability", return_value={"available": True}):
             controller = SessionController(Path(folder), [sys.executable, "unused-provider.py"])
             server = SessionServer(controller)
             threading.Thread(target=server.serve_forever, daemon=True).start()
@@ -108,7 +234,7 @@ class ModelRoutesTests(unittest.TestCase):
     def test_creation_switch_preserves_defaults_and_held_receipt_is_visible(self):
         from playwright.sync_api import expect, sync_playwright
 
-        with tempfile.TemporaryDirectory() as folder:
+        with tempfile.TemporaryDirectory() as folder, patch("awkit.sessions.availability", return_value={"available": True}):
             controller = SessionController(Path(folder), [sys.executable, "unused-provider.py"])
             server = SessionServer(controller)
             threading.Thread(target=server.serve_forever, daemon=True).start()

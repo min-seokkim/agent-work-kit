@@ -43,7 +43,7 @@ a{color:var(--accent)}.small{font-size:.83rem}.hidden{display:none!important}
 </head>
 <body>
 <header><div class="brand">awkit <span class="subtle">/ sessions</span></div><div id="project" class="project">Connecting to the local project…</div>
-<div class="toolbar"><button id="open-history">Open channel history</button><button id="open-enroll">Use existing conversation</button><button id="open-create" class="primary">Create session</button></div></header>
+<div class="toolbar"><button id="open-history">Open channel history</button><button id="open-enroll" disabled>Use existing conversation</button><button id="open-create" class="primary" disabled>Create session</button></div><p id="creation-availability" class="reason" role="status" hidden></p></header>
 <div id="banner" class="banner" role="status" aria-live="polite"></div>
 <div id="pending" class="strip" aria-label="Project actions"></div>
 <main><aside><h2>Sessions &amp; histories</h2><div id="list" class="list"></div><p class="reason">Opening a conversation does not acknowledge or accept its messages.</p></aside>
@@ -208,7 +208,10 @@ function render() {
   if (!state) return;
   byId('project').textContent = 'Project · ' + state.project;
   const providers = state.capabilities.providers || {};
-  byId('open-create').disabled = !Object.values(providers).some(value => value.available && value.operations.create.supported);
+  const creationAvailable = Object.values(providers).some(value => value.available && value.operations.create.supported);
+  byId('open-create').disabled = !creationAvailable;
+  byId('creation-availability').hidden = creationAvailable;
+  byId('creation-availability').textContent = creationAvailable ? '' : 'No session provider is available. ' + Object.values(providers).map(value => value.unavailable_reason).filter(Boolean).join(' ');
   byId('open-enroll').disabled = !Object.keys(providers).length;
   for (const option of byId('provider').options) option.disabled = !providers[option.value] || !providers[option.value].available;
   providerDraft();
@@ -417,7 +420,13 @@ async function refresh() {
 }
 const creationDrafts = new Map();
 let draftProvider = byId('provider').value;
+let providerChosen = false, creating = false;
 function providerDraft() {
+  const providers = state && state.capabilities.providers || {};
+  if (!providerChosen && !byId('create-dialog').open && !providers[byId('provider').value]?.available) {
+    const available = [...byId('provider').options].find(option => providers[option.value]?.available && providers[option.value].operations.create.supported);
+    if (available) byId('provider').value = available.value;
+  }
   const provider = byId('provider').value;
   if (provider !== draftProvider) {
     creationDrafts.set(draftProvider,{model:byId('create-model').value,effort:byId('create-effort').value});
@@ -427,6 +436,7 @@ function providerDraft() {
   }
   const capability = state && state.capabilities.providers && state.capabilities.providers[provider];
   if (!capability) { byId('create-submit').disabled = true; byId('provider-reason').textContent = 'Provider capabilities unavailable. Restart the controller before creating a session.'; return; }
+  byId('create-submit').disabled = creating || !capability.available || !capability.operations.create.supported;
   const sandbox = capability.permissions.field === 'sandbox';
   byId('codex-permissions').hidden = !sandbox;
   byId('codex-permissions').classList.toggle('hidden',!sandbox);
@@ -504,9 +514,9 @@ async function loadPicker(more = false) {
     }
   }
 }
-byId('provider').onchange = () => providerDraft();
+byId('provider').onchange = () => { providerChosen = true; providerDraft(); };
 byId('enroll-provider').onchange = () => loadPicker();
-byId('open-create').onclick = () => { byId('create-error').textContent = ''; providerDraft(); byId('create-dialog').showModal(); };
+byId('open-create').onclick = () => { byId('create-error').textContent = ''; providerDraft(); providerChosen = true; byId('create-dialog').showModal(); };
 byId('open-history').onclick = () => byId('history-dialog').showModal();
 byId('open-enroll').onclick = () => { byId('enroll-dialog').showModal(); loadPicker(); };
 byId('picker-refresh').onclick = () => loadPicker();
@@ -539,18 +549,19 @@ byId('update-form').onsubmit = async event => {
   finally { byId('update-submit').disabled = false; }
 };
 byId('create-form').onsubmit = async event => {
-  event.preventDefault(); byId('create-submit').disabled = true;
+  event.preventDefault(); if (creating) return; creating = true; byId('create-submit').disabled = true;
   byId('create-error').textContent = '';
   try {
     const provider = byId('provider').value;
     const capability = state.capabilities.providers[provider];
+    if (!capability || !capability.available || !capability.operations.create.supported) throw new Error(capability && capability.unavailable_reason || 'Selected provider is unavailable. Choose an available provider explicitly.');
     const permissions = capability.permissions.field === 'sandbox' ? {sandbox:byId('sandbox').value} : {permission_mode:'default'};
     const model = capability.model.supported && byId('create-model').value !== '' ? {model:byId('create-model').value} : {};
     if (capability.effort.supported && byId('create-effort').value !== '') model.reasoning_effort = byId('create-effort').value;
     const result = await api('create',{name:byId('create-name').value,responsibility:byId('responsibility').value,project:state.project,provider,...permissions,...model});
     byId('create-dialog').close(); await refresh(); select(result.session.id); banner(result.session.error || 'Created ' + result.session.name + '.');
   } catch (error) { byId('create-error').textContent = error.message; }
-  finally { byId('create-submit').disabled = false; }
+  finally { creating = false; providerDraft(); }
 };
 byId('history-form').onsubmit = async event => {
   event.preventDefault(); byId('history-submit').disabled = true;

@@ -39,7 +39,8 @@ class TurnUpdateTests(unittest.TestCase):
         self.addCleanup(self.controller.close)
 
     def wait(self, predicate):
-        deadline = time.monotonic() + 5
+        # Provider RPCs have a 30s budget; allow their persisted events and queued follow-up to arrive.
+        deadline = time.monotonic() + 35
         while time.monotonic() < deadline:
             view = self.controller.status()["sessions"][0]
             if predicate(view):

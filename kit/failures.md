@@ -335,8 +335,8 @@ Generated from the guards' own declarations: each guide section ends with a "Pre
 | F3 Support claimed for environments that were not run | workflow.md Check a frozen version; checking.md The checked version | none | none |
 | F4 Documents describe behavior the code does not have | none | none | none |
 | F5 Documents point at things that do not exist | none | `awkit publish` | none |
-| F6 Numbers reported beyond what was measured | workflow.md Report; delegation.md 1. Objective | `awkit usage` | none |
-| F7 A convenience changes state nobody asked to change | connect.md; delivery.md Confirm it in its intended context | `awkit kit hooks`, `awkit kit init`, `awkit kit remove`, `awkit managed project state` | none |
+| F6 Numbers reported beyond what was measured | workflow.md Report; delegation.md 1. Objective | `awkit review storage`, `awkit usage` | none |
+| F7 A convenience changes state nobody asked to change | connect.md; delivery.md Confirm it in its intended context | `awkit kit hooks`, `awkit review storage`, `awkit kit init`, `awkit kit remove`, `awkit managed project state` | none |
 | F8 The user's unrelated work is bundled in | workflow.md Define the task | `awkit kit init --commit and kit example (commit only what they wrote)` | none |
 | F9 The agent's own identity replaces the repository's convention | connect.md | `awkit check commit`, `awkit kit hooks`, `awkit kit init --commit and kit example (commit only what they wrote)`, `awkit doctor`, `awkit hook` | `commit-identity (block)` |
 | F10 Irreversible publication prepared before it is justified | none | none | none |

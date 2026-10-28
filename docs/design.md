@@ -28,6 +28,14 @@ Assess a procedure by its contribution to the usable result as well as its burde
 
 The [method-selection review](history/tasks/writing-revision-workflow.md#method-selection-review) owns the writing-specific changes to consider and their acceptance conditions. This decision authorizes planning integration; shipped guidance and enforcement change through a scoped implementation with its own evidence.
 
+### Evidence storage and continuity across environments
+
+The owner authorized the coordinator to integrate the scope assessment and choose subsequent work. Storage efficiency is the first selected unit; the [task record](tasks/review-storage.md) distinguishes inspection from later changes to storage. Retain each run's identity, checked inputs, outcome, logs and artifact associations. Identical immutable payloads may be shared when readers can still retrieve and verify the exact evidence. Any such implementation must preserve existing evidence paths or provide an explicit compatible migration. Shared storage does not authorize deletion or retention expiry.
+
+The desktop execution host and laptop file-access client are the selected environments for later continuity evaluation. A task needs a stable project and request identity, a known execution host, corresponding paths and declared client capabilities. Inspect retained execution state after interruption before retrying a change. Apply the existing provider-parity decision and record unsupported operations explicitly; shared file access alone does not establish remote execution or safe database access.
+
+Shared-context discovery remains a candidate extension of existing scan/doctor commands. Link the configured shared entry point and the project's current task record, preserving their owners and locations. The existing decision against writing memory files remains in force. Separate current facts, historical activity and open handoffs when reporting what to read. Provider-memory divergence is an observation question until a recorded occurrence justifies a guard.
+
 ## Decisions
 
 | Decision | Detail |

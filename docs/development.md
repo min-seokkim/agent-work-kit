@@ -1,6 +1,6 @@
 # Development
 
-Start here to resume work on Agent Work Kit. The latest selected assignment is [managed session and exact-request status](tasks/session-orchestration.md#selected-session-and-request-status), following delivered local-state exclusion and provider parity. Read its next action and evidence before repeating a check, push or installation. The [roadmap](roadmap.md) retains broader unfinished outcomes.
+Start here to resume work on Agent Work Kit. The selected assignment is [review storage inspection](tasks/review-storage.md), chosen by the coordinator under the owner's delegated planning authority. The preceding [session-status receipt](tasks/session-orchestration.md#selected-session-and-request-status) retains its own delivery stages. Read the relevant task's next action and evidence before repeating a check, push or installation. The [roadmap](roadmap.md) retains broader unfinished outcomes.
 
 ## Resume a task
 

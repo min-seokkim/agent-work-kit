@@ -31,7 +31,15 @@ IDENTITY = ("-c", "user.name=Agent Work Kit", "-c", "user.email=awkit@localhost"
 # The failure catalogue entries (kit/failures.md) each command guards against.
 PREVENTS = {"awkit review snapshot": ("F17",), "awkit review check": ("F2", "F17"),
             "awkit review accept": ("F16",), "awkit review compare": ("F16",),
+            "awkit review storage": ("F6", "F7"),
             "awkit kit init --commit and kit example (commit only what they wrote)": ("F8", "F9")}
+
+
+def storage(repo, runs_root=None):
+    """Inventory existing run storage without creating records or changing Git state."""
+    from .review_storage import inspect
+    root = toplevel(repo) / ".awkit" / "reviews" if runs_root is None else Path(runs_root)
+    return inspect(root, default=runs_root is None)
 
 
 def _probe(folder, *args):

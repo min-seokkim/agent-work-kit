@@ -6,7 +6,7 @@ The owner selected combined managed-session and exact-request status after deliv
 
 ## Selected session and request status
 
-The coordinator owns product scope; status_delivery owns implementation, checks and delivery. The authoritative scope is `.awkit/handoffs/session-scoped-status/implementation-contract.md`; request-assessment.md beside it supplies the consumed upfront judgment. This combined unit supersedes the earlier session-only/exact-request split and expired work-window gate. No further feature is selected.
+The coordinator owns product scope; status_delivery owns implementation, checks and delivery. The authoritative scope is `.awkit/handoffs/session-scoped-status/implementation-contract.md`; request-assessment.md beside it supplies the consumed upfront judgment. This combined unit supersedes the earlier session-only/exact-request split and expired work-window gate. The next selected product unit is [review storage inspection](review-storage.md); this receipt continues to own only session-status delivery.
 
 Use `awkit session --project . status --session NAME_OR_ID [--request M-007]`, or HTTP session/request query selectors. Local managed identities are distinct from native IDs and history aliases. Exact mode returns the original input and explicitly associated records, including valid reply-only descendants, without unrelated bodies or raw events. Request lifecycle stays separate from current session activity; commentary, cancellation intent and returned text do not establish semantic acceptance or interruption. Ambiguous associations remain explicit coverage limitations.
 

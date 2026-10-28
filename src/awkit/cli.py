@@ -256,6 +256,9 @@ def _parser():
     isolated.add_argument("--config", type=Path, required=True, help="checks TOML (schema = 1) with setup, checks and artifacts")
     isolated.add_argument("--runs-root", type=Path, help="where run folders are kept (default: .awkit/reviews in the repository, excluded from Git locally)")
     isolated.add_argument("--keep", action="store_true", help="keep the worktree after a normal finish")
+    storage = review_commands.add_parser("storage", help="inspect existing review storage without changing files; exit 0 complete, 1 partial, 2 unavailable")
+    storage.add_argument("--runs-root", type=Path, help="existing run store (default: repository .awkit/reviews)")
+    storage.add_argument("--json", action="store_true", help="print observed sizes, metadata coverage and unverified hash accounting as JSON")
     confirm = review_commands.add_parser("verify", help="rehash a run's retained artifacts against its manifest; exit 0 when all match")
     confirm.add_argument("run_dir", type=Path, help="run folder printed by `review check`")
     keep = review_commands.add_parser("accept", help="keep a verified run's artifacts as the accepted version")
@@ -646,6 +649,12 @@ def main(argv=None):
             dirty = (_git_status(project_top(args.dir), COMMITTED) or []) if commit else []
             return _report_init(connect(args.dir, git=not args.no_git), commit, dirty)
         if args.group == "review":
+            if args.action == "storage":
+                from .review import storage
+                from .review_storage import text
+                report = storage(args.repo, args.runs_root)
+                print(json.dumps(report, ensure_ascii=False, indent=2) if args.json else text(report))
+                return 0 if report["complete"] else 1
             if args.action == "snapshot":
                 print(snapshot(args.repo, args.files))
                 return 0

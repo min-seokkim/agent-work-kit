@@ -100,13 +100,13 @@ From the three-layer change on, `kit init`, `kit skills` and `kit remove` work a
 
 ### What awkit writes
 
-awkit writes only to these places, and `WRITES` in `src/awkit/connect.py` lists them:
+Allowed destinations (`WRITES` in `src/awkit/connect.py`):
 
 - in the project: `.awkit/`; the `checks.toml` it created, or the `[kit]` table or keys it added to one; the `.awkit/` line in `.git/info/exclude`;
 - through `kit hooks`: `rules.toml`, its handlers in `.claude/settings.local.json` and `.codex/hooks.json`, exact local exclude rules for settings files it created, and its line or hook in Git's hooks folder;
 - in the user's home folder: `~/.claude/skills/awkit-*/`, `~/.agents/skills/awkit-*/` and `~/.awkit/`.
 
-Memory and record files (`MEMORY.md`, `.beads/`, `.planning/`, Claude Code's automatic memory) and the project's instruction files and own skills are only read. `tests/test_layers.py` runs `kit skills`, `kit init` and `kit remove` with the real `kit hooks` and fails when anything else changes, including the modification time of a read-only file, or when the project and home folder differ from before after removal.
+Memory (`MEMORY.md`, `.beads/`, `.planning/`, automatic memory), project instructions and existing skills are read-only. `tests/test_layers.py` exercises setup/removal with real hooks, checking unrelated files, read-only modification times and restoration of project/home folders.
 
 ## review
 
@@ -144,7 +144,7 @@ Git display quoting caused the non-ASCII fixture failure; spaced paths stayed in
 
 `awkit review [--repo DIR] check REVISION --config FILE [--runs-root DIR] [--keep]`
 
-`REVISION` is a full commit ID or `HEAD`. The runner adds a fresh worktree at that commit, runs the setup steps, then the checks, retains artifacts and removes the worktree. The configuration is read from outside the snapshot and its SHA-256 is recorded; it names programs to run, so it must come from a trusted source.
+`REVISION` is a full commit ID or `HEAD`. A fresh worktree runs setup, checks and artifact collection, then is removed. Configuration comes from outside the snapshot; its SHA-256 is recorded. Trust its source: it names programs to execute.
 
 ```toml
 schema = 1
@@ -165,15 +165,15 @@ cwd = "packages/sdk"             # relative to the base folder, "/" separators
 argv = ["python", "-m", "pytest", "-q"]
 ```
 
-- Step names are distinct. `argv` is an argument array and never goes through a shell.
+- Step names are distinct; `argv` is an argument array, without a shell.
 - `cwd` defaults to the base folder (see Git tracking). Absolute paths, `..`, `.git` and empty paths are refused before running. A `cwd` that is missing or resolves outside the worktree fails that step.
 - Placeholders in `argv` and `env` values: `{python}` (the interpreter running awkit, not necessarily the project's), `{worktree}`, `{run_dir}`, `{run_id}`. Steps also get `AWKIT_WORKTREE`, `AWKIT_RUN_DIR`, `AWKIT_RUN_ID`.
 - Artifact patterns are relative to the base folder and accept `*`, `?`, `**`. Matches are copied after all steps, even when checks failed. Links and paths outside the worktree are skipped and listed under `skipped_artifacts`. A `required_artifacts` pattern with no match turns a passing run into `failed`.
-- A timeout or interruption kills the step's whole process tree, records `uncertain` and keeps the worktree. Remote work the step started is not stopped.
-- A step passes when its command exits 0. The runner trusts that exit code: a test that was changed to pass (an assertion removed, a test skipped or deleted, an expected value edited) passes here too. Review the diff of test files separately; `check done` inherits the same limit.
+- Timeout/interruption kills the step's process tree, records `uncertain` and keeps the worktree. The runner does not stop remote work.
+- Exit 0 passes, including tests weakened through removed assertions, skipped/deleted tests or edited expectations. Review test diffs separately; `check done` shares this limit.
 - Worktrees share DBs, ports, sockets and devices. Allocate them per `{run_id}` in the project's commands.
 
-Run folder (default `.awkit/reviews/` in the repository, which `review check` excludes from Git locally when nothing ignores it yet; `--runs-root` puts it elsewhere):
+Run folder: repository `.awkit/reviews/`, locally excluded from Git when needed; override with `--runs-root`.
 
 | Path | Content |
 |---|---|
@@ -184,6 +184,16 @@ Run folder (default `.awkit/reviews/` in the repository, which `review check` ex
 
 `status` is `passed`, `failed`, `uncertain` (a timeout) or `cleanup-failed`. Exit codes: 0 passed, 1 failed or uncertain, 2 configuration or Git error.
 
+### storage
+
+`awkit review [--repo DIR] storage [--runs-root DIR] [--json]`
+
+Inspects direct `review-*` directories without writes, initialization, deletion or following linked/reparse descendants. Default: Git top-level `.awkit/reviews`; an explicit root needs no Git repository. A missing default returns `absent` without creating it.
+
+Text and schema-1 JSON report logical sizes by run/category, recorded statuses, largest runs, metadata coverage and errors. Manifest-declared, counted, unique-hash and duplicate-declaration bytes remain separate from observed sizes. Hashes are unverified; counts require valid matching identities, safe declarations and observed sizes. Conflicting hash sizes exclude every affected declaration. The live walk is non-atomic; estimates establish neither allocated disk use nor recoverable space.
+
+Exits: 0 complete/absent, 1 partial coverage, 2 missing explicit root or unavailable root/invocation. Failed review statuses alone do not fail inventory.
+
 ### verify, accept, compare
 
 | Command | Effect | Exit 0 when |
@@ -192,7 +202,7 @@ Run folder (default `.awkit/reviews/` in the repository, which `review check` ex
 | `review accept RUN_DIR [--label L]` | Verifies the run, then copies its artifacts to `.awkit/accepted/<label>/` (default `accepted`) with `accepted.json` recording run, commit, config hash and hashes. Replaces an earlier version with the same label. One accept at a time per repository (lock `.awkit/accept.lock.sqlite3`). | accepted |
 | `review compare [--label L] [--run RUN_DIR] [--diff] [--include-added]` | Compares each accepted file with the working tree, or with a run's artifacts given `--run`: `same`, `changed`, `missing`. `--diff` adds unified diffs for changed text files. | every file is `same` |
 
-Generated files absent from the working tree show `missing` with a `note`; use `--run`. Matching hashes establish unchanged bytes; content correctness needs review.
+Absent generated files show `missing` with a `note`; use `--run`. Hash equality proves unchanged bytes, not correctness.
 
 `--include-added` requires `--run`: `added_artifacts` lists candidate-manifest paths absent from acceptance, with source/scope. It excludes unrecorded files, verifies no content and adds no diffs. Invalid/unavailable inventory exits 2. Additions leave `unchanged` and exits 0/1 determined by accepted files. Default output remains unchanged.
 
@@ -207,7 +217,7 @@ Checks meant to run without anyone choosing to: from a Git hook, a Claude Code h
 | `check writing-compare BASELINE CANDIDATE PATH... [--repo DIR] [--json]` | Compares complete-file findings at two explicit Git revisions. Same-path correspondence, source changes and both full reports remain available; existing errors still block. | 0 no candidate errors, 1 candidate errors, 2 invalid/unavailable evidence |
 | `check done [--session ID] [--mark] [--runs-root DIR] [--hook]` | `--mark` records the current state (HEAD plus every working-tree change and non-ignored untracked file, excluding `.awkit/` runtime state) as the session's starting point in `.awkit/done/`. User settings follow Git's tracked and ignored paths. Without it: passes when nothing changed since that point (or since HEAD when none was recorded), or when a passing `review check` run checked exactly the current state; otherwise lists the changed files. Runs are looked up in `--runs-root`, `.awkit/reviews` and the system temp folder older versions used. | 0 yes, 1 no |
 
-The text summaries state their scope. `check writing` checks complete files and does not classify findings as existing or introduced; it does not inspect content or rendering. Done matches repository states, not task ownership or check coverage: a task-only snapshot can pass while other changes keep the repository state unmatched. An unchanged state establishes no verification. A matching passing run establishes success of its configured commands, not document review. Exit codes and JSON fields do not change with these explanations.
+Summaries state their scope. `check writing` checks complete files without classifying existing/introduced findings or inspecting content/rendering. Done matches repository states, not ownership or coverage: task-only snapshots can pass while unrelated changes remain unmatched. Unchanged state establishes no verification. Passing runs establish configured-command success, not document review. These explanations change no exit codes or JSON fields.
 
 With `--hook`, `check done` reads the Claude Code hook input from stdin: SessionStart marks the starting point (a resumed or compacted session keeps the one it has), Stop exits 2 with the reason on stderr so the agent continues, and a second stop in the same turn (`stop_hook_active`) passes, so the agent can report work it could not check and say why.
 

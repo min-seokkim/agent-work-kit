@@ -4,7 +4,18 @@
 
 Deferred broader outcome. Channel status and relationship declarations have shipped; managed-session implementation continues in [session orchestration](session-orchestration.md). Existing IDE attachment and general recovery remain unfinished.
 
-Next action: Use the session record for delivered controls and the conditions for another selected unit. Keep receipt and remote-transport extensions conditional on observed need.
+Next action: complete the selected storage unit first. Then consider the two-environment evaluation below when selecting a continuation trial; the session record owns existing controls and native coverage. Remote transport implementation remains unselected.
+
+## Two-environment evaluation
+
+The coordinator selected an existing desktop execution host and laptop file-access client as the two real evaluation targets for roadmap items 10 and 11. This is a trial direction, not a claim of verified client support or a transport implementation assignment. The private scope assessment is retained locally under `.awkit/handoffs/scope-input/`.
+
+- Identify one project through its canonical host path and the client's mapped path. Git, databases and checks execute on the canonical host under the existing environment policy.
+- Evaluate Claude and Codex separately. Record whether a client can read, edit, execute remotely or only exchange files; verify actual capabilities before choosing its integration.
+- Retain request identity, source revision, artifacts, replies and version-mismatch handling across an interruption. Query whether the original operation ran before authorizing a retry.
+- Use an existing authorized connection and a disposable trial task. Preserve user credentials and unrelated work. Establish the expected result and cleanup before any mutation trial.
+
+Shared-context entry-point discovery is a separate roadmap candidate. Existing project records remain authoritative, and awkit does not gain permission to write shared memory.
 
 ## Resume inputs
 

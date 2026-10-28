@@ -4,7 +4,7 @@ Use this directory to locate a task; its record owns the current state and next 
 
 ## Selected assignment
 
-- [Managed session and exact-request status](session-orchestration.md#selected-session-and-request-status): combined CLI/HTTP selection and retained-fact projection. [Local-state exclusion](local-state-exclusion.md), [provider parity](session-orchestration.md#selected-provider-parity), Codex model/effort selection, the picker and its [writing-outcome evidence](writing-outcome-evaluation.md#current-status) retain separate receipts.
+- [Review storage inspection](review-storage.md): read-only measured inventory and qualified duplicate-payload estimates, selected under delegated planning authority. The implementation session owns checks and delivery. [Managed session and exact-request status](session-orchestration.md#selected-session-and-request-status), [local-state exclusion](local-state-exclusion.md) and [provider parity](session-orchestration.md#selected-provider-parity) retain separate receipts.
 
 ## Deferred and blocked
 

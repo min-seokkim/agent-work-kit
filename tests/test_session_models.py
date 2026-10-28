@@ -365,7 +365,7 @@ class SessionModelTests(unittest.TestCase):
             self.make_controller()
             self.controller._worker.join(timeout=5)
             self.assertFalse(self.controller._worker.is_alive())
-        entered, release = threading.Event(), threading.Event()
+        resumed_ids = []
         original_call, original_resume = self.provider.call, self.controller.resume
         reads = []
 
@@ -379,33 +379,29 @@ class SessionModelTests(unittest.TestCase):
 
         def resumed(ident):
             result = original_resume(ident)
-            entered.set()
-            if not release.wait(5):
-                raise AssertionError("Callback fixture barrier timed out")
-            return result
-
-        self.provider.call = call
-        self.provider.resume_overrides = dict(thread=dict(id=meta["native_id"], status=dict(type="active")))
-        self.controller.resume = resumed
-        try:
-            self.controller._worker = threading.Thread(target=dispatch, args=(self.controller,), daemon=True)
-            self.controller._worker.start()
-            self.assertTrue(entered.wait(5))
-            store = self.controller._store(meta["id"])
+            store = self.controller._store(ident)
+            self.assertEqual(store.metadata()["error"], "Fictional reconciliation failure")
+            self.assertEqual(reads, [True])
             self.assertEqual(store.metadata()["model_selection"]["state"], "held")
             self.native["holding"] = False
             self.controller._message(dict(method="turn/completed", params=dict(threadId=meta["native_id"],
                 turn=dict(id=turn_id, status="completed", items=[dict(type="agentMessage", id="late", text="Old reply")]))))
             self.assertEqual(store.metadata()["state"], "idle")
-            release.set()
-            time.sleep(.8)  # Observe the resumed iteration and subsequent queue polls.
-            snapshot = store.snapshot()
-            self.assertEqual(snapshot["session"]["model_selection"]["state"], "held")
-            self.assertEqual(len(snapshot["attempts"]), 1)
-            self.assertIn(queued, snapshot["unanswered"])
-            self.assertNotIn("turn/start", [method for method, _ in self.provider.calls])
-        finally:
-            release.set()
+            resumed_ids.append(ident)
+            return result
+
+        self.provider.call = call
+        self.provider.resume_overrides = dict(thread=dict(id=meta["native_id"], status=dict(type="active")))
+        self.controller.resume = resumed
+        # Drive recovery and subsequent queue polls at the exact callback boundary.
+        with patch.object(self.controller._stop, "wait", side_effect=[False, False, False, True]):
+            dispatch(self.controller)
+        self.assertEqual(resumed_ids, [meta["id"]])
+        snapshot = self.controller._store(meta["id"]).snapshot()
+        self.assertEqual(snapshot["session"]["model_selection"]["state"], "held")
+        self.assertEqual(len(snapshot["attempts"]), 1)
+        self.assertIn(queued, snapshot["unanswered"])
+        self.assertNotIn("turn/start", [method for method, _ in self.provider.calls])
 
     def test_claim_reads_hold_in_the_same_sqlite_transaction_as_reservation(self):
         meta = self.create(model="fictional")

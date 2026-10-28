@@ -6,6 +6,7 @@ import time
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import patch
 
 from awkit.codex_enrollment import EXECUTABLE_SHA256, VERSION
 from awkit.codex_session import ProviderError, ProviderRejected
@@ -358,7 +359,12 @@ class SessionModelTests(unittest.TestCase):
         turn_id = active["attempts"][0]["turn_id"]
         queued = self.controller.send(meta["id"], key="queued", body="Must stay queued")["message"]["id"]
         self.controller.close()
-        self.make_controller()
+        # Install the recovery fixtures before allowing the restarted worker to poll.
+        dispatch = SessionController._dispatch
+        with patch.object(SessionController, "_dispatch"):
+            self.make_controller()
+            self.controller._worker.join(timeout=5)
+            self.assertFalse(self.controller._worker.is_alive())
         entered, release = threading.Event(), threading.Event()
         original_call, original_resume = self.provider.call, self.controller.resume
         reads = []
@@ -382,6 +388,8 @@ class SessionModelTests(unittest.TestCase):
         self.provider.resume_overrides = dict(thread=dict(id=meta["native_id"], status=dict(type="active")))
         self.controller.resume = resumed
         try:
+            self.controller._worker = threading.Thread(target=dispatch, args=(self.controller,), daemon=True)
+            self.controller._worker.start()
             self.assertTrue(entered.wait(5))
             store = self.controller._store(meta["id"])
             self.assertEqual(store.metadata()["model_selection"]["state"], "held")

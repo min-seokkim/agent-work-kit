@@ -9,7 +9,7 @@ Use this directory to locate a task; its record owns the current state and next 
 ## Deferred and blocked
 
 - [Writing outcomes](writing-outcome-evaluation.md#current-status): evaluate the selected real continuation; lasting adherence and causal kit benefit remain unverified.
-- [Session orchestration](session-orchestration.md#current-status): existing IDE attachment, broader discovery and Claude peer enrollment remain unfinished beyond the selected picker.
+- [Session orchestration](session-orchestration.md#current-status): existing IDE attachment, broader discovery and Claude peer enrollment remain unassigned candidates after the delivered session units.
 - [Independent-session collaboration](independent-session-collaboration.md#current-status): retain the broader coordination outcome and conditional transport/receipt work; use the session record for implementation state.
 - [Planning-role drift](planning-role-drift.md#current-status): diagnosis is complete; observe actual role adherence at an ordinary delivery and continuation.
 - [Connection diagnostics](connection-diagnostics.md#current-status): shipped corrections are retained; the historical automatic-hook cause needs the actual failing invocation.

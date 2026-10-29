@@ -2,7 +2,7 @@
 
 ## Current status
 
-Deferred broader outcome. Channel status and relationship declarations have shipped; managed-session implementation continues in [session orchestration](session-orchestration.md). Existing IDE attachment and general recovery remain unfinished.
+Deferred broader outcome. Channel status and relationship declarations have shipped; managed-session implementation is recorded in [session orchestration](session-orchestration.md). Existing IDE attachment and general recovery remain unfinished.
 
 Next action: complete the selected storage unit and establish its bounded adoption plan. The next continuity evaluation should reuse existing host execution and portable artifact export before proposing transport code. The session record owns existing controls and native coverage; remote transport implementation remains unselected.
 

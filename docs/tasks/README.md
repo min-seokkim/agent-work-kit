@@ -4,7 +4,7 @@ Use this directory to locate a task; its record owns the current state and next 
 
 ## Selected assignment
 
-- [Artifact selection preview](artifact-selection-preview.md): implementation has independent code acceptance; its receipt owns integration checks and delivery. The next planning decision is the prepared current-manuscript collection proposal. This supports [evidence-storage adoption](shared-artifact-storage.md#adoption-after-technical-delivery), whose broader required outputs and retrieval needs remain undecided. The shared-storage feature is delivered in `ac10928`; no other-project configuration change is assigned.
+- [Evidence-storage adoption](shared-artifact-storage.md#adoption-after-technical-delivery): the next owner decision is the prepared current-manuscript collection proposal. Broader required outputs and retrieval needs remain undecided. Shared storage and selection preview are delivered; no further implementation or other-project configuration change is assigned.
 
 ## Deferred and blocked
 
@@ -20,6 +20,7 @@ Use this directory to locate a task; its record owns the current state and next 
 
 | Record | Completed scope; remaining limits stay in the record |
 |---|---|
+| [Artifact selection preview](artifact-selection-preview.md#current-status) | Read-only current selection and coverage reporting delivered in `83db970`; CI, exact installation and authorized target observation passed. Configuration repair and storage adoption remain separate owner decisions. |
 | [Shared artifact storage](shared-artifact-storage.md#current-status) | Opt-in shared payloads, compatible readers, ordinary export and inventory delivered in `ac10928`; CI and exact installation passed. Existing history is unchanged; project adoption remains a planning decision. |
 | [README rewrite](documentation-restructure.md#current-status) | Both language versions rewritten within their existing sections; the receipt records checks, CI and exact installation. |
 | [Writing revision workflow](writing-revision-workflow.md#current-status) | W0 guidance, W1 public review/revision package and W2 optional public continuation route. |

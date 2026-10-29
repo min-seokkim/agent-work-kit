@@ -335,12 +335,12 @@ Generated from the guards' own declarations: each guide section ends with a "Pre
 | F3 Support claimed for environments that were not run | workflow.md Check a frozen version; checking.md The checked version | none | none |
 | F4 Documents describe behavior the code does not have | none | none | none |
 | F5 Documents point at things that do not exist | none | `awkit publish` | none |
-| F6 Numbers reported beyond what was measured | workflow.md Report; delegation.md 1. Objective | `awkit review storage`, `awkit usage` | none |
-| F7 A convenience changes state nobody asked to change | connect.md; delivery.md Confirm it in its intended context | `awkit kit hooks`, `awkit review check`, `awkit review storage`, `awkit review export`, `awkit kit init`, `awkit kit remove`, `awkit managed project state` | none |
+| F6 Numbers reported beyond what was measured | workflow.md Report; delegation.md 1. Objective | `awkit review storage`, `awkit review preview`, `awkit usage` | none |
+| F7 A convenience changes state nobody asked to change | connect.md; delivery.md Confirm it in its intended context | `awkit kit hooks`, `awkit review check`, `awkit review storage`, `awkit review preview`, `awkit review export`, `awkit kit init`, `awkit kit remove`, `awkit managed project state` | none |
 | F8 The user's unrelated work is bundled in | workflow.md Define the task | `awkit kit init --commit and kit example (commit only what they wrote)` | none |
 | F9 The agent's own identity replaces the repository's convention | connect.md | `awkit check commit`, `awkit kit hooks`, `awkit kit init --commit and kit example (commit only what they wrote)`, `awkit doctor`, `awkit hook` | `commit-identity (block)` |
 | F10 Irreversible publication prepared before it is justified | none | none | none |
-| F11 A guess is presented as a finding | workflow.md Do the work; connect.md; checking.md The checked version; writing.md Before writing | `awkit doctor`, `awkit kit scan`, `awkit hook` | none |
+| F11 A guess is presented as a finding | workflow.md Do the work; connect.md; checking.md The checked version; writing.md Before writing | `awkit review preview`, `awkit doctor`, `awkit kit scan`, `awkit hook` | none |
 | F12 Scope grows before anything is measured | connect.md | `awkit kit scan`, `awkit kit init`, `awkit kit skills` | none |
 | F13 AI writing patterns in English | workflow.md Report; writing.md Write plainly | `awkit check writing`, `awkit check writing-compare`, `awkit hook` | `writing-check (verify)` |
 | F14 Korean that reads like a translation, including from an agent that wrote the rules | korean-writing.md Writing process; korean-writing.md Tone and terminology; korean-writing.md Revise sentences | `awkit check writing`, `awkit check writing-compare`, `awkit hook`, `awkit hook reply` | `writing-check (verify)`, `korean-writing (inject)`, `writing-request (inject)`, `writing-reply (verify)` |

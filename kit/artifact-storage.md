@@ -2,6 +2,22 @@
 
 Use this reference when repeated checks retain large identical artifacts or when moving review evidence. Start with `awkit review storage` to inspect existing logical sizes. Storage selection changes future checks; it does not reduce existing copied history.
 
+## Preview current selection
+
+Run `awkit review [--repo DIR] preview --config PATH [--json]` before setup and checks. Explicit base and configuration paths resolve to their canonical locations once, including an old linked location; artifact paths are relative to that base, as for `check`. The command reads configuration and filesystem metadata without executing steps, hashing artifact contents or creating a snapshot, run or store.
+
+Schema-1 JSON identifies the base, current HEAD, configuration hash and storage mode. It lists distinct selected paths, stat sizes, logical-byte totals, optional/required pattern associations, current unmatched patterns, skipped paths and observation errors. Both pattern lists contribute to selection. Text reports pattern counts and the 20 largest selected files; JSON retains all paths.
+
+Ordinary portable paths follow the collector's glob and mode rules. Preview avoids linked/reparse branches and reports partial coverage where descendant matches cannot be observed safely. Nonportable paths, enumeration errors and metadata errors also make coverage and totals partial. Collectors retain their existing traversal rules.
+
+Current files may be untracked or ignored and absent from a later snapshot. Setup and checks can generate or change files; currently unmatched required patterns do not predict failure. These counts establish neither evidence completeness, consumer compatibility, content sharing nor allocated disk space.
+
+This live observation is not an atomic tree snapshot and may miss concurrent additions or changes. Complete means no observation error or limitation was detected; detected unsafe changes remain partial.
+
+Exits: 0 complete observation, including unmatched required patterns; 1 partial observation; 2 invalid invocation, configuration or base.
+
+Prevents: F6, F7, F11.
+
 ## Select storage for new runs
 
 Set `artifact_storage = "shared"` at the top level of the check configuration. Omit the key or use `"copy"` for ordinary per-run copies. Unsupported values fail before execution. There is no separate command-line storage override.

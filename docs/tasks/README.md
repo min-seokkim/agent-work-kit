@@ -4,7 +4,7 @@ Use this directory to locate a task; its record owns the current state and next 
 
 ## Selected assignment
 
-- [Evidence-storage adoption](shared-artifact-storage.md#adoption-after-technical-delivery): select the target project's next continuation, required outputs, consumers and configuration owner before comparing storage options. The shared-storage feature is delivered in `ac10928`; no other-project configuration change is assigned. [Storage inspection](review-storage.md), [managed session and exact-request status](session-orchestration.md#selected-session-and-request-status), [local-state exclusion](local-state-exclusion.md) and [provider parity](session-orchestration.md#selected-provider-parity) retain separate receipts.
+- [Artifact selection preview](artifact-selection-preview.md): implementation has independent code acceptance; its receipt owns integration checks and delivery. The next planning decision is the prepared current-manuscript collection proposal. This supports [evidence-storage adoption](shared-artifact-storage.md#adoption-after-technical-delivery), whose broader required outputs and retrieval needs remain undecided. The shared-storage feature is delivered in `ac10928`; no other-project configuration change is assigned.
 
 ## Deferred and blocked
 

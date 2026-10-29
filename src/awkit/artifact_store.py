@@ -341,6 +341,7 @@ class ObjectStore:
 
 def collect(worktree, run, patterns, required, store):
     """Collect configured payloads; keep direct artifact diagnostics as local evidence."""
+    from .review_selection import classify
     source = SafeRoot(Path(worktree).resolve())
     destination = SafeRoot(run)
     try:
@@ -358,19 +359,12 @@ def collect(worktree, run, patterns, required, store):
     for pattern in dict.fromkeys(patterns + required):
         matched = False
         for path in sorted(source.root.glob(pattern)):
-            name = path.relative_to(source.root).as_posix()
-            if ".git" in path.relative_to(source.root).parts:
+            candidate = classify(source.root, path, source)
+            if candidate is None:
                 continue
-            try:
-                relative(name)
-            except ValueError as exc:
-                raise ArtifactCollision([name], "Artifact path is not portable") from exc
-            parts = relative(name).parts
-            if any(linked(source.info("/".join(parts[:index]))) for index in range(1, len(parts) + 1)):
+            name, info, excluded = candidate
+            if excluded:
                 skipped.append(name)
-                continue
-            info = source.info(name)
-            if not stat.S_ISREG(info.st_mode):
                 continue
             matched = True
             selected[name] = info

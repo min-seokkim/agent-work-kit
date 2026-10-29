@@ -8,6 +8,8 @@ OriginalImplementation then failed with a native capacity error after reporting 
 
 Next action: consume the implementer's ordinary delivery report and decide the next product scope without independently repeating checks, CI or installation audits. Observe natural continuation without another owner reminder. A recurrence supplies new evidence; a rewritten checkpoint or replay does not close this incident.
 
+In the later [artifact-preview continuation](artifact-selection-preview.md), root selected the product contract and prepared the next owner decision while separate agents ran technical inspection, reproductions and review. The attached planning reviewer challenged root's wording about an implementation mechanism; root clarified the builder's ownership and settled the required safety and compatibility behavior. All three code findings and their verification stayed with those agents. This is another bounded observation of role adherence, not proof of lasting behavior. Its delivery receipt owns the remaining delivery stages.
+
 ## Resume inputs
 
 ID: `planning-role-drift`. The current coordinator owns product decisions; discovery_builder succeeds OriginalImplementation as execution and delivery owner. `.awkit/handoffs/session-model-selection/implementation-handoff.md` records the original transfer; `.awkit/handoffs/session-effort-selection/decision.md` records the next product selection. The earlier native channel retains the capacity failure, before-dispatch cancellations and transfer notice M-011. No new rule or enforcement feature is assigned. The earlier diagnosis and owners remain in the history.

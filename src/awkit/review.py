@@ -32,6 +32,7 @@ IDENTITY = ("-c", "user.name=Agent Work Kit", "-c", "user.email=awkit@localhost"
 PREVENTS = {"awkit review snapshot": ("F17",), "awkit review check": ("F2", "F7", "F17", "F26"),
             "awkit review accept": ("F16",), "awkit review compare": ("F16",),
             "awkit review storage": ("F6", "F7"),
+            "awkit review preview": ("F6", "F7", "F11"),
             "awkit review export": ("F7", "F16", "F17"),
             "awkit kit init --commit and kit example (commit only what they wrote)": ("F8", "F9")}
 
@@ -211,23 +212,23 @@ def artifact_patterns(settings):
 def collect_artifacts(worktree, run, patterns, required):
     """Copy the files matching `patterns` from the worktree into run/artifacts and hash them.
 
-    Returns (files, missing): files maps each retained relative path to its size and SHA-256;
+    Returns (files, missing, skipped): files maps each retained relative path to its size and SHA-256;
     missing lists the required patterns that matched nothing. Links and anything resolving
     outside the worktree are skipped and reported under `skipped`.
     """
+    from .review_selection import classify
     worktree = worktree.resolve()
     destination = run / "artifacts"
     files, missing, skipped = {}, [], []
     for pattern in dict.fromkeys(patterns + required):
         matched = False
         for path in sorted(worktree.glob(pattern)):
-            relative = path.relative_to(worktree).as_posix()
-            if ".git" in path.relative_to(worktree).parts:
+            candidate = classify(worktree, path)
+            if candidate is None:
                 continue
-            if any(p.is_symlink() for p in [path, *path.parents] if p != worktree.parent) \
-                    or not path.resolve().is_relative_to(worktree) or not path.is_file():
-                if path.is_file() or path.is_symlink():
-                    skipped.append(relative)
+            relative, _, excluded = candidate
+            if excluded:
+                skipped.append(relative)
                 continue
             matched = True
             if relative in files:

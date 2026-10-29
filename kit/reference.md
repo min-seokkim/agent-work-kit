@@ -187,11 +187,15 @@ Run folder: repository `.awkit/reviews/`, locally excluded from Git when needed;
 
 `"shared"` affects new runs; deletion does not generally reclaim objects. Prior shared runs still need compatible readers/store after switching to `"copy"`; export before removing that dependency. See [portability](artifact-storage.md).
 
+### preview
+
+[Instructions](artifact-storage.md#preview-current-selection).
+
 ### storage
 
 `awkit review [--repo DIR] storage [--runs-root DIR] [--json]`
 
-Reads direct `review-*` directories, skipping linked/reparse descendants. Default: Git top-level `.awkit/reviews`; missing means `absent` without creation. An explicit root needs no Git repository.
+Reads direct `review-*` directories, skipping linked/reparse descendants. Default: Git top-level `.awkit/reviews`; missing means `absent` without creation. Explicit roots need no Git.
 
 Schema-2 output separates run-local, shared and total logical bytes, per-run references, statuses and coverage. Shared objects count once. Hash estimates are unverified; conflicts are excluded. Unreferenced bytes are not proven reclaimable. See [inspection limits](artifact-storage.md#move-and-inspect-a-collection).
 

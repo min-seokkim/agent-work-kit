@@ -135,6 +135,63 @@ class PreviewTests(unittest.TestCase):
                     self.assertEqual(report["unmatched_required"], missing)
                     self.assertEqual(report["skipped"], skipped)
 
+    @unittest.skipUnless(sys.version_info[:2] == (3, 12), "Python 3.12 literal enumeration")
+    def test_literal_spelling_parent_and_union_match_python312_collectors(self):
+        self.write("MixedParent/MixedFile.txt", b"literal")
+        optional = ["MixedParent/MixedFile.txt", "mixedparent/mixedfile.txt", "MixedParent/*.txt"]
+        required = ["MIXEDPARENT/MIXEDFILE.TXT", "MixedParent/MixedFile.txt"]
+        for mode in ("copy", "shared"):
+            with self.subTest(mode=mode):
+                run = self.root / ("literal-run-" + mode)
+                run.mkdir()
+                if mode == "copy":
+                    files, missing, skipped = collect_artifacts(self.repo, run, optional, required)
+                else:
+                    collection = self.root / "literal-store"
+                    collection.mkdir()
+                    files, missing, skipped, _ = collect(self.repo, run, optional, required,
+                                                        ObjectStore(collection, create=True))
+                self.configure(optional, required, mode)
+                report = preview(self.repo, self.config)
+                self.assertTrue(report["complete"], report["errors"])
+                self.assertEqual({item["path"]: item["size"] for item in report["files"]},
+                                 {name: entry["size"] for name, entry in files.items()})
+                self.assertEqual(report["totals"], dict(files=1, logical_bytes=7, complete=True))
+                self.assertEqual(report["unmatched_required"], missing)
+                self.assertEqual(report["skipped"], skipped)
+                expected_patterns = [pattern for pattern in dict.fromkeys(optional + required)
+                                     if list(self.repo.glob(pattern))]
+                self.assertEqual(report["files"][0]["patterns"], expected_patterns)
+                for entry in report["patterns"]:
+                    self.assertEqual(entry["matches"], sorted(path.relative_to(self.repo).as_posix()
+                                                            for path in self.repo.glob(entry["pattern"])))
+
+    @unittest.skipUnless(os.name == "nt" and sys.version_info[:2] == (3, 12),
+                         "Windows Python 3.12 Unicode literal enumeration")
+    def test_unicode_literals_match_python312_collectors(self):
+        names = ["i.txt", "\u0130.txt", "\u0131.txt", "s.txt", "\u017f.txt", "k.txt", "\u212a.txt"]
+        for index, name in enumerate(names):
+            self.write(f"literal/{index}/{name}", b"literal")
+        patterns = ["literal/*/i.txt", "literal/*/s.txt", "literal/*/k.txt"]
+        for mode in ("copy", "shared"):
+            with self.subTest(mode=mode):
+                run = self.root / ("unicode-literal-run-" + mode)
+                run.mkdir()
+                if mode == "copy":
+                    files, _, _ = collect_artifacts(self.repo, run, [], patterns)
+                else:
+                    collection = self.root / "unicode-literal-store"
+                    collection.mkdir()
+                    files, _, _, _ = collect(self.repo, run, [], patterns, ObjectStore(collection, create=True))
+                self.assertEqual(len(files), 7)
+                self.configure([], patterns, mode)
+                report = preview(self.repo, self.config)
+                self.assertTrue(report["complete"], report["errors"])
+                self.assertEqual({item["path"]: item["size"] for item in report["files"]},
+                                 {name: entry["size"] for name, entry in files.items()})
+                self.assertEqual([entry["match_count"] for entry in report["patterns"]], [3, 2, 2])
+                self.assertEqual(report["unmatched_required"], [])
+
     @unittest.skipUnless(os.name == "nt", "Windows Unicode case-insensitive wildcard matching")
     def test_windows_unicode_ranges_match_both_collectors(self):
         names = ["i.txt", "\u0130.txt", "\u0131.txt", "\u017f.txt", "\u212a.txt", "s.txt", "k.txt", "a.TXT"]
@@ -199,20 +256,17 @@ class PreviewTests(unittest.TestCase):
         self.configure(["nested/*.txt"], ["nested/*.txt"])
         original = os.scandir
 
-        def inaccessible(path):
-            if not isinstance(path, int) and Path(path) == self.repo / "nested":
+        nested_info = (self.repo / "nested").stat()
+
+        def denied_directory(path):
+            # Deny the selected directory, even when literal parent segments
+            # are enumerated first or POSIX supplies an anchored descriptor.
+            info = os.fstat(path) if isinstance(path, int) else Path(path).stat()
+            if (info.st_dev, info.st_ino) == (nested_info.st_dev, nested_info.st_ino):
                 raise PermissionError("injected enumeration denial")
             return original(path)
 
-        if os.name == "nt":
-            target = "awkit.review_selection.os.scandir"
-            replacement = inaccessible
-        else:
-            # POSIX enumeration uses an anchored descriptor, not an absolute path.
-            target = "awkit.review_selection.os.scandir"
-            def replacement(path):
-                raise PermissionError("injected enumeration denial")
-        with patch(target, replacement):
+        with patch("awkit.review_selection.os.scandir", denied_directory):
             code, out, _ = self.cli("--json")
         report = json.loads(out)
         self.assertEqual(code, 1)
@@ -445,13 +499,19 @@ class PreviewTests(unittest.TestCase):
         self.write("denied.txt", b"payload")
         self.configure(["denied.txt", "tracked.txt"])
         original = SafeRoot.info
+        original_stat = os.stat
 
         def denied(source, name):
             if name == "denied.txt":
                 raise PermissionError("injected metadata denial")
             return original(source, name)
 
-        with patch.object(SafeRoot, "info", denied):
+        def denied_stat(path, *args, **kwargs):
+            if not isinstance(path, int) and Path(path).name == "denied.txt":
+                raise PermissionError("injected metadata denial")
+            return original_stat(path, *args, **kwargs)
+
+        with patch.object(SafeRoot, "info", denied), patch("awkit.review_selection.os.stat", denied_stat):
             code, out, _ = self.cli("--json")
         report = json.loads(out)
         self.assertEqual(code, 1)

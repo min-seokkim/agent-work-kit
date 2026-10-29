@@ -95,7 +95,9 @@ def candidates(source, pattern):
                 if index == len(parts) - 1 and sys.version_info >= (3, 13):
                     found[child] = child_info
                 visit(child, index, child_info)
-        elif any(char in part for char in "*?["):
+        elif sys.version_info[:2] == (3, 12) or any(char in part for char in "*?["):
+            # Python 3.12 glob enumerates literal segments too: spelling and
+            # Windows Unicode matches come from directory entries, not lookup.
             for child, child_info in entries(name, part):
                 visit(child, index + 1, child_info)
         else:

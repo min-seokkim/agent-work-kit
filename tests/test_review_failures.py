@@ -42,6 +42,8 @@ class ReviewFailureTests(unittest.TestCase):
             code = cli.main(["review", "--repo", str(self.repo), "check", "HEAD",
                              "--config", str(config), "--runs-root", str(runs)])
         run, = runs.glob("review-*")
+        # Windows TEMP may use an 8.3 alias; the diagnostic reports the resolved directory.
+        run = run.resolve()
         result = json.loads((run / "result.json").read_text(encoding="utf-8"))
         if cleanup and result.get("worktree_retained"):
             self.addCleanup(self.original_git, self.repo, "worktree", "remove", "--force", result["worktree"])

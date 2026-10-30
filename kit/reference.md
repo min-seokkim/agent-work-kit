@@ -6,18 +6,18 @@ Requirements: Python 3.11+, Git for the hooks `kit init` installs and for its `-
 
 ## doctor
 
-`awkit doctor [DIR] [--json]` checks Python 3.11+, Git 2.25+, Git name/email/history identity, awkit on PATH, repository/commit, kit/skill versions, hooks and nested repositories (Git tracking). Findings: item, status (`ok`, `missing`, `warning`), detail, fix. Missing required items exit 1; warnings exit 0.
+`awkit doctor [DIR] [--json]` checks Python 3.11+, Git 2.25+, Git name/email and history identity, awkit on PATH, repository/commit, kit/skill versions, hooks and nested repositories (Git tracking). Findings: item, status (`ok`, `missing`, `warning`), detail, fix. Missing required items exit 1; warnings exit 0.
 
 Project-rule read/decode/parse/validation errors leave path readiness unverified. Only consumed kit directories are inspected; relative paths resolve from the project root. Directory presence verifies neither guides, freshness nor client loading. Repair hints preserve custom rules; doctor never repairs them.
 
-It reports the loaded package path and installation commit from matching distribution metadata. Source execution reports its checkout's HEAD and whether source/kit changed locally, never another installation's metadata. Missing provenance stays explicit; recorded provenance establishes neither file integrity nor current installation. Source URLs and credentials are omitted.
+It reports the loaded package path and installation commit from matching distribution metadata. Source execution reports its checkout's HEAD and whether source and kit changed locally, never another installation's metadata. Missing provenance stays explicit; recorded provenance establishes neither file integrity nor whether the installation is current. Source URLs and credentials are omitted.
 
 Existing `checks.toml` uses `review check` validation without execution. Empty/invalid settings warn; valid settings leave execution unverified. The final line reports missing tools or warnings. Exit 0 establishes neither passed checks nor automatic hooks; finding fields and exits are unchanged.
 
 ## Git tracking
 
 - `review` commands check files that Git tracks. They never create a repository or a commit. In a folder that is not a repository, or a repository with no commit, they exit 2 and say so; commit the files first.
-- `kit init` and `kit init --copy` report their writes without committing or creating repositories; outside Git they say so. In existing repositories, `kit init --commit` commits the `checks.toml` and `rules.toml` it wrote, unless either had uncommitted changes; `kit init --copy --commit` commits only its new folder. `kit example` commits its new folder, initializing Git if absent with `core.autocrlf=false` so committed/checked bytes match; `--no-git` only copies. Existing staged changes skip these commits with a stderr note, preserving the user's work. Repositories with only awkit commits use `Agent Work Kit <awkit@localhost>`, excluded from `check commit` history. Others use the configured identity, skipping with a reason if it looks like an agent (`Claude`, `anthropic.com`/`openai.com` address) or has never committed there.
+- `kit init` and `kit init --copy` report their writes without committing or creating repositories; outside Git they say so. In existing repositories, `kit init --commit` commits the `checks.toml` and `rules.toml` it wrote, unless either had uncommitted changes; `kit init --copy --commit` commits only its new folder. `kit example` commits its new folder, initializing Git if absent with `core.autocrlf=false` so committed/checked bytes match; `--no-git` only copies. With staged changes, awkit skips these commits with a stderr note, preserving the user's work. Repositories with only awkit commits use `Agent Work Kit <awkit@localhost>`, excluded from `check commit` history. Others use the configured identity, skipping with a reason if it looks like an agent (`Claude`, `anthropic.com`/`openai.com` address) or has never committed there.
 - Another Git repository inside the project, such as a clone of awkit, is not supported: a snapshot cannot hold a folder, so changes there can never be checked. `doctor` and `kit scan` list such folders, and `check done` fails while one is present. Move it outside the project or add it to `.gitignore`; ignored folders and submodules are not affected.
 - `review` resolves file names, step `cwd` and `artifacts` patterns relative to the folder it runs in (`--repo`, default the current folder), in the same subfolder of the checked worktree. The run records that subfolder as `subdir`.
 
@@ -48,9 +48,9 @@ Existing `checks.toml` uses `review check` validation without execution. Empty/i
 
 The section goes at the end of `AGENTS.md` and of `CLAUDE.md` (or `.claude/CLAUDE.md`) unless `CLAUDE.md` imports `AGENTS.md` or is the same file; with neither, init creates `AGENTS.md` with the section and a `CLAUDE.md` that imports it. It sits between `<!-- awkit:begin -->` and `<!-- awkit:end -->`, says to follow the `awkit-workflow` skill (with a bundle: to plan, review and delegate with the bundle and use the workflow for checks and reports), and holds the project profile's five "Start here" fields. Fields the scan can answer point to what the project has (the gate or the CI files, the memory and record locations) instead of copying it. Skills are written for Claude Code when the project has a `CLAUDE.md` or `.claude/`, and for Codex when it has `AGENTS.md`, `.codex/` or `.agents/`; for both when init creates the files. A project with `AGENTS.md` and `.claude/` but no `CLAUDE.md` gets a note: Claude Code sees the kit only through the skill descriptions there.
 
-`session_words` counts awkit sections in instruction files loaded every session and skill descriptions retained for selection. Skill bodies load only when used.
+`session_words` counts awkit sections in instruction files loaded every session and awkit's skill descriptions retained for selection. Skill bodies load only when used.
 
-Writes: `.awkit/`, generated skills (`<!-- awkit:generated`), awkit instruction sections, its hook handlers and Git hook lines/hooks. Managed-state writers [verify clone-local exclusion](connect.md#managed-project-state). Nothing else is written; memory/records (`MEMORY.md`, `.beads/`, `.planning/`, automatic memory) are read only. `tests/test_connect.py` checks this every run.
+Awkit writes `.awkit/`, generated skills (`<!-- awkit:generated`), awkit instruction sections, its hook handlers and Git hook lines/hooks. Managed-state writers [verify clone-local exclusion](connect.md#managed-project-state). Nothing else in the project is written; memory/records (`MEMORY.md`, `.beads/`, `.planning/`, automatic memory) are read only. `tests/test_connect.py` checks this every run.
 
 ### Removing
 
@@ -167,12 +167,12 @@ argv = ["python", "-m", "pytest", "-q"]
 ```
 
 - Step names are distinct; `argv` is an argument array, without a shell.
-- `cwd` defaults to the base folder (Git tracking). Absolute paths, `..`, `.git` and empty paths are refused before execution. Missing/outside-worktree `cwd` fails that step.
+- `cwd` defaults to the base folder (Git tracking). Absolute paths, `..`, `.git` and empty paths are refused before execution. A `cwd` that is missing or resolves outside the worktree fails that step.
 - Placeholders in `argv` and `env` values: `{python}` (the interpreter running awkit, not necessarily the project's), `{worktree}`, `{run_dir}`, `{run_id}`. Steps also get `AWKIT_WORKTREE`, `AWKIT_RUN_DIR`, `AWKIT_RUN_ID`.
-- Artifact patterns are relative to the base and accept `*`, `?`, `**`. Matches are retained after all steps, including failures. Links/outside-worktree paths enter `skipped_artifacts`. An unmatched `required_artifacts` pattern turns a passing run into `failed`.
+- Artifact patterns are relative to the base and accept `*`, `?`, `**`. Matches are retained after all steps, including failures. Links and paths outside the worktree are skipped and listed under `skipped_artifacts`. An unmatched `required_artifacts` pattern turns a passing run into `failed`.
 - Timeout/interruption kills the step's process tree, records `uncertain` and keeps the worktree. The runner does not stop remote work.
 - Exit 0 passes even with removed assertions, skipped/deleted tests or edited expectations. Review test diffs separately; `check done` shares this limit.
-- Allocate shared DBs, ports, sockets and devices per `{run_id}` in project commands.
+- Worktrees share DBs, ports, sockets and devices. Allocate them per `{run_id}` in project commands.
 
 Run folder: repository `.awkit/reviews/`, locally excluded from Git when needed; override with `--runs-root`.
 
@@ -189,21 +189,11 @@ Caught runner exceptions add `failure: {phase, error}` to `result.json`: `phase`
 
 `"shared"` affects new runs; deletion does not generally reclaim objects. Prior shared runs still need compatible readers/store after switching to `"copy"`; export before removing that dependency. See [portability](artifact-storage.md).
 
+<a id="windows-recovery"></a>
+
 #### Recovering a Windows path failure
 
-For checkout errors naming a long path, choose a shorter absolute `DIR` outside cloud-sync folders and retry the same snapshot:
-
-```text
-awkit review check REVISION --config checks.toml --runs-root DIR
-awkit check done --runs-root DIR
-awkit review storage --runs-root DIR
-```
-
-Completion lookup and the project's `done-check` hook need that root. In `rules.toml`, append `"--runs-root", "DIR"` to the existing rule's `command` array, replacing `DIR` with the absolute path using `/`; preserve its other fields, including `command_protocol`. A different shared root starts a separate collection/store without reuse or migration. Keep prior history in place.
-
-Alternatively, choose repository-local Git handling with `git config --local core.longpaths true`. This passed checkout, Python file reads, copied/shared collection and removal on Windows with `LongPathsEnabled=1`; awkit does not set it. Keep the setting through later removal of retained worktrees: check `git -C WORKTREE status --porcelain`, preserve needed evidence and work, then use `git worktree remove WORKTREE` from the repository. Ordinary removal without long-path handling can leave files after removing the registration.
-
-Measured UTF-16 limits apply only to that host. Directory and auxiliary paths can fail earlier; external tools, component limits and other runtimes remain unqualified.
+For checkout errors naming a long path, see [Windows review path recovery](windows-recovery.md). It covers shorter run roots and an explicit repository-local Git option, including lookup, hook, storage and removal conditions.
 
 ### preview
 
@@ -241,10 +231,10 @@ Checks meant to run without anyone choosing to: from a Git hook, a Claude Code h
 
 | Command | Effect | Exit |
 |---|---|---|
-| `check commit --message FILE \| --rev REV \| --hook [--history N]` | Reports agent-like authors and compares author email/trailer keys (Git's terminal `Key: value` lines) against the last N commits (default 50). Unseen emails/keys include repair instructions; no history passes. Allow a contributor with `git config --add awkit.allowAuthor EMAIL`, a trailer with `git config --add awkit.allowTrailer KEY`. `--hook` reads an event from stdin and checks each `git commit` in its shell command before execution (see hook). | 0 consistent, 1 not |
+| `check commit --message FILE \| --rev REV \| --hook [--history N]` | Reports agent-like authors and compares author email and trailer keys (`Key: value` lines Git recognizes at the end of the message) against the last N commits (default 50). Reports unseen emails or trailer keys with repair instructions; repositories without earlier commits pass. Allow a contributor with `git config --add awkit.allowAuthor EMAIL`, a trailer with `git config --add awkit.allowTrailer KEY`. `--hook` reads an event from stdin and checks each `git commit` in its shell command before execution (see hook). | 0 consistent, 1 not |
 | `check writing PATH... [--json]` | Recursively checks Markdown against the [Writing Guide](writing.md) ([example](https://github.com/min-seokkim/agent-work-kit/tree/dev/examples/document-intent/revision)). Errors: em dashes, middle dots joining Korean words, mixed `-세요`/`-시오` endings in one document. Warnings: lead-ins, contrasts against claims nobody made, sales words, Korean stock phrases. Skips code blocks, blockquotes, inline code, quoted spans and link targets. Repository folder scans include tracked/trackable Markdown, excluding ignored folders and other repositories. | 0 no errors, 1 errors |
 | `check writing-compare BASELINE CANDIDATE PATH... [--repo DIR] [--json]` | Compares complete-file findings at two explicit Git revisions. Same-path correspondence, source changes and both full reports remain available; existing errors still block. | 0 no candidate errors, 1 candidate errors, 2 invalid/unavailable evidence |
-| `check done [--session ID] [--mark] [--runs-root DIR] [--hook]` | `--mark` saves the session's initial state in `.awkit/done/`: HEAD plus working-tree changes and non-ignored untracked files, excluding `.awkit/` runtime state. User settings follow Git tracking/ignores. Otherwise, passes for unchanged state since that mark (HEAD if absent), or an exactly matching passing `review check`; lists changes otherwise. Lookup: `--runs-root`, `.awkit/reviews` and older versions' system-temp folder. | 0 yes, 1 no |
+| `check done [--session ID] [--mark] [--runs-root DIR] [--hook]` | `--mark` records the current state as the session's starting point in `.awkit/done/`: HEAD plus working-tree changes and non-ignored untracked files, excluding `.awkit/` runtime state. User settings follow Git tracking/ignores. Otherwise, passes for unchanged state since that mark (HEAD if absent), or an exactly matching passing `review check`; lists changes otherwise. Lookup: `--runs-root`, `.awkit/reviews` and older versions' system-temp folder. | 0 yes, 1 no |
 
 Summaries state their scope. `check writing` checks complete files without classifying existing/introduced findings or inspecting content/rendering. Done matches repository states, not ownership or coverage: task-only snapshots can pass while unrelated changes remain unmatched. Unchanged state establishes no verification. Passing runs establish configured-command success, not document review. These explanations change no exit codes or JSON fields.
 
@@ -315,8 +305,8 @@ For unmarked commands, failure below means a nonzero exit. Opted-in commands fir
 | `verify` | Stop, PostToolUse, PreToolUse, UserPromptSubmit, SubagentStop, SessionStart | The command fails; on Stop once per session, elsewhere once per distinct output | `decision: block` with the message and the output; on SessionStart, `additionalContext` |
 | `inject` | PreToolUse, PostToolUse, UserPromptSubmit, SessionStart | The conditions match and, with `command`, the command fails; once per session | `additionalContext` |
 
-- All conditions must match. `events`/`tools` name the event/tool; Codex `apply_patch` also matches `Edit`/`Write`, and `spawn_agent`/Claude Code `Task` match `Agent`. `shell` searches `tool_input.command` by regex, excluding heredoc bodies fed to programs: written files are not commands. `paths` globs edited `file_path`, `notebook_path` or `apply_patch` file headers; patterns without `/` match filenames in any folder. `text` searches written `content`, `new_string`, `edits`, `new_source` and added patch lines. Only `inject` rules accept `prompt`, searching UserPromptSubmit messages except `<pasted_content>`: tool calls determine the situation; the user's words only add guidance.
-- `command` expresses other conditions: an argument array, without a shell, executed at the project root with event JSON on stdin. Placeholders: `{python}` (awkit's interpreter), `{kit}`, `{root}`; `{paths}` expands to matching existing edited files, skipping the rule if none exist. Unmarked rules: exit 0 without output means no opinion; exit 0 with `{"decision": "deny"|"ask"|"block"|"allow", "reason": TEXT, "context": TEXT}` means that decision; other exits fire with stdout/stderr's first 1,000 characters. Opted-in rules use [Bundled command results](#bundled-command-results).
+- All conditions must match. `events` and `tools` name the event and tool; Codex `apply_patch` also matches `Edit`/`Write`, and `spawn_agent`/Claude Code `Task` match `Agent`. `shell` searches `tool_input.command` by regex, excluding heredoc bodies fed to programs: written files are not commands. `paths` globs edited `file_path`, `notebook_path` or `apply_patch` file headers; patterns without `/` match filenames in any folder. `text` searches written `content`, `new_string`, `edits`, `new_source` and added patch lines. Only `inject` rules accept `prompt`, searching UserPromptSubmit messages except `<pasted_content>`: tool calls determine the situation; the user's words only add guidance.
+- `command` expresses other conditions: an argument array, without a shell, executed at the project root with event JSON on stdin. Placeholders: `{python}` (awkit's interpreter), `{kit}`, `{root}`; a standalone `{paths}` element expands to matching existing edited files, skipping the rule if none exist. Unmarked rules: exit 0 without output means no opinion; exit 0 with `{"decision": "deny"|"ask"|"block"|"allow", "reason": TEXT, "context": TEXT}` means that decision; other exits fire with stdout/stderr's first 1,000 characters. Opted-in rules use [Bundled command results](#bundled-command-results).
 
 The default rules, each with the entries it guards:
 

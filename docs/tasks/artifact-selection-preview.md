@@ -8,7 +8,7 @@ Implementation began before the owner attached this planning channel. Its first 
 
 The local `.awkit/handoffs/artifact-selection-preview/delivery.json` retains the frozen checks, failed first CI, correction, publication, installation and authorized installed-use evidence. The published commit and successful CI above establish the completed feature boundary without requiring these private records. The receipt and `technical-review.md` beside it are ignored and unavailable in a fresh clone. A later documentation-only delivery has its own stages in the receipt and does not replace this source-feature boundary.
 
-Next planning action: present the prepared current-manuscript collection proposal in `.awkit/handoffs/shared-artifact-storage/adoption-preparation.md` for owner approval. It preserves existing requirements, check commands and copied storage while naming the proposed additional outputs. Only read-only target observation and local metadata recording are authorized so far. Configuration changes, shared-storage adoption and historical recovery remain separate decisions.
+Next planning action: none. The owner approved the prepared current-manuscript collection proposal and the target project applied it; [shared artifact storage](shared-artifact-storage.md#current-status) records that result. Further configuration changes, shared-storage adoption and historical recovery remain separate decisions.
 
 ## Intended result and reason
 

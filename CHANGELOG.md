@@ -8,6 +8,8 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Commands
 
+- `review check` retains an additive `failure` object with the phase and original error for caught runner exceptions saved as `uncertain`, including failures before checks start and after steps finish. The CLI reports the run location and preserves the original error if saving its diagnostic fails. Existing status/exit meanings, step history, cleanup and incomplete shared publication remain. The reference documents custom-root lookup/hook configuration and tested repository-local Windows path recovery.
+
 - `review preview --config PATH [--json]` observes the current folder's artifact selection before checks. Schema-1 JSON retains paths, stat sizes, optional/required pattern associations, unmatched patterns and coverage errors; text shows counts and the 20 largest files. It reads no artifact contents and creates no snapshot, run or store. Linked branches or unavailable metadata produce partial observations; current missing matches do not predict future check failure. Existing collectors retain their mode-specific rules.
 
 - Preview follows Python 3.12's literal-segment enumeration, preserving actual filename spelling, Windows Unicode matches and selection deduplication. Other Python versions and artifact collectors retain their existing behavior.

@@ -551,12 +551,15 @@ def check(repo, revision, config, runs_root=None, keep=False):
     preserve = keep
     (run / "config.toml").write_bytes(raw)
     save()
+    phase = "worktree-creation"
+    failure = None
     try:
         git(repo, "worktree", "add", "--detach", str(worktree), commit)
         added = True
         for index, step in enumerate(setup + checks):
+            phase = "setup" if index < len(setup) else "check"
             step_dir = base / relative_directory(step.get("cwd", "."))
-            entry = {"name": step["name"], "cwd": str(step_dir), "phase": "setup" if index < len(setup) else "check",
+            entry = {"name": step["name"], "cwd": str(step_dir), "phase": phase,
                      "log": f"{index + 1:02d}.log", "argv": [expand(s) for s in step["argv"]]}
             result["steps"].append(entry)
             with (run / entry["log"]).open("wb") as log:
@@ -577,6 +580,7 @@ def check(repo, revision, config, runs_root=None, keep=False):
                     preserve = True
                 except (OSError, ValueError) as exc:
                     entry.update(status="failed", error=str(exc))
+            phase = "step-result"
             save()
             if entry["status"] == "timeout" or (index < len(setup) and entry["status"] != "passed"):
                 break
@@ -585,6 +589,7 @@ def check(repo, revision, config, runs_root=None, keep=False):
         if any(s["status"] == "timeout" for s in result["steps"]):
             result["status"] = "uncertain"
         if patterns or required or store is not None:
+            phase = "artifact-collection"
             if store is None:
                 files, missing, skipped = collect_artifacts(base, run, patterns, required)
             else:
@@ -596,6 +601,7 @@ def check(repo, revision, config, runs_root=None, keep=False):
                 result["skipped_artifacts"] = skipped
             manifest = {"schema": 1, "snapshot": commit, "config_sha256": result["config_sha256"],
                         "subdir": subdir, "run_id": run.name, "files": files}
+            phase = "artifact-publication"
             if store is None:
                 atomic_json(run / "artifacts" / "manifest.json", manifest)
             else:
@@ -619,6 +625,8 @@ def check(repo, revision, config, runs_root=None, keep=False):
             if collision:
                 result["artifact_publication"]["collisions"] = exc.paths
         if not collision:
+            failure = exc
+            result["failure"] = {"phase": phase, "error": str(exc) or type(exc).__name__}
             raise
     finally:
         if added and not preserve:
@@ -626,6 +634,13 @@ def check(repo, revision, config, runs_root=None, keep=False):
                 git(repo, "worktree", "remove", "--force", str(worktree))
             except ValueError as exc:
                 result.update(status="cleanup-failed", cleanup_error=str(exc))
-        result["worktree_retained"] = worktree.exists()
-        save()
+        if failure is not None:
+            failure.add_note(f"Review run: {run}")
+        try:
+            result["worktree_retained"] = worktree.exists()
+            save()
+        except BaseException as exc:
+            if failure is None:
+                raise
+            failure.add_note(f"Could not save review failure: {str(exc) or type(exc).__name__}")
     return result

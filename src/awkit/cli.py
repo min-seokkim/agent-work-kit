@@ -826,7 +826,11 @@ def main(argv=None):
         return exc.code if 1 <= exc.code <= 125 else 1
     except (ValueError, KeyError, TypeError, OSError, sqlite3.Error) as exc:
         print(f"cannot run: {exc}", file=sys.stderr)
+        for note in getattr(exc, "__notes__", ()):
+            print(note, file=sys.stderr)
         return 2
-    except KeyboardInterrupt:
+    except KeyboardInterrupt as exc:
         print("Interrupted. Check the run record and the target's actual state.", file=sys.stderr)
+        for note in getattr(exc, "__notes__", ()):
+            print(note, file=sys.stderr)
         return 130

@@ -74,6 +74,12 @@ Selecting a row preserves its exact ID across paging, refresh and admission refu
 
 Risk is high for wrong-target selection and body export. The builder supplied backend/tests; root owned integration and delivery; an independent native reviewer assessed snapshot `6aee39a`. The run also evaluated the real session-guide revision against existing preservation and scoped-writing instructions. `.awkit/handoffs/session-picker/run-plan.md` records allocation and acceptance criteria; `delivery.json` distinguishes implementation, checks, screen observations, review and delivery.
 
+## Deferred live Claude inventory
+
+Source reassessment at `7e82e3f` identified a separate [documented JSON inventory](https://code.claude.com/docs/en/agent-view#list-sessions-as-json) for live terminal sessions, including interactive terminals. This does not establish IDE coverage, historical discovery or SDK ownership transfer. Research inspected SDK 0.2.174 with bundled CLI 2.1.310; no native inventory was run, and the manually opened reviewer's runtime remains unverified. The inspected historical SDK listing reads transcript content.
+
+The documentation describes a separate `CLAUDE_CONFIG_DIR` instance and warns that native job files are not a stable interface. JSON-mode transcript access, project filtering and startup side effects remain unverified. An empty-profile probe is deferred because it cannot establish populated-session coverage. Resume when the owner requests this listing or an ordinary continuation exposes a session-lookup gap. Retain existing admission and ownership restrictions; no provider startup, upgrade, attachment or feature implementation is selected. Planning request M-010/R-005 is retained in the local `.awkit/review-planning-3.sqlite3` channel.
+
 ## Resume inputs
 
 ID: `session-orchestration`. No new implementation is selected here. Existing IDE attachment, foreign Claude enrollment and first-use connection remain unassigned candidates. Before selecting one, establish the needed user outcome and assess both providers' actual capabilities. Historical owners and execution bases do not transfer ownership. Read the [task directory](README.md) for the repository's current assignment and the relevant receipt before repeating earlier work.

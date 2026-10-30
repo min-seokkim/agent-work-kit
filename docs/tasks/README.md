@@ -4,6 +4,8 @@ Use this directory to locate a task; its record owns the current state and next 
 
 ## Selected assignment
 
+- [Review preparation failure evidence](review-preparation-failures.md#current-status): retain caught runner failure causes/phases and run locations, with demonstrated Windows recovery guidance. Independent code review accepted `e336c296`; its implementation receipt records the frozen full check, publication and exact installation stages.
+
 - [Evidence-storage adoption](shared-artifact-storage.md#adoption-after-technical-delivery): the owner-approved current-manuscript collection repair and delivery-baseline decision are applied in the target project, whose suite now passes. An owner-approved copied/shared comparison on one snapshot is recorded; the Windows `result.json` replacement failure it exposed is fixed, and adoption awaits the owner's decision. Broader required outputs and retrieval needs remain undecided; no further implementation is assigned.
 
 ## Deferred and blocked

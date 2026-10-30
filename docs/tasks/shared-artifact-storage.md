@@ -12,7 +12,19 @@ The owner approved the current-manuscript collection proposal in `.awkit/handoff
 
 The owner then chose the published Naver text as the reference for the two manuscripts that differed from the delivery baseline. The target's next commit records each revision's reason and current hash beside the unchanged delivery hash; its frozen check passed all 29 checks. That check had stopped at the first mismatch, so the earlier failure reported one manuscript where two differed.
 
-Next action: a copied/shared comparison on one target snapshot, which now has a fully passing suite, awaits the owner's approval. Follow [Adoption after technical delivery](#adoption-after-technical-delivery) before a storage-format change; existing history is unchanged and real-use reduction remains unverified.
+The owner approved an executed comparison on that passing target commit. It differs from the measurement plan below: it reran unchanged checks for measurement, and the repeat used identical content, the most favorable reuse. Two copied and two shared runs used separate run roots and an untracked copy of the target configuration with only `artifact_storage = "shared"` added; the tracked configuration and existing collection are unchanged. All four passed, and `review verify` accepted both shared runs.
+
+| Run on one snapshot | Copied | Shared |
+|---|---|---|
+| First | 42,824,586 bytes | 283,737 run bytes plus 42,515,307 store bytes (526 objects and a 93-byte descriptor) |
+| Second, added | 42,824,586 bytes | 283,737 bytes, no new objects |
+| Duration | 75 to 76 s | 85 to 89 s |
+
+These are logical sizes from `du -sb` and `review storage`, not allocated space, and a named continuation with changing outputs would reuse less. The target's tracked consumers read project paths, not run artifacts; unknown manual readers would need `review export`.
+
+The comparison exposed two Windows failures. Run roots 11 characters longer than `.awkit/reviews` could not create the worktree: the target's longest tracked path already reaches 256 characters there. Two later runs, one in each mode, stopped with WinError 5 when `records.atomic_json` replaced `result.json`; they kept a `running` result and a 389 MB worktree each, which the session removed. The process holding the file was not identified, and both modes succeeded on retry. `os.replace` has no retry for this Windows sharing error; whether to add one is unassigned.
+
+Next action: the owner decides whether the target adopts shared storage for future runs, and whether the `atomic_json` failure warrants a fix. Follow [Adoption after technical delivery](#adoption-after-technical-delivery) before a storage-format change; existing history is unchanged and real-use reduction remains unverified.
 
 Detailed review and execution evidence is in the local `.awkit/handoffs/shared-artifact-storage/implementation/delivery.json`; the channel is its archive. These ignored files are unavailable in a fresh clone. The published commit and CI above establish the completed feature boundary without requiring those local records.
 

@@ -4,7 +4,7 @@ Use this directory to locate a task; its record owns the current state and next 
 
 ## Selected assignment
 
-- [Evidence-storage adoption](shared-artifact-storage.md#adoption-after-technical-delivery): the owner-approved current-manuscript collection repair and delivery-baseline decision are applied in the target project, whose suite now passes. A copied/shared comparison awaits owner approval. Broader required outputs and retrieval needs remain undecided; no further implementation is assigned.
+- [Evidence-storage adoption](shared-artifact-storage.md#adoption-after-technical-delivery): the owner-approved current-manuscript collection repair and delivery-baseline decision are applied in the target project, whose suite now passes. An owner-approved copied/shared comparison on one snapshot is recorded; adoption and a Windows `result.json` replacement failure await owner decisions. Broader required outputs and retrieval needs remain undecided; no further implementation is assigned.
 
 ## Deferred and blocked
 

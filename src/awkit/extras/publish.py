@@ -11,6 +11,7 @@ from html.parser import HTMLParser
 from pathlib import Path, PurePosixPath
 from urllib.parse import unquote, urlsplit
 
+from ..records import replace
 from ..review import relative_file
 
 # The failure catalogue entries (kit/failures.md) this command guards against.
@@ -175,7 +176,7 @@ class Publisher:
                 stream.write(text)
                 stream.flush()
                 os.fsync(stream.fileno())
-            os.replace(temporary, self.output / "index.html")
+            replace(temporary, self.output / "index.html")
         finally:
             Path(temporary).unlink(missing_ok=True)
 

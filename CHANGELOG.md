@@ -154,6 +154,10 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Fixed
 
+- On Windows, replacing a JSON record, hook state, history view, session endpoint or published entry page retries for about three seconds while another process holds the target open. A check run previously stopped with WinError 5 when `result.json` was briefly held, leaving a `running` result and a retained worktree. A hold longer than the retry window still raises the original error; other platforms replace once, as before.
+
+- A managed session attempt that became uncertain because the provider connection was lost stays uncertain when the provider's `turn/start` response is handled afterwards. The turn ID is still recorded for recovery. Previously that order reset the attempt to `accepted` and the session to `accepted` while no provider was connected; it also made a recovery test fail intermittently on Windows CI.
+
 - Connection guidance selects HEAD only when it contains the intended check inputs; otherwise it uses explicitly selected current files in a snapshot. Check setup guidance points to per-worktree `[[setup]]` preparation and preserves snapshot-compatible dependency selection. Command behavior and separately hashed external configuration are unchanged.
 
 - Bundled hook messages and newly generated rules now name the installed kit's readable guide folder. Resource lookup starts at the regular `awkit` package, avoiding a namespace object's `MultiplexedPath(...)` representation. Project-local kit precedence is preserved. Existing project rules are left untouched; previously generated malformed paths need separate repair.

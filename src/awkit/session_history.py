@@ -12,6 +12,7 @@ from pathlib import Path
 
 from .channel import REQUESTS
 from .channel_status import _read_channel
+from .records import replace
 from .session_store import now
 
 
@@ -68,7 +69,7 @@ class HistoryViews:
                 handle.flush()
                 os.fsync(handle.fileno())
                 temporary = Path(handle.name)
-            os.replace(temporary, self.path)
+            replace(temporary, self.path)
             return value
 
     def snapshots(self):

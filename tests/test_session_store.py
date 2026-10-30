@@ -95,6 +95,18 @@ class SessionStoreTests(unittest.TestCase):
         self.assertIsNone(reopened.claim("generation-a"))
         self.assertEqual(reopened.snapshot()["attempts"][0]["id"], claim["id"])
 
+    def test_turn_bound_after_connection_loss_stays_uncertain(self):
+        # A provider can answer turn/start and exit before the response is handled.
+        self.store.post("one", "First")
+        self.store.claim("generation-a")
+        self.store.uncertain("generation-a", "Provider connection lost")
+        self.assertTrue(self.store.bind_turn("generation-a", "turn-1"))
+        self.assertTrue(self.store.bind_turn("generation-a", "turn-1", executing=True))
+        attempt = self.store.snapshot()["attempts"][0]
+        self.assertEqual((attempt["state"], attempt["turn_id"]), ("uncertain", "turn-1"))
+        self.assertEqual(self.store.metadata()["state"], "unknown")
+        self.assertFalse(self.store.bind_turn("generation-a", "other-turn"))
+
     def test_native_completion_publishes_one_linked_reply_and_preserves_cursors(self):
         request = self.store.post("one", "First")["id"]
         self.store.channel.find("reviewer", "new")

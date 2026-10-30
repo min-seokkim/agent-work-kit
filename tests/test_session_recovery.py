@@ -50,7 +50,9 @@ class RecoveryTests(unittest.TestCase):
     def check_recovered_reply(self, body, *, expect_bound):
         session = self.create()
         request = self.controller.send(session["id"], key="fault", body=body)["message"]
-        lost = self.wait_for(lambda view: view["attempts"] and view["attempts"][0]["state"] == "uncertain")
+        # The response and the connection loss race; wait until both are recorded, in either order.
+        lost = self.wait_for(lambda view: view["attempts"] and view["attempts"][0]["state"] == "uncertain"
+                             and bool(view["attempts"][0]["turn_id"]) == expect_bound)
         self.assertEqual(bool(lost["attempts"][0]["turn_id"]), expect_bound)
         recovered = self.restart()
         self.assertEqual(len(recovered["messages"]), 2)

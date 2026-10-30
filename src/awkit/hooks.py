@@ -521,7 +521,8 @@ def _save_state(root, session, state):
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(f"{path.name}.{os.getpid()}.tmp")
     temporary.write_text(json.dumps(state), encoding="utf-8")
-    os.replace(temporary, path)
+    from .records import replace
+    replace(temporary, path)
 
 
 def log(root, entry):

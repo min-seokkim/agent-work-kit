@@ -15,6 +15,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from importlib.resources import files
 from pathlib import Path
 
+from .records import replace
 from .sessions import SessionController
 
 
@@ -188,7 +189,7 @@ def serve(project, command, *, port=0, record=None, claude_cli=None):
             json.dump(data, handle)
             handle.flush()
             os.fsync(handle.fileno())
-        os.replace(temporary, path)
+        replace(temporary, path)
         print(json.dumps(dict(schema=1, project=str(controller.project),
                               url=server.url + "/#token=" + server.token, generation=controller.generation)), flush=True)
         server.serve_forever(poll_interval=0.2)

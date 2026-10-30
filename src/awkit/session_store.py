@@ -194,6 +194,11 @@ class SessionStore:
             row = self._active(conn, generation)
             if row is None or row["turn_id"] not in (None, turn_id):
                 return False
+            if row["state"] == "uncertain":
+                # The connection was lost before this response was handled: keep the turn for recovery,
+                # but do not report a live attempt to a provider that is gone.
+                conn.execute("UPDATE awkit_delivery SET turn_id=?,updated=? WHERE id=?", (turn_id, now(), row["id"]))
+                return True
             state = "executing" if executing or row["state"] == "executing" else "accepted"
             conn.execute("UPDATE awkit_delivery SET turn_id=?,state=?,updated=? WHERE id=?",
                          (turn_id, state, now(), row["id"]))

@@ -233,7 +233,7 @@ The model, permissions or work claimed by a subagent are not what happened.
 #### F21. Handoffs carry too much or too little.
 
 Unrelated conversation or repository material is passed, or required original material or a decision the subagent needs is missing.
-- Evidence: needs evidence (size limits come from 55 handoffs in one project).
+- Evidence: observed and corrected in awkit's development. A reviewer handoff omitted a shared-cursor transfer decision; the accepted correction used a fresh channel and old-channel export only. Root checked the selected notice, review and response; the replaced original prompt is unavailable for comparison. The risk was addressed before confirmed message loss; actual loss, duplicate review and saved effort are not established. The repository's `docs/tasks/independent-session-collaboration.md` records the reviewer handoff omission. The size limits still come from 55 handoffs in one project.
 - Countermeasure: four-part handoff with starting sizes for the brief; authorized access to required originals with explicit inspection coverage and access limits; `NEEDS_CONTEXT` status.
 - Check: Kind: inject. prose.
 
@@ -242,7 +242,7 @@ Unrelated conversation or repository material is passed, or required original ma
 #### F22. Observations, assumptions and interpretation are mixed.
 
 A computed value depends on an unstated or wrong assumption, or an interpretation is presented as a result.
-- Evidence: needs evidence (the analysis example reproduces it).
+- Evidence: observed in awkit's development. A storage-summary assessment overstated source-order evidence against a reader report and omitted valid-result declarations when inferring surviving artifacts from missing-manifest issues. The response corrected the order inference; a later source assessment confirmed the omitted predicate branch. Per-run causes and the legacy-layout hypothesis remain unverified. The repository's `docs/tasks/review-storage.md` records this one storage-summary interpretation episode, counted as F22 without a duplicate F11 occurrence. The synthetic analysis example separately reproduces the pattern.
 - Countermeasure: assumptions in a file checked against the data; a report with separate parts; interpretation by a person.
 - Check: Kind: guidance. the analysis example's check script shows the pattern. Status: prose plus example.
 

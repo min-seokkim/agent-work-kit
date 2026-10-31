@@ -2,9 +2,9 @@
 
 ## Current status
 
-The coordinator selected an opt-in, best-effort `awkit channel wait --keep-awake` behavior under the owner's delegated scope. Planning review `M-021/R-010` replaced the proposal's power-error exits with warnings so an unsupported platform or a power-only failure does not interrupt channel work. Root owns scope and planning; the implementation session owns code, checks and delivery.
+The opt-in, best-effort `awkit channel wait --keep-awake` behavior was delivered in `38512d8`, after accepted independent review, a passing frozen check, Windows/Linux CI and exact installation with source, kit and user-skill alignment. The coordinator selected the scope under the owner's delegation. Planning review `M-021/R-010` replaced the proposal's power-error exits with warnings so an unsupported platform or a power-only failure does not interrupt channel work.
 
-Implementation and 45 focused channel tests pass on the Windows development host, including simulated unsupported-platform and API-failure paths. A five-second native probe confirmed this thread's request and restoration through actual API return values. Another holder kept aggregate system state active throughout; that aggregate observation does not isolate this request. Read `.awkit/handoffs/channel-keep-awake/implementation.json` for the cumulative frozen check, independent review, publication, CI and exact-installation stages before repeating work. The [storage summary view](review-storage.md#summary-view) shares that delivery cycle.
+The implementation passed 45 focused channel tests on the Windows development host, including simulated unsupported-platform and API-failure paths. A five-second native probe confirmed this thread's request and restoration through actual API return values. Another holder kept aggregate system state active throughout; that aggregate observation does not isolate this request. The completed cumulative receipt `.awkit/handoffs/channel-keep-awake/implementation.json` retains the frozen check, independent review, publication, CI and exact-installation evidence. No real idle timeout or explicit sleep was tested. The [storage summary view](review-storage.md#summary-view) shares that delivery cycle.
 
 ## Selected behavior
 
@@ -19,10 +19,10 @@ The request covers only an active command. Gaps between waits and ended turns re
 - Proposal: `.awkit/handoffs/planning-continuation/channel-keep-awake-proposal.md`; the accepted `R-010` warning behavior supersedes its exit-2 proposal.
 - Retained sleep observation: `.awkit/handoffs/sleep-prevention/observation.json`. It records the reviewer's local event/power-setting queries and temporary helper. The meaning of event reason code 7 is unverified; the helper's aggregate request observation was not proven exclusive to that helper.
 - Native API contract: [Microsoft SetThreadExecutionState](https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-setthreadexecutionstate). Its success return is the previous thread state; zero means failure. The request does not prevent user-initiated sleep.
-- Implementation and delivery receipt: `.awkit/handoffs/channel-keep-awake/implementation.json`. Local receipts are unavailable in a fresh clone; published commit and CI identifiers will identify the delivered boundary.
+- Implementation and delivery receipt: `.awkit/handoffs/channel-keep-awake/implementation.json`. Local receipts are unavailable in a fresh clone; published commit `38512d820ac75e861b93cfa5209e252784f18e3b` and [CI run 41189114063](https://github.com/min-seokkim/agent-work-kit/actions/runs/41189114063) identify the delivered boundary.
 
-This operational option adds no failure-catalogue entry or guard mapping. Existing channel guards retain their meanings. The native probe must use an owned disposable channel after the reviewer pauses its temporary helper; it must not consume a real channel cursor or change power settings.
+This operational option adds no failure-catalogue entry or guard mapping. Existing channel guards retain their meanings. Any later native probe must use an owned disposable channel after the reviewer pauses its temporary helper; it must not consume a real channel cursor or change power settings.
 
 ## Next action
 
-Read the cumulative receipt and finish only its pending review or delivery stages. The accepted scope includes both additive features, the F16 evidence update and the transferred planning observations. The held task index and shared-storage record remain outside this unit's edit scope.
+Reuse the delivered option and storage summary view. No review or delivery stage remains for this cumulative unit; read the completed receipt before repeating checks or installation. The delivered scope includes both additive features, the F16 evidence update and the transferred planning observations. A further native trial is not assigned. The held task index and shared-storage record remain outside this records follow-up's edit scope.

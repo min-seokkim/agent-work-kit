@@ -2,7 +2,9 @@
 
 ## Current status
 
-The selected additive [summary view](#summary-view) is implemented with passing focused checks. It shares a cumulative frozen-check and delivery receipt with [channel wait sleep prevention](channel-keep-awake.md): `.awkit/handoffs/channel-keep-awake/implementation.json`. Root owns both contracts; the implementation session owns checks and delivery. Read that receipt for completed and pending stages before repeating work.
+The additive [summary view](#summary-view) was delivered with [channel wait sleep prevention](channel-keep-awake.md) in `38512d8`, after accepted independent review, a passing frozen check, Windows/Linux CI and exact installation with source, kit and user-skill alignment. The completed cumulative receipt is `.awkit/handoffs/channel-keep-awake/implementation.json`; [CI run 41189114063](https://github.com/min-seokkim/agent-work-kit/actions/runs/41189114063) identifies the published boundary.
+
+Next action: reuse the delivered summary view. No review or delivery stage remains for this unit; read the completed receipt before repeating checks or installation. Its comparison uses a synthetic report, so original-client behavior and exact per-run cleanup correspondence remain unverified. The original-inspection narrative below retains its earlier scope and receipt pointers.
 
 ### Original inspection
 
@@ -37,6 +39,14 @@ The summary preserves root, inspection status, run count, logical sizes, recorde
 Default text remains byte-for-byte compatible for identical reports, schema-2 JSON remains complete, and inspection/status/exit behavior is unchanged. `--summary` and `--json` are mutually exclusive. The feature establishes no faster scan, common cause, permanent removal, cleanup authorization or target configuration change. Validation uses synthetic fixtures; no new target scan is part of this unit.
 
 The cumulative receipt retains the baseline default-output comparison, focused summary and CLI checks, documentation inspection, independent review, frozen check and delivery stages. Read it before repeating a completed stage. The historical inspection receipt above remains separate.
+
+### Storage-summary interpretation correction
+
+One planning assessment mixed source observations with interpretation. In channel 5 R-006, the reviewer overstated summary-first source order as a conflict with the reader's report, and inferred surviving artifacts from missing-manifest issues without accounting for valid-result declarations. M-012 corrected the source-order inference: the summary can precede repeated detail while the reading client may still make the overview hard to use. It also retained intentional removal as another possible explanation, without exact per-run correspondence.
+
+Root checked R-006 and M-012 and separately confirmed the omitted branch in `src/awkit/review_storage.py` at `45c5392`: `has_artifacts` can follow a valid result's `artifacts` or `artifact_export` key, or shared-storage declaration, as well as observed directories, a manifest or payloads. Missing-manifest issues therefore do not establish surviving artifact files. That predicate correction belongs to the later failure-evidence assessment; M-012 did not state it. The legacy-layout hypothesis remains unverified, and no exact cause is assigned to individual runs.
+
+The decision is retained in `.awkit/handoffs/planning-continuation/failure-observation-decision.md`. This unit counts one F22 interpretation episode, without a duplicate F11 occurrence or the two later proposed episodes. It adds evidence to the existing category; the summary feature's acceptance and synthetic-validation limits above remain unchanged.
 
 ### Broader storage choices
 

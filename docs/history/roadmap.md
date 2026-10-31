@@ -1,6 +1,6 @@
 # Roadmap
 
-> Historical record preserved from `90e2557`. Read [the current record](../roadmap.md) before resuming. Stage-specific statuses and assignments below describe that revision. Local `.awkit/` paths remain relative to the repository root.
+> The original sections through Earlier planning context are preserved from `90e2557`. Later sections identify their own source revision and assessment. Read [the current record](../roadmap.md) before resuming; stage-specific statuses and assignments describe their named source. Local `.awkit/` paths remain relative to the repository root.
 
 Remaining work and its completion criteria. Item numbers retain the earlier development record's references; they do not authorize implementation or set a new priority. The owner chooses the next task. Candidate checks and conditional extensions keep their stated prerequisites. Completed items are in the [evidence record](evidence.md#completed-work).
 
@@ -125,3 +125,19 @@ The next prepared communication contract is a recognizable, current-project Code
 | 11 | Coordinate independent work sessions | Reuse provider messaging, queues and delegation first; connect Claude and Codex through the [provider integration plan](tasks/independent-session-collaboration.md#reuse-provider-collaboration-features). Owned-worker Codex and host-mediated Codex/Claude round trips passed; existing IDE attachment remains unverified. The offline adapter contract passed 23 focused tests; durable pre-send recording and its caller remain prerequisites for automatic dispatch. Read-only channel status was delivered in `03031d6` after integrated checks, all 17 Windows/Linux CI jobs and exact-commit installation checks. First use covered two registered channels; human output ordering was delivered in `7de0cb8` after attention items appeared behind settled history. Its task record retains unmeasured recovery and productivity limits. Preserve the existing channel and its small setup burden. Completion remains independent assignment, execution, evidence review and follow-up without manual message relay after setup. Items 9 and 10 remain conditional on demonstrated need. |
 
 </details>
+
+## Later storage candidate assessment
+
+The following second-payload-buffer paragraph is preserved verbatim from `docs/roadmap.md` at published `909363114a3ce66ec45886eed175db398c4259e3`, whose tree matches frozen `aabd782523ebeb32d7deee5496e80bbfee0b119e`. The candidate remains deferred under its stated conditions.
+
+Removing the second payload buffer during shared-object publication remains deferred. The historical large-file fixture suggests a possible memory improvement, but the largest observed target artifact is about 11.4 MB and no memory-pressure failure is established. Reconsider when a real workload makes peak memory material, with a fresh comparison of exact source revisions.
+
+The separate bounded source-snapshot storage assessment is retained in `.awkit/handoffs/planning-continuation/source-snapshot-storage-assessment.json`. Git's reported aggregate object-storage fields do not identify snapshot-exclusive, duplicate or recoverable bytes. Ref counts do not measure retained object cost, and worktree registration metadata establishes neither active ownership nor deletion authority. The observation established no material storage-pressure failure. Root selected no snapshot-storage feature or cleanup; a future attribution study would need a concrete cost or reproducibility problem and separately bounded retention/ownership analysis. Source-snapshot lifetime remains separate from artifact storage.
+
+## Later operations assessment
+
+The following two paragraphs are preserved verbatim from `docs/roadmap.md` at published `909363114a3ce66ec45886eed175db398c4259e3`, whose tree matches frozen `aabd782523ebeb32d7deee5496e80bbfee0b119e`. The original operations evidence and its unresolved questions remain bounded to that assessment; they do not become new findings or assignments through this move.
+
+The source assessment places the incomplete-event conclusion under existing F6 and unintended shell-helper operations under F7. Both entries already have evidence; these cases do not justify another guard. The records distinguish pinning, which took effect, from unpinning, which returned success without the requested state change. Checking the state detected the unpin mismatch; no false completion claim is established, so F24's missing occurrence evidence remains open.
+
+The wrong deletion target still needs the original pre-action request to establish its authorization context. A shared-file conflict was reconciled, but lost data or a missed handoff was not established. Mixed current facts and history, and possible provider-memory divergence, likewise lack a demonstrated downstream failure. Source locations and remaining questions stay in `.awkit/handoffs/scope-input/operations-assessment.json`; identifying context is not published. No new guard or failure-count reduction is selected from this assessment.

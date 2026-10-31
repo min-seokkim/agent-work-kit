@@ -34,6 +34,14 @@ Automatic long-path handling, numeric preflight limits, shorter generated names,
 
 ## Next action
 
+### Reference policy follow-up
+
+After documentation closeout `1776df7`, the owner approved the exact replacement in `.awkit/handoffs/planning-continuation/reference-budget-policy-proposal.md`. The repository instruction now prefers moving a complete topic into a focused guide at a lookup limit, retains the original section and a link, and requires comparison of conditions, reasons and negations before shortening accepted text. Existing word limits and section-preservation requirements remain. This separate instruction change adds no executable guard or approval step; the earlier recovery-topic relocation changed no policy.
+
+Root owns planning scope; the implementation session owns this follow-up's checks and delivery. `.awkit/handoffs/planning-continuation/reference-policy-delivery.json` records its frozen check, publication, CI and exact installation separately from the completed feature and documentation closeout. Read that receipt before repeating a delivery stage.
+
+### Deferred product work
+
 Installed guide conversion at `6dee28b` drops exact cross-file fragments while retaining descriptive link text and the destination guide route. No wrong-section or failed lookup was observed. Fragment hints and section extraction remain deferred until such a lookup incident or measured whole-guide cost identifies the needed behavior. A heading slug is not necessarily searchable in printed guide text; duplicate headings and explicit paragraph anchors require distinct handling if this work resumes.
 
-The selected unit is complete. Resume only when a named deferred condition is met or a new defect is established. Read the retained receipt before repeating a check or delivery stage. Preserve the unavailable original baseline delivery receipt and rendering limits.
+The failure-evidence unit is complete. Resume its product work only when a named deferred condition is met or a new defect is established. Read the retained receipt before repeating a check or delivery stage. Preserve the unavailable original baseline delivery receipt and rendering limits.

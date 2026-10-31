@@ -38,7 +38,7 @@ In a cloud session, `.claude/hooks/session-start.sh` installs a copy of awkit fr
 - Write the two READMEs for people and keep them short. Write everything else, including this file, the kit and the CHANGELOG, in English for agents. The kit's writing guides keep their Korean examples.
 - Follow [kit/writing.md](kit/writing.md) in everything you write; its pattern list is what the owner removes. Korean text also follows [kit/korean-writing.md](kit/korean-writing.md). This applies to replies to the owner as well.
 - Write agent-facing kit text as what to do, with the reason. A failure from [kit/failures.md](kit/failures.md) can be the reason. The catalogue ships with the kit as a reference, not read every session.
-- Keep the kit short. The files read every session and each situation file stay within the word limits in `tests/test_kit.py`, which come from Claude Code's guidance on CLAUDE.md and from what survives a context compaction. Before adding a rule, look for an existing rule that covers the same failure; if a limit is exceeded, shorten something else in that file.
+- Keep the kit short. The files read every session and each situation file stay within the word limits in `tests/test_kit.py`, which come from Claude Code's guidance on CLAUDE.md and from what survives a context compaction. Before adding a rule, look for an existing rule that covers the same failure. When a lookup reference reaches its limit, prefer moving a complete topic into a focused guide while retaining the original section and a link. Before shortening accepted text, compare its conditions, reasons and negations with the source, following `kit/writing.md`.
 
 ## Checks before pushing
 

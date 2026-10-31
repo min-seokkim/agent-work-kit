@@ -201,13 +201,15 @@ For checkout errors naming a long path, see [Windows review path recovery](windo
 
 ### storage
 
-`awkit review [--repo DIR] storage [--runs-root DIR] [--json]`
+`awkit review [--repo DIR] storage [--runs-root DIR] [--json | --summary]`
 
 Reads direct `review-*` directories, skipping linked/reparse descendants. Default: Git top-level `.awkit/reviews`; missing means `absent` without creation. Explicit roots need no Git.
 
 Schema-2 output separates run-local, shared and total logical bytes, per-run references, statuses and coverage. Shared objects count once. Hash estimates are unverified; conflicts are excluded. Unreferenced bytes are not proven reclaimable. See [inspection limits](artifact-storage.md#move-and-inspect-a-collection).
 
 Exits: 0 complete/absent, 1 partial coverage, 2 missing explicit root or unavailable root/invocation. Failed review statuses alone do not fail inventory.
+
+`--summary` retains totals, coverage and limitations, with issue classifications and explicit detail omissions. Omit it or use `--json` for full details.
 
 ### verify, accept, compare
 
@@ -388,7 +390,7 @@ A message log in SQLite shared by two local sessions: `main` (implements) and `r
 
 `--snap` takes 7 to 64 lowercase hex characters.
 
-`awkit channel wait ROLE MODE [ID] [--max SECONDS] [--json]` (default 120 s, `--max 0` checks once):
+`awkit channel wait ROLE MODE [ID] [--max SECONDS] [--json] [--keep-awake]` (default 120 s, `--max 0` checks once):
 
 | Mode | Returns |
 |---|---|
@@ -397,6 +399,8 @@ A message log in SQLite shared by two local sessions: `main` (implements) and `r
 | `reply ID` | Replies and rebuttals to message ID |
 
 Exit codes: 0 found, 1 timed out, 2 usage or storage error, 3 the reviewer received `close`. `awkit channel export [--json]` prints the whole log; bodies are quoted so they cannot imitate headers.
+
+`--keep-awake` requests Windows idle-sleep prevention during the wait, restoring the previous thread state on exit. Unsupported platforms or acquisition/release failures warn on stderr that the system may sleep; normal output, cursors, exits and exceptions remain. It changes no display, away-mode or power-plan setting. Gaps between calls, ended turns and explicit sleep remain unprotected. See [waiting guidance](review-session.md#6-waiting).
 
 `awkit channel status --record task.json [--json]` reads UTF-8 records (optional leading BOM); `--db` is rejected:
 

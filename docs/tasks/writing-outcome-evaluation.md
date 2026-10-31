@@ -6,7 +6,9 @@ The owner selected a real continuation alongside session feature development. Th
 
 The initial draft, source comparison and rendered preview are retained in `.awkit/handoffs/session-picker/`; `delivery.json` records the bounded outcome. Existing heading order and guide conditions were preserved. Independent source review found the guide within scope; its one Minor reference word-limit finding was corrected. No further owner writing correction was observed during this continuation.
 
-Next action: observe a later real revision or owner response before extending the conclusion. This informed single continuation and its independent review cannot establish lasting adherence, saved reminders or causal kit benefit. Private source material stays in its owning project.
+The later [review-preparation revision](review-preparation-failures.md) supplies an adverse outcome. To satisfy the repository rule then directing agents to shorten other text when a file exceeded its limit, `6dee28b` shortened existing reference instructions. It passed its local frozen checks, but a separate writing review found eight preservation defects involving conditions, scope and reasons. `9fa9a2a` restored those meanings and moved the complete recovery topic into a separate guide. Its earlier Windows CI failure concerned different test assertions; the writing defects were found by source comparison. The owner then approved the reference-size policy delivered in `235875b`, replacing the instruction that had directed compression. Existing preservation guidance and mechanical checks had not prevented the regression under that conflicting instruction.
+
+Next action: use the next assigned guide revision to compare accepted conditions, reasons and negations before delivery, retaining the baseline and the review result. The observed correction does not establish lasting adherence, saved reminders or causal kit benefit. The [owning task](review-preparation-failures.md#contract-and-evidence) retains the exact receipts; private source material stays in its owning project.
 
 ## Resume inputs
 

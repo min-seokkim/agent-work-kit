@@ -61,6 +61,14 @@ Prevents: F17.
 
 `awkit channel wait <role> <mode> --max <seconds>` exits 0 with matching messages, 1 on timeout, or 3 when the reviewer receives `close`. Keep each wait within the user's and client's limit; 60 seconds is an example bound, not permission to exceed a smaller limit. A timeout is not cancellation. Exit 2 reports a usage/storage error; investigate it before waiting again.
 
+Idle sleep can interrupt an authorized wait. For a Windows work window that needs the machine awake, add `--keep-awake` to each bounded wait. Use the same permitted duration, for example:
+
+```powershell
+awkit channel --db $db wait reviewer new --max 60 --keep-awake
+```
+
+The flag makes a best-effort request to prevent idle system sleep only while that command waits, then restores the thread's previous state on return or interrupt. It changes no display, away-mode or power-plan setting. On other platforms, or if acquiring or releasing the request fails, stderr warns that the system may sleep; the normal wait, output, read positions, exit codes and exceptions remain. Investigate the warning before relying on sleep prevention. Gaps between waits, ended turns and explicit or forced sleep remain unprotected. The flag cannot keep an ended agent turn active or deliver messages to it.
+
 On startup or resume, inspect `channel export` for requests, prior results and closure before repeating work. Read `wait <role> new --max 0`, then recover unanswered requests with `wait <role> request --max 0`. Use IDs to distinguish unfinished work from an already returned result. The shared `new` position records reading; it does not establish handling or completion, and cannot hide an unanswered request from `request` mode. Use `reply <ID>` or export to recover an earlier result.
 
 Both roles inspect `new` between work portions, including notices and replies. Before waiting, check for unanswered requests. When idle or blocked, wait in `new` mode with the allowed bound, then check `request --max 0` and handle the corresponding IDs. Request-only waits omit notices; a receipt notice does not answer a request.
@@ -92,6 +100,7 @@ Main session:
 Implement <unit> as the main session. Read agent-work-kit/review-session.md and follow the main role. A review session is monitoring the channel.
 Use .awkit/review-<unit>.sqlite3 as the channel file. After each risky portion, create a snapshot with awkit review snapshot and request review.
 On startup/resume, inspect history, new messages and unanswered requests. Between work portions inspect new notices; use bounded new-mode waits when blocked, recovering requests by ID.
+For an authorized Windows work window, add --keep-awake to each bounded channel wait and heed its warnings. The flag does not keep an ended turn active.
 At the end, request final, apply its results and send close. Do not commit.
 ```
 
@@ -100,6 +109,7 @@ Review session:
 ```text
 Act as the independent review session for <unit>. Read agent-work-kit/review-session.md and follow the reviewer role.
 Use .awkit/review-<unit>.sqlite3 as the channel file. Inspect history on startup/resume and recover unanswered requests in request mode. Read new messages between portions and use bounded new-mode waits while idle, then recover requests by ID. Handle notices as well as assignments; stop when close returns exit 3. Keep the Codex turn open while waiting.
+For an authorized Windows work window, add --keep-awake to each bounded channel wait and heed its warnings. The flag does not keep an ended turn active.
 ```
 
 Prevents: F17.

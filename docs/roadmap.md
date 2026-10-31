@@ -4,7 +4,9 @@ Choose the next unfinished outcome here. The owner selects implementation or del
 
 ## Current planning focus
 
-[Review preparation failure evidence](tasks/review-preparation-failures.md) was delivered in `9fa9a2a`, with passing frozen checks, Windows/Linux CI and exact installation. No next product implementation is assigned. Automatic long-path enablement and broader status and lookup changes remain deferred under that task's conditions. Source-snapshot retention remains separate from artifact storage. The [usage record](tasks/usage-log-compatibility.md#current-status) now includes one additional sample with IDE metadata; no parser change was selected.
+[Channel wait sleep prevention](tasks/channel-keep-awake.md) is selected for implementation after a host sleep interrupted the authorized work window. Root owns the opt-in behavior and planning review; the implementation session owns code, checks and delivery. An additive [storage summary view](tasks/review-storage.md#summary-view) is also selected, using retained target metadata and a representative formatter fixture. The [planning record](tasks/planning-role-drift.md) records the preceding failure to continue selecting work.
+
+[Review preparation failure evidence](tasks/review-preparation-failures.md) was delivered in `9fa9a2a`, with passing frozen checks, Windows/Linux CI and exact installation. Automatic long-path enablement and broader status and lookup changes remain deferred under that task's conditions. Source-snapshot retention remains separate from artifact storage. The [usage record](tasks/usage-log-compatibility.md#current-status) now includes one additional sample with IDE metadata; no parser change was selected.
 
 The owner approved the exact reference-size policy replacement in `.awkit/handoffs/planning-continuation/reference-budget-policy-proposal.md`: prefer a complete topic guide at a lookup limit and compare accepted text with its source before shortening. The [owning task](tasks/review-preparation-failures.md#reference-policy-follow-up) records this separate follow-up and its delivery receipt. The reference at `9fa9a2a` uses 8,887 of 9,000 words; the existing limits remain unchanged.
 
@@ -26,7 +28,7 @@ Item numbers preserve references from earlier plans. Completed units and the ear
 
 | Item | Remaining work | Condition or next decision |
 |---|---|---|
-| 1 | Evidence for the remaining failure entries | Owner-record coverage is complete. The twelve entries still marked "needs evidence" require real review, delegation, data or operations cases under item 5, or removal after that evaluation. |
+| 1 | Evidence for the remaining failure entries | The reference revision supplies an observed F16 occurrence, recorded in the [writing outcome](tasks/writing-outcome-evaluation.md). The eleven entries still marked "needs evidence" require real review, delegation, data or operations cases under item 5, or removal after that evaluation. |
 | 2a | Candidate executable guards | Select a guard only when item 5 demonstrates its failure and existing controls are insufficient. Usage-based enforcement also depends on item 6. Original candidates remain in the [historical backlog](history/roadmap.md#earlier-planning-context). |
 | 5 | Measure real work | Preserve task-bounded repeated instructions, tokens and observed/prevented failures in [evidence](history/evidence.md#measurement-record). Select a real continuation or revision; existing trials establish narrower results than causal benefit or saved effort. |
 | 6 | Usage against current clients | The format-3 correction is delivered. Further work requires fresh client samples, an explicit counting unit and reliable task boundaries; see [compatibility limits](tasks/usage-log-compatibility.md#current-status). |

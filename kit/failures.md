@@ -194,9 +194,9 @@ Conversational phrasing, the user's feelings or the conversation itself appear i
 #### F16. Approved work regresses during a later change.
 
 A revision passes its checks but loses what the user had accepted.
-- Evidence: needs evidence (carried over from `work-types.md`). awkit's own loop (accept and compare) guards it, so whether it occurs in real work is a main question of next work 5. One prevented case from real use, not an occurrence: an owner-approved replacement configuration was prepared from a project's earlier file; another session then committed path changes to that file. Writing the prepared file would have reverted them. The approval's instruction to recheck the baseline hash before applying caught the change, and the same additions were applied to the current file instead (recorded in the repository's shared artifact storage task). Accept and compare were not used; the guard was prose.
+- Evidence: observed in awkit's development. To fit new recovery guidance within the reference limit, `6dee28b` shortened existing instructions as the repository rule then directed, and passed its local frozen checks. A separate writing review found eight preservation defects, including lost conditions, scope and reasons. `9fa9a2a` restored them and moved the complete recovery topic into its own guide; `235875b` later replaced the compression rule. Comparison with the earlier reference caught this occurrence, not the mechanical writing check or `review accept` or `compare`. One prevented case from real use, not an occurrence: an owner-approved replacement configuration was prepared from a project's earlier file; another session then committed path changes to that file. Writing the prepared file would have reverted them. The approval's instruction to recheck the baseline hash before applying caught the change, and the same additions were applied to the current file instead (recorded in the repository's shared artifact storage task). Accept and compare were not used; the guard was prose.
 - Countermeasure: keep the accepted version; compare every revision with it.
-- Check: Kind: guidance. `awkit review accept` and `compare`. Status: tool.
+- Check: Kind: guidance. [Writing, Preserve facts and judgments](writing.md#preserve-facts-and-judgments); `awkit review accept` and `compare`. Status: prose and tool.
 
 ### Review
 

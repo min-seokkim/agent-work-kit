@@ -1,6 +1,6 @@
 # Shared artifact storage
 
-Use this reference when repeated checks retain large identical artifacts or when moving review evidence. Start with `awkit review storage` to inspect existing logical sizes. Storage selection changes future checks; it does not reduce existing copied history.
+Use this reference when repeated checks retain large identical artifacts or when moving review evidence. Start with `awkit review storage --summary` for an overview of existing logical sizes and inspection limits. Omit `--summary` or use `--json` for complete rows and issue details. Storage selection changes future checks; it does not reduce existing copied history.
 
 ## Preview current selection
 
@@ -63,6 +63,8 @@ Prevents: F7, F16, F17.
 Move the collection with its `.awkit-artifacts/` directory to preserve shared verification without the original project path. Copying a complete collection may retain its identity; the identity represents compatible store lineage, not a unique physical location. Copies may diverge independently. A lone reference-based run cannot reconstruct its missing store by searching other paths.
 
 `review storage` reports run-local bytes, shared object bytes counted once, per-run referenced logical bytes and total observed collection bytes. Staging and unreferenced object bytes are separate. Invalid or unreadable manifests limit reference coverage, so unreferenced does not establish reclaimable space. These are live logical sizes, not allocated disk use or measured savings.
+
+`--summary` keeps totals, recorded statuses, metadata and shared-reference coverage, unverified manifest estimates and every limitation. It replaces per-run shared-reference rows, largest-run rows and individual issue details with explicit omission counts. Issue counts are grouped by scope and code; run-scoped groups also count distinct affected runs. Collection and shared-store issues have no inferred run identity. These classifications do not establish causes or authorize cleanup. `--summary` and `--json` are mutually exclusive. All views use the same inspection and exit meanings; summary does not scan faster or make partial results complete.
 
 Deleting a run does not generally reclaim its shared objects. Switching future runs back to `"copy"` leaves prior shared runs dependent on a compatible reader and store; export those runs independently before removing that dependency. This unit performs no migration or collection. Source Git snapshot lifetime also remains separate from retained artifact integrity.
 

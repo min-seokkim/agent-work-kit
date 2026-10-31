@@ -464,11 +464,33 @@ def _size(value):
             return f"{value} bytes ({scaled // 100}.{scaled % 100:02d} {label})"
 
 
-def text(report):
+def _issue_summary(report):
+    counts = Counter()
+    affected = defaultdict(set)
+    for scope, issues in (("collection", report["issues"]), ("shared store", report["shared_store"]["issues"])):
+        counts.update((scope, issue["code"]) for issue in issues)
+    for run in report["runs"]:
+        for issue in run["issues"]:
+            counts["runs", issue["code"]] += 1
+            affected[issue["code"]].add(run["name"])
+    total = sum(counts.values())
+    run_count = len(set().union(*affected.values()))
+    lines = [f"Issues: {total}; runs with run-scoped issues: {run_count}. Counts are classifications, not causes."]
+    for (scope, code), count in sorted(counts.items()):
+        suffix = f"; affected runs: {len(affected[code])}" if scope == "runs" else ""
+        noun = "issue" if count == 1 else "issues"
+        lines.append(f"  {scope} / {code}: {count} {noun}{suffix}")
+    lines.extend([f"Individual issue details: {total} omitted.",
+                  "For full rows and issue paths/details, omit --summary or use --json."])
+    return lines
+
+
+def text(report, *, summary=False):
     lines = [f"Review storage: {report['root']}", f"Inspection: {report['status']}; runs: {report['run_count']}",
              f"Observed run-local logical size: {_size(report['observed']['total_bytes'])}",
              f"Observed collection logical size: {_size(report['collection_observed']['total_bytes'])}"]
-    statuses = ", ".join(f"{name}={count}" for name, count in report["recorded_status_counts"].items()) or "none"
+    status_items = report["recorded_status_counts"].items()
+    statuses = ", ".join(f"{name}={count}" for name, count in (sorted(status_items) if summary else status_items)) or "none"
     lines.append("Recorded statuses: " + statuses)
     for category in CATEGORIES:
         value = report["observed"][category]
@@ -480,27 +502,35 @@ def text(report):
         lines.append(f"  shared {category}: {_size(value['bytes'])}; files: {value['files']}")
     unreferenced = store["unreferenced_objects"]
     lines.append(f"Objects unreferenced by valid readable manifests (not proven reclaimable): {_size(unreferenced['bytes'])}; files: {unreferenced['files']}")
-    lines.append("Shared logical references per run:")
-    for run in report["runs"]:
-        if run["metadata"]["storage"] == "shared":
-            lines.append(f"  {run['name']}: declared {_size(run['shared_references']['declared_payload_bytes'])}; "
-                         f"counted {_size(run['shared_references']['counted_payload_bytes'])}")
+    if summary:
+        count = sum(run["metadata"]["storage"] == "shared" for run in report["runs"])
+        lines.append(f"Shared logical references per run: {count} rows omitted.")
+    else:
+        lines.append("Shared logical references per run:")
+        for run in report["runs"]:
+            if run["metadata"]["storage"] == "shared":
+                lines.append(f"  {run['name']}: declared {_size(run['shared_references']['declared_payload_bytes'])}; "
+                             f"counted {_size(run['shared_references']['counted_payload_bytes'])}")
     manifests = report["manifests"]
     coverage = report["metadata_coverage"]
     lines.extend([f"Metadata coverage: valid results={coverage['valid_results']}, valid manifests={coverage['valid_manifests']}, artifactless runs={coverage['artifactless_runs']}",
                   f"Manifest-declared payload: {_size(manifests['declared_payload_bytes'])}",
                   f"Counted manifest payload: {_size(manifests['counted_payload_bytes'])}",
                   f"Unique recorded hash size (unverified): {_size(manifests['unique_recorded_payload_bytes'])}",
-                  f"Duplicate declared size (not recoverable space): {_size(manifests['duplicate_declared_bytes'])}",
-                  "Largest runs:"])
-    for run in report["largest_runs"]:
-        lines.append(f"  {run['name']}: {_size(run['bytes'])}")
-    for issue in report["issues"]:
-        lines.append(f"issue {issue['path']}: {issue['code']}: {issue['detail']}")
-    for issue in store["issues"]:
-        lines.append(f"issue {STORE}/{issue['path']}: {issue['code']}: {issue['detail']}")
-    for run in report["runs"]:
-        for issue in run["issues"]:
-            lines.append(f"issue {run['name']}/{issue['path']}: {issue['code']}: {issue['detail']}")
+                  f"Duplicate declared size (not recoverable space): {_size(manifests['duplicate_declared_bytes'])}"])
+    if summary:
+        lines.append(f"Largest runs: {len(report['largest_runs'])} rows omitted.")
+        lines.extend(_issue_summary(report))
+    else:
+        lines.append("Largest runs:")
+        for run in report["largest_runs"]:
+            lines.append(f"  {run['name']}: {_size(run['bytes'])}")
+        for issue in report["issues"]:
+            lines.append(f"issue {issue['path']}: {issue['code']}: {issue['detail']}")
+        for issue in store["issues"]:
+            lines.append(f"issue {STORE}/{issue['path']}: {issue['code']}: {issue['detail']}")
+        for run in report["runs"]:
+            for issue in run["issues"]:
+                lines.append(f"issue {run['name']}/{issue['path']}: {issue['code']}: {issue['detail']}")
     lines.extend(report["limits"])
     return "\n".join(lines)

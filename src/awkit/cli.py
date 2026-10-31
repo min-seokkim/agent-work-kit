@@ -158,6 +158,8 @@ def _parser():
     wait.add_argument("target", nargs="?", metavar="ID", help="message ID, for reply mode only")
     wait.add_argument("--max", type=float, default=120, metavar="SECONDS", help="how long to wait; 0 checks once (default: 120)")
     wait.add_argument("--json", action="store_true", help="print messages as JSON")
+    wait.add_argument("--keep-awake", action="store_true",
+                      help="best-effort Windows idle-sleep prevention during this wait; warns if unavailable")
     export = commands.add_parser("export", help="print the whole channel; does not move read positions")
     export.add_argument("--json", action="store_true", help="print messages as JSON")
     status = commands.add_parser("status", help="observe listed channels and explicit task-record obligations without writes")
@@ -261,7 +263,9 @@ def _parser():
     preview.add_argument("--json", action="store_true", help="print paths, patterns, logical sizes and observation limits as JSON")
     storage = review_commands.add_parser("storage", help="inspect existing review storage without changing files; exit 0 complete, 1 partial, 2 unavailable")
     storage.add_argument("--runs-root", type=Path, help="existing run store (default: repository .awkit/reviews)")
-    storage.add_argument("--json", action="store_true", help="print observed sizes, metadata coverage and unverified hash accounting as JSON")
+    storage_output = storage.add_mutually_exclusive_group()
+    storage_output.add_argument("--json", action="store_true", help="print observed sizes, metadata coverage and unverified hash accounting as JSON")
+    storage_output.add_argument("--summary", action="store_true", help="print totals, coverage, issue counts and limitations; omit individual rows/details")
     confirm = review_commands.add_parser("verify", help="rehash a run's retained artifacts against its manifest; exit 0 when all match")
     confirm.add_argument("run_dir", type=Path, help="run folder printed by `review check`")
     export = review_commands.add_parser("export", help="export verified run evidence as independent ordinary files")
@@ -664,7 +668,7 @@ def main(argv=None):
                 from .review import storage
                 from .review_storage import text
                 report = storage(args.repo, args.runs_root)
-                print(json.dumps(report, ensure_ascii=False, indent=2) if args.json else text(report))
+                print(json.dumps(report, ensure_ascii=False, indent=2) if args.json else text(report, summary=args.summary))
                 return 0 if report["complete"] else 1
             if args.action == "snapshot":
                 print(snapshot(args.repo, args.files))
@@ -773,7 +777,12 @@ def main(argv=None):
             if args.action == "export":
                 print(render(store.export(), args.json))
                 return 0
-            code, rows = store.wait(args.role, args.mode, args.target, seconds=args.max)
+            if args.keep_awake:
+                from .keep_awake import keep_awake
+                with keep_awake():
+                    code, rows = store.wait(args.role, args.mode, args.target, seconds=args.max)
+            else:
+                code, rows = store.wait(args.role, args.mode, args.target, seconds=args.max)
             if rows:
                 print(render(rows, args.json))
             elif code == 3:

@@ -8,6 +8,10 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Commands
 
+- `review storage --summary` keeps totals, recorded statuses, coverage, unverified estimates and limitations while replacing per-run references, largest-run rows and individual issues with explicit omission counts. Issues are counted by scope and code, with affected-run counts only for run-scoped issues; counts do not establish causes. The option is mutually exclusive with `--json`. Default text, schema-2 JSON, inspection and exits are unchanged.
+
+- `channel wait --keep-awake` requests Windows idle-sleep prevention for that wait and restores the thread's previous state on exit. It is best effort: unsupported platforms and acquisition or release failures warn on stderr while preserving normal messages, JSON, cursors, exit codes and exceptions. Default waits are unchanged; gaps between calls and explicit sleep remain unprotected.
+
 - `kit guide windows-recovery` prints the complete Windows review path-recovery topic, included in packages and copied kits. The reference keeps its original recovery heading and fragment, with a whole-file link to the topic.
 
 - `review check` retains an additive `failure` object with the phase and original error for caught runner exceptions saved as `uncertain`, including failures before checks start and after steps finish. The CLI reports the run location and preserves the original error if saving its diagnostic fails. Existing status/exit meanings, step history, cleanup and incomplete shared publication remain. The reference documents custom-root lookup/hook configuration and tested repository-local Windows path recovery.

@@ -15,7 +15,70 @@ from unittest.mock import patch
 from awkit.cli import main
 from awkit.review import check, git, storage
 from awkit.review_export import export_run
-from awkit.review_storage import _linked, inspect
+from awkit.review_storage import CATEGORIES, STORE_CATEGORIES, _linked, inspect, text
+
+
+def summary_fixture():
+    """Representative partial/shared report; no filesystem scan or private inputs."""
+    def sizes(categories, **values):
+        data = {name: {'bytes': 0, 'files': 0} for name in categories}
+        for name, value in values.items():
+            data[name] = {'bytes': value, 'files': 1}
+        data['total_bytes'] = sum(data[name]['bytes'] for name in categories)
+        data['total_files'] = sum(data[name]['files'] for name in categories)
+        return data
+
+
+    def run(name, storage='copied', manifest='absent', issues=None):
+        shared = storage == 'shared'
+        return {
+            'name': name, 'complete': not issues, 'recorded_status': 'passed',
+            'observed': sizes(CATEGORIES, records=1), 'issues': issues or [],
+            'metadata': {'result': 'valid', 'manifest': manifest, 'storage': storage,
+                         'declared_files': int(shared), 'declared_payload_bytes': 4 if shared else 0,
+                         'counted_files': int(shared), 'counted_payload_bytes': 4 if shared else 0},
+            'shared_references': {'declared_files': int(shared), 'declared_payload_bytes': 4 if shared else 0,
+                                  'counted_files': int(shared), 'counted_payload_bytes': 4 if shared else 0},
+        }
+
+    runs = [run(f'review-missing-{i:03}', manifest='invalid', issues=[{
+        'path': 'artifacts/manifest.json', 'code': 'invalid-metadata',
+        'detail': 'Metadata is missing or was not safely inventoried.'
+    }]) for i in range(126)]
+    runs += [run(f'review-artifactless-{i:02}') for i in range(20)]
+    runs += [run(f'review-shared-{i:02}', storage='shared', manifest='valid') for i in range(2)]
+    runs.sort(key=lambda entry: entry['name'])
+    store_observed = sizes(STORE_CATEGORIES, objects=4, metadata=93)
+    report = {
+        'schema': 2, 'root': 'synthetic-review-collection',
+        'selection': 'direct review-* directories and collection-local shared store',
+        'status': 'partial', 'complete': False, 'run_count': len(runs),
+        'observed': sizes(CATEGORIES, records=148),
+        'collection_observed': {'total_bytes': 148 + store_observed['total_bytes'], 'total_files': 150},
+        'recorded_status_counts': {'passed': 148}, 'runs': runs,
+        'largest_runs': [{'name': entry['name'], 'bytes': 1} for entry in runs[:10]],
+        'issues': [{'path': 'review-unreadable', 'code': 'stat-error', 'detail': 'Synthetic distinct filesystem error.'}],
+        'shared_store': {
+            'present': True, 'descriptor': 'valid', 'issues': [], 'observed': store_observed,
+            'reference_coverage_complete': False,
+            'reference_scope': 'Valid readable manifests in the selected direct review-* directories.',
+            'referenced_objects': {'bytes': 4, 'files': 1},
+            'unreferenced_objects': {'bytes': 0, 'files': 0, 'hashes': []},
+        },
+        'metadata_coverage': {'valid_results': 148, 'valid_manifests': 2, 'artifactless_runs': 20},
+        'manifests': {'valid_runs': 2, 'declared_files': 2, 'declared_payload_bytes': 8,
+                      'counted_files': 2, 'counted_payload_bytes': 8, 'unique_recorded_hashes': 1,
+                      'unique_recorded_payload_bytes': 4, 'duplicate_declared_bytes': 4, 'conflicting_hashes': []},
+        'limits': [
+            'Logical file sizes, not allocated disk usage or recoverable space.',
+            'Recorded payload hashes are unverified; payloads were not read or rehashed.',
+            'Live filesystem inspection is not an atomic snapshot.',
+            'Unreferenced objects are relative to valid readable manifests, not proven reclaimable bytes.',
+        ],
+    }
+    report['observed']['records']['files'] = 148
+    report['observed']['total_files'] = 148
+    return report
 
 
 class StorageTests(unittest.TestCase):
@@ -671,6 +734,121 @@ class StorageTests(unittest.TestCase):
         report = inspect(self.store)
         self.assertFalse(report["complete"])
         self.assertEqual(report["runs"][0]["metadata"]["result"], "invalid")
+
+
+class StorageSummaryTests(unittest.TestCase):
+    def invoke(self, *options):
+        stdout, stderr = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+            code = main(["review", "storage", *options])
+        return code, stdout.getvalue(), stderr.getvalue()
+
+    def test_default_text_retains_baseline_bytes(self):
+        report = summary_fixture()
+        original = json.dumps(report, sort_keys=True)
+        expected = "b2e79cca8e1bfea6681f760742b45482cacbc540157d89b463d504688360e39e"
+        self.assertEqual(hashlib.sha256(text(report).encode()).hexdigest(), expected)
+        self.assertEqual(text(report), text(report, summary=False))
+        self.assertEqual(json.dumps(report, sort_keys=True), original)
+
+    def test_summary_retains_every_scalar_qualifier_and_limitation(self):
+        report = summary_fixture()
+        report["recorded_status_counts"] = {status: index + 1 for index, status in enumerate(
+            ("running", "passed", "failed", "uncertain", "cleanup-failed", "unknown"))}
+        report["limits"].append("Additional inspection limitation remains visible.")
+        original = json.dumps(report, sort_keys=True)
+        output = text(report, summary=True)
+        prefixes = ("Review storage:", "Inspection:", "Observed run-local", "Observed collection",
+                    "Shared store:", "Objects unreferenced", "Metadata coverage:",
+                    "Manifest-declared payload:", "Counted manifest payload:",
+                    "Unique recorded hash size (unverified):", "Duplicate declared size (not recoverable space):")
+        for line in text(report).splitlines():
+            if line.startswith(prefixes) or line.startswith(tuple("  " + name + ":" for name in CATEGORIES)) \
+                    or line.startswith(tuple("  shared " + name + ":" for name in STORE_CATEGORIES)):
+                self.assertIn(line, output)
+        for status, count in report["recorded_status_counts"].items():
+            self.assertIn(f"{status}={count}", output)
+        for limit in report["limits"]:
+            self.assertIn(limit, output)
+        self.assertIn("reference coverage complete: false", output)
+        self.assertIn("Shared logical references per run: 2 rows omitted.", output)
+        self.assertIn("Largest runs: 10 rows omitted.", output)
+        self.assertIn("Individual issue details: 127 omitted.", output)
+        self.assertIn("omit --summary or use --json", output)
+        self.assertNotIn("review-missing-", output)
+        self.assertNotIn("Synthetic distinct filesystem error", output)
+        self.assertEqual(json.dumps(report, sort_keys=True), original)
+
+    def test_issue_counts_distinguish_scopes_and_unique_affected_runs(self):
+        report = summary_fixture()
+        issue = {"path": "hidden-path", "code": "invalid-metadata", "detail": "hidden-detail"}
+        report["issues"].append(issue)
+        report["shared_store"]["issues"].append(issue)
+        run = next(run for run in report["runs"] if run["issues"])
+        run["issues"].append(issue)
+        output = text(report, summary=True)
+        self.assertIn("Issues: 130; runs with run-scoped issues: 126. Counts are classifications, not causes.", output)
+        self.assertIn("collection / invalid-metadata: 1 issue", output)
+        self.assertIn("collection / stat-error: 1 issue", output)
+        self.assertIn("shared store / invalid-metadata: 1 issue", output)
+        self.assertIn("runs / invalid-metadata: 127 issues; affected runs: 126", output)
+        self.assertNotIn("hidden-path", output)
+        self.assertNotIn("hidden-detail", output)
+        report["runs"].reverse()
+        report["issues"].reverse()
+        self.assertEqual(text(report, summary=True), output)
+
+    def test_no_run_identity_is_inferred_from_root_or_store_issue_paths(self):
+        report = summary_fixture()
+        for run in report["runs"]:
+            run["issues"] = []
+        report["shared_store"]["issues"] = [{"code": "scan-error", "path": "review-name", "detail": "denied"}]
+        output = text(report, summary=True)
+        self.assertIn("Issues: 2; runs with run-scoped issues: 0.", output)
+
+    def test_zero_issues_absent_and_complete_reports_remain_explicit(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            for root, default in ((Path(temporary), False), (Path(temporary) / "absent", True)):
+                report = inspect(root, default=default)
+                output = text(report, summary=True)
+                self.assertIn(f"Inspection: {report['status']}; runs: 0", output)
+                self.assertIn("Issues: 0; runs with run-scoped issues: 0.", output)
+                self.assertIn("Individual issue details: 0 omitted.", output)
+                self.assertIn("Shared logical references per run: 0 rows omitted.", output)
+                self.assertIn("Largest runs: 0 rows omitted.", output)
+                self.assertTrue(all(limit in output for limit in report["limits"]))
+
+    def test_cli_summary_default_and_json_use_the_same_report_and_exits(self):
+        report = summary_fixture()
+        for status, complete, expected in (("partial", False, 1), ("complete", True, 0), ("absent", True, 0)):
+            with self.subTest(status=status):
+                report.update(status=status, complete=complete)
+                original = json.dumps(report, sort_keys=True)
+                with patch("awkit.review.storage", return_value=report) as scan:
+                    code, output, error = self.invoke("--summary")
+                    self.assertEqual((code, output, error), (expected, text(report, summary=True) + "\n", ""))
+                    self.assertEqual(self.invoke(), (expected, text(report) + "\n", ""))
+                    self.assertEqual(self.invoke("--json"),
+                                     (expected, json.dumps(report, ensure_ascii=False, indent=2) + "\n", ""))
+                self.assertEqual(scan.call_count, 3)
+                self.assertEqual(scan.call_args_list[0], scan.call_args_list[1])
+                self.assertEqual(scan.call_args_list[1], scan.call_args_list[2])
+                self.assertEqual(json.dumps(report, sort_keys=True), original)
+                self.assertEqual(report["schema"], 2)
+
+    def test_cli_unavailable_keeps_exit_two(self):
+        with patch("awkit.review.storage", side_effect=ValueError("cannot inspect fixture")):
+            code, output, error = self.invoke("--summary")
+        self.assertEqual((code, output), (2, ""))
+        self.assertIn("cannot inspect fixture", error)
+
+    def test_cli_rejects_summary_and_json_before_scanning(self):
+        for options in (("--summary", "--json"), ("--json", "--summary")):
+            with self.subTest(options=options), patch("awkit.review.storage") as scan:
+                with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as caught:
+                    self.invoke(*options)
+                self.assertEqual(caught.exception.code, 2)
+                scan.assert_not_called()
 
 
 if __name__ == "__main__":

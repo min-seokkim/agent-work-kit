@@ -114,6 +114,8 @@ class Migration(unittest.TestCase):
             path.write_text(original, encoding="utf-8")
             kit_hooks.install(root, use_git=False, use_codex=False)
             self.assertNotIn("||", path.read_text(encoding="utf-8"))
-            self.assertFalse((root / ".claude/settings.local.json").exists())
+            local = json.loads((root / ".claude/settings.local.json").read_text(encoding="utf-8"))
+            self.assertEqual(local["hooks"], {})  # The local selector adds no duplicate handler.
+            self.assertEqual(local["env"], {"AWKIT_CLAUDE_BASH_PATHS": "git-bash"})
             kit_hooks.remove(root, ask=lambda path: True)
             self.assertEqual(path.read_text(encoding="utf-8"), original)

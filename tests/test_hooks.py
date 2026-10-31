@@ -279,7 +279,7 @@ class UnexpectedErrorContext(Project):
     def test_process_context_is_useful_without_payload_argv_environment_or_locals(self):
         sentinels = ("PAYLOAD_SECRET", "ENV_SECRET", "ARGV_SECRET", "LOCAL_SECRET")
 
-        def broken(*args):
+        def broken(*args, **kwargs):
             local_value = sentinels[3]
             self.assertEqual(local_value, "LOCAL_SECRET")
             raise ModuleNotFoundError("invented missing module")
@@ -371,7 +371,7 @@ class UnexpectedErrorContext(Project):
                 "    raise Failure('invented')\n")
         exec(compile(code, filename, "exec"), namespace)
 
-        def broken(*args):
+        def broken(*args, **kwargs):
             namespace[name](80)
 
         with (mock.patch.object(hooks, "_run", side_effect=broken),

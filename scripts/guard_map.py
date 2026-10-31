@@ -19,7 +19,7 @@ KIT = ROOT / "kit"
 CATALOGUE = KIT / "failures.md"
 RULES = [KIT / "rules.toml", KIT / "rules-session.toml"]
 GUIDES = ("workflow.md", "connect.md", "checking.md", "delivery.md", "protocol.md", "work-types.md",
-          "delegation.md", "review-session.md", "writing.md", "korean-writing.md", "sessions.md")
+          "delegation.md", "review-session.md", "writing.md", "korean-writing.md", "sessions.md", "commit-paths.md")
 MODULES = ("awkit.checks", "awkit.review", "awkit.doctor", "awkit.scan", "awkit.connect", "awkit.kit_install",
            "awkit.usage", "awkit.channel", "awkit.hooks", "awkit.local_state", "awkit.session_rules", "awkit.sessions", "awkit.claude_session",
            "awkit.extras.pipeline", "awkit.extras.publish", "awkit.extras.ui")

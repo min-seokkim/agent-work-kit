@@ -3,6 +3,7 @@
 import hashlib
 import os
 import subprocess
+import tempfile
 import time
 from contextlib import contextmanager
 from pathlib import Path
@@ -95,6 +96,28 @@ def _pattern(relative, directory):
     return "/" + escaped + ("/" if directory else "")
 
 
+def _backup(top, requested, data):
+    """Reserve a fresh original copy without overwriting an unrecorded backup."""
+    path = requested
+    try:
+        requested.relative_to(top)
+        git_root = repository(top)
+        if git_root is not None:
+            _untracked(git_root, requested.relative_to(git_root).as_posix())
+        requested.parent.mkdir(parents=True, exist_ok=True)
+        fd, name = tempfile.mkstemp(prefix=requested.name + "-", dir=requested.parent)
+        path = Path(name)
+        with os.fdopen(fd, "wb") as stream:
+            if git_root is not None:
+                _untracked(git_root, path.relative_to(git_root).as_posix())
+            stream.write(data)
+            stream.flush()
+            os.fsync(stream.fileno())
+    except OSError as exc:
+        raise ExclusionError(f"Cannot save fresh backup {path}: {exc}") from exc
+    return path
+
+
 def add_rule(top, relative, *, directory=False, backup=None, project=None):
     """Append without replacing existing bytes; optionally return an installer receipt."""
     top = Path(top).resolve()
@@ -114,6 +137,17 @@ def add_rule(top, relative, *, directory=False, backup=None, project=None):
             pattern = _pattern(relative.rstrip("/"), directory)
             line = pattern.encode("utf-8") + newline
             addition = (b"" if not data or data.endswith(b"\n") else newline) + line
+            entry = {"pattern": pattern, "before": _sha(before), "after": _sha(data + addition), "line": line.hex()}
+            if backup is not None and before is not None:
+                base = Path(project) if project is not None else top
+                requested = base / backup
+                # Reserve a new file, including when an earlier unrecorded backup exists.
+                # Save it before touching exclude; a failed reservation/write leaves exclude exact.
+                try:
+                    path = _backup(top, requested, before)
+                except ExclusionError as exc:
+                    raise ExclusionError(f"Git exclusion was not changed: {exc}") from exc
+                entry["backup"] = path.relative_to(base).as_posix()
             with exclude.open("ab") as stream:
                 stream.write(addition)
                 stream.flush()
@@ -128,14 +162,6 @@ def add_rule(top, relative, *, directory=False, backup=None, project=None):
                         exclude.write_bytes(before)
                 raise ExclusionError(f"Git does not ignore {target}; check higher-priority .gitignore negations. "
                                      "Managed state was not written.")
-            entry = {"pattern": pattern, "before": _sha(before), "after": _sha(data + addition), "line": line.hex()}
-            if backup is not None and before is not None:
-                base = Path(project) if project is not None else top
-                path = base / backup
-                _untracked(top, path.relative_to(top).as_posix())
-                path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_bytes(before)
-                entry["backup"] = Path(backup).as_posix()
             return entry
     except OSError as exc:
         raise ExclusionError(f"Cannot protect managed state using {exclude}: {exc}") from exc

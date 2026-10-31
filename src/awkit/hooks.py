@@ -225,6 +225,8 @@ class Call:
         self.event, self.session, self.payload, self.cwd = event, session, payload, cwd
         self.tool, self.tool_names, self.shell, self.paths, self.text = "", (), "", [], ""
         self.prompt = ""
+        self.bash_paths = None
+        self.bash_path_error = None
 
 
 def _event_name(value):
@@ -334,7 +336,21 @@ def _argv(rule, call, root):
             argv.extend(files)
         else:
             argv.append(part.replace("{root}", str(root)))
+    if _selected_commit(rule, call):
+        from .commit_paths import ARGUMENT, MODE
+        if call.bash_path_error:
+            raise CommandProtocolError(call.bash_path_error)
+        if call.bash_paths != MODE:
+            raise CommandProtocolError("AWKIT_CLAUDE_BASH_PATHS must be git-bash")
+        if len(argv) != 6:
+            raise CommandProtocolError("bundled commit adapter has conflicting or unsupported arguments")
+        argv.append(ARGUMENT)
     return argv
+
+
+def _selected_commit(rule, call):
+    return (call.bash_paths is not None and rule.command_protocol == "awkit-v1"
+            and rule.command[:6] == [sys.executable, "-m", "awkit.rule_command", "check", "commit", "--hook"])
 
 
 def run_command(argv, payload, root, timeout):
@@ -587,7 +603,7 @@ def _collect_error_context(exc, context):
 # Entry points
 
 
-def run(stdin_text, root=None, skip=(), kit_rules=False, event=None):
+def run(stdin_text, root=None, skip=(), kit_rules=False, event=None, *, bash_paths=None):
     """Handle one hook event; returns decision text (empty when nothing fired). Caught handler failures
     allow the call and are logged once. Startup/imports and the initial cwd lookup are outside this handler. Rules named in `skip` do not run. With `kit_rules`,
     a project without rules.toml gets the kit's rules; without it, such a project gets none. `event` is the
@@ -609,7 +625,7 @@ def run(stdin_text, root=None, skip=(), kit_rules=False, event=None):
         base = find_root(start)
         if event and not payload.get("hook_event_name"):
             payload = {**payload, "hook_event_name": event}
-        return _run(payload, base, skip, kit_rules)
+        return _run(payload, base, skip, kit_rules, bash_paths=bash_paths)
     except Exception as exc:  # noqa: BLE001 - a hook failure must never block the agent
         context = {"schema": 1, "executable": None, "python_version": None, "cwd": None,
                    "awkit_file": None, "hooks_file": None, "exception_type": None, "frames": []}
@@ -626,9 +642,13 @@ def run(stdin_text, root=None, skip=(), kit_rules=False, event=None):
         return ""
 
 
-def _run(payload, root, skip=(), kit_rules=False):
+def _run(payload, root, skip=(), kit_rules=False, *, bash_paths=None):
     rules_path, kit = root / RULES_FILE, None
     call = normalize(payload, root)
+    from .commit_paths import declaration_error, selected
+    call.bash_paths = selected(bash_paths, payload)
+    if call.bash_paths is not None:
+        call.bash_path_error = declaration_error(call.bash_paths, root)
     if not rules_path.is_file():
         if not kit_rules:
             _missing_rules(root, call)
@@ -655,16 +675,19 @@ def _run(payload, root, skip=(), kit_rules=False):
             continue
         if not matches(rule, call):
             continue
+        error = None
         try:
             firing = evaluate(rule, call, root, state)
         except subprocess.TimeoutExpired:
-            errors.append((rule.name, f"timed out after {rule.timeout:g} s; allowed"))
-            continue
+            error = f"timed out after {rule.timeout:g} s; allowed"
         except CommandProtocolError as exc:
-            errors.append((rule.name, f"bundled command error: {exc}; allowed"))
-            continue
+            error = f"bundled command error: {exc}; allowed"
         except OSError as exc:
-            errors.append((rule.name, f"could not run {rule.command[0]}: {exc.strerror or exc}; allowed"))
+            error = f"could not run {rule.command[0]}: {exc.strerror or exc}; allowed"
+        if error:
+            errors.append((rule.name, error))
+            if _selected_commit(rule, call):
+                firings.append(Firing(rule.name, "context", f"{rule.label}: commit protection unavailable: {_trim(error)}"))
             continue
         if firing:
             firings.append(firing)
@@ -798,16 +821,26 @@ def _simple_commands(command):
     yield words
 
 
-def git_commits(command):
+def git_commits(command, *, bash_paths=False):
     """Each `git commit` in a shell command as (environment assignments, git options, commit arguments,
     folder), where folder is where earlier `cd` commands in the same command line moved to (None when
     none did). Raises ValueError when the command cannot be split, such as an unclosed quote."""
     found = []
     folder = None
     for words in _simple_commands(_without_heredocs(command)):
+        if bash_paths and words == ["cd"]:
+            raise ValueError("cd needs an explicit path for Git-Bash commit protection")
         if len(words) >= 2 and words[0] == "cd":
-            target = os.path.expanduser(words[1])
-            folder = target if folder is None else os.path.join(folder, target)
+            if bash_paths:
+                from .commit_paths import component, join
+                operands = words[2:] if words[1] == "--" else words[1:]
+                if len(operands) != 1 or operands[0].startswith("-"):
+                    raise ValueError("unsupported cd arguments for Git-Bash commit protection")
+                target = component(operands[0])
+                folder = target if folder is None else join(folder, target)
+            else:
+                target = os.path.expanduser(words[1])
+                folder = target if folder is None else os.path.join(folder, target)
             continue
         env, index = {}, 0
         while index < len(words) and ASSIGNMENT.match(words[index]):
@@ -826,8 +859,18 @@ def git_commits(command):
         options = []
         while index < len(words) and words[index].startswith("-"):
             if words[index] in ("-c", "-C") and index + 1 < len(words):
+                if bash_paths and words[index] == "-C" and words[index + 1]:
+                    from .commit_paths import component
+                    component(words[index + 1])
                 options.append((words[index], words[index + 1]))
                 index += 2
+            elif bash_paths and words[index].startswith("-C"):
+                if words[index] == "-C":
+                    raise ValueError("git -C needs a path")
+                from .commit_paths import component
+                component(words[index][2:])
+                options.append(("-C", words[index][2:]))
+                index += 1
             else:
                 options.append((words[index], None))
                 index += 1
@@ -901,7 +944,7 @@ def _author_ident(folder, env, options):
     return (match.group(1), match.group(2)) if match else None
 
 
-def check_commit_command(payload, *, strict=False):
+def check_commit_command(payload, *, strict=False, bash_paths=None):
     """Problems with each `git commit` in a Bash hook event: the author and trailers compared with the
     repository's history, as `check commit` does for a written commit. Empty when there is no commit or
     nothing wrong. Legacy calls leave unavailable parsing/checks unjudged; strict calls raise their ValueError."""
@@ -910,9 +953,14 @@ def check_commit_command(payload, *, strict=False):
     command = data.get("command")
     if not isinstance(command, str) or "commit" not in command:
         return []
-    cwd = Path(payload.get("cwd") or ".")
+    from .commit_paths import MODE, component, selected
+    mode = selected(bash_paths, payload)
+    if mode is not None and mode != MODE:
+        raise ValueError("AWKIT_CLAUDE_BASH_PATHS must be git-bash")
+    cwd_text = payload.get("cwd") or "."
+    cwd = Path(component(cwd_text) if mode else cwd_text)
     try:
-        commits = git_commits(command)
+        commits = git_commits(command, bash_paths=True) if mode else git_commits(command)
     except ValueError:
         if strict:
             raise
@@ -922,7 +970,7 @@ def check_commit_command(payload, *, strict=False):
         folder = cwd / moved if moved else cwd
         for option, value in options:
             if option == "-C" and value:
-                folder = folder / value
+                folder = folder / (component(value) if mode else value)
         message, author = commit_arguments(args, command, folder)
         match = IDENT.match(author) if author else None
         ident = (match.group(1), match.group(2)) if match else _author_ident(folder, env, options)

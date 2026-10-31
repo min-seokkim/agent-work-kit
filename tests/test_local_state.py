@@ -223,6 +223,55 @@ class LocalStateTests(unittest.TestCase):
         data = exclude.read_bytes()
         self.assertEqual(data, before + b"# external\n/unrelated/\n/concurrent/\n")
 
+    def exclusion_fixture(self):
+        self.assertEqual(kit_hooks._top(self.project), (self.project.resolve(), True))
+        exclude = local_state.exclude_file(self.project)
+        backup = self.project / ".awkit/backup/exclude"
+        backup.parent.mkdir(parents=True, exist_ok=True)
+        before = {"exclude": exclude.read_bytes(), "backup": backup.read_bytes() if backup.is_file() else None}
+        before["sha256"] = {key: local_state._sha(value) for key, value in before.items()}
+        return exclude, backup, before
+
+    def test_exclusion_backup_preserves_an_orphan_and_records_a_fresh_owned_path(self):
+        exclude, backup, _ = self.exclusion_fixture()
+        orphan = b"older unrecorded backup\xff\r\n"
+        backup.write_bytes(orphan)
+        exclude, backup, before = self.exclusion_fixture()
+        entry = kit_hooks.exclude_local(self.project, ".awkit/", backup.relative_to(self.project))
+        actual = self.project / entry["backup"]
+        self.assertNotEqual(actual, backup)
+        self.assertTrue(actual.is_relative_to(backup.parent))
+        self.assertEqual(actual.read_bytes(), before["exclude"])
+        self.assertEqual(backup.read_bytes(), orphan)
+        self.assertEqual(local_state._sha(actual.read_bytes()), entry["before"])
+        kit_hooks.restore_exclude(self.project, entry)
+        self.assertEqual(exclude.read_bytes(), before["exclude"])
+        self.assertEqual(backup.read_bytes(), before["backup"])
+
+    def test_exclusion_backup_allocation_collision_leaves_both_files_exact(self):
+        exclude, backup, _ = self.exclusion_fixture()
+        backup.write_bytes(b"existing collision bytes")
+        exclude, backup, before = self.exclusion_fixture()
+        with mock.patch.object(local_state.tempfile, "mkstemp", side_effect=FileExistsError("candidate collision")):
+            with self.assertRaisesRegex(local_state.ExclusionError, "candidate collision"):
+                kit_hooks.exclude_local(self.project, ".awkit/", backup.relative_to(self.project))
+        self.assertEqual(exclude.read_bytes(), before["exclude"])
+        self.assertEqual(backup.read_bytes(), before["backup"])
+        self.assertFalse(exclude.with_name(exclude.name + ".awkit-lock").exists())
+
+    def test_exclusion_backup_write_failure_precedes_any_exclude_append(self):
+        exclude, backup, before = self.exclusion_fixture()
+        with mock.patch.object(local_state.os, "fsync", side_effect=OSError("backup flush failed")):
+            with self.assertRaisesRegex(local_state.ExclusionError, "Git exclusion was not changed"):
+                kit_hooks.exclude_local(self.project, ".awkit/", backup.relative_to(self.project))
+        self.assertEqual(exclude.read_bytes(), before["exclude"])
+        self.assertFalse(backup.exists())
+        # The failed attempt retains only its exclusively created file, never an older path.
+        retained = list(backup.parent.iterdir())
+        self.assertEqual(len(retained), 1)
+        self.assertTrue(retained[0].name.startswith(backup.name + "-"))
+        self.assertFalse(exclude.with_name(exclude.name + ".awkit-lock").exists())
+
     def test_append_does_not_capture_or_lose_a_noncooperating_edit(self):
         exclude = local_state.exclude_file(self.project)
         before = exclude.read_bytes()

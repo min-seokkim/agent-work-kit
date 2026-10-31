@@ -277,6 +277,8 @@ Transcripts, as the two agents document and write them: Claude Code passes `tran
 
 `check commit --hook` is the command behind the `commit-identity` rule. It reads the message from `-m`, `--message`, `-F` (a file, or `-` with a heredoc) and `$(cat <<'EOF' ...)` substitutions, and the author from `--author`, `GIT_AUTHOR_*` assignments before `git`, `-c user.*` or Git's configuration. The repository is the event's `cwd` moved by `cd` commands earlier in the same command line and by `git -C`. The body of a heredoc that feeds a program, such as a script for `python3 - <<'EOF'`, is input and never read as commands. A command it cannot split, such as one with an unclosed quote, passes.
 
+For native Windows Bash path selection, unavailable protection and removal ownership, read [Commit paths from Git Bash](commit-paths.md).
+
 ## Rule format
 
 `rules.toml` at the project root declares the rules. The kit's default rules are `rules.toml` and `rules-session.toml` in the kit; the second holds only `[[rules]]` tables, and `kit hooks` writes both into one file.

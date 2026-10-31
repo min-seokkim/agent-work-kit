@@ -8,6 +8,12 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Commands
 
+- Claude hook entry requires matching delivered `AWKIT_CLAUDE_BASH_PATHS=git-bash` and current local settings under the resolved rule root for native Windows `Bash` conversion. The exact opted-in bundled commit adapter converts drive-rooted `cd` and successive `git -C` components before joining; unavailable selection or declaration is visible while existing allow/block policy remains. Other tools, platforms, custom commands and absent-selector behavior are unchanged.
+
+- `kit hooks --claude` inserts the absent selector in untracked, unstaged local settings without selector-related command changes or duplicate handlers. Existing values are preserved. Schema-1 hook installation records add optional per-file `owned_env` metadata for inserted keys; removal preserves changed or unowned values. Older removers leave the selector in edited files. The shipped [Git-Bash path guide](kit/commit-paths.md) separates configuration from verified native delivery.
+
+- Hook-file and exclusion backups reserve fresh files exclusively before modifying the files they protect, preserving existing backup paths. Existing receipt fields name the actual new paths. Hook removal deletes only recorded, hash-matching backups within the managed backup folder and empty directories; unknown or changed copies retain their `.awkit/` exclusion.
+
 - `review storage --summary` keeps totals, recorded statuses, coverage, unverified estimates and limitations while replacing per-run references, largest-run rows and individual issues with explicit omission counts. Issues are counted by scope and code, with affected-run counts only for run-scoped issues; counts do not establish causes. The option is mutually exclusive with `--json`. Default text, schema-2 JSON, inspection and exits are unchanged.
 
 - `channel wait --keep-awake` requests Windows idle-sleep prevention for that wait and restores the thread's previous state on exit. It is best effort: unsupported platforms and acquisition or release failures warn on stderr while preserving normal messages, JSON, cursors, exit codes and exceptions. Default waits are unchanged; gaps between calls and explicit sleep remain unprotected.

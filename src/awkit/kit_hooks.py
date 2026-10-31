@@ -14,7 +14,7 @@ marker. It reads no other install state, so `kit init` and `kit remove` can call
 
 import hashlib
 import json
-import shutil
+import stat
 from pathlib import Path
 
 EVENTS = ("SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "Stop")
@@ -95,7 +95,7 @@ class Record:
         except ValueError:
             return str(path)
 
-    def write(self, path, text, action="written"):
+    def write(self, path, text, action="written", *, owned_env=None):
         path = Path(path).absolute()
         data = text.encode("utf-8", errors="surrogateescape")
         before = path.read_bytes() if path.is_file() else None
@@ -108,10 +108,9 @@ class Record:
             entry = {"action": action, "before": _sha(before)}
             if before is not None:
                 backup = self.top / BACKUP / key.replace(":", "_").lstrip("/")
-                from .local_state import prepare
+                from .local_state import _backup, prepare
                 prepare(self.top, backup)
-                backup.parent.mkdir(parents=True, exist_ok=True)
-                backup.write_bytes(before)
+                backup = _backup(self.top, backup, before)
                 entry["backup"] = backup.relative_to(self.top).as_posix()
                 entry["mode"] = path.stat().st_mode & 0o777
             self.data["files"][key] = entry
@@ -124,6 +123,8 @@ class Record:
             self.data["dirs"].append(self.key(folder))
         path.write_bytes(data)
         entry["after"] = _sha(data)
+        if owned_env:
+            entry.setdefault("owned_env", {}).update(owned_env)
         self.changed = True
         return True
 
@@ -222,7 +223,33 @@ def draft_rules(top):
     return head + "\n".join([first, *rest])
 
 
-def install_settings(top, provider, record, skip=()):
+def _selector_refusal(top, path):
+    """None for confirmed unversioned settings, otherwise why only the selector is skipped."""
+    from .review import _probe
+    repository = _probe(top, "rev-parse", "--is-inside-work-tree")
+    if repository.returncode:
+        # Preserve supported non-Git use, without interpreting arbitrary Git failures as untracked.
+        if ("not a git repository" in repository.stderr.lower()
+                and not any((parent / ".git").exists() for parent in (top, *top.parents))):
+            return None
+        return "could not establish Git tracking status"
+    if repository.stdout.strip() != "true":
+        return "could not establish Git worktree tracking status"
+    key = path.relative_to(top).as_posix()
+    index = _probe(top, "ls-files", "--", key)
+    head = _probe(top, "rev-parse", "--verify", "-q", "HEAD^{commit}")
+    if index.returncode or head.returncode not in (0, 1):
+        return "could not establish whether local settings are tracked or staged"
+    probes = [index]
+    if head.returncode == 0:
+        tree = _probe(top, "ls-tree", "--name-only", "HEAD", "--", key)
+        if tree.returncode:
+            return "could not inspect committed local settings"
+        probes.append(tree)
+    return "local settings are tracked or staged" if any(probe.stdout.strip() for probe in probes) else None
+
+
+def install_settings(top, provider, record, skip=(), notes=None):
     """Add a handler per event to the agent's project hook file, beside the handlers there. An event that
     already runs `awkit hook` in this file or another of the same agent's files is left alone. Returns
     (path, "installed" or "kept")."""
@@ -232,6 +259,21 @@ def install_settings(top, provider, record, skip=()):
     settings = json.loads(original) if original.strip() else {}
     if not isinstance(settings, dict) or not isinstance(settings.setdefault("hooks", {}), dict):
         raise ValueError(f"{path} does not hold a JSON object with a `hooks` object")
+    owned_env = {}
+    if provider == "claude":
+        from .commit_paths import ENV_KEY, MODE
+        env = settings.get("env", {})
+        if not isinstance(env, dict):
+            refusal = "env is not a JSON object"
+        elif ENV_KEY not in env:
+            refusal = _selector_refusal(top, path)
+            if refusal is None:
+                settings.setdefault("env", {})[ENV_KEY] = MODE
+                owned_env[ENV_KEY] = MODE
+        else:
+            refusal = None
+        if refusal and notes is not None:
+            notes.append(f"{path}: {refusal}; {ENV_KEY} was not inserted. Existing hook installation continues.")
     elsewhere = set()
     for other in OTHER_SETTINGS[provider]:
         try:
@@ -244,7 +286,7 @@ def install_settings(top, provider, record, skip=()):
                     elsewhere.add(event)
         except (OSError, ValueError, AttributeError):
             continue
-    changed = migrate_commands(settings)
+    changed = migrate_commands(settings) or bool(owned_env)
     for event in EVENTS:
         if event in elsewhere:
             continue
@@ -256,7 +298,7 @@ def install_settings(top, provider, record, skip=()):
         entries.append({"hooks": [{"type": "command", "command": handler_command(event, skip), "timeout": 60}]})
         changed = True
     if changed:
-        record.write(path, _dump(settings, original), "merged")
+        record.write(path, _dump(settings, original), "merged", owned_env=owned_env)
     return path, "installed" if changed else "kept"
 
 
@@ -283,7 +325,7 @@ def install(folder, use_git=True, use_claude=True, use_codex=True):
                                    for g in found) + " already stops the agent from finishing unchecked work")
     for provider in providers:
         try:
-            path, what = install_settings(top, provider, record, skip)
+            path, what = install_settings(top, provider, record, skip, result["notes"])
         except ValueError as exc:
             result["notes"].append(f"{exc}; no handler was added there")
             continue
@@ -304,15 +346,23 @@ def install(folder, use_git=True, use_claude=True, use_codex=True):
 # Removing
 
 
-def _strip_settings(path):
+def _strip_settings(path, owned_env=None):
     """Take the marked handlers out of an agent's hook file. Returns True when the file changed."""
     text = _read(path)
     data = json.loads(text)
-    hooks = data.get("hooks") if isinstance(data, dict) else None
-    if not isinstance(hooks, dict):
+    if not isinstance(data, dict):
         return False
     changed = False
-    for event, entries in list(hooks.items()):
+    env = data.get("env")
+    if isinstance(env, dict) and isinstance(owned_env, dict):
+        from .commit_paths import ENV_KEY, MODE
+        if owned_env.get(ENV_KEY) == MODE and env.get(ENV_KEY) == MODE:
+            del env[ENV_KEY]
+            if not env:
+                del data["env"]
+            changed = True
+    hooks = data.get("hooks")
+    for event, entries in list(hooks.items()) if isinstance(hooks, dict) else []:
         if not isinstance(entries, list):
             continue
         kept = []
@@ -399,7 +449,7 @@ def remove(folder, ask=None):
             else:
                 report.append((path, "kept (changed since it was written)"))
         elif path.suffix == ".json":
-            report.append((path, "stripped" if _strip_settings(path) else "unchanged"))
+            report.append((path, "stripped" if _strip_settings(path, entry.get("owned_env")) else "unchanged"))
         else:
             report.append((path, _strip_git_hook(path, created)))
     # Without the record, as in another clone, the markers show what is awkit's.
@@ -433,18 +483,103 @@ def remove(folder, ask=None):
     return report
 
 
+def _plain_backup_path(managed, path):
+    """A contained path with no symlink or Windows reparse entry in its managed ancestry."""
+    try:
+        if managed.resolve() != managed or not path.is_relative_to(managed) or not path.resolve().is_relative_to(managed):
+            return False
+        for candidate in (path, *path.parents):
+            if candidate.is_relative_to(managed):
+                info = candidate.lstat()
+                if stat.S_ISLNK(info.st_mode) or getattr(info, "st_file_attributes", 0) & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0):
+                    return False
+        return True
+    except (OSError, RuntimeError, ValueError):
+        return False
+
+
+def _matching_backup(top, entry):
+    """A recorded original copy we can still identify inside the managed backup folder."""
+    if not isinstance(entry, dict) or not isinstance(entry.get("backup"), str) or not isinstance(entry.get("before"), str):
+        return None
+    managed = top / BACKUP
+    path = top / entry["backup"]
+    try:
+        if not _plain_backup_path(managed, path) or not path.is_file():
+            return None
+        return path if _sha(path.read_bytes()) == entry["before"] else None
+    except (OSError, ValueError):
+        return None
+
+
+def _backup_entries(managed):
+    """Inventory unknown redirects without entering them; None means no safe inventory."""
+    try:
+        managed.lstat()
+    except FileNotFoundError:
+        return []
+    except OSError:
+        return None
+    if not _plain_backup_path(managed, managed) or not managed.is_dir():
+        return None
+    pending, entries = [managed], []
+    while pending:
+        folder = pending.pop()
+        if not _plain_backup_path(managed, folder):
+            return None
+        try:
+            children = list(folder.iterdir())
+        except OSError:
+            return None
+        entries.extend(children)
+        pending.extend(path for path in children if _plain_backup_path(managed, path) and path.is_dir())
+    return entries
+
+
+def _prune_backup_dirs(top):
+    managed = top / BACKUP
+    entries = _backup_entries(managed)
+    if entries is None:
+        return
+    for path in sorted(entries, key=lambda p: len(p.parts), reverse=True) + [managed]:
+        if _plain_backup_path(managed, path) and path.is_dir():
+            try:
+                path.rmdir()
+            except OSError:
+                pass  # Nonempty or inaccessible directories remain.
+
+
 def _forget(top, record):
-    """Delete the record and the copies, then .awkit/ when kit hooks created it and nothing else is left, and
-    with it the exclude line, restored byte for byte while the exclude file is as kit hooks left it."""
+    """Remove identified copies, retaining unknown contents and their local exclusion.
+
+    Restore exclusions before deleting their backups. Remove .awkit/ only when this installation
+    created it and cleanup actually leaves it empty.
+    """
     for entry in reversed(record.data.get("settings_excluded", [])):
         restore_exclude(top, entry)
+    entries = [*record.data["files"].values(), *record.data.get("settings_excluded", [])]
+    for entry in entries:
+        path = _matching_backup(top, entry)
+        if path is not None:
+            path.unlink()
     (top / RECORD).unlink(missing_ok=True)
+    _prune_backup_dirs(top)
     folder = top / ".awkit"
-    removable = (record.data.get("created_awkit") and folder.is_dir()
-                 and all(path == top / BACKUP for path in folder.iterdir()))
     excluded = record.data.get("excluded")
+    held = _matching_backup(top, excluded)
+    managed = top / BACKUP
+    entries = _backup_entries(managed)
+    removable = (record.data.get("created_awkit") and _plain_backup_path(folder, folder) and folder.is_dir()
+                 and all(path == managed for path in folder.iterdir())
+                 and entries is not None
+                 and all(_plain_backup_path(managed, path) and (path.is_dir() or path == held) for path in entries))
     if removable and isinstance(excluded, dict):
         restore_exclude(top, excluded)
-    shutil.rmtree(top / BACKUP, ignore_errors=True)
-    if removable:
+        # The .awkit exclusion may be retained for unknown/changed files; keep its backup then too.
+        held = _matching_backup(top, excluded)
+        if held is not None:
+            held.unlink()
+        _prune_backup_dirs(top)
+    if (record.data.get("created_awkit") and _plain_backup_path(folder, folder)
+            and folder.is_dir() and not any(folder.iterdir())):
         folder.rmdir()

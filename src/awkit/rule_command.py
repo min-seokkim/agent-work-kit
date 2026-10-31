@@ -14,7 +14,7 @@ MESSAGE_LIMIT = 1000
 ACTIONS = ("check commit --hook", "check writing", "check done --hook", "hook reply", "hook kit-version")
 
 
-def _dispatch(args, parser, payload):
+def _dispatch(args, parser, payload, *, bash_paths=None):
     from . import cli, hook_cli
 
     if args.group == "check" and args.action == "writing":
@@ -26,7 +26,7 @@ def _dispatch(args, parser, payload):
                 raise ValueError("commit hook input needs tool_input.command")
             from .hooks import check_commit_command
 
-            problems = check_commit_command(payload, strict=True)
+            problems = check_commit_command(payload, strict=True, bash_paths=bash_paths)
             for problem in problems:
                 print(problem, file=sys.stderr)
             return 1 if problems else 0
@@ -60,10 +60,16 @@ def execute(argv, raw):
                 raise ValueError("transcript_path must be text or null")
             from .cli import _parser
 
+            bash_paths = None
+            if any(part.split("=", 1)[0] == "--bash-paths" for part in argv):
+                from .commit_paths import ARGUMENT, MODE
+                if argv != ["check", "commit", "--hook", ARGUMENT]:
+                    raise ValueError("unsupported or conflicting bundled commit path selector")
+                argv, bash_paths = argv[:3], MODE
             parser = _parser()
             args = parser.parse_args(argv)
             sys.stdin = io.StringIO(raw)
-            code = _dispatch(args, parser, payload)
+            code = _dispatch(args, parser, payload, bash_paths=bash_paths)
             finding_codes = (0, 1, 2) if args.group == "check" and args.action == "done" else (0, 1)
             if type(code) is not int or code not in finding_codes:
                 raise ValueError("unsupported bundled action result")

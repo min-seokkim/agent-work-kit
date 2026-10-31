@@ -3,6 +3,7 @@ call, so the hook runner's commands change here without touching the other comma
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -70,7 +71,9 @@ def run(args, parser):
         text = sys.stdin.read()
     except (OSError, UnicodeDecodeError):
         text = "�"
-    output = hooks.run(text, args.root, args.skip, args.kit_rules, event=args.action)
+    from .commit_paths import ENV_KEY
+    output = hooks.run(text, args.root, args.skip, args.kit_rules, event=args.action,
+                       bash_paths=os.environ.get(ENV_KEY))
     if output:
         print(output)
     return 0

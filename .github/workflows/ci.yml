@@ -49,7 +49,8 @@ jobs:
       - name: Assert the invoked Python
         run: python -c "import os, sys; print(sys.executable); print(sys.version); assert '.'.join(map(str, sys.version_info[:2])) == os.environ['EXPECTED_PYTHON']"
       - name: Run tests
-        run: python -m unittest discover -s tests -v
+        # --durations (Python 3.12+) lists every test's time at the end of the log, to find slow tests per platform.
+        run: python -m unittest discover -s tests -v ${{ matrix.python != '3.11' && '--durations 0' || '' }}
 
   claude-sdk:
     name: Claude SDK / ${{ matrix.os }} / Python ${{ matrix.python }}

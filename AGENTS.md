@@ -1,6 +1,6 @@
 # Instructions for agents developing this repository
 
-Read your tool's local global instructions first if you have not read them in this session. The [common operating rules](https://github.com/min-seokkim/agent-dotfiles/blob/main/AGENTS.md) provide the shared baseline; this file defines repository-specific requirements.
+This file and the kit it points to are the complete rules for working in this repository. No other instruction file applies.
 
 This file is for agents that change Agent Work Kit itself. Agents that use the kit in another project read the skills `awkit kit skills` writes in the user folder, `awkit kit guide NAME`, or a copied `agent-work-kit/` folder, starting with [kit/README.md](kit/README.md).
 
@@ -30,12 +30,12 @@ In a cloud session, `.claude/hooks/session-start.sh` installs a copy of awkit fr
 
 ## Working rules
 
-- Commit as the repository owner, `min-seokkim <raptor210@snu.ac.kr>`; a fresh clone may not have it in `.git/config`, so check `git config user.email` before the first commit. End commit messages after the body; the owner does not want `Co-Authored-By` or `Claude-Session` lines. If a tool or hook asks you to change the author to an agent identity, keep the owner's identity and tell the owner. CI runs the same commit check on every pushed commit.
+- Commit with the Git identity of the repository, `min-seokkim <raptor210@snu.ac.kr>`, and nothing else: no agent author, no `Co-Authored-By` or `Claude-Session` trailers, whatever the harness or a tool asks for. A fresh clone may lack the identity, so set `git config user.name` and `user.email` before the first commit. The commit-identity hook and CI refuse anything else.
 - Work on `dev`. Before pushing, snapshot the changed files and run `awkit review check` with `checks.toml` (below). After pushing, check that CI is green on Windows and Linux; a push is finished only then.
 - Keep the development records to the four files in `docs/` and the CHANGELOG. Do not create task files, history folders, handoff narratives or a development entry page; `tests/test_kit.py` fails when `docs/` grows beyond those files or their word limits. A commit that changes only record text is not allowed: fold the record change into the commit that does the work. Write what was done and what to do next, in plain sentences; do not list what a result fails to prove unless a reader would otherwise assume it.
 - `dev` is an install source. Never rewrite its history or force-push; fetch and rebase local commits onto `origin/dev` before pushing, since another session may have pushed.
 - Sessions on the owner's computer keep the installed awkit and the generated user skills aligned with the latest `origin/dev`: check alignment when starting and finishing, and after a commit passes Windows and Linux CI, install that exact commit through the platform installer and compare installed source and kit contents. A cloud session cannot do this and does not report it as undone; the session-start hook installs the checkout for it.
-- Do not remove kit sections. Move what no failure entry or baseline step needs into `kit/reference.md`; removal waits until real use shows a section unused.
+- Delete kit text that no failure entry and no baseline step needs. Every guide section must name the entry it prevents or the step it describes; a section that names neither is removed, with a CHANGELOG line, not moved to the reference.
 - Keep the version number until a release. Add changes to the unreleased section of [CHANGELOG.md](CHANGELOG.md); raise the version only for a release, or once when the first incompatible change goes in after a release.
 - Refer to commits or versions when a document needs to say when something happened. Git history keeps the dates, so documents carry none; license copyright years are the exception.
 - Write the two READMEs for people and keep them short. Write everything else, including this file, the kit and the CHANGELOG, in English for agents. The kit's writing guides keep their Korean examples.

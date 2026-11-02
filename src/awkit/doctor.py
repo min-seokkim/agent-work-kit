@@ -126,7 +126,13 @@ def _rules(top, add):
     if problems:
         warning("rule validation error", "; ".join(problems))
         return
-    add("project rules", "ok", f"{len(rules)} valid rule(s); execution unverified")
+    from .hooks import last_run
+    ran = last_run(top)
+    if ran:
+        add("project rules", "ok", f"{len(rules)} valid rule(s); the runner ran {ran[0]} times in this clone, last {ran[1]}")
+    else:
+        add("project rules", "ok", f"{len(rules)} valid rule(s); execution unverified: no hook event has reached the "
+            "runner in this clone")
     consumed = False
     for raw, rule in zip(data.get("rules", []), rules, strict=True):
         command = raw.get("command", [])

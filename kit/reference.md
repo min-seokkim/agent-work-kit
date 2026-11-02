@@ -234,11 +234,11 @@ Checks meant to run without anyone choosing to: from a Git hook, a Claude Code h
 | Command | Effect | Exit |
 |---|---|---|
 | `check commit --message FILE \| --rev REV \| --hook [--history N]` | Reports agent-like authors and compares author email and trailer keys (`Key: value` lines Git recognizes at the end of the message) against the last N commits (default 50). Reports unseen emails or trailer keys with repair instructions; repositories without earlier commits pass. Allow a contributor with `git config --add awkit.allowAuthor EMAIL`, a trailer with `git config --add awkit.allowTrailer KEY`. `--hook` reads an event from stdin and checks each `git commit` in its shell command before execution (see hook). | 0 consistent, 1 not |
-| `check writing PATH... [--json]` | Recursively checks Markdown against the [Writing Guide](writing.md) ([example](https://github.com/min-seokkim/agent-work-kit/tree/dev/examples/document-intent/revision)). Errors: em dashes, middle dots joining Korean words, mixed `-세요`/`-시오` endings in one document. Warnings: lead-ins, contrasts against claims nobody made, sales words, Korean stock phrases. Skips code blocks, blockquotes, inline code, quoted spans and link targets. Repository folder scans include tracked/trackable Markdown, excluding ignored folders and other repositories. | 0 no errors, 1 errors |
+| `check writing [PATH...] [--changed] [--json]` | Recursively checks Markdown against the [Writing Guide](writing.md) ([example](https://github.com/min-seokkim/agent-work-kit/tree/dev/examples/document-intent/revision)). Errors: em dashes, middle dots joining Korean words, mixed `-세요`/`-시오` endings in one document. Warnings: lead-ins, contrasts against claims nobody made, sales words, Korean stock phrases. Skips code blocks, blockquotes, inline code, quoted spans and link targets. Repository folder scans include tracked/trackable Markdown, excluding ignored folders and other repositories. | 0 no errors, 1 errors |
 | `check writing-compare BASELINE CANDIDATE PATH... [--repo DIR] [--json]` | Compares complete-file findings at two explicit Git revisions. Same-path correspondence, source changes and both full reports remain available; existing errors still block. | 0 no candidate errors, 1 candidate errors, 2 invalid/unavailable evidence |
 | `check done [--session ID] [--mark] [--runs-root DIR] [--hook]` | `--mark` records the current state as the session's starting point in `.awkit/done/`: HEAD plus working-tree changes and non-ignored untracked files, excluding `.awkit/` runtime state. User settings follow Git tracking/ignores. Otherwise, passes for unchanged state since that mark (HEAD if absent), or an exactly matching passing `review check`; lists changes otherwise. Lookup: `--runs-root`, `.awkit/reviews` and older versions' system-temp folder. | 0 yes, 1 no |
 
-Summaries state their scope. `check writing` checks complete files without classifying existing/introduced findings or inspecting content/rendering. Done matches repository states, not ownership or coverage: task-only snapshots can pass while unrelated changes remain unmatched. Unchanged state establishes no verification. Passing runs establish configured-command success, not document review. These explanations change no exit codes or JSON fields.
+`--changed` adds the Markdown files added, modified or untracked in the current folder's repository, and alone checks only those; with nothing changed, or outside a repository, it exits 0. Summaries state their scope. `check writing` checks complete files without classifying existing/introduced findings or inspecting content/rendering. Done matches repository states, not ownership or coverage: task-only snapshots can pass while unrelated changes remain unmatched. Unchanged state establishes no verification. Passing runs establish configured-command success, not document review. These explanations change no exit codes or JSON fields.
 
 With `--hook`, `check done` reads the Claude Code hook input from stdin: SessionStart marks the starting point (a resumed or compacted session keeps the one it has), Stop exits 2 with the reason on stderr so the agent continues, and a second stop in the same turn (`stop_hook_active`) passes, so the agent can report work it could not check and say why.
 
@@ -266,16 +266,16 @@ Both agents send the same input fields (`hook_event_name`, `tool_name`, `tool_in
 
 Unexpected exceptions caught by `hooks.run` alone add optional `context` schema 1: `executable`, `python_version`, process `cwd`, loaded `awkit_file`/`hooks_file`, `exception_type`, `frames` (`file`,`function`,positive integer `line`). Unavailable scalars/frames: null/[]. Strings: 512 characters; Python 256, type/function 128. Keep the last eight awkit frames from at most 64 traceback links. Collection/log failures stay silent and allow. Startup, earlier imports and initial cwd lookup are outside this handler. Exclude input, argv, environment/sys.path, source lines and locals. The unchanged 160-character reason may contain sensitive text. Keep logs local; sanitize paths/reasons before sharing. These facts establish neither sender, automatic origin, permissions, commit integrity nor child environment.
 
-`awkit hook report [DIR] [--json]` counts firings, blocks (`deny`/`block`), asks, injections, errors and rules per session, plus `rules.toml` problems.
+`awkit hook report [DIR] [--json]` counts firings, blocks (`deny`/`block`), asks, injections, errors and rules per session, plus `rules.toml` problems. Each session state also counts the runner's executions (`runs`, `last_run`), so a runner that fired nothing is still shown to have run; `awkit doctor` reports the last execution in the clone or says that no event has reached the runner.
 
-`awkit hook reply [--hangul N]` and `awkit hook kit-version` are the commands behind the default `writing-reply` and `kit-version` rules. Each reads the event on stdin, prints a line and exits 1 when its rule should fire, and otherwise prints nothing and exits 0.
+`awkit hook reply [--hangul N] [--replies]` and `awkit hook kit-version` are the commands behind the default `writing-reply` and `kit-version` rules. Each reads the event on stdin, prints a line and exits 1 when its rule should fire, and otherwise prints nothing and exits 0.
 
-- `reply` takes the final reply from `last_assistant_message`, or else from the transcript. It fires when the reply has more than N Hangul syllables (default 500), a Markdown heading outside code blocks or a turn whose request asked for a prompt, instructions or a document, and when no tool call in the session read the writing guide (a `writing.md` or `korean-writing.md` path, the `awkit-writing` skill, or a `/awkit-writing` command). Its output lists what `awkit check writing` finds in the reply. Without a readable transcript it passes.
+- `reply` takes the final reply from `last_assistant_message`, or else from the transcript. It fires when the reply has more than N Hangul syllables (default 500), a Markdown heading outside code blocks or a turn whose request asked for a prompt, instructions or a document, and when no tool call in the session read the writing guide (a `writing.md` or `korean-writing.md` path, the `awkit-writing` skill, or a `/awkit-writing` command). Its output lists what `awkit check writing` finds in the reply. Without a readable transcript it passes. `--replies` drops the heading and request conditions, for a project whose instructions apply the guide to replies; a subagent prompt that names the guide is not a read by this session.
 - `kit-version` fires when `checks.toml` has a `version` key in its `[kit]` table that differs from the installed awkit's version. Without the key it prints nothing.
 
 Transcripts, as the two agents document and write them: Claude Code passes `transcript_path` on every event, a JSON lines file under `~/.claude/projects/`; `user` and `assistant` records carry `message.content` with `text` and `tool_use` blocks, and the file may lag the current turn, so the documentation points hooks to `last_assistant_message` on Stop. Codex passes `transcript_path`, which may be null, and `last_assistant_message` on Stop; its rollout file has `response_item` records (`message`, `function_call`, `custom_tool_call`, `local_shell_call`) and `event_msg` records (`user_message`, `agent_message`).
 
-`check commit --hook` is the command behind the `commit-identity` rule. It reads the message from `-m`, `--message`, `-F` (a file, or `-` with a heredoc) and `$(cat <<'EOF' ...)` substitutions, and the author from `--author`, `GIT_AUTHOR_*` assignments before `git`, `-c user.*` or Git's configuration. The repository is the event's `cwd` moved by `cd` commands earlier in the same command line and by `git -C`. The body of a heredoc that feeds a program, such as a script for `python3 - <<'EOF'`, is input and never read as commands. A command it cannot split, such as one with an unclosed quote, passes.
+`check commit --hook` is the command behind the `commit-identity` rule. It reads the message from `-m`, `--message`, `-F` (a file, or `-` with a heredoc) and `$(cat <<'EOF' ...)` substitutions, and the author from `--author`, `GIT_AUTHOR_*` assignments before `git`, `-c user.*`, a `git config user.name` or `user.email` earlier in the same command line, or Git's configuration. The repository is the event's `cwd` moved by `cd` commands earlier in the same command line and by `git -C`. The body of a heredoc that feeds a program, such as a script for `python3 - <<'EOF'`, is input and never read as commands. A command it cannot split, such as one with an unclosed quote, passes.
 
 For native Windows Bash path selection, unavailable protection and removal ownership, read [Commit paths from Git Bash](commit-paths.md).
 
@@ -309,7 +309,7 @@ For unmarked commands, failure below means a nonzero exit. Opted-in commands fir
 | `verify` | Stop, PostToolUse, PreToolUse, UserPromptSubmit, SubagentStop, SessionStart | The command fails; on Stop once per session, elsewhere once per distinct output | `decision: block` with the message and the output; on SessionStart, `additionalContext` |
 | `inject` | PreToolUse, PostToolUse, UserPromptSubmit, SessionStart | The conditions match and, with `command`, the command fails; once per session | `additionalContext` |
 
-- All conditions must match. `events` and `tools` name the event and tool; Codex `apply_patch` also matches `Edit`/`Write`, and `spawn_agent`/Claude Code `Task` match `Agent`. `shell` searches `tool_input.command` by regex, excluding heredoc bodies fed to programs: written files are not commands. `paths` globs edited `file_path`, `notebook_path` or `apply_patch` file headers; patterns without `/` match filenames in any folder. `text` searches written `content`, `new_string`, `edits`, `new_source` and added patch lines. Only `inject` rules accept `prompt`, searching UserPromptSubmit messages except `<pasted_content>`: tool calls determine the situation; the user's words only add guidance.
+- All conditions must match. `events` and `tools` name the event and tool; Codex `apply_patch` also matches `Edit`/`Write`, and `spawn_agent`/Claude Code `Task` match `Agent`. `shell` searches `tool_input.command` by regex, excluding heredoc bodies fed to programs: written files are not commands. `paths` globs edited `file_path`, `notebook_path` or `apply_patch` file headers; patterns without `/` match filenames in any folder. `text` searches written `content`, `new_string`, `edits`, `new_source`, added patch lines and the bodies of heredocs in a shell command. Only `inject` rules accept `prompt`, searching UserPromptSubmit messages except `<pasted_content>`: tool calls determine the situation; the user's words only add guidance.
 - `command` expresses other conditions: an argument array, without a shell, executed at the project root with event JSON on stdin. Placeholders: `{python}` (awkit's interpreter), `{kit}`, `{root}`; a standalone `{paths}` element expands to matching existing edited files, skipping the rule if none exist. Unmarked rules: exit 0 without output means no opinion; exit 0 with `{"decision": "deny"|"ask"|"block"|"allow", "reason": TEXT, "context": TEXT}` means that decision; other exits fire with stdout/stderr's first 1,000 characters. Opted-in rules use [Bundled command results](#bundled-command-results).
 
 The default rules, each with the entries it guards:
@@ -320,6 +320,7 @@ The default rules, each with the entries it guards:
 | `done-check` | verify, SessionStart and Stop | changed files without a passing check of their current state (`check done --hook`) | F1 |
 | `writing-check` | verify, PostToolUse | an edited Markdown file with writing errors (`check writing`) | F13, F14, F32 |
 | `korean-writing` | inject, PreToolUse | the first Markdown edit with Korean text | F14 |
+| `writing-check-bash`, `korean-writing-bash` | the same two for Bash | a shell command naming a `.md` file: the check runs on the Markdown changed in Git; Korean in a heredoc body gets the guide line | F13, F14, F32 |
 | `writing-request` | inject, UserPromptSubmit | the first request for a prompt, instructions, a document or a report | F14 |
 | `writing-reply` | verify, Stop | a final reply that is a long Korean document written without the guide (`hook reply`) | F14 |
 | `research` | inject, PreToolUse | the first web search or fetch | F23, F37 |
@@ -452,62 +453,7 @@ Exits: 0 readable, including pending/conflicting; 1 missing/unreadable/unsupport
 
 ## Extras for web projects
 
-### pipeline
-
-`awkit pipeline --config FILE plan|deploy RELEASE|rollback|status|reconcile|history [--allow-unhealthy-current] [--json]` runs the project's delivery commands in a fixed order and verifies the target's actual state. Its statuses (`passed`, `failed-restored` and the rest) describe one run, not the state of a task. Release IDs are 7 to 64 lowercase hex characters; use full commit or artifact hashes.
-
-```toml
-schema_version = 1
-
-[pipeline]
-target = "web"                   # letters, digits, . _ -
-state_dir = ".awkit/releases"    # relative to this file
-timeout_seconds = 120            # per command
-required_checks = ["service"]
-auto_rollback = false            # needs a rollback command
-
-[commands]                       # argument arrays, no shell
-preflight = ["{python}", "{project}/adapter.py", "preflight", "{target}", "{release}"]
-backup    = ["{python}", "{project}/adapter.py", "backup", "{target}", "{release}"]    # optional
-deploy    = ["{python}", "{project}/adapter.py", "deploy", "{target}", "{release}"]
-verify    = ["{python}", "{project}/adapter.py", "verify", "{target}", "{release}"]
-rollback  = ["{python}", "{project}/adapter.py", "rollback", "{target}", "{release}"]  # optional
-```
-
-Placeholders: `{python}`, `{project}` (the config folder), `{target}`, `{release}`, `{previous}`, `{run_dir}`. The command contract:
-
-- `preflight` prints `{"target": T, "release": ID or null}` without changing anything.
-- `deploy` and `rollback` finish all work before exiting; nothing left in the background.
-- `verify` reads the release actually running and prints `{"target": T, "release": ID, "checks": [{"name": N, "ok": true}]}`, exiting 0 even when a check fails. Every `required_checks` name must appear. A wrong target, a release other than the requested one, or malformed JSON fails the step. Echoing the requested release defeats verification.
-- Omit `backup` and `rollback` for one-way deliveries (submissions, uploads). Then `rollback` and `auto_rollback` are refused, and a failure after the target changed is `failed-unrecovered`.
-
-Order: preflight, verify-current, backup, deploy, verify. A deploy stops at `verify-current` when the current release fails its checks, unless `--allow-unhealthy-current`. Deploying the running healthy release only verifies (`outcome: already-current`). `rollback` takes no release; it walks back one healthy release from `history.json` per run.
-
-| Status | Meaning |
-|---|---|
-| `passed` | The requested release runs and every check passes. |
-| `failed` | Failed before the target changed. |
-| `failed-restored` | Deploy failed; automatic rollback restored and verified the previous release. Exit 1. |
-| `failed-unrecovered` | Failed after the target changed; recovery not confirmed. |
-| `rollback-failed` | Automatic rollback or its verification failed. |
-| `uncertain` | Timeout or interruption; state unknown. |
-
-After `running`, `uncertain`, `rollback-failed` or `failed-unrecovered`, every deploy and rollback is blocked. Inspect the real target, recover it, then run `reconcile`: it records `reconciled` (exit 0) or `reconciled-unhealthy` (exit 1) and lifts the block. Do not delete records to skip this. One run per `state_dir` at a time (SQLite lock); there is no lock on the target itself. State: `last-run.json`, `history.json`, `runs/<id>/result.json`, `runs/<id>/logs/`. Logs keep raw output, so keep secrets out of arguments and output. Exit codes: 0 passed, reconciled or healthy (`status`); 1 any other outcome; a project command's own code when it fails with 1 to 125; 2 cannot run; 130 interrupted. A file-only mock is in `examples/local-release/` of the awkit repository.
-
-### publish
-
-`awkit publish --output DIR --project NAME build --source DIR --files LIST.json` publishes a trusted static HTML build. `LIST.json` is a JSON array of relative paths and must include `index.html`; only listed files are copied. Before publishing, every HTML link, anchor and simple CSS `url()` must point at a listed file; external pages may be linked, external resources may not. `@import`, `srcset`, `srcdoc` and `base` are refused. Each version goes to `versions/<content hash>/`, is verified, and only then the entry `index.html` is replaced atomically. `restore VERSION` re-verifies and switches back. The output folder must be empty on first use. One publisher per output folder at a time; the lock does not work across machines or sync folders.
-
-### ui
-
-`awkit ui --config pages.json --output DIR [--channel chrome|msedge|chromium]` captures full-page PNGs of the listed pages at each width and builds `index.html`, `sheet.png` and `result.json` in an empty output folder.
-
-```json
-{"base_url": "http://127.0.0.1:8765", "widths": [320, 1440], "timeout_ms": 15000,
- "pages": [{"name": "Home", "path": "/index.html"}]}
-```
-
-`base_url` is an origin without credentials or path; 1 to 20 pages, 1 to 6 distinct widths between 240 and 3840. Only same-origin GET and HEAD requests are allowed; other requests, service workers and WebSockets are blocked. Findings per page and width: `horizontal-overflow`, `control-outside-viewport`, `http-error`, `capture-error` and `resource-blocked`. Any finding makes the exit code 1. Judge layout and content from the images yourself.
+`pipeline`, `publish` and `ui` are web-project extras in `src/awkit/extras/`; their commands, formats and exit codes are in [extras.md](extras.md) (`awkit kit guide extras`). They are not mentioned in the READMEs and leave the package if real use does not need them.
 
 ## Sessions
 

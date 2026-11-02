@@ -30,6 +30,7 @@ import re
 import shlex
 import subprocess
 import sys
+import time
 import tomllib
 from datetime import UTC, datetime
 from pathlib import Path
@@ -270,8 +271,11 @@ def normalize(payload, root):
         texts = [line[1:] for line in command.splitlines() if line.startswith("+")]
     else:
         if isinstance(command, str):
-            # The body of a heredoc fed to a program is its input, such as a file being written, not commands.
+            # The body of a heredoc fed to a program is its input, such as a file being written, not commands;
+            # it is the written text, as `content` is for Write.
             call.shell = _without_heredocs(command) if "<<" in command else command
+            if "<<" in command:
+                texts.extend(_heredoc_bodies(command))
         for key in ("file_path", "notebook_path"):
             if isinstance(data.get(key), str):
                 paths.append(data[key])
@@ -511,10 +515,12 @@ def _load_state(root, session):
         state = {}
     injected = state.get("injected")
     reported = state.get("reported")
+    runs = state.get("runs")
     return {"injected": injected if isinstance(injected, list) else [],
             "reported": reported if isinstance(reported, dict) else {},
             "stopped": state.get("stopped") if isinstance(state.get("stopped"), list) else [],
-            "logged": state.get("logged") if isinstance(state.get("logged"), list) else []}
+            "logged": state.get("logged") if isinstance(state.get("logged"), list) else [],
+            "runs": runs if isinstance(runs, dict) else {}}
 
 
 def _prepare(root, output=None):
@@ -697,6 +703,10 @@ def _run(payload, root, skip=(), kit_rules=False, *, bash_paths=None):
     for firing in firings:
         log(root, {"session": call.session or None, "event": call.event, "tool": call.tool or None,
                    "rule": firing.rule, "decision": firing.decision})
+    # Evidence that the runner ran at all, which a log of firings cannot show: `hook report` and `doctor` read it.
+    runs = state["runs"]
+    runs["count"] = (runs.get("count") if isinstance(runs.get("count"), int) else 0) + 1
+    runs["last_event"], runs["last_time"] = call.event, time.strftime("%Y-%m-%dT%H:%M:%S")
     if json.dumps(state, sort_keys=True) != before:
         _save_state(root, call.session, state)
     output = render(call.event, firings)
@@ -751,8 +761,36 @@ def report(folder):
         summary[{"deny": "blocked", "block": "blocked", "ask": "asked"}.get(decision, "injected")] += 1
         rule = entry.get("rule") or "(none)"
         summary["rules"][rule] = summary["rules"].get(rule, 0) + 1
+    for key, runs in session_runs(root).items():
+        summary = sessions.setdefault(key, {"session": key, "first": None, "last": None, "fired": 0, "blocked": 0,
+                                            "asked": 0, "injected": 0, "errors": 0, "rules": {}})
+        summary["runs"], summary["last_run"] = runs["count"], f"{runs.get('last_event')} at {runs.get('last_time')}"
     result["sessions"] = list(sessions.values())
     return result
+
+
+def session_runs(root):
+    """Per session state file: the runner's recorded executions (`count`, `last_event`, `last_time`)."""
+    folder = root / STATE_DIR
+    found = {}
+    for state_path in sorted(folder.glob("*.json")) if folder.is_dir() else []:
+        try:
+            runs = json.loads(state_path.read_text(encoding="utf-8")).get("runs") or {}
+        except (OSError, ValueError, AttributeError):
+            continue
+        if isinstance(runs, dict) and isinstance(runs.get("count"), int):
+            found[state_path.stem] = runs
+    return found
+
+
+def last_run(root):
+    """(count, description) of the runner's executions recorded in the project's session states, or None.
+    Reads only the state files, never rules.toml."""
+    runs = list(session_runs(Path(root)).values())
+    if not runs:
+        return None
+    latest = max(runs, key=lambda r: str(r.get("last_time")))
+    return sum(r["count"] for r in runs), f"{latest.get('last_event')} at {latest.get('last_time')}"
 
 
 def render_report(result):
@@ -768,7 +806,8 @@ def render_report(result):
         rules = ", ".join(f"{name} {count}" for name, count in sorted(summary["rules"].items()))
         lines.append(f"{summary['session']}  fired {summary['fired']}, blocked {summary['blocked']}, asked "
                      f"{summary['asked']}, injected {summary['injected']}, errors {summary['errors']}"
-                     + (f"  ({rules})" if rules else ""))
+                     + (f"  ({rules})" if rules else "")
+                     + (f"; ran {summary['runs']} times, last {summary['last_run']}" if summary.get("runs") else ""))
     if result["damaged_lines"]:
         lines.append(f"{result['damaged_lines']} damaged log lines skipped")
     return "\n".join(lines)
@@ -806,6 +845,48 @@ def _without_heredocs(command):
             index += 1
             break
     return "\n".join(kept)
+
+
+def _heredoc_bodies(command):
+    """The bodies of the heredocs `_without_heredocs` leaves out, in order."""
+    lines = command.split("\n")
+    bodies, index = [], 0
+    while index < len(lines):
+        line = lines[index]
+        index += 1
+        for match in HEREDOC.finditer(line):
+            before = line[:match.start()]
+            if before.count('"') % 2 or before.count("'") % 2:
+                continue
+            start = index
+            while index < len(lines) and lines[index].strip() != match.group(2):
+                index += 1
+            bodies.append("\n".join(lines[start:index]))
+            index += 1
+            break
+    return bodies
+
+
+# `git config user.name NAME` or `user.email EMAIL` earlier in the same command line.
+CONFIGURED_IDENTITY = re.compile(r"\bgit\b(?:\s+-C\s+\S+)?\s+config\s+(?:--(?:global|local|worktree)\s+)?"
+                                 r"user\.(name|email)\s+(\"[^\"]*\"|'[^']*'|\S+)")
+
+
+def configured_identity(command):
+    """(name, email) set by `git config` commands in `command` before its first `git commit`; None for a part
+    not set. A hook reads the configuration before the command runs, so a config set in the same line would
+    otherwise be judged by the old value."""
+    text = _without_heredocs(command) if "<<" in command else command
+    commit = re.search(r"\bgit\b[^\n;&|]*\bcommit\b", text)
+    found = {}
+    for match in CONFIGURED_IDENTITY.finditer(text):
+        if commit and match.start() > commit.start():
+            break
+        value = match.group(2)
+        if value[:1] in "\"'" and value[-1:] == value[:1]:
+            value = value[1:-1]
+        found[match.group(1)] = value
+    return found.get("name"), found.get("email")
 
 
 def _simple_commands(command):
@@ -974,6 +1055,9 @@ def check_commit_command(payload, *, strict=False, bash_paths=None):
         message, author = commit_arguments(args, command, folder)
         match = IDENT.match(author) if author else None
         ident = (match.group(1), match.group(2)) if match else _author_ident(folder, env, options)
+        name, email = configured_identity(command)
+        if ident and (name or email):
+            ident = (name or ident[0], email or ident[1])
         try:
             report = commit_identity(folder, message=message, author=ident)
         except ValueError:

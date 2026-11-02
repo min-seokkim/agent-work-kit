@@ -50,6 +50,8 @@ def add(groups, kit_commands):
                                              "final reply is a Korean document written without the writing guide")
     reply.add_argument("--hangul", type=int, default=500,
                        help="Hangul syllables above which a reply counts as long (default: 500)")
+    reply.add_argument("--replies", action="store_true", help="judge every long Korean reply, not only one with a "
+                       "heading or after a request for a document; for a project whose rules apply to replies")
     actions.add_parser("kit-version", help="the default kit-version rule: exit 1 with a line when checks.toml "
                                            "records another kit version than the installed awkit")
 
@@ -65,7 +67,7 @@ def run(args, parser):
         return 0
     if args.action in ("reply", "kit-version"):
         from .session_rules import main
-        return main(args.action, getattr(args, "hangul", 500))
+        return main(args.action, getattr(args, "hangul", 500), replies=getattr(args, "replies", False))
     from . import hooks
     try:
         text = sys.stdin.read()

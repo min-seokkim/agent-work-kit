@@ -24,9 +24,9 @@ HANGUL = re.compile(r"[가-힣]")
 HEADING = re.compile(r"^#{1,6}\s+\S")
 FENCE = re.compile(r"^\s*(```|~~~)")
 # The turn asked for text that will be used elsewhere: an instruction or prompt for another session, a document.
-DOCUMENT_REQUEST = re.compile(r"(지시문|프롬프트|문서|보고서|안내문|prompt|instructions|document|report)"
-                              r".{0,40}?(써|쓰|작성|만들|정리|write|draft)"
-                              r"|(써|작성|write|draft).{0,40}?(지시문|프롬프트|문서|보고서|prompt|instructions|document)",
+DOCUMENT_REQUEST = re.compile(r"(지시문|프롬프트|문서|보고서|안내문|초안|결론|prompt|instructions|document|report)"
+                              r".{0,40}?(써|쓰|작성|만들|정리|내보|write|draft)"
+                              r"|(써|쓰|작성|write|draft).{0,40}?(지시문|프롬프트|문서|보고서|초안|prompt|instructions|document)",
                               re.I | re.S)
 # Mentions identify potentially relevant unsupported operations, never successful access.
 GUIDE = re.compile(r"(?:korean-)?writing\.md|awkit-writing|kit\s+guide\s+(?:korean-)?writing", re.I)
@@ -162,6 +162,8 @@ def _access_operation(name, arguments):
             return "unknown" if GUIDE.search(raw) else "none"
     if not isinstance(arguments, dict):
         return "unknown" if GUIDE.search(raw) else "none"
+    if name in {"agent", "task", "spawn_agent"}:
+        return "none"  # a subagent's prompt may name the guide; that session, not this one, would read it
     if name == "skill":
         return "read" if str(arguments.get("skill", "")).rsplit(":", 1)[-1] == "awkit-writing" else \
             "unknown" if GUIDE.search(raw) else "none"
@@ -293,11 +295,12 @@ def has_heading(text):
     return False
 
 
-def reply_check(payload, hangul):
+def reply_check(payload, hangul, replies=False):
     """What the writing-reply rule says about the reply that ends this turn, or None when the reply passes or
     the check cannot tell. A reply counts as a Korean document for use elsewhere when it has more than
     `hangul` Hangul syllables, and a heading or a turn that asked for a prompt or document, and the session
-    has supported complete evidence of no successful guide access."""
+    has supported complete evidence of no successful guide access. With `replies`, every long Korean reply
+    counts, for a project whose instructions say replies follow the guide too."""
     records = read_transcript(payload.get("transcript_path"))
     reply = payload.get("last_assistant_message")
     if not isinstance(reply, str) or not reply.strip():
@@ -306,7 +309,7 @@ def reply_check(payload, hangul):
         return None
     if records is None:
         return None  # without the transcript the guide's use cannot be judged
-    if not (has_heading(reply) or DOCUMENT_REQUEST.search(last_request(records))):
+    if not (replies or has_heading(reply) or DOCUMENT_REQUEST.search(last_request(records))):
         return None
     if guide_access(records) != "absent":
         return None
@@ -337,7 +340,7 @@ def kit_version_check(root):
             "differ from what the project expects. Tell the user before relying on them.")
 
 
-def main(action, hangul=500, stdin=None):
+def main(action, hangul=500, stdin=None, replies=False):
     """Run `awkit hook reply` or `awkit hook kit-version` on the event in `stdin`; returns the exit code."""
     stdin = sys.stdin if stdin is None else stdin
     try:
@@ -347,7 +350,7 @@ def main(action, hangul=500, stdin=None):
     if not isinstance(payload, dict):
         return 0
     if action == "reply":
-        found = reply_check(payload, hangul)
+        found = reply_check(payload, hangul, replies)
     else:
         from .hooks import find_root
         cwd = payload.get("cwd")

@@ -50,6 +50,29 @@ paths = ["*.md"]
 text = '[가-힣]'
 message = "Keep one ending style, no middle dots joining words and no translationese in Korean text. Read {kit}/korean-writing.md before writing more."
 
+# The same two checks for Markdown written through a shell command (a heredoc, sed, a Python script), which
+# reaches no Edit or Write hook. The written text is the heredoc bodies; the files are those changed in Git.
+[[rules]]
+name = "writing-check-bash"
+prevents = ["F13", "F14", "F32"]
+kind = "verify"
+events = ["PostToolUse"]
+tools = ["Bash"]
+shell = '\.md\b'
+command_protocol = "awkit-v1"
+command = ["{python}", "-m", "awkit.rule_command", "check", "writing", "--changed"]
+message = "Markdown changed by this command has writing errors. Fix them before continuing."
+
+[[rules]]
+name = "korean-writing-bash"
+prevents = ["F14"]
+kind = "inject"
+events = ["PreToolUse"]
+tools = ["Bash"]
+shell = '\.md\b'
+text = '[가-힣]'
+message = "Keep one ending style, no middle dots joining words and no translationese in Korean text. Read {kit}/korean-writing.md before writing more."
+
 [[rules]]
 name = "research"
 prevents = ["F23", "F37"]

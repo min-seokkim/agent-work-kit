@@ -103,7 +103,9 @@ def _parser():
     identity.add_argument("--history", type=int, default=50, help="number of earlier commits to compare with (default: 50)")
     writing = check_commands.add_parser("writing", help="find writing patterns in Markdown files; exit 1 when a pattern "
                                         "that is wrong on one sighting is found, warnings do not fail")
-    writing.add_argument("paths", nargs="+", type=Path, help="Markdown files, or folders searched recursively for *.md")
+    writing.add_argument("paths", nargs="*", type=Path, help="Markdown files, or folders searched recursively for *.md")
+    writing.add_argument("--changed", action="store_true", help="also the Markdown files added, modified or untracked "
+                         "in the repository of the current folder; without paths, only those (nothing changed: exit 0)")
     writing.add_argument("--json", action="store_true", help="print the findings as JSON")
     comparison = check_commands.add_parser("writing-compare", help="compare complete-file writing findings at two "
                                            "explicit Git revisions; candidate errors still exit 1, invalid evidence 2")
@@ -536,7 +538,19 @@ def _run_check(args):
             print(problem, file=sys.stderr)
         return 0 if report["ok"] else 1
     if args.action == "writing":
-        report = checks.check_writing(args.paths)
+        paths = list(args.paths)
+        if args.changed:
+            changed = checks.changed_markdown(Path.cwd())
+            if changed is None and not paths:
+                print("not in a Git repository; nothing checked", file=sys.stderr)
+                return 0
+            paths.extend(changed or [])
+            if not paths:
+                return 0
+        elif not paths:
+            print("awkit check writing: name Markdown files or folders, or pass --changed", file=sys.stderr)
+            return 2
+        report = checks.check_writing(paths)
         print(json.dumps(report, ensure_ascii=False, indent=2) if args.json else checks.render_writing(report))
         return 0 if report["ok"] else 1
     if args.action == "writing-compare":

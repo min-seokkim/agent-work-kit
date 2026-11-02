@@ -50,6 +50,29 @@ paths = ["*.md"]
 text = '[가-힣]'
 message = "Keep one ending style, no middle dots joining words and no translationese in Korean text. Read {kit}/korean-writing.md before writing more."
 
+# The same two checks for Markdown written through a shell command (a heredoc, sed, a Python script), which
+# reaches no Edit or Write hook. The written text is the heredoc bodies; the files are those changed in Git.
+[[rules]]
+name = "writing-check-bash"
+prevents = ["F13", "F14", "F32"]
+kind = "verify"
+events = ["PostToolUse"]
+tools = ["Bash"]
+shell = '\.md\b'
+command_protocol = "awkit-v1"
+command = ["{python}", "-m", "awkit.rule_command", "check", "writing", "--changed"]
+message = "Markdown changed by this command has writing errors. Fix them before continuing."
+
+[[rules]]
+name = "korean-writing-bash"
+prevents = ["F14"]
+kind = "inject"
+events = ["PreToolUse"]
+tools = ["Bash"]
+shell = '\.md\b'
+text = '[가-힣]'
+message = "Keep one ending style, no middle dots joining words and no translationese in Korean text. Read {kit}/korean-writing.md before writing more."
+
 [[rules]]
 name = "research"
 prevents = ["F23", "F37"]
@@ -90,14 +113,14 @@ message = "Text that leaves the conversation follows the whole writing guide. Re
 # A long Korean reply shaped like a document (a heading, or a turn that asked for a document), written in a
 # session that never read the writing guide. Writing can end in the chat with no tool call, so this rule
 # reads the result instead of a tool call. `--hangul` is the number of Hangul syllables above which a reply
-# counts as long.
+# counts as long. `--replies` judges every long Korean reply, since AGENTS.md applies the guide to replies too.
 [[rules]]
 name = "writing-reply"
 prevents = ["F14"]
 kind = "verify"
 events = ["Stop"]
 command_protocol = "awkit-v1"
-command = ["{python}", "-m", "awkit.rule_command", "hook", "reply", "--hangul", "500"]
+command = ["{python}", "-m", "awkit.rule_command", "hook", "reply", "--hangul", "500", "--replies"]
 message = "답글이 다른 곳에 쓰일 한국어 문서인데 작성 가이드를 읽지 않았다. 가이드의 과정대로 다시 쓰고 한국어만 따로 읽어라."
 
 # The kit version checks.toml records ([kit] version), against the awkit installed here. Without the key the

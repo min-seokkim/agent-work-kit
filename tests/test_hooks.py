@@ -497,7 +497,7 @@ class RulesFormat(unittest.TestCase):
     def test_example_messages_are_short_and_end_with_what_to_do(self):
         rules, problems = hooks.load_rules(ROOT / "kit" / "rules.toml")
         self.assertEqual(problems, [])
-        self.assertEqual(len(rules), 7)
+        self.assertEqual(len(rules), 9)
         for rule in rules:
             self.assertTrue(rule.prevents, rule.name)
             if rule.message:
@@ -535,6 +535,13 @@ class Report(Project):
                              text=True, encoding="utf-8", env=child_env())
         self.assertEqual(cli.returncode, 0, cli.stderr)
         self.assertIn("s1  fired 2, blocked 1", cli.stdout)
+        # Every run is counted in the session state, so a silent runner is still visibly running.
+        self.assertEqual(sessions["s1"]["runs"], 2)
+        self.assertTrue(sessions["s1"]["last_run"].startswith("PreToolUse at "))
+        self.assertIn("ran 2 times, last PreToolUse at", cli.stdout)
+        count, description = hooks.last_run(self.root)
+        self.assertEqual(count, 3)
+        self.assertTrue(description.startswith("PreToolUse at "))
 
 
 class Install(Project):

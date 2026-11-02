@@ -6,12 +6,14 @@ guide is blocked, a plain explanation of the same length passes, and a session t
 runner's failure paths (a broken input, a command that runs too long, no rules file) allow the call.
 """
 
+import io
 import json
 import subprocess
 import sys
 import tempfile
 import time
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
 from unittest import mock
 
@@ -79,6 +81,16 @@ class CommitIdentity(Project):
         self.assertIsNone(self.bash('git commit -m "Fix the parser"'))
         self.assertEqual(self.log(), [])
 
+    def test_an_identity_set_earlier_in_the_same_command_is_the_one_judged(self):
+        # The hook reads the configuration before the command runs; a `git config` in the same line counts.
+        git(self.root, "config", "user.name", "Claude")
+        git(self.root, "config", "user.email", "noreply@anthropic.com")
+        self.assertIsNotNone(self.bash('git commit -m "Fix"'))
+        self.assertIsNone(self.bash('git config user.name "owner" && git config user.email owner@example.com '
+                                    '&& git commit -q -m "Fix"', session="s2"))
+        self.assertEqual(hooks.configured_identity('git commit -m x; git config user.email late@example.com'),
+                         (None, None))
+
 
 class DoneCheck(Project):
     def test_stopping_with_unchecked_changes_blocks_once_per_session(self):
@@ -115,6 +127,24 @@ class MarkdownEdits(Project):
     def test_a_clean_english_document_prints_nothing(self):
         self.assertIsNone(self.write("guide.md", "A kit for agents.\n", "PreToolUse"))
         self.assertIsNone(self.write("guide.md", "A kit for agents.\n", "PostToolUse"))
+
+    def test_markdown_written_through_a_shell_command_is_checked_the_same_way(self):
+        # A heredoc or script writes a file without any Edit or Write hook; the Bash rules cover it.
+        (self.root / "guide.md").write_text("Agent Work Kit — a kit.\n", encoding="utf-8")
+        output = self.bash("cat > guide.md <<'EOF'\nAgent Work Kit — a kit.\nEOF", event="PostToolUse")
+        self.assertEqual(output["decision"], "block")
+        self.assertIn("em-dash", output["reason"])
+        self.assertIn("guide.md", output["reason"])
+        line = self.context(self.bash("cat > 안내.md <<'EOF'\n전원을 확인하세요.\nEOF", session="s2"))
+        self.assertTrue(line.startswith("awkit korean-writing-bash (F14): "))
+        # Clean Markdown, Korean in a file that is not Markdown, and commands without .md print nothing.
+        (self.root / "guide.md").write_text("A kit for agents.\n", encoding="utf-8")
+        self.assertIsNone(self.bash("cat > guide.md <<'EOF'\nA kit for agents.\nEOF", event="PostToolUse", session="s3"))
+        self.assertIsNone(self.bash("cat > notes.txt <<'EOF'\n한국어\nEOF", session="s3"))
+        self.assertIsNone(self.bash("git status", event="PostToolUse", session="s3"))
+
+    def bash(self, command, session="s1", event="PreToolUse"):
+        return self.tool("Bash", {"command": command}, event=event, session=session)
 
 
 class WritingRequest(Project):
@@ -166,6 +196,23 @@ class WritingReply(Project):
         self.assertIsNone(self.stop("# 결과\n\n완료했습니다.", transcript, session="s2"))
         self.assertIsNone(self.stop(DOCUMENT, None, session="s3"))
         self.assertEqual(self.log(), [])
+
+    def test_with_replies_every_long_korean_reply_is_judged_and_a_subagent_prompt_is_not_access(self):
+        from awkit import session_rules
+        # A subagent's prompt naming the guide is not this session reading it, so the evidence stays complete.
+        transcript = self.transcript("테스트 결과 알려 줘.", ("Agent", {"prompt": "read kit/writing.md first"}))
+        payload = {"hook_event_name": "Stop", "session_id": "s1", "transcript_path": transcript,
+                   "last_assistant_message": EXPLANATION}
+        self.assertEqual(session_rules.main("reply", stdin=io.StringIO(json.dumps(payload, ensure_ascii=False))), 0)
+        with redirect_stdout(io.StringIO()) as out:
+            code = session_rules.main("reply", stdin=io.StringIO(json.dumps(payload, ensure_ascii=False)), replies=True)
+        self.assertEqual(code, 1)
+        self.assertIn("awkit check writing", out.getvalue())
+        records = session_rules.read_transcript(transcript)
+        self.assertEqual(session_rules.guide_access(records), "absent")
+        # The owner's casual requests for a draft or a conclusion count as asking for a document.
+        for request in ("초안을 읽기 쉽게 쓰셈", "결론을 다시 잘 내보셈", "보고서 정리해 줘"):
+            self.assertTrue(session_rules.DOCUMENT_REQUEST.search(request), request)
 
     def test_a_session_that_read_the_guide_passes(self):
         guide = (Path(__file__).resolve().parents[1] / "kit/writing.md").read_text(encoding="utf-8")
@@ -244,7 +291,7 @@ class Contract(Project):
         long_kit = "/home/someone/.local/share/pipx/venvs/agent-work-kit/lib/python3.13/site-packages/awkit/kit"
         rules, problems = hooks.load_rules([kit_hooks.Path(p) for p in hooks.default_rules(self.root)[0]], long_kit)
         self.assertEqual(problems, [])
-        self.assertEqual(len(rules), 10)
+        self.assertEqual(len(rules), 12)
         for rule in rules:
             self.assertTrue(rule.prevents, rule.name)
             if rule.message:

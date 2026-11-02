@@ -153,6 +153,27 @@ def _tracked_markdown(folder):
     return [folder / name for name in sorted(names) if (folder / name).is_file()]
 
 
+def changed_markdown(folder):
+    """Markdown files added, modified or untracked in the working tree of the repository at `folder`, or None
+    outside a repository. The hook rule for Bash runs the writing check on these after a command mentioning
+    `.md`, since a file written through a shell command reaches no Edit or Write hook."""
+    folder = Path(folder)
+    probe = _probe(folder, "status", "--porcelain", "--untracked-files=all", "-z", "--", ".")
+    if probe.returncode:
+        return None
+    entries = iter(probe.stdout.split("\0"))
+    files = []
+    for entry in entries:
+        if len(entry) < 4:
+            continue
+        status, name = entry[:2], entry[3:]
+        if status[0] in "RC":
+            next(entries, None)  # the original name of a rename follows as its own entry
+        if "D" not in status and name.endswith(".md") and (folder / name).is_file():
+            files.append(folder / name)
+    return files
+
+
 def writing_files(paths):
     files = []
     for path in map(Path, paths):

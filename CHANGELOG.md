@@ -8,6 +8,14 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Commands
 
+- Two default rules cover Markdown written through a shell command, which reaches no Edit or Write hook: `writing-check-bash` runs `check writing --changed` after a Bash command that names a `.md` file, and `korean-writing-bash` gives the Korean guide line when a heredoc body has Korean. `check writing --changed` checks the Markdown files added, modified or untracked in the repository; `text` conditions now also search heredoc bodies. In one audited session every Markdown file was written this way and neither existing rule fired.
+
+- `hook reply --replies` judges every long Korean reply, not only one with a heading or after a request for a document; this repository's rules use it because AGENTS.md applies the guide to replies. A subagent prompt that names the guide no longer makes guide access unknown for the rest of the session, and casual requests for a draft or a conclusion (초안, 결론, 내보) count as asking for a document.
+
+- The commit-identity rule reads a `git config user.name` or `user.email` earlier in the same command line, so setting the identity and committing in one command is judged by the new identity.
+
+- Each hook session state counts the runner's executions; `hook report` shows `ran N times, last EVENT at TIME` and `doctor` reports the last execution or that no event has reached the runner in the clone.
+
 - Claude hook entry requires matching delivered `AWKIT_CLAUDE_BASH_PATHS=git-bash` and current local settings under the resolved rule root for native Windows `Bash` conversion. The exact opted-in bundled commit adapter converts drive-rooted `cd` and successive `git -C` components before joining; unavailable selection or declaration is visible while existing allow/block policy remains. Other tools, platforms, custom commands and absent-selector behavior are unchanged.
 
 - `kit hooks --claude` inserts the absent selector in untracked, unstaged local settings without selector-related command changes or duplicate handlers. Existing values are preserved. Schema-1 hook installation records add optional per-file `owned_env` metadata for inserted keys; removal preserves changed or unowned values. Older removers leave the selector in edited files. The shipped [Git-Bash path guide](kit/commit-paths.md) separates configuration from verified native delivery.
@@ -53,6 +61,8 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 - Session decide accepts --input-file PATH, or - for UTF-8 stdin, containing the exact decision_id and choice. UTF-8 BOM is supported. Mixed argument/file input and malformed or ambiguous JSON are refused before dispatch. The selected session, existing decision handler, offered choices, permission semantics, JSON result schema and exit meanings remain unchanged; --decision with --choice or --answers-file still works.
 
 ### Guidance
+
+- The web-project extras (`pipeline`, `publish`, `ui`) moved from the command reference into their own guide, `kit/extras.md` (`awkit kit guide extras`), with the text unchanged. The reference had reached its word limit; the policy is to move a complete topic rather than shorten accepted text.
 
 - The development records are four files: `docs/roadmap.md` (Ready and Blocked work, the agent picks from Ready), `docs/design.md` (decisions), `docs/evidence.md` and `docs/release.md`. `docs/tasks/`, `docs/history/`, `docs/development.md` and `docs/document-workflow-plan.md` are removed; Git history keeps them. A test fails when `docs/` gains a file or a record exceeds its word limit. AGENTS.md now has the agent choose its work from the roadmap and forbids record-only commits. `checks.toml` points `records` at the roadmap; `scripts/evidence_catalog.py` no longer maps history paths. `docs/design.md` states the conclusion of the nine measured sessions and closes the measurement item; the roadmap turns the entries without an occurrence into a removal task. An audit of one cloud session added roadmap tasks for the rules that did not fire (Markdown written through Bash, long Korean replies without a heading) and for the kit texts that produced hedged records and per-task files. AGENTS.md gains the bash form of the pre-push check and scopes the installation-alignment rule to sessions on the owner's computer. The owner decided three rules: kit text that serves no failure entry or baseline step is deleted instead of moved to the reference; commits carry the repository's Git identity and no trailers regardless of what a harness asks; AGENTS.md is the complete rule set and no longer points at an external instruction file.
 

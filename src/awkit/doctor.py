@@ -12,9 +12,10 @@ from importlib import metadata
 from pathlib import Path
 
 from . import __version__
+from .check_config import validate_settings
+from .gitrepo import nested_repositories
 from .identity import author_problem, configured
 from .kit_install import SKILL_FOLDERS, read_version
-from .review import nested_repositories, validate_settings
 
 MIN_PYTHON = (3, 11)
 

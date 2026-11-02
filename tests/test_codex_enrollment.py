@@ -295,7 +295,7 @@ class EnrollmentTests(unittest.TestCase):
             server.server_close()
 
     def test_wrapped_or_unsupported_runtime_refuses_before_process(self):
-        with patch("awkit.codex_enrollment.subprocess.run") as run:
+        with patch("awkit.codex_runtime.subprocess.run") as run:
             with self.assertRaises(ValueError):
                 runtime(["codex", "--config", "unsafe=true"])
             executable = self.project / "unsupported.exe"

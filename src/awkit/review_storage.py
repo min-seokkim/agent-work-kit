@@ -8,7 +8,7 @@ import stat
 from collections import Counter, defaultdict
 from pathlib import Path, PurePosixPath
 
-from .artifact_store import STORE, metadata, store_descriptor
+from .artifact_paths import STORE, metadata, store_descriptor
 
 CATEGORIES = ("artifacts", "worktree", "records", "other")
 STORE_CATEGORIES = ("objects", "staging", "metadata", "other")
@@ -233,7 +233,7 @@ def _shared_declarations(folder, manifest, raw_manifest, result, files, director
 
 
 def _export_metadata(folder, files, directories, captures):
-    from .review_export import EXPORT_METADATA, ORIGINAL_MANIFEST, export_metadata
+    from .export_format import EXPORT_METADATA, ORIGINAL_MANIFEST, export_metadata
     raw = {name: None if name == ORIGINAL_MANIFEST and name not in files and name not in directories
            else captures[name] if name in captures else _read(folder, name, files, directories, raw=True)
            for name in EXPORT_METADATA}

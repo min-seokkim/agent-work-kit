@@ -65,7 +65,7 @@ def claude_observe(store, model):
 
 
 def verify_runtime(controller, provider):
-    from .codex_enrollment import EXECUTABLE_SHA256, VERSION
+    from .codex_runtime import EXECUTABLE_SHA256, VERSION
 
     evidence = controller.client
     if (evidence.get("version") != VERSION or evidence.get("executable_sha256") != EXECUTABLE_SHA256

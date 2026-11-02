@@ -1131,7 +1131,7 @@ def install_settings(top, provider, changes=None, skip=()):
     another settings file of the same agent runs the runner already, nothing is added. The command names
     awkit, not an interpreter, so the file can be committed. The runner handles rule errors; launch
     failures stay visible to the host. Returns (path, changed)."""
-    from .connect import dump_json, read_exact
+    from .project_files import dump_json, read_exact
     top = Path(top)
     path = top / SETTINGS[provider]
     others = [top / ".claude" / "settings.local.json"] if provider == "claude" else []
@@ -1164,7 +1164,7 @@ def install_settings(top, provider, changes=None, skip=()):
 def remove_entries(path, command, changes=None):
     """Remove hook entries running exactly `command`, which an earlier awkit wrote. Returns True when
     the file changed."""
-    from .connect import dump_json, read_exact
+    from .project_files import dump_json, read_exact
     if not path.is_file():
         return False
     original = read_exact(path)

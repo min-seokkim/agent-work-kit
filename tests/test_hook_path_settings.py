@@ -186,7 +186,7 @@ class LocalPathSettings(unittest.TestCase):
 
     def test_git_inventory_error_refuses_local_write(self):
         self.write({"model": "keep"})
-        from awkit.review import _probe
+        from awkit.gitrepo import _probe
 
         def probe(top, *args):
             if args[0] == "ls-files":
@@ -194,7 +194,7 @@ class LocalPathSettings(unittest.TestCase):
             return _probe(top, *args)
 
         notes = []
-        with mock.patch("awkit.review._probe", side_effect=probe):
+        with mock.patch("awkit.gitrepo._probe", side_effect=probe):
             kit_hooks.install_settings(self.preflight(), "claude", kit_hooks.Record(self.root), notes=notes)
         self.assertTrue(any("could not establish" in note and "was not inserted" in note for note in notes))
         self.assertNotIn("env", self.read())

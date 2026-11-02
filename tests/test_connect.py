@@ -17,7 +17,7 @@ from pathlib import Path
 from unittest import mock
 
 from awkit import connect, environment
-from awkit.checks import GIT_MARK, install_git_hook, install_hooks
+from awkit.kit_hooks import GIT_MARK, install_git_hook, install_hooks
 from awkit.review import git
 from support import child_env
 

@@ -12,7 +12,6 @@ project's instruction files are only read.
 
 from __future__ import annotations
 
-import hashlib
 import json
 import re
 import shutil
@@ -23,15 +22,23 @@ from pathlib import Path
 
 from . import environment
 from .environment import BEGIN, END, GENERATED
+from .project_files import (  # noqa: F401  (moved; importers keep working)
+    BACKUP,
+    CHECKS,
+    RECORD,
+    _newlines,
+    dump_json,
+    json_format,
+    kit_table,
+    read_exact,
+    sha,
+)
 
-RECORD = Path(".awkit") / "installed.json"
-BACKUP = Path(".awkit") / "backup"
 # Records worth keeping when the kit is removed: check runs, accepted versions, the review channel and
 # the hook log. The rest of .awkit/ is state that means nothing without the kit.
 RECORDS = ("reviews", "accepted", "channel.sqlite3", "hooks.ndjson")
 # What an awkit before the three layers appended to instruction files; `kit remove` still takes it out.
 CLAUDE_IMPORT = f"{BEGIN}\n@AGENTS.md\n{END}\n"
-CHECKS = "checks.toml"
 KIT_KEYS = ("version", "done", "recipient", "records")
 KIT_MARK = "# Agent Work Kit:"
 # Every place awkit writes, relative to the project or (with ~) the home folder. tests/test_layers.py
@@ -49,22 +56,8 @@ INSTRUCTION_LINE = ("Agent Work Kit: follow the `awkit-workflow` skill (or `awki
 PREVENTS = {"awkit kit init": ("F7", "F12", "F29"), "awkit kit remove": ("F7",)}
 
 
-def read_exact(path):
-    """A file's text with its line endings and any undecodable bytes kept, so writing it back changes
-    nothing awkit did not mean to change."""
-    return Path(path).read_bytes().decode("utf-8", errors="surrogateescape")
-
-
 def write_exact(path, text):
     Path(path).write_bytes(text.encode("utf-8", errors="surrogateescape"))
-
-
-def _newlines(text, like):
-    return text.replace("\n", "\r\n") if "\r\n" in like else text
-
-
-def sha(data):
-    return None if data is None else hashlib.sha256(data).hexdigest()
 
 
 def _git(top, *args):
@@ -173,17 +166,6 @@ def _exclude_file(top):
 
 
 # Installing: checks.toml with the [kit] table, the hooks through `kit hooks`, and the record.
-
-
-def kit_table(path):
-    """The `[kit]` table of a checks.toml, {} when it has none, or None when the file is missing or does
-    not parse."""
-    try:
-        data = tomllib.loads(Path(path).read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return None
-    table = data.get("kit")
-    return table if isinstance(table, dict) else {}
 
 
 def _toml(value):
@@ -345,23 +327,6 @@ def _strip_block(text, sep=None):
     return before + after
 
 
-def json_format(text):
-    """(indent, trailing newline) of a JSON file, so a rewrite changes only what it must."""
-    indent = 2
-    for line in text.splitlines()[1:]:
-        stripped = line.lstrip()
-        if stripped and line != stripped:
-            whitespace = line[:len(line) - len(stripped)]
-            indent = "\t" if whitespace.startswith("\t") else len(whitespace)
-            break
-    return indent, text.endswith("\n")
-
-
-def dump_json(data, original=""):
-    indent, newline = json_format(original) if original else (2, True)
-    return _newlines(json.dumps(data, indent=indent, ensure_ascii=False) + ("\n" if newline else ""), original)
-
-
 def _strip_hooks(path, created):
     """Take awkit's hook entries out of a Claude Code or Codex settings file; delete a file awkit created
     once nothing else is left in it. Returns what happened."""
@@ -396,7 +361,7 @@ def _strip_hooks(path, created):
 
 
 def _strip_git_hook(path, created):
-    from .checks import GIT_MARK
+    from .kit_hooks import GIT_MARK
     text = read_exact(path)
     kept = [line for line in text.splitlines(keepends=True) if GIT_MARK not in line]
     rest = "".join(kept)
@@ -462,8 +427,8 @@ def _found_by_markers(top, hooks=True):
     """Files carrying awkit's markers, for a clone without the record: the [kit] table, blocks earlier
     versions appended, generated skills and, unless `kit hooks --remove` took them out, settings entries and
     the Git hook line."""
-    from .checks import GIT_MARK, git_hook_path
     from .hooks import SETTINGS, is_awkit_command
+    from .kit_hooks import GIT_MARK, git_hook_path
     found = []
     checks = top / CHECKS
     if checks.is_file() and KIT_MARK in checks.read_text(encoding="utf-8", errors="replace"):
@@ -603,3 +568,31 @@ def _unexclude(top, entry=None):
         from .kit_hooks import restore_exclude
         restore_exclude(top, entry)
         return
+
+
+def install_user_skills(providers=("claude", "codex"), without=(), home=None):
+    """Write the self-contained skills into the user's skill folders, which every session of the agent reads
+    in any project; the guides are the person's way of working, not a project's. Skills left out with
+    `without` that awkit wrote earlier are deleted. Everything written is recorded in `~/.awkit/installed.json`,
+    which `kit remove --user` reads. Returns ({provider: result}, record path or None)."""
+    from .environment import is_awkit_skill
+    from .kit_install import SITUATIONS, WORKFLOW, _write_skills, skill_names, skill_text, user_skill_folders
+    home = Path.home() if home is None else Path(home)
+    keep, left_out = skill_names(without)
+    changes = Changes(home, exclude=False)
+    results = {}
+    for provider in providers:
+        folder = user_skill_folders(home)[provider]
+        planned = [(name, folder / name / "SKILL.md", skill_text(name, guide, description, extra))
+                   for name, guide, description, extra in (WORKFLOW, *SITUATIONS) if name in keep]
+        result = _write_skills(planned, [(name, "left out with --without") for name in left_out], changes)
+        result["removed"] = []
+        for name in left_out:
+            path = folder / name / "SKILL.md"
+            if path.is_file() and is_awkit_skill(path.read_text(encoding="utf-8", errors="replace")):
+                path.unlink()
+                if not any(path.parent.iterdir()):
+                    path.parent.rmdir()
+                result["removed"].append(path)
+        results[provider] = result
+    return results, changes.save()

@@ -4,7 +4,7 @@ It writes four things, each marked as awkit's: rules.toml from the kit's default
 none (its first line says `kit hooks` wrote it), a handler `awkit hook <event> --kit-hooks` per hook event in
 `.claude/settings.local.json` and in Codex's project hook file `.codex/hooks.json`, and the commit identity
 check in the repository's commit-msg hook (a line after an existing hook's commands, with husky or pre-commit
-in their files; see checks.install_git_hook). Hooks run code, so nothing goes into the user's own folders:
+in their files; see install_git_hook below). Hooks run code, so nothing goes into the user's own folders:
 the handlers exist only in projects that chose awkit.
 
 What it writes is recorded in `.awkit/kit-hooks.json` with a copy of each file as it was, so `--remove`
@@ -16,6 +16,9 @@ import hashlib
 import json
 import stat
 from pathlib import Path
+
+from .checks import _repository
+from .gitrepo import git
 
 EVENTS = ("SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "Stop")
 MARK = "--kit-hooks"
@@ -75,7 +78,7 @@ def _commands(entries):
 class Record:
     """What kit hooks wrote: the hash before and after and a copy of the original for each file, the folders
     it created and whether it excluded .awkit/ from Git. Has the `write(path, text, action)` that
-    checks.install_git_hook calls."""
+    install_git_hook calls."""
 
     def __init__(self, top):
         self.top = Path(top)
@@ -154,7 +157,7 @@ class Record:
             self.changed = True
 
     def _exclude_settings(self):
-        from .review import _probe, git
+        from .gitrepo import _probe, git
         for relative in SETTINGS.values():
             key = relative.as_posix()
             entry = self.data["files"].get(key)
@@ -194,7 +197,7 @@ def _exclude_file(top):
 
 
 def _top(folder):
-    from .review import git
+    from .gitrepo import git
     folder = Path(folder).resolve()
     if not folder.is_dir():
         raise ValueError(f"The folder does not exist: {folder}")
@@ -225,7 +228,7 @@ def draft_rules(top):
 
 def _selector_refusal(top, path):
     """None for confirmed unversioned settings, otherwise why only the selector is skipped."""
-    from .review import _probe
+    from .gitrepo import _probe
     repository = _probe(top, "rev-parse", "--is-inside-work-tree")
     if repository.returncode:
         # Preserve supported non-Git use, without interpreting arbitrary Git failures as untracked.
@@ -334,7 +337,6 @@ def install(folder, use_git=True, use_claude=True, use_codex=True):
         result["notes"].append("Codex runs project hooks only in a trusted project, after each is approved under /hooks")
     if use_git:
         if repository:
-            from .checks import install_git_hook
             path, what, note = install_git_hook(top, record)
             result[what].append(str(path) + (f" ({note})" if note else ""))
         else:
@@ -385,7 +387,6 @@ def _strip_settings(path, owned_env=None):
 
 
 def _strip_git_hook(path, created):
-    from .checks import GIT_HOOK, GIT_MARK
     text = _read(path)
     if GIT_MARK not in text:
         return "unchanged"
@@ -416,7 +417,6 @@ def remove(folder, ask=None):
     kit hooks created it; a file changed since loses only the marked handlers or line. rules.toml goes only
     while unchanged; a changed one is deleted when `ask(path)` says so (by default, the person at a terminal;
     without one it is kept). Returns [(path, what happened)]."""
-    from .checks import git_hook_path
     from .hooks import RULES_FILE
     top, repository = _top(folder)
     record = Record(top)
@@ -583,3 +583,131 @@ def _forget(top, record):
     if (record.data.get("created_awkit") and _plain_backup_path(folder, folder)
             and folder.is_dir() and not any(folder.iterdir())):
         folder.rmdir()
+
+
+# The commit identity hook for Git, and the project-level hook installation (moved from checks).
+
+
+def git_hook_path(top):
+    hooks = Path(git(top, "rev-parse", "--git-path", "hooks"))
+    return (hooks if hooks.is_absolute() else top / hooks) / "commit-msg"
+
+
+GIT_MARK = "# awkit: commit identity check"
+
+
+GIT_HOOK = f"""#!/bin/sh
+# Installed by `awkit kit hooks --git`: compare the commit's author and trailers with this repository's history.
+# awkit is found by name, so the hook keeps working when awkit is reinstalled or its environment moves.
+{GIT_MARK}
+if command -v awkit >/dev/null 2>&1; then
+    exec awkit check commit --message "$1"
+fi
+for python in python3 python; do
+    if "$python" -c "import awkit" >/dev/null 2>&1; then
+        exec "$python" -m awkit check commit --message "$1"
+    fi
+done
+echo "awkit was not found; the commit identity check did not run." >&2
+"""
+
+
+# The line `kit hooks --git` adds to a commit-msg hook the project has already. Like GIT_HOOK it finds
+# awkit by name or as a Python module; without either it does nothing, so it never stops a teammate who has
+# not installed awkit.
+GIT_LINE = ('if command -v awkit >/dev/null 2>&1; then awkit check commit --message "$1" || exit 1; '
+            'else for p in python3 python; do if "$p" -c "import awkit" >/dev/null 2>&1; then '
+            '"$p" -m awkit check commit --message "$1" || exit 1; break; fi; done; fi  ' + GIT_MARK + '\n')
+
+
+PRE_COMMIT = "File generated by pre-commit"
+
+
+def _chain(text):
+    """`text` with GIT_LINE after the hook's own commands, or before its last line when that line ends the
+    script (`exit` or `exec`), so both run. Returns (new text, where)."""
+    newline = "\r\n" if "\r\n" in text else "\n"
+    line = GIT_LINE.replace("\n", newline)
+    lines = text.splitlines(keepends=True)
+    if lines and not lines[-1].endswith("\n"):
+        lines[-1] += newline
+    last = next((i for i in range(len(lines) - 1, -1, -1)
+                 if lines[i].strip() and not lines[i].lstrip().startswith("#")), None)
+    if last is not None and lines[last].startswith(("exit", "exec ")):
+        return "".join(lines[:last] + [line] + lines[last:]), "before its last line, which ends the script"
+    return "".join(lines) + line, "after its own commands"
+
+
+def install_git_hook(top, changes=None):
+    """Put the commit identity check into the repository's commit-msg hook: write the hook when there is
+    none, or add one line to the hook the project has. With husky the line goes into `.husky/commit-msg`,
+    which husky runs; with pre-commit into `commit-msg.legacy`, which pre-commit runs before its own hooks.
+    Returns (path, what happened: "installed", "connected" or "kept", note)."""
+    from .project_files import read_exact
+
+    def write(path, text, action, mode=0o755):
+        if changes is not None:
+            changes.write(path, text, action)
+        else:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(text.encode("utf-8", errors="surrogateescape"))
+        path.chmod(mode)
+
+    hook = git_hook_path(top)
+    note = ""
+    if hook.parent.name == "_" and hook.parent.parent.name == ".husky":
+        hook, note = hook.parent.parent / "commit-msg", "husky runs it"
+    if hook.is_file():
+        text = read_exact(hook)
+        if PRE_COMMIT in text:
+            hook, note = hook.with_name("commit-msg.legacy"), "pre-commit runs it before its own hooks"
+    if not hook.is_file():
+        write(hook, GIT_HOOK, "created")
+        return hook, "installed", note
+    text = read_exact(hook)
+    if GIT_MARK in text or "Installed by `awkit kit hooks --git`" in text:
+        return hook, "kept", note
+    new, where = _chain(text)
+    write(hook, new, "chained", hook.stat().st_mode & 0o777 | 0o111)
+    return hook, "connected", "; ".join(filter(None, [where, note]))
+
+
+def install_hooks(folder, python=None, use_git=True, use_claude=False, use_codex=False, changes=None):
+    """Install the commit identity check for Git and the hook runner for Claude Code and Codex, adding to
+    what the project has and changing nothing else.
+
+    The Git check goes into the repository's commit-msg hook (see `install_git_hook`). The agents' handlers
+    go into their project settings, `.claude/settings.json` and `.codex/hooks.json`, beside the handlers
+    there, and run `awkit hook`, which applies the project's rules.toml or, without one, the kit's rules.
+    When the project has a completion gate of its own, the runner skips the done check. Everything calls
+    awkit by name, so the files can be committed. The done-check entries an earlier awkit wrote to
+    .claude/settings.local.json are removed. `python` is accepted for compatibility and not used.
+    Returns {installed, connected, kept, notes}."""
+    from .environment import gates
+    from .hooks import OLD_DONE_HOOK, RULES_FILE, install_settings, remove_entries
+    from .scan import _ci
+    top, _ = _repository(folder)
+    result = {"installed": [], "connected": [], "kept": [], "notes": []}
+    if use_git:
+        path, what, note = install_git_hook(top, changes)
+        result[what].append(str(path) + (f" ({note})" if note else ""))
+    providers = [name for name, chosen in (("claude", use_claude), ("codex", use_codex)) if chosen]
+    skip = []
+    if providers:
+        found = gates(top, ci=_ci(top))
+        if found:
+            skip.append("done-check")
+            result["notes"].append("the done check is left out: " + ", ".join(f"{g['name']} ({g['evidence']})"
+                                   for g in found) + " already stops the agent from finishing unchecked work")
+    for provider in providers:
+        path, changed = install_settings(top, provider, changes, skip)
+        result["installed" if changed else "kept"].append(str(path))
+    if use_claude:
+        local = top / ".claude" / "settings.local.json"
+        if remove_entries(local, OLD_DONE_HOOK, changes):
+            result["installed"].append(str(local))
+    if providers and not (top / RULES_FILE).is_file():
+        from .kit_install import kit_root
+        result["notes"].append(f"the hooks apply the kit's rules ({kit_root().joinpath(RULES_FILE)}); copy that "
+                               f"file to {top / RULES_FILE} to change them")
+    return result

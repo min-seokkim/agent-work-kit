@@ -7,9 +7,11 @@ import os
 import queue
 import subprocess
 import threading
+import uuid
 from pathlib import Path
 
 from . import __version__
+from .codex_runtime import local_path
 
 
 class ProviderError(RuntimeError):
@@ -152,8 +154,6 @@ class CodexSession:
                     with self._lock:
                         response = self._pending.get(ident)
                         if response is not None and ident in self._discovery:
-                            from .session_discovery import project_response
-
                             if not response.full():
                                 response.put_nowait(project_response(message, *self._discovery[ident]))
                     continue  # Late discovery replies must never enter ordinary event diagnostics.
@@ -220,3 +220,46 @@ class CodexSession:
                 thread.join(timeout=2)
         self.process.stdout.close()
         self.process.stderr.close()
+
+
+SOURCES = ("cli", "vscode", "exec", "appServer")
+
+
+def project_response(message, project, limit=50):
+    """Strip native bodies/errors before a discovery response enters a request queue."""
+    try:
+        if "error" in message:
+            error = message["error"]
+            code = error.get("code") if isinstance(error, dict) else None
+            if type(code) is int and code in (-32601, -32602):
+                return dict(error=dict(code=code))
+            return dict(error="Conversation discovery is unavailable.")
+        result = message["result"]
+        if not isinstance(result, dict) or not isinstance(result.get("data"), list):
+            raise ValueError
+        if len(result["data"]) > limit:
+            raise ValueError
+        rows = []
+        expected = local_path(project)
+        for thread in result["data"]:
+            if not isinstance(thread, dict):
+                raise ValueError
+            ident = thread.get("id")
+            if not isinstance(ident, str) or str(uuid.UUID(ident)) != ident:
+                raise ValueError
+            if local_path(thread["cwd"]) != expected or thread.get("source") not in SOURCES:
+                raise ValueError
+            name = thread.get("name")
+            if name is not None and not isinstance(name, str):
+                raise ValueError
+            times = [thread.get(key) for key in ("createdAt", "updatedAt")]
+            if any(value is not None and type(value) is not int for value in times):
+                raise ValueError
+            rows.append(dict(id=ident, name=name, project=str(expected), source=thread["source"],
+                             created_at=times[0], updated_at=times[1]))
+        cursor = result.get("nextCursor")
+        if cursor is not None and (not isinstance(cursor, str) or not cursor or len(cursor) > 8192):
+            raise ValueError
+        return dict(result=dict(conversations=rows, next_cursor=cursor))
+    except (OSError, ValueError, KeyError, TypeError, RuntimeError):
+        return dict(error="Conversation discovery is unavailable.")

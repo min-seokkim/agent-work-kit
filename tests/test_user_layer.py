@@ -12,7 +12,8 @@ from pathlib import Path
 from unittest import mock
 
 from awkit import __version__, environment
-from awkit.kit_install import SITUATIONS, WORKFLOW, guide, guide_files, install_user_skills
+from awkit.connect import install_user_skills
+from awkit.kit_install import SITUATIONS, WORKFLOW, guide, guide_files
 from awkit.review import git
 from support import child_env
 from test_kit import skill_front_matter

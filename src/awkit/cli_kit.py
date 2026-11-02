@@ -98,8 +98,8 @@ def _guide(name):
 
 def _skills(args):
     """`kit skills`: the user folders by default, the project's with --project (or --kit)."""
-    from .connect import Changes, project_top
-    from .kit_install import install_user_skills, skill_names
+    from .connect import Changes, install_user_skills, project_top
+    from .kit_install import skill_names
     providers = (args.provider,) if args.provider else ("claude", "codex")
     if not (args.project or args.kit):
         results, record = install_user_skills(providers, args.without)
@@ -125,7 +125,7 @@ def _skills(args):
 
 
 def _git_status(top, names):
-    from .review import _probe
+    from .gitrepo import _probe
     probe = _probe(top, "status", "--porcelain", "--", *names)
     return None if probe.returncode else [line[3:] for line in probe.stdout.splitlines()]
 

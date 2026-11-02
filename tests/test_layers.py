@@ -15,8 +15,9 @@ from pathlib import Path
 from unittest import mock
 
 from awkit import __version__, connect, environment
+from awkit.connect import install_user_skills
 from awkit.doctor import diagnose
-from awkit.kit_install import SITUATIONS, WORKFLOW, install_user_skills
+from awkit.kit_install import SITUATIONS, WORKFLOW
 from awkit.review import git
 from support import child_env
 

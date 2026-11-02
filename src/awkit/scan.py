@@ -45,7 +45,7 @@ def _git(folder):
     if top is None:
         return {"repository": None}
     status = run("status", "--porcelain")
-    from .review import nested_repositories
+    from .gitrepo import nested_repositories
     return {"repository": top, "nested_repositories": nested_repositories(top),
             "head": run("rev-parse", "--verify", "-q", "HEAD^{commit}"),
             "branch": run("rev-parse", "--abbrev-ref", "HEAD"),
@@ -155,14 +155,14 @@ def _profile_fields(text):
 
 def _kit(folder, found):
     """How the kit is connected: copied as a folder, connected by `kit init`, or pointed at by skills."""
-    from .connect import RECORD
     from .environment import awkit_block
+    from .project_files import RECORD
     kit = folder / "agent-work-kit"
     if kit.is_dir():
         profile = kit / "templates" / "project.md"
         filled = _profile_fields(profile.read_text(encoding="utf-8", errors="replace")) if profile.is_file() else {}
         return {"present": True, "mode": "copy", "profile": str(profile) if profile.is_file() else None, **filled}
-    from .connect import CHECKS, kit_table
+    from .project_files import CHECKS, kit_table
     sections = [f["path"] for f in found["instructions"] if f["awkit_words"]]
     skills = sorted({s["name"] for entries in found["skills"].values() for s in entries if s["awkit"]})
     table = kit_table(folder / CHECKS) or {}

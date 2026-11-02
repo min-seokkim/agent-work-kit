@@ -43,7 +43,7 @@ def build_wheel(out: Path) -> Path:
 
 
 def build_kit_zip(out: Path) -> Path:
-    from awkit.kit_install import install_user_skills
+    from awkit.connect import install_user_skills
 
     target = out / f"agent-work-kit-skills-{__version__}.zip"
     with tempfile.TemporaryDirectory() as temporary:

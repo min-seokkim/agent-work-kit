@@ -25,7 +25,7 @@ def classify(base, path, source=None):
             return (name, None, True) if path.is_file() or path.is_symlink() else None
         return name, None, False
 
-    from .artifact_store import ArtifactCollision, linked, relative
+    from .artifact_paths import ArtifactCollision, linked, relative
     try:
         parts = relative(name).parts
     except ValueError as exc:
@@ -43,7 +43,7 @@ def candidates(source, pattern):
     matching and platform case convention, but exposes I/O errors that glob hides.
     A linked branch has unknown contents and is reported without following it.
     """
-    from .artifact_store import linked
+    from .artifact_paths import linked
     parts = pattern.split("/")
     if sys.version_info < (3, 13) and any("**" in part and part != "**" for part in parts):
         raise ValueError("Invalid pattern: '**' can only be an entire path component on this Python.")
@@ -124,8 +124,9 @@ def candidates(source, pattern):
 
 def preview(repo, config):
     """Observe the current working folder, without running or retaining evidence."""
-    from .artifact_store import SafeRoot, distinct, fingerprint, linked, relative
-    from .review import git, located, validate_settings
+    from .artifact_paths import SafeRoot, distinct, fingerprint, linked, relative
+    from .check_config import validate_settings
+    from .gitrepo import git, located
     base, config = Path(repo).resolve(), Path(config).resolve()
     top, subdir = located(base)
     raw = config.read_bytes()

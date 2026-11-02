@@ -14,19 +14,23 @@ import tomllib
 from contextlib import contextmanager
 from pathlib import Path, PurePosixPath
 
+from .check_config import (  # noqa: F401  (moved; importers keep working)
+    artifact_patterns,
+    relative_directory,
+    relative_file,
+    validate_settings,
+)
+from .gitrepo import (  # noqa: F401  (moved; importers keep working)
+    IDENTITY,
+    _probe,
+    git,
+    located,
+    nested_repositories,
+    nested_warning,
+    toplevel,
+)
 from .process import run_to_files
 from .records import LABEL, atomic_json, rename, stamp
-
-
-def git(repo, *args, env=None):
-    result = subprocess.run(["git", "-C", str(repo), *args], env=env,
-                            capture_output=True, text=True, encoding="utf-8", errors="replace")
-    if result.returncode:
-        raise ValueError(result.stderr.strip() or "Git command failed.")
-    return result.stdout.strip()
-
-
-IDENTITY = ("-c", "user.name=Agent Work Kit", "-c", "user.email=awkit@localhost")
 
 # The failure catalogue entries (kit/failures.md) each command guards against.
 PREVENTS = {"awkit review snapshot": ("F1",), "awkit review check": ("F1", "F2", "F7", "F26"),
@@ -42,63 +46,6 @@ def storage(repo, runs_root=None):
     from .review_storage import inspect
     root = toplevel(repo) / ".awkit" / "reviews" if runs_root is None else Path(runs_root)
     return inspect(root, default=runs_root is None)
-
-
-def _probe(folder, *args):
-    return subprocess.run(["git", "-C", str(folder), *args], capture_output=True, text=True,
-                          encoding="utf-8", errors="replace")
-
-
-def toplevel(folder):
-    """The Git top level that contains `folder`, which must already have a commit.
-
-    The review commands only read and check files that Git tracks; they never create a
-    repository or commit on their own.
-    """
-    folder = Path(folder).resolve()
-    if not folder.is_dir():
-        raise ValueError(f"The folder does not exist: {folder}")
-    probe = _probe(folder, "rev-parse", "--show-toplevel")
-    if probe.returncode:
-        raise ValueError(f"Not a Git repository: {folder}. awkit checks files that Git tracks: run `git init` "
-                         "and commit them, or start from `awkit kit init` or `awkit kit example`.")
-    top = Path(probe.stdout.strip())
-    if _probe(top, "rev-parse", "--verify", "-q", "HEAD^{commit}").returncode:
-        raise ValueError(f"The repository has no commit yet: {top}. Commit the files before checking them.")
-    return top
-
-
-def nested_repositories(top):
-    """Untracked folders in the repository that are Git repositories of their own, such as a clone of
-    awkit placed inside the project. awkit does not support them: a snapshot cannot hold a folder, so
-    changes there can never be checked. Ignored folders and submodules are not listed."""
-    top = Path(top)
-    probe = _probe(top, "ls-files", "--others", "--exclude-standard", "-z")
-    found = []
-    for entry in probe.stdout.split("\0"):
-        # Git does not descend into another repository; it lists it as one "path/" entry.
-        if entry.endswith("/") and (top / entry / ".git").exists():
-            path = entry.rstrip("/")
-            found.append({"path": path, "awkit": (top / path / "src" / "awkit" / "__init__.py").is_file()})
-    return found
-
-
-def nested_warning(entry):
-    what = "a clone of awkit" if entry["awkit"] else "a separate Git repository"
-    return (f"{entry['path']} is {what} inside this project. awkit does not support that: changes in it can "
-            "never be checked, and `git add -A` would add it as an embedded repository. Move it outside the "
-            "project, or add it to .gitignore.")
-
-
-def located(folder):
-    """The repository top level and the folder's path inside it, "" at the root.
-
-    Review commands take paths, step working directories and artifact patterns relative to the
-    folder they are run in, and resolve them inside the same subfolder of the checked worktree.
-    """
-    top = toplevel(folder)
-    inside = Path(folder).resolve().relative_to(top.resolve())
-    return top, inside.as_posix() if inside.parts else ""
 
 
 def track(folder, paths, message):
@@ -148,20 +95,6 @@ def track(folder, paths, message):
     return record
 
 
-def relative_file(value):
-    path = PurePosixPath(value)
-    if (not value or path.is_absolute() or any(p.lower() in ("", ".", "..", ".git") for p in value.split("/"))
-            or "\\" in value or ":" in value or "\x00" in value):
-        raise ValueError(f"Use a relative path inside the project: {value}")
-    return path
-
-
-def relative_directory(value):
-    if not isinstance(value, str):
-        raise ValueError("cwd must be a string path relative to the worktree.")
-    return PurePosixPath(".") if value == "." else relative_file(value)
-
-
 def snapshot(repo, paths):
     repo, subdir = located(repo)
     base = repo / subdir
@@ -194,19 +127,6 @@ def snapshot(repo, paths):
         git(repo, "add", "-A", "--", *specs, env=env)
         tree = git(repo, "write-tree", env=env)
         return git(repo, "commit-tree", tree, "-p", parent, "-m", "Review snapshot", env=env)
-
-
-def artifact_patterns(settings):
-    """Validate `artifacts` and `required_artifacts`: glob patterns relative to the worktree."""
-    patterns = {}
-    for key in ("artifacts", "required_artifacts"):
-        values = settings.get(key, [])
-        if not isinstance(values, list) or any(not isinstance(v, str) for v in values):
-            raise ValueError(f"{key} must be an array of relative glob patterns.")
-        for value in values:
-            relative_file(value.replace("*", "x").replace("?", "x").replace("[", "x").replace("]", "x"))
-        patterns[key] = values
-    return patterns["artifacts"], patterns["required_artifacts"]
 
 
 def collect_artifacts(worktree, run, patterns, required):
@@ -475,36 +395,6 @@ def compare(repo, label="accepted", run_dir=None, diff=False, include_added=Fals
         report["note"] = ("A file the check produced exists only in the worktree it ran in, not in the working "
                           "tree. To compare the outputs of a later run, pass its run folder with --run.")
     return report
-
-
-def validate_settings(settings):
-    """Validate check configuration without executing commands or creating a worktree."""
-    if type(settings.get("schema")) is not int or settings["schema"] != 1:
-        raise ValueError("The check configuration needs schema = 1.")
-    if settings.get("artifact_storage", "copy") not in ("copy", "shared"):
-        raise ValueError('artifact_storage must be "copy" or "shared".')
-    timeout = settings.get("timeout_seconds", 300)
-    if isinstance(timeout, bool) or not isinstance(timeout, (int, float)) or not 0 < timeout <= 86400:
-        raise ValueError("timeout_seconds must be above 0 and at most 86400.")
-    checks, setup = settings.get("checks"), settings.get("setup", [])
-    if not isinstance(checks, list) or not checks or not isinstance(setup, list):
-        raise ValueError("checks must list at least one command.")
-    names = set()
-    for step in setup + checks:
-        if not isinstance(step, dict):
-            raise ValueError("Each step must be a table.")
-        name, argv = step.get("name"), step.get("argv")
-        if not isinstance(name, str) or not name or name in names:
-            raise ValueError("Each step needs a distinct name.")
-        names.add(name)
-        if not isinstance(argv, list) or not argv or any(not isinstance(s, str) for s in argv):
-            raise ValueError("argv must be a non-empty array of strings.")
-        relative_directory(step.get("cwd", "."))
-    custom_env = settings.get("env", {})
-    if not isinstance(custom_env, dict) or any(not isinstance(v, str) for v in custom_env.values()):
-        raise ValueError("env values must be strings.")
-    patterns, required = artifact_patterns(settings)
-    return timeout, checks, setup, custom_env, patterns, required
 
 
 def check(repo, revision, config, runs_root=None, keep=False):

@@ -452,34 +452,6 @@ def skill_names(without=()):
     return [name for name in names if name not in chosen], sorted(chosen)
 
 
-def install_user_skills(providers=("claude", "codex"), without=(), home=None):
-    """Write the self-contained skills into the user's skill folders, which every session of the agent reads
-    in any project; the guides are the person's way of working, not a project's. Skills left out with
-    `without` that awkit wrote earlier are deleted. Everything written is recorded in `~/.awkit/installed.json`,
-    which `kit remove --user` reads. Returns ({provider: result}, record path or None)."""
-    from .connect import Changes
-    from .environment import is_awkit_skill
-    home = Path.home() if home is None else Path(home)
-    keep, left_out = skill_names(without)
-    changes = Changes(home, exclude=False)
-    results = {}
-    for provider in providers:
-        folder = user_skill_folders(home)[provider]
-        planned = [(name, folder / name / "SKILL.md", skill_text(name, guide, description, extra))
-                   for name, guide, description, extra in (WORKFLOW, *SITUATIONS) if name in keep]
-        result = _write_skills(planned, [(name, "left out with --without") for name in left_out], changes)
-        result["removed"] = []
-        for name in left_out:
-            path = folder / name / "SKILL.md"
-            if path.is_file() and is_awkit_skill(path.read_text(encoding="utf-8", errors="replace")):
-                path.unlink()
-                if not any(path.parent.iterdir()):
-                    path.parent.rmdir()
-                result["removed"].append(path)
-        results[provider] = result
-    return results, changes.save()
-
-
 def _write_skills(planned, omitted, changes):
     from .environment import is_awkit_skill
     result = {"created": [], "updated": [], "unchanged": [], "kept": [], "omitted": omitted}

@@ -19,7 +19,7 @@ from pathlib import Path
 from unittest import mock
 
 from awkit import hooks
-from awkit.checks import install_hooks
+from awkit.kit_hooks import install_hooks
 from awkit.review import git
 from support import child_env
 

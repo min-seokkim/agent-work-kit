@@ -8,8 +8,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from awkit.checks import check_text, check_writing, commit_identity, done, install_hooks, render_done, render_writing
+from awkit.checks import check_text, check_writing, commit_identity, done, render_done, render_writing
 from awkit.hooks import HOOK_EVENTS, OLD_DONE_HOOK
+from awkit.kit_hooks import install_hooks
 from awkit.review import check, git, snapshot
 from support import child_env
 

@@ -8,6 +8,8 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Commands
 
+- `kit skills` and `kit init` read awkit's source (`kit_source`, two git processes in a source checkout) once per write of the skills instead of once per skill file, and the skill that points into a project's kit folder takes the version from the package instead of from `kit_source`. The written files are unchanged.
+
 - Finding the repository top level and whether it has a commit (`review`, `check done` and the commands that use `gitrepo.toplevel`) takes one `git rev-parse` process instead of two.
 
 - A managed write in a folder where Git can find no repository (no `.git` entry in it or its parents, no bare repository folder, no `GIT_DIR`, `GIT_WORK_TREE`, `GIT_COMMON_DIR` or `GIT_OBJECT_DIRECTORY`) is `outside-git` without starting git; before, a git failure other than "not a git repository" there was an error. In a repository, a write whose exclusion is already in place checks it with one `git check-ignore --stdin` instead of three. The test suite starts 2,762 fewer git processes (13,495 to 10,733); on Windows CI each start costs about 40 ms.

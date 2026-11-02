@@ -576,14 +576,22 @@ def install_user_skills(providers=("claude", "codex"), without=(), home=None):
     `without` that awkit wrote earlier are deleted. Everything written is recorded in `~/.awkit/installed.json`,
     which `kit remove --user` reads. Returns ({provider: result}, record path or None)."""
     from .environment import is_awkit_skill
-    from .kit_install import SITUATIONS, WORKFLOW, _write_skills, skill_names, skill_text, user_skill_folders
+    from .kit_install import (
+        SITUATIONS,
+        WORKFLOW,
+        _source_label,
+        _write_skills,
+        skill_names,
+        skill_text,
+        user_skill_folders,
+    )
     home = Path.home() if home is None else Path(home)
     keep, left_out = skill_names(without)
     changes = Changes(home, exclude=False)
-    results = {}
+    results, label = {}, _source_label()
     for provider in providers:
         folder = user_skill_folders(home)[provider]
-        planned = [(name, folder / name / "SKILL.md", skill_text(name, guide, description, extra))
+        planned = [(name, folder / name / "SKILL.md", skill_text(name, guide, description, extra, label=label))
                    for name, guide, description, extra in (WORKFLOW, *SITUATIONS) if name in keep]
         result = _write_skills(planned, [(name, "left out with --without") for name in left_out], changes)
         result["removed"] = []

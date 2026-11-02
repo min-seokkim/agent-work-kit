@@ -6,7 +6,6 @@ What to work on in this repository. An agent picks the highest Ready item it can
 
 | Item | Done when |
 |---|---|
-| Shorten the Windows test jobs. They take 10 to 13 minutes in CI while the Linux jobs take about 2.5, which delays every push. | The cause is measured (per-test timings on a Windows run, for example with `--durations` or timing around the slowest classes), the slowest cost is removed without dropping a test or a Windows-specific assertion, and two consecutive green runs show every Windows test job under 7 minutes. |
 
 ## Blocked
 

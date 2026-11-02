@@ -354,9 +354,12 @@ def _source_label():
     return label
 
 
-def skill_text(name, guide, description, extra="", kit_path=None):
+def skill_text(name, guide, description, extra="", kit_path=None, label=None):
     """The SKILL.md for one guide. With `kit_path` it points to the guide in a kit folder inside the
-    project; otherwise it holds the guide itself, so nothing outside the skill folder is needed."""
+    project; otherwise it holds the guide itself, so nothing outside the skill folder is needed. `label`
+    is `_source_label()`, which callers writing several skills compute once: in a source checkout it starts
+    two git processes."""
+    from . import __version__
     head = f"---\nname: {name}\n" \
            f"description: {json.dumps(description)}\n---\n\n"  # JSON is valid YAML; ": " needs quoting
     if kit_path is not None:
@@ -365,12 +368,12 @@ def skill_text(name, guide, description, extra="", kit_path=None):
         if extra:
             body += " " + extra.format(kit=kit_path)
         # Only the version: the guide it points at carries the content, so the file changes only with awkit.
-        return head + f"{GENERATED} by awkit {kit_source()['awkit']}. Update with `awkit kit skills --project --kit {kit_path}`. -->\n\n" \
+        return head + f"{GENERATED} by awkit {__version__}. Update with `awkit kit skills --project --kit {kit_path}`. -->\n\n" \
             + body + "\n"
     sources = [guide, *APPENDED.get(name, ())]
     # One line: which awkit made the file and how to update it. A skill in the user folder outlives any
     # project, so the version is what tells a reader whether it is current.
-    parts = [f"{GENERATED} by {_source_label()} from {', '.join(sources)}. Update with `awkit kit skills`. -->\n",
+    parts = [f"{GENERATED} by {label or _source_label()} from {', '.join(sources)}. Update with `awkit kit skills`. -->\n",
              _rewrite_links(_guide(guide), name)]
     for appended in APPENDED.get(name, ()):
         parts.append(_demote(_rewrite_links(_guide(appended), name)))
@@ -408,6 +411,7 @@ def planned_skills(project: Path, provider: str, kit: Path | None = None, found_
     # With a kit folder the instruction file points at workflow.md itself; without one the workflow is a skill.
     chosen = SITUATIONS if kit_path is not None else (WORKFLOW, *SITUATIONS)
     planned, omitted = [], []
+    label = _source_label() if kit_path is None else None
     for name, guide, description, extra in chosen:
         if names is not None and name not in names:
             omitted.append((name, "left out with --without"))
@@ -417,7 +421,7 @@ def planned_skills(project: Path, provider: str, kit: Path | None = None, found_
             omitted.append((name, f"{bundle['name']} ({bundle['evidence']}) {COVERED_BY_BUNDLES[name]}"))
             continue
         path = project / SKILL_FOLDERS[provider] / name / "SKILL.md"
-        planned.append((name, path, skill_text(name, guide, description, extra, kit_path)))
+        planned.append((name, path, skill_text(name, guide, description, extra, kit_path, label)))
     return planned, omitted
 
 

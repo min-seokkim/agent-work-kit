@@ -7,6 +7,7 @@ import tempfile
 import tomllib
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from awkit import __version__
 from awkit.kit_install import SITUATIONS, WORKFLOW, install, install_roles, install_skills, load_roles, read_version
@@ -212,6 +213,16 @@ class RoleTests(unittest.TestCase):
         for spec in ("judge", "best=opus", "judge=", 'judge=a"b'):
             with self.subTest(spec=spec), self.assertRaises(ValueError):
                 install_roles(self.project, "codex", [spec])
+
+    def test_skills_with_their_guides_read_the_source_once(self):
+        # In a source checkout kit_source starts two git processes; one write of every skill needs it once.
+        from awkit import kit_install
+        with mock.patch.object(kit_install, "kit_source", wraps=kit_install.kit_source) as source:
+            install_skills(self.project, "claude")
+        self.assertEqual(source.call_count, 1)
+        name, guide, description, extra = WORKFLOW
+        written = (self.project / ".claude/skills" / name / "SKILL.md").read_text(encoding="utf-8")
+        self.assertEqual(written, kit_install.skill_text(name, guide, description, extra))
 
     def test_skills_point_to_a_copied_kit_folder(self):
         target, _ = install(self.project)

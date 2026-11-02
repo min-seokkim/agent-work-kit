@@ -136,6 +136,15 @@ class SessionStore:
         with self.channel.transaction() as conn:
             return self._update(conn, **fields)
 
+    def observe_state(self, expected, **fields):
+        """Apply a provider observation only while the state is still `expected`, the state the observer read
+        before asking the provider. Another writer may have changed it during the call (resume holding the
+        session, a late callback); a stale observation must not overwrite that. Returns the new metadata or None."""
+        with self.channel.transaction() as conn:
+            if self._metadata(conn)["state"] != expected:
+                return None
+            return self._update(conn, **fields)
+
     def post(self, key, body, *, kind="question", entry="agent"):
         if not isinstance(key, str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,200}", key):
             raise ValueError("A client key contains 1 to 200 letters, digits, underscores or hyphens.")

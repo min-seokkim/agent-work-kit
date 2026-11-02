@@ -185,7 +185,8 @@ class LocalStateTests(unittest.TestCase):
         self.assertEqual(lock.read_bytes(), b"other owner")
         self.assertFalse((self.project / ".awkit").exists())
         lock.unlink()
-        with mock.patch.object(local_state.os, "open", side_effect=PermissionError("read-only administration")):
+        with mock.patch.object(local_state.os, "open", side_effect=PermissionError("read-only administration")), \
+                mock.patch.object(local_state, "PENDING_DELETE_SECONDS", 0.05):
             with self.assertRaisesRegex(local_state.ExclusionError, "coordinate"):
                 self.channel()
         self.assertFalse((self.project / ".awkit").exists())
@@ -211,12 +212,14 @@ class LocalStateTests(unittest.TestCase):
                 pass
         self.assertEqual(len(calls), 2)
         self.assertFalse(exclude.with_name("exclude.awkit-lock").exists())
-        # Elsewhere a permission error is real and is reported at once.
-        with mock.patch.object(local_state, "WINDOWS", False), \
-                mock.patch("os.open", side_effect=PermissionError(13, "Permission denied")):
-            with self.assertRaises(local_state.ExclusionError):
-                with local_state._locked(exclude):
-                    pass
+        # A permission error that persists is a real one on Windows too, and elsewhere it is reported at once.
+        for windows in (True, False):
+            with mock.patch.object(local_state, "WINDOWS", windows), \
+                    mock.patch.object(local_state, "PENDING_DELETE_SECONDS", 0.05), \
+                    mock.patch("os.open", side_effect=PermissionError(13, "Permission denied")):
+                with self.assertRaisesRegex(local_state.ExclusionError, "coordinate"):
+                    with local_state._locked(exclude):
+                        pass
 
     def test_concurrent_process_writers_preserve_rules_and_one_managed_addition(self):
         code = ("from awkit.local_state import prepare,add_rule; from pathlib import Path; import sys; "

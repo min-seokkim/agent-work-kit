@@ -59,6 +59,25 @@ class ReplaceRetry(unittest.TestCase):
                 records.replace(self.folder / "missing.tmp", self.path)
         self.assertEqual(len(calls), 1)
 
+    def test_directory_rename_is_retried_and_never_overwrites(self):
+        # `review accept` promotes its staging folder by renaming; a held file inside made Windows refuse it.
+        source, target = self.folder / "staging", self.folder / "accepted"
+        source.mkdir()
+        real, calls = os.rename, []
+        def fake(src, dst):
+            calls.append(dst)
+            if len(calls) == 1:
+                raise PermissionError(5, "Access is denied")
+            return real(src, dst)
+        with mock.patch.object(records, "REPLACE_DELAYS", (0.01,)), mock.patch.object(records.os, "rename", fake), \
+             mock.patch.object(records.time, "sleep"):
+            records.rename(source, target)
+        self.assertEqual((len(calls), target.is_dir(), source.exists()), (2, True, False))
+        other = self.folder / "other"
+        other.mkdir()
+        with self.assertRaises(OSError):
+            records.rename(other, target) if os.name == "nt" else records.rename(other, self.path)
+
     @unittest.skipUnless(os.name == "nt", "Windows refuses to replace a file another handle holds open")
     def test_windows_open_reader_delays_but_does_not_fail_the_write(self):
         # Python opens files without delete sharing, which is how a scanner's read blocks the replacement.

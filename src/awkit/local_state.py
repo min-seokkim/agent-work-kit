@@ -12,8 +12,10 @@ from pathlib import Path
 PREVENTS = {"awkit managed project state": ("F1", "F7")}
 LOCK_SECONDS = 5
 # Windows refuses to create a file whose previous copy another process is still deleting, with EACCES instead
-# of EEXIST; for the lock that means "busy". Elsewhere a permission error is a real one.
+# of EEXIST. A deletion finishes within moments, so a permission error that clears within this many seconds
+# was a busy lock; one that persists is a real permission problem. Elsewhere a permission error is real at once.
 WINDOWS = os.name == "nt"
+PENDING_DELETE_SECONDS = 1.0
 
 
 class ExclusionError(ValueError):
@@ -69,15 +71,20 @@ def _locked(exclude):
     """Coordinate awkit append and restore; never steal a possibly live lock."""
     lock = exclude.with_name(exclude.name + ".awkit-lock")
     deadline = time.monotonic() + LOCK_SECONDS
+    denied_since = None
     try:
         exclude.parent.mkdir(parents=True, exist_ok=True)
         while True:
             try:
                 fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
                 break
-            except (FileExistsError, PermissionError) as exc:
-                if isinstance(exc, PermissionError) and not (WINDOWS and lock.parent.is_dir()):
+            except PermissionError:
+                denied_since = denied_since or time.monotonic()
+                if not WINDOWS or time.monotonic() - denied_since >= PENDING_DELETE_SECONDS:
                     raise
+                time.sleep(0.025)
+            except FileExistsError:
+                denied_since = None
                 if time.monotonic() >= deadline:
                     raise ExclusionError(f"Git exclusion is busy: {lock}. Retry after the owning writer finishes.") from None
                 time.sleep(0.025)

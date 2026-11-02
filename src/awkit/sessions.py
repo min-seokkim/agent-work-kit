@@ -418,9 +418,10 @@ class SessionController:
                         store.update(state="unknown", observed_at=now(), source="thread/read", error="Provider identity or availability is uncertain.")
                         continue
                     if state == "active":
-                        store.update(state="waiting for idle", observed_at=now(), source="thread/read")
+                        store.observe_state(meta["state"], state="waiting for idle", observed_at=now(), source="thread/read")
                         continue
-                    store.update(state="idle", observed_at=now(), source="thread/read")
+                    if store.observe_state(meta["state"], state="idle", observed_at=now(), source="thread/read") is None:
+                        continue  # the state changed during thread/read; decide again on the next cycle
                     claim = store.claim(generation)
                     if claim is None:
                         continue

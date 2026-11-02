@@ -8,6 +8,12 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Commands
 
+- The session controller applies a provider's `thread/read` observation only while the session state is still the one it read before the call. Earlier, a state another writer set during the call (resume holding the session, a late callback) was overwritten with `idle`, and queued work held by that state could be sent. Found as an intermittent Windows CI failure.
+
+- `review accept` retries the renames that promote its staging folder on Windows while a file inside is held open, as file replacement already did; the Windows exclude-lock wait now gives up after a second of permission errors and reports them as a coordination failure.
+
+- The reference adds a bash form of the snapshot recipe; a test runs it as written on changed, spaced and Korean file names.
+
 - On Windows, a writer that finds the `.git/info/exclude` lock still being deleted by another process now waits as for a busy lock instead of failing with a permission error. Elsewhere a permission error on the lock is still reported at once. Windows CI hit this with concurrent writers.
 
 - Two default rules cover Markdown written through a shell command, which reaches no Edit or Write hook: `writing-check-bash` runs `check writing --changed` after a Bash command that names a `.md` file, and `korean-writing-bash` gives the Korean guide line when a heredoc body has Korean. `check writing --changed` checks the Markdown files added, modified or untracked in the repository; `text` conditions now also search heredoc bodies. In one audited session every Markdown file was written this way and neither existing rule fired.

@@ -6,8 +6,6 @@ What to work on in this repository. An agent picks the highest Ready item it can
 
 | Item | Done when |
 |---|---|
-| Check that the Windows file-replacement retry from `7e82e3f` also covers acceptance directory promotion in `review accept`, which failed with WinError 5 in real use. | A test holds the target open and acceptance still succeeds, or the gap is fixed. |
-| Run the [snapshot recipe](../kit/reference.md#snapshot) on Linux. It has only been exercised on Windows. | The recipe works in bash or the reference gives a POSIX form, with a test. |
 
 ## Blocked
 

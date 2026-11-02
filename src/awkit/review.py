@@ -15,7 +15,7 @@ from contextlib import contextmanager
 from pathlib import Path, PurePosixPath
 
 from .process import run_to_files
-from .records import LABEL, atomic_json, stamp
+from .records import LABEL, atomic_json, rename, stamp
 
 
 def git(repo, *args, env=None):
@@ -354,8 +354,8 @@ def accept(repo, run_dir, label="accepted"):
         if previous.exists():
             shutil.rmtree(previous)
         if target.exists():
-            target.rename(previous)
-        staging.rename(target)
+            rename(target, previous)
+        rename(staging, target)
         if previous.exists():
             shutil.rmtree(previous)
     record["folder"] = str(target)

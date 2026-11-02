@@ -178,6 +178,29 @@ class SessionModelTests(unittest.TestCase):
             self.controller.update_turn(meta["id"], key="steer", request_id=queued, expected_turn_id="old", body="Invented")
         self.assertEqual([method for method, _ in self.provider.calls], ["thread/resume"])
 
+    def test_a_state_changed_during_thread_read_is_not_overwritten_by_the_observation(self):
+        # Windows CI: the dispatcher read "idle", the test set "unknown" during thread/read, and the
+        # observation wrote "idle" back, so queued work was sent (run on e477bc6).
+        meta = self.create(model="fictional")
+        store = self.controller._store(meta["id"])
+        original_call = self.provider.call
+
+        def call(method, params, **kwargs):
+            if method == "thread/read":
+                store.update(state="unknown", source="concurrent writer")
+            return original_call(method, params, **kwargs)
+
+        self.provider.call = call
+        queued = store.post("queued-during-read", "Must remain queued")["id"]
+        deadline = time.monotonic() + 2
+        while time.monotonic() < deadline and store.metadata()["source"] != "concurrent writer":
+            time.sleep(.02)
+        time.sleep(.5)
+        self.assertEqual(store.metadata()["state"], "unknown")
+        self.assertEqual(store.snapshot()["attempts"], [])
+        self.assertIn(queued, store.snapshot()["unanswered"])
+        self.assertIsNone(store.observe_state("idle", state="idle"))
+
     def test_model_only_resume_keeps_native_effort_inheritance_unconstrained(self):
         meta = self.create(model="fictional")
         self.controller._store(meta["id"]).update(state="unknown")

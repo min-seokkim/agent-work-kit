@@ -138,7 +138,14 @@ if ($LASTEXITCODE) { throw }
 $awkitSnapshot
 ```
 
-Git display quoting caused the non-ASCII fixture failure; spaced paths stayed intact.
+In bash, the same selection with NUL-separated paths:
+
+```sh
+awkitSnapshot=$( { git diff --name-only --no-renames -z HEAD; git ls-files --others --exclude-standard -z; } \
+  | sort -zu | xargs -0r awkit review snapshot -- ) && echo "$awkitSnapshot"
+```
+
+Git display quoting caused the non-ASCII fixture failure; spaced paths stayed intact. Both forms read paths with `-z`, so neither quotes them. With no changed files the bash form prints nothing and `awkitSnapshot` stays empty.
 
 ### check
 

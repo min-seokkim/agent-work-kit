@@ -29,6 +29,17 @@ def replace(source, target):
     return os.replace(source, target)
 
 
+def rename(source, target):
+    """os.rename for a directory, with the same retry: a scanner holding a file inside the folder open makes
+    Windows refuse the rename. Unlike replace, an existing target is never overwritten."""
+    for delay in REPLACE_DELAYS:
+        try:
+            return os.rename(source, target)
+        except PermissionError:
+            time.sleep(delay)
+    return os.rename(source, target)
+
+
 def atomic_json(path, value):
     """Write JSON so that a reader sees either the old file or the complete new one."""
     path = Path(path)

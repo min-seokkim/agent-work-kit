@@ -6,6 +6,13 @@ What to work on in this repository. An agent picks the highest Ready item it can
 
 | Item | Done when |
 |---|---|
+| Give the session controller one provider interface. Owned Codex, enrolled Codex and Claude are handled by `provider == "claude"` and `enrollment` branches in send, resume, decide, interrupt, status and dispatch, and helper modules change the controller's private attributes (`_mutex`, `_stores`, `_connection`). | One interface with an implementation per mode; the controller calls it without provider branches; no module outside the controller touches its private attributes; the session tests pass unchanged. |
+| Define session states in one place. Session, delivery and decision states are free strings repeated in SQL and Python tuples (`session_store.py`, `sessions.py`, `session_reading.py`). | One module lists each state machine's states and allowed transitions; the store refuses an undeclared state; the SQL uses the same constants. |
+| Separate the session schema number from enrollment. Schema "4" in `session_store.py` means enrolled, not a later version, and `awkit_session.data` is unversioned JSON. | The schema number only counts versions, enrollment is a field, and an upgrade test covers every earlier shape. |
+| Stop the dispatcher from reading every store's full snapshot every 0.35 seconds (`sessions.py`, `_dispatch`). | It reads only unanswered requests and attempts, with a test bounding the queries per cycle. |
+| Split `cli.py`. `_parser` and `main` are 275 lines each and the most-changed file. | Each command group registers its own parser and handler; `main` dispatches by table; command help and exit codes are unchanged. |
+| Untangle the import cycles. 29 module pairs import each other, hidden by 153 function-local imports. | Modules form layers with no cycle, checked by a test; function-local imports remain only where hook start-up time needs them. |
+| Route every `.awkit` write through one function. `local_state.prepare` is called by hand at about 20 write sites in 11 modules; a missed call is F7. | One write helper prepares exclusion and writes; a test fails when a module writes under `.awkit` without it. |
 
 ## Blocked
 

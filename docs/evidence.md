@@ -14,7 +14,7 @@ Where check results and task evidence live in a clone of this repository, and ho
 
 All `.awkit/` stores are ignored by Git and exist only in the clone that produced them. A fresh clone has none of them. CI runs on GitHub are the evidence that survives.
 
-Run `python scripts/evidence_catalog.py` to list the local collections with their sizes, the review runs with their recorded status, and which documents reference them. It writes `.awkit/evidence/index.md` and `catalog.json`, both ignored. It reads; it never moves or deletes evidence.
+`awkit review storage` lists the review runs in a clone with their recorded status and sizes. Each run's `result.json` names its snapshot, command and result.
 
 ## Citing a result
 

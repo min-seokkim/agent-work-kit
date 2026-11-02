@@ -18,13 +18,29 @@ A new guard needs a failure entry with a recorded occurrence and a check that wo
 
 Common safeguards are separate from task-dependent methods. Purpose, reader, factual fidelity, authorization and agreed author choices are common to every document. Drafting language, source transformation, explanation order and review arrangement are chosen per task; genre informs the choice but does not prescribe one method.
 
+## What the measurements showed
+
+Nine sessions were measured between `6482bc7` and `83db970`; the table is in Git history (`docs/history/evidence.md` at `2ef5040`). This is the conclusion, and it closes the measurement item.
+
+- Repeated instructions fell from 4 of 52 and 2 of 56 user messages, in the two long sessions before the hook runner, to 0 in the seven sessions after it. Those sessions had 1 to 6 messages each, so shorter sessions explain part of the drop.
+- Who caught failures changed. Before the runner the owner caught every occurrence (F9 twice, F13, F14, F28) and no guard did. After it, `AGENTS.md` and the `commit-identity` rule refused F9, the baseline-hash recheck prevented an F16, and `done-check` blocked a premature report once.
+- Wrong hook firings fell from 3 of 4 and 2 of 2 to 0 of 3 as the rules were fixed. Each wrong block cost the owner a turn, so a rule errs toward missing.
+- Most defects were found by installing and using the kit on real projects, not by guards: about twelve kit defects, among them F7, F11, F25 and F29 occurring in the kit itself.
+- Cache reads are 95 to 99 percent of every session's tokens. Context size, not output, drives cost. That is the reason for the word limits.
+- The column "what the user did not have to do" stayed unknown in seven of nine rows. A value no tool records does not get recorded.
+- Not measured, and not measurable here: time saved, and whether the same work without the kit would have failed. The design forbids the comparison run.
+
+The largest cost of the period is not in the table. Over six days (`0e33ff6` to `2ef5040`) sessions authorized to choose their own work built session and storage features no roadmap item asked for, made 19 of 44 commits as record changes only, grew the records to 92,000 words, and once waited three hours for a decision. The owner caught it, not a guard (F28, F12). The guards against it are now the roadmap's Ready table, the record rule in AGENTS.md and the test on `docs/`.
+
+What follows: a guard candidate needs an occurrence in the catalogue, and F11, F16, F21, F22 and F29 have one. Entries with no occurrence after this period are removed or merged.
+
 ## Decisions
 
 | Decision | Detail |
 |---|---|
 | The agent picks its work from the roadmap | The Ready table in the roadmap is the authorization. Earlier, every item waited for an owner choice, and six days of sessions built unasked features and rewrote records while the roadmap's top items stood still. The owner keeps the Blocked table and the Decided-against list; the agent keeps Ready moving. |
 | Four development records, no more | `docs/` holds roadmap, design, evidence and release, with word limits in `tests/test_kit.py`. Task files, history folders and a development entry page grew to 92,000 words in 61 files and were updated in commits that changed nothing else. Git history is the record of what happened. |
-| How to measure the kit | Per real task, five values: user messages with repeated instructions counted; tokens by kind; failure entries that occurred or were caught; hook firings with wrong ones counted; what the user did not have to do. Never the same task twice with and without the kit: the second run knows the answer. A firing is not a prevented failure. |
+| How to measure the kit | Per task, record the failure entries that occurred or were caught and the hook firings with wrong ones counted, both from `awkit hook report` and the catalogue. Count a repeated instruction only when the owner notes one. Never run the same task twice with and without the kit: the second run knows the answer. A firing is not a prevented failure. The five-column table was retired when its last column stayed unknown (see above). |
 | Before building a feature, name five things | The user problem and its consequence, the expected improvement, what existing capabilities already cover, the selected change, and the result that would justify keeping it. If research shows current behavior is enough, add nothing. |
 | Rules run as hooks, not as prompt text | Prompt instructions are forgotten, taken as optional, or not recognized as applying, and cost context every turn. The kit's rules live in `rules.toml`, run by `awkit hook` on every hook event of Claude Code and Codex. A rule recognizes its situation by the shape of the tool call. The runner is silent when nothing fires, says each line once per session, errs toward missing, and logs every firing so `awkit hook report` can show whether repeated instructions decrease. A silent call takes about 110 ms on Linux; the web extras and `review` are imported only by their commands to keep it there. |
 | The writing rule reads the result, not a tool call | Writing can end in the chat with no tool call. The `writing-reply` rule reads the final reply when the agent stops and blocks once when transcript evidence shows no guide access. From `fce1d14`, access requires correlated success and returned guide content; uncertainty is fail-open. This proves access, not comprehension. |

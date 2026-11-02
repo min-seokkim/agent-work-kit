@@ -54,7 +54,7 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Guidance
 
-- The development records are four files: `docs/roadmap.md` (Ready and Blocked work, the agent picks from Ready), `docs/design.md` (decisions), `docs/evidence.md` and `docs/release.md`. `docs/tasks/`, `docs/history/`, `docs/development.md` and `docs/document-workflow-plan.md` are removed; Git history keeps them. A test fails when `docs/` gains a file or a record exceeds its word limit. AGENTS.md now has the agent choose its work from the roadmap and forbids record-only commits. `checks.toml` points `records` at the roadmap; `scripts/evidence_catalog.py` no longer maps history paths.
+- The development records are four files: `docs/roadmap.md` (Ready and Blocked work, the agent picks from Ready), `docs/design.md` (decisions), `docs/evidence.md` and `docs/release.md`. `docs/tasks/`, `docs/history/`, `docs/development.md` and `docs/document-workflow-plan.md` are removed; Git history keeps them. A test fails when `docs/` gains a file or a record exceeds its word limit. AGENTS.md now has the agent choose its work from the roadmap and forbids record-only commits. `checks.toml` points `records` at the roadmap; `scripts/evidence_catalog.py` no longer maps history paths. `docs/design.md` states the conclusion of the nine measured sessions and closes the measurement item; the roadmap turns the entries without an occurrence into a removal task.
 
 - The English and Korean READMEs retain their sections with rewritten introductions, task examples and setup explanations. They now describe shipped local session controls and align drafting-method guidance with the current writing guides.
 

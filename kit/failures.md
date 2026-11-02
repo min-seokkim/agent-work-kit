@@ -112,7 +112,7 @@ An inference from file names or conventions is reported as how the project works
 #### F12. Scope grows before anything is measured.
 
 Features and documents are added because they seem useful, before real use shows a need.
-- Evidence: observed in awkit's development. The release runner was widened to every kind of delivery and documentation grew to several thousand words for readers who did not read it (`8cf8e72`, restructured in `8f93b7b`). Owner's records: a server for a temporary project was specified with a graphics card, more memory than the load needed and a layout for a larger organization.
+- Evidence: observed in awkit's development. The release runner was widened to every kind of delivery and documentation grew to several thousand words for readers who did not read it (`8cf8e72`, restructured in `8f93b7b`). Observed again: over six days (`0e33ff6` to `2ef5040`) sessions built session and storage features no roadmap item asked for, and the development records grew to 92,000 words in 61 files, updated in 19 commits that changed nothing else (reduced to four files in the next commit). Owner's records: a server for a temporary project was specified with a graphics card, more memory than the load needed and a layout for a larger organization.
 - Countermeasure: a feature needs a failure entry here and a check; measure on real tasks before widening. Size a design to the purpose, duration, load and the person who will run it.
 - Check: Kind: guidance. prose; the kit word limit tests bound each file by when it is read.
 
@@ -312,7 +312,7 @@ A behavior that worked before a change is to be restored; the agent proposes alt
 #### F28. The wrong level of autonomy.
 
 The agent does the work when the user wanted to learn or decide, or only advises when the user wanted it done.
-- Evidence: owner's records, in both directions. Given a setup task, the agent described the steps for the owner to perform until the owner said to do it; asked to confirm a system state the agent could read itself, it asked the owner to check. Conversely, when the owner said they would do the first parts of an assignment themselves, the agent began drafting the answers ("I did not tell you to write the answers"); in another conversation the owner said the agent need not write code because they were doing it elsewhere and only wanted to talk through the task.
+- Evidence: observed in awkit's development: the roadmap said the owner decides what to build, so sessions waited for a choice, once for three hours; when the owner delegated the choice, the next sessions built six days of features the roadmap did not list. The repository now gives the agent a Ready table to choose from. Owner's records, in both directions. Given a setup task, the agent described the steps for the owner to perform until the owner said to do it; asked to confirm a system state the agent could read itself, it asked the owner to check. Conversely, when the owner said they would do the first parts of an assignment themselves, the agent began drafting the answers ("I did not tell you to write the answers"); in another conversation the owner said the agent need not write code because they were doing it elsewhere and only wanted to talk through the task.
 - Countermeasure: settle the form of help at the start and record it in the handoff.
 - Check: Kind: guidance. prose.
 

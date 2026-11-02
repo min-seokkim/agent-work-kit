@@ -16,6 +16,7 @@ from awkit.session_http import SessionServer
 from awkit.session_models import claude_observe
 from awkit.session_store import SessionStore
 from awkit.sessions import SessionController
+from support import WAIT_SECONDS
 
 
 class ModelRoutesTests(unittest.TestCase):
@@ -33,7 +34,7 @@ class ModelRoutesTests(unittest.TestCase):
             def create(**args):
                 calls.append(args)
                 entered.set()
-                if not release.wait(8):
+                if not release.wait(WAIT_SECONDS):
                     raise ValueError("Fixture release timed out")
                 raise ValueError("Fixture: no native creation performed")
 
@@ -52,7 +53,7 @@ class ModelRoutesTests(unittest.TestCase):
                         page.locator("#create-name").fill("Available provider")
                         page.locator("#responsibility").fill("Invented fixture")
                         page.locator("#create-submit").click()
-                        self.assertTrue(entered.wait(2))
+                        self.assertTrue(entered.wait(WAIT_SECONDS))
                         page.wait_for_timeout(1800)  # The 1500ms status poll runs while creation is pending.
                         expect(page.locator("#create-submit")).to_be_disabled()
                         self.assertEqual(len(calls), 1)

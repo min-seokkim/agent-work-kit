@@ -12,6 +12,7 @@ from awkit.codex_enrollment import EXECUTABLE_SHA256, VERSION
 from awkit.codex_session import ProviderError, ProviderRejected
 from awkit.session_store import SessionStore
 from awkit.sessions import SessionController
+from support import WAIT_SECONDS
 
 
 class ModelProvider:
@@ -98,7 +99,7 @@ class SessionModelTests(unittest.TestCase):
         return self.controller.create(name="Fictional reviewer", responsibility="Use invented context", **kwargs)["session"]
 
     def wait_for(self, ident, predicate):
-        deadline = time.monotonic() + 5
+        deadline = time.monotonic() + WAIT_SECONDS
         while time.monotonic() < deadline:
             snapshot = self.controller._store(ident).snapshot()
             if predicate(snapshot):
@@ -422,7 +423,7 @@ class SessionModelTests(unittest.TestCase):
         with store.channel.transaction() as conn:
             store._update(conn, model_selection=dict(meta["model_selection"], state="held"), state="idle")
             thread.start()
-            self.assertTrue(started.wait(2))
+            self.assertTrue(started.wait(WAIT_SECONDS))
             self.assertFalse(finished.wait(.05))
         thread.join(timeout=3)
         self.assertFalse(thread.is_alive())
@@ -453,7 +454,7 @@ class SessionModelTests(unittest.TestCase):
         def call(method, params, **kwargs):
             if method == "thread/read":
                 entered.set()
-                if not release.wait(5):
+                if not release.wait(WAIT_SECONDS):
                     raise AssertionError("Update fixture barrier timed out")
             return original_call(method, params, **kwargs)
 
@@ -463,7 +464,7 @@ class SessionModelTests(unittest.TestCase):
             body="Must not reach native steering")))
         try:
             thread.start()
-            self.assertTrue(entered.wait(5))
+            self.assertTrue(entered.wait(WAIT_SECONDS))
             store.update(model_selection=dict(meta["model_selection"], state="held"), state="running")
             release.set()
             thread.join(timeout=5)

@@ -195,6 +195,29 @@ class LocalStateTests(unittest.TestCase):
             with self.assertRaisesRegex(local_state.ExclusionError, "resolve Git repository"):
                 self.channel()
 
+    def test_a_lock_being_deleted_on_windows_is_busy_not_a_failure(self):
+        # Windows CI: a writer creating the lock while another deleted it got EACCES (run 41196269839).
+        exclude = self.project / ".git" / "info" / "exclude"
+        real_open, calls = os.open, []
+
+        def deleting_then_free(path, flags, *args):
+            calls.append(path)
+            if len(calls) == 1:
+                raise PermissionError(13, "Permission denied", str(path))
+            return real_open(path, flags, *args)
+
+        with mock.patch.object(local_state, "WINDOWS", True), mock.patch("os.open", side_effect=deleting_then_free):
+            with local_state._locked(exclude):
+                pass
+        self.assertEqual(len(calls), 2)
+        self.assertFalse(exclude.with_name("exclude.awkit-lock").exists())
+        # Elsewhere a permission error is real and is reported at once.
+        with mock.patch.object(local_state, "WINDOWS", False), \
+                mock.patch("os.open", side_effect=PermissionError(13, "Permission denied")):
+            with self.assertRaises(local_state.ExclusionError):
+                with local_state._locked(exclude):
+                    pass
+
     def test_concurrent_process_writers_preserve_rules_and_one_managed_addition(self):
         code = ("from awkit.local_state import prepare,add_rule; from pathlib import Path; import sys; "
                 "p=Path(sys.argv[1]); prepare(p); add_rule(p,sys.argv[2],directory=True)")

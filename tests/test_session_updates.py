@@ -18,6 +18,7 @@ from awkit.codex_session import ProviderError, ProviderRejected
 from awkit.session_http import SessionServer, request
 from awkit.session_updates import EXECUTABLE_SHA256, VERSION
 from awkit.sessions import SessionController
+from support import WAIT_SECONDS
 
 
 class TurnUpdateTests(unittest.TestCase):
@@ -40,7 +41,7 @@ class TurnUpdateTests(unittest.TestCase):
 
     def wait(self, predicate):
         # Provider RPCs have a 30s budget; allow their persisted events and queued follow-up to arrive.
-        deadline = time.monotonic() + 35
+        deadline = time.monotonic() + WAIT_SECONDS
         while time.monotonic() < deadline:
             view = self.controller.status()["sessions"][0]
             if predicate(view):
@@ -202,7 +203,7 @@ class TurnUpdateTests(unittest.TestCase):
             if method == "turn/steer":
                 calls.append(params)
                 reached.set()
-                release.wait(3)
+                release.wait(WAIT_SECONDS)
             return original(method, params, **kwargs)
         def first():
             try:
@@ -213,7 +214,7 @@ class TurnUpdateTests(unittest.TestCase):
             worker = threading.Thread(target=first)
             worker.start()
             try:
-                self.assertTrue(reached.wait(3))
+                self.assertTrue(reached.wait(WAIT_SECONDS))
                 duplicate = self.controller.update_turn("Worker", **self.args("KEEP_HOLDING"))
                 self.assertTrue(duplicate["recovered"])
                 self.assertEqual(duplicate["state"], "uncertain")

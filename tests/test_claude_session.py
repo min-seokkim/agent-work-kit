@@ -13,6 +13,7 @@ from unittest.mock import patch
 
 from awkit.claude_session import ClaudeSession, recover_local_results
 from awkit.session_store import SessionStore
+from support import WAIT_SECONDS
 
 
 @dataclass
@@ -248,7 +249,7 @@ class ClaudeLifetimeTests(unittest.TestCase):
             for index in range(2):
                 self.store.post(f"request{index}", f"invented fact {index}")
                 client.submit(self.store.claim(client.generation))
-                deadline = time.monotonic() + 3
+                deadline = time.monotonic() + WAIT_SECONDS
                 while len(self.store.snapshot()["messages"]) < (index + 1) * 2 and time.monotonic() < deadline:
                     time.sleep(0.01)
             self.assertEqual(len(FakeClient.instances), 1)
@@ -274,7 +275,7 @@ class ClaudeLifetimeTests(unittest.TestCase):
             self.assertIsNone(self.store.metadata()["model_selection"]["latest"])
             self.store.post("alias-input", "Invented alias input")
             client.submit(self.store.claim(client.generation))
-            deadline = time.monotonic() + 3
+            deadline = time.monotonic() + WAIT_SECONDS
             while len(self.store.snapshot()["messages"]) < 2 and time.monotonic() < deadline:
                 time.sleep(.01)
             observed = self.store.metadata()["model_selection"]
@@ -315,7 +316,7 @@ class ClaudeLifetimeTests(unittest.TestCase):
         self.assertEqual(FakeClient.instances[0].queries, [])
 
     def wait_for_decision(self):
-        deadline = time.monotonic() + 3
+        deadline = time.monotonic() + WAIT_SECONDS
         while time.monotonic() < deadline:
             rows = [row for row in self.store.snapshot()["decisions"] if row["state"] == "pending"]
             if rows:
@@ -331,7 +332,7 @@ class ClaudeLifetimeTests(unittest.TestCase):
         old = self.wait_for_decision()
         self.assertEqual(old["choices"], ["allow", "deny"])
         first.cancel()
-        deadline = time.monotonic() + 3
+        deadline = time.monotonic() + WAIT_SECONDS
         old_row = old
         while time.monotonic() < deadline:
             old_row = next(row for row in self.store.snapshot()["decisions"] if row["id"] == old["id"])

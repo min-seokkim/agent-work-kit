@@ -6,8 +6,6 @@ What to work on in this repository. An agent picks the highest Ready item it can
 
 | Item | Done when |
 |---|---|
-| Fix the two flaky Windows CI tests: Python 3.11 lock creation and 3.12 session deadline, first seen failing then passing on retry in [run 41196269839](https://github.com/min-seokkim/agent-work-kit/actions/runs/41196269839). | The cause is found and the test is deterministic, or the product defect is fixed. Passing on a rerun does not count. |
-| Find the intermittent Linux temporary-directory cleanup failure in CI and make it deterministic. | Same standard as above. |
 | Check that the Windows file-replacement retry from `7e82e3f` also covers acceptance directory promotion in `review accept`, which failed with WinError 5 in real use. | A test holds the target open and acceptance still succeeds, or the gap is fixed. |
 | Run the [snapshot recipe](../kit/reference.md#snapshot) on Linux. It has only been exercised on Windows. | The recipe works in bash or the reference gives a POSIX form, with a test. |
 | Teach `awkit check writing` the hedging pattern. The development records used "bounded", "retained", "remains unverified", "does not establish" and "separate" 1,400 times; the checker and the pattern list in `kit/writing.md` name none of them, and `kit/workflow.md` ("Missing evidence stays unverified"), `kit/templates/task.md` ("Remaining limitations and decisions needed") and `kit/templates/checkpoint.md` ("Unchecked scope") ask for them. | A warning for a status sentence that only says what a result does not prove, and the three kit texts say to write what was done and what is next first. |

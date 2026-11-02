@@ -22,6 +22,7 @@ from awkit.cli import main
 from awkit.codex_session import ProviderError
 from awkit.session_http import SessionServer
 from awkit.sessions import SessionController
+from support import WAIT_SECONDS
 
 
 def cli(project, arguments, stdin=b""):
@@ -121,7 +122,7 @@ class DecisionRouteTests(unittest.TestCase):
         self.write("decline")
 
     def wait(self, predicate):
-        deadline = time.monotonic() + 5
+        deadline = time.monotonic() + WAIT_SECONDS
         while time.monotonic() < deadline:
             view = self.controller.status()["sessions"][0]
             if predicate(view):

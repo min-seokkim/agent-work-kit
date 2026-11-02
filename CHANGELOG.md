@@ -8,6 +8,8 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Commands
 
+- On Windows, a writer that finds the `.git/info/exclude` lock still being deleted by another process now waits as for a busy lock instead of failing with a permission error. Elsewhere a permission error on the lock is still reported at once. Windows CI hit this with concurrent writers.
+
 - Two default rules cover Markdown written through a shell command, which reaches no Edit or Write hook: `writing-check-bash` runs `check writing --changed` after a Bash command that names a `.md` file, and `korean-writing-bash` gives the Korean guide line when a heredoc body has Korean. `check writing --changed` checks the Markdown files added, modified or untracked in the repository; `text` conditions now also search heredoc bodies. In one audited session every Markdown file was written this way and neither existing rule fired.
 
 - `hook reply --replies` judges every long Korean reply, not only one with a heading or after a request for a document; this repository's rules use it because AGENTS.md applies the guide to replies. A subagent prompt that names the guide no longer makes guide access unknown for the rest of the session, and casual requests for a draft or a conclusion (초안, 결론, 내보) count as asking for a document.

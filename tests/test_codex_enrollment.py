@@ -19,6 +19,7 @@ from awkit.codex_session import ProviderError
 from awkit.session_http import SessionServer, request
 from awkit.session_store import SessionStore
 from awkit.sessions import SessionController
+from support import WAIT_SECONDS
 
 
 class EnrollmentTests(unittest.TestCase):
@@ -89,7 +90,7 @@ class EnrollmentTests(unittest.TestCase):
         self.addCleanup(self.controller.close)
 
     def wait(self, predicate):
-        deadline = time.monotonic() + 4
+        deadline = time.monotonic() + WAIT_SECONDS
         while time.monotonic() < deadline:
             view = self.controller.status()["sessions"][0]
             if predicate(view):

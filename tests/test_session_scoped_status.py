@@ -22,6 +22,7 @@ from awkit.session_http import SessionServer, request
 from awkit.session_reading import SelectorError, decision_request, exact_request
 from awkit.session_store import SessionStore
 from awkit.sessions import SessionController
+from support import WAIT_SECONDS
 
 
 class ScopedStatusTests(unittest.TestCase):
@@ -286,11 +287,11 @@ class ScopedStatusTests(unittest.TestCase):
         def snapshot():
             value = original()
             captured.set()
-            self.assertTrue(finished.wait(5))
+            self.assertTrue(finished.wait(WAIT_SECONDS))
             return value
 
         def complete():
-            if captured.wait(5):
+            if captured.wait(WAIT_SECONDS):
                 self.finish(self.codex, attempt)
             finished.set()
 
@@ -320,12 +321,12 @@ class ScopedStatusTests(unittest.TestCase):
                     def snapshot(original=original, captured=captured, changed=changed):
                         value = original()
                         captured.set()
-                        self.assertTrue(changed.wait(5))
+                        self.assertTrue(changed.wait(WAIT_SECONDS))
                         return value
 
                     def mutate(captured=captured, changed=changed, transition=transition, store=store, selected=selected):
                         try:
-                            if captured.wait(5):
+                            if captured.wait(WAIT_SECONDS):
                                 if transition == "claim":
                                     store.claim("generation")
                                 elif transition == "cancel":

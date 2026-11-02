@@ -51,7 +51,7 @@ Tests pass on one platform and the work is reported as working everywhere.
 The text states what the change was meant to do; the code does something else, and the test covers only the easy case.
 - Evidence: observed in awkit's development. `f475f9e` documented that an example created inside an existing repository is committed there; the code skipped any repository that already had a commit, and the test used a repository without one. The example's first command then failed. Fixed in `b5d78ba`.
 - Countermeasure: for each behavior stated in a document, a test that exercises exactly that case.
-- Check: Kind: verify. `tests/test_examples.py` runs every command in the example READMEs as written, from an example created inside a repository with history; with the `f475f9e` behavior restored it fails. Status: enforced for the examples.
+- Check: Kind: verify. `tests/test_examples.py` runs every command in the example READMEs as written, from an example created inside a repository with history; with the `f475f9e` behavior restored it fails. `tests/test_kit_commands.py` parses every `awkit` command line in the kit's guides with awkit's own parser and fails on an unknown command or option, including a documented option renamed in the parser. Status: enforced for the examples and for command syntax in the kit.
 
 #### F5. Documents point at things that do not exist.
 
@@ -284,7 +284,7 @@ Generated from the guards' own declarations: each guide section ends with a "Pre
 | F1 Done without a check on the delivered version | workflow.md Check a frozen version; workflow.md Report; connect.md; checking.md The checked version; delivery.md Identify what is delivered; delivery.md Confirm it in its intended context; delivery.md Failure and recovery; protocol.md A task record; protocol.md States; protocol.md Reviews and decisions; work-types.md Environment setup; work-types.md Operating an application; review-session.md 1. Purpose and cost; review-session.md 2. Session setup; review-session.md 3. Work through a unit; review-session.md 5. Commands; review-session.md 8. Starting prompts; writing.md Completion check; sessions.md Start the controller; sessions.md Enroll a selected Codex conversation; sessions.md Find a conversation by name; sessions.md Send and read work; sessions.md Read current work; sessions.md Update an active turn; sessions.md Submit a decision file; sessions.md Read existing channel history; sessions.md Retain execution evidence | `awkit check done`, `awkit kit hooks`, `awkit review snapshot`, `awkit review check`, `awkit review export`, `awkit channel`, `awkit session decide`, `awkit hook`, `awkit managed project state`, `awkit session`, `awkit pipeline`, `awkit publish`, `awkit ui` | `done-check (verify)`, `delivery (inject)` |
 | F2 The first failure disappears | workflow.md Check a frozen version; checking.md Interpreting results; review-session.md 3. Work through a unit; review-session.md 4. Review criteria | `awkit review check` | none |
 | F3 Support claimed for environments that were not run | workflow.md Check a frozen version; checking.md The checked version | none | none |
-| F4 Documents describe behavior the code does not have | none | none | none |
+| F4 Documents describe behavior the code does not have | none | `awkit parser, against every command shown in kit/*.md` | none |
 | F5 Documents point at things that do not exist | none | `awkit publish` | none |
 | F6 Numbers reported beyond what was measured | workflow.md Report; delegation.md 1. Objective | `awkit review storage`, `awkit review preview`, `awkit usage` | none |
 | F7 A convenience changes state nobody asked to change | connect.md; delivery.md Confirm it in its intended context | `awkit kit hooks`, `awkit review check`, `awkit review storage`, `awkit review preview`, `awkit review export`, `awkit kit init`, `awkit kit remove`, `awkit managed project state` | none |
@@ -314,5 +314,5 @@ Generated from the guards' own declarations: each guide section ends with a "Pre
 | F38 Caveats instead of the mechanism | work-types.md Learning | none | none |
 | F39 A workaround replaces the restoration the user asked for | work-types.md Environment setup | none | none |
 
-Entries with no guard yet: F4, F10.
+Entries with no guard yet: F10.
 <!-- end of guard table -->

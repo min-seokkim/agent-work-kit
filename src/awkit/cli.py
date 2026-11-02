@@ -11,6 +11,9 @@ from .cli_common import REFERENCE
 from .cli_extras import _step_error
 from .cli_kit import _report_init  # noqa: F401  (tests use it)
 
+# tests/test_kit_commands.py parses every `awkit` command line in kit/*.md with this parser.
+PREVENTS = {"awkit parser, against every command shown in kit/*.md": ("F4",)}
+
 # The handler for each command group; `kit hooks` is handled by the kit module, which hands it to hook_cli.
 HANDLERS = {"doctor": cli_check.run_doctor, "check": cli_check.run_check, "hook": hook_cli.run, "kit": cli_kit.run,
             "usage": cli_check.run_usage, "review": cli_review.run, "publish": cli_extras.run_publish,

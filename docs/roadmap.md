@@ -6,7 +6,6 @@ What to work on in this repository. An agent picks the highest Ready item it can
 
 | Item | Done when |
 |---|---|
-| Guard F4, documents describing behavior the code does not have. Every `awkit ...` command shown in the kit's guides (code blocks and inline code in `kit/*.md`) should parse against the real CLI. | A test extracts those command lines, parses each with awkit's own parser without running it, and fails on an unknown command or option; it fails when one documented option is renamed in the parser; `PREVENTS` or a `Prevents:` line names F4 and the guard table is regenerated. |
 | Shorten the Windows test jobs. They take 10 to 13 minutes in CI while the Linux jobs take about 2.5, which delays every push. | The cause is measured (per-test timings on a Windows run, for example with `--durations` or timing around the slowest classes), the slowest cost is removed without dropping a test or a Windows-specific assertion, and two consecutive green runs show every Windows test job under 7 minutes. |
 
 ## Blocked

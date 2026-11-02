@@ -72,6 +72,8 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Guidance
 
+- A test parses every `awkit` command shown in the kit's guides, inline or in a code block, with awkit's own parser and fails on an unknown command, an unknown option or an abbreviated one; usage synopses are expanded into each optional and alternative form. `awkit.cli` declares it for F4 in the guard table. `reference.md` shows the `rules.toml` header line as one code span.
+
 - The kit's guides and templates say what a result shows and what to check next instead of what it does not establish; `check writing kit/` reports no `hedge` warning. `writing.md` quotes the two phrases where it names the pattern.
 
 - The failure catalogue keeps only entries with a recorded occurrence. F17 and F24 merged into F1, F19 into F21, F20 into F11, F23 into F37 and F27 into F12; F18 was removed. F2 and F26 gained occurrences from an audit of 121 CI runs. Every `Prevents:` line, command `PREVENTS` declaration and default rule now names the surviving entries, so hook messages cite them (for example `awkit delivery (F1)`); the numbers of merged entries are not reused.

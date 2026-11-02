@@ -8,6 +8,8 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Commands
 
+- Finding the repository top level and whether it has a commit (`review`, `check done` and the commands that use `gitrepo.toplevel`) takes one `git rev-parse` process instead of two.
+
 - A managed write in a folder where Git can find no repository (no `.git` entry in it or its parents, no bare repository folder, no `GIT_DIR`, `GIT_WORK_TREE`, `GIT_COMMON_DIR` or `GIT_OBJECT_DIRECTORY`) is `outside-git` without starting git; before, a git failure other than "not a git repository" there was an error. In a repository, a write whose exclusion is already in place checks it with one `git check-ignore --stdin` instead of three. The test suite starts 2,762 fewer git processes (13,495 to 10,733); on Windows CI each start costs about 40 ms.
 
 - Managed session channels use extension schema 5. The number now counts versions only: extension 4 had been written only for enrolled Codex conversations, and the `enrollment` field already says that. The controller upgrades extensions 1 to 4 in place; older controllers refuse extension 5. Session, attempt and decision states are declared in one module, and the store refuses an undeclared session state.

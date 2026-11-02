@@ -21,6 +21,20 @@ def _probe(folder, *args):
                           encoding="utf-8", errors="replace")
 
 
+def top_and_commit(folder):
+    """(top level, whether HEAD names a commit) from one git process, or None outside a repository.
+
+    `rev-parse --show-toplevel --verify -q HEAD^{commit}` prints the top level and exits 0 when HEAD has a
+    commit, 1 when it has none and 128 outside a repository. Two separate calls cost twice the process
+    starts, about 40 ms each on Windows.
+    """
+    probe = _probe(folder, "rev-parse", "--show-toplevel", "--verify", "-q", "HEAD^{commit}")
+    output = probe.stdout.rstrip("\n")
+    if probe.returncode not in (0, 1) or not output:
+        return None
+    return Path(output.rsplit("\n", 1)[0] if probe.returncode == 0 else output), probe.returncode == 0
+
+
 def toplevel(folder):
     """The Git top level that contains `folder`, which must already have a commit.
 
@@ -30,12 +44,12 @@ def toplevel(folder):
     folder = Path(folder).resolve()
     if not folder.is_dir():
         raise ValueError(f"The folder does not exist: {folder}")
-    probe = _probe(folder, "rev-parse", "--show-toplevel")
-    if probe.returncode:
+    found = top_and_commit(folder)
+    if found is None:
         raise ValueError(f"Not a Git repository: {folder}. awkit checks files that Git tracks: run `git init` "
                          "and commit them, or start from `awkit kit init` or `awkit kit example`.")
-    top = Path(probe.stdout.strip())
-    if _probe(top, "rev-parse", "--verify", "-q", "HEAD^{commit}").returncode:
+    top, has_commit = found
+    if not has_commit:
         raise ValueError(f"The repository has no commit yet: {top}. Commit the files before checking them.")
     return top
 

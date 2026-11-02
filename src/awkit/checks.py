@@ -13,7 +13,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-from .gitrepo import _probe, git, nested_repositories, nested_warning, toplevel
+from .gitrepo import _probe, git, nested_repositories, nested_warning, top_and_commit, toplevel
 from .identity import author_problem
 
 HISTORY = 50
@@ -26,11 +26,10 @@ PREVENTS = {"awkit check commit": ("F9",), "awkit check writing": ("F13", "F14",
 
 def _repository(folder):
     """(top level, has a commit) for a folder inside a Git repository."""
-    probe = _probe(Path(folder).resolve(), "rev-parse", "--show-toplevel")
-    if probe.returncode:
+    found = top_and_commit(Path(folder).resolve())
+    if found is None:
         raise ValueError(f"Not a Git repository: {folder}")
-    top = Path(probe.stdout.strip())
-    return top, not _probe(top, "rev-parse", "--verify", "-q", "HEAD^{commit}").returncode
+    return found
 
 
 def _config_values(top, key):

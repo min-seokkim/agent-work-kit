@@ -27,7 +27,6 @@ Each row has a default. An agent applies the default when the rest of the gate i
 | Remove `init --commit`, an incompatible change. | Keep it in 0.3.0; decide after. |
 | Keep any of `pipeline`, `publish`, `ui`. | Remove all three. |
 | The PyPI pending publisher and the `pypi` environment ([release.md](release.md#release)). | None: the upload needs them. |
-| Cloud sessions start from `main`, which is far behind `dev`, with the AGENTS.md of that commit. Fast-forward `main` to `dev`, or make `dev` the default branch. | No change; a session prompt tells the agent to fetch `origin/dev` first. |
 | The word "release". | None. |
 
 ## After 0.3.0

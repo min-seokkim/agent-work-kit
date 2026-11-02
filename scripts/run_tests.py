@@ -5,9 +5,9 @@ CI uses this instead of `python -m unittest discover -s tests`. The tests start 
 process running every module took 11 to 13 minutes there. The modules use their own temporary folders and
 home directories and share no ports, so they can run side by side.
 
-Each module runs as `python -m unittest -v MODULE` with tests/ on the path, as discovery imports it. Its output
-is printed whole when it finishes, failing modules are listed again at the end, and the exit status is 1 when
-any module failed. Modules start largest file first, so a long module does not start last.
+Each module runs as `python -m unittest -v MODULE` would, with tests/ on the path and `support` imported first,
+as under discovery. Its output is printed whole when it finishes, failing modules are listed again at the end,
+and the exit status is 1 when any module failed. Modules start largest file first, so a long module does not start last.
 
     python scripts/run_tests.py [--jobs N] [--durations N] [MODULE...]
 """
@@ -33,7 +33,10 @@ def modules():
 
 
 def run(module, durations, env):
-    argv = [sys.executable, "-m", "unittest", "-v", module]
+    # support.py turns off Git's background gc and maintenance for every git the tests start and checks that awkit
+    # comes from src/. Discovery imported it once for the whole suite; a module that does not import it itself would
+    # otherwise run without it (Git 2.56 on Linux CI then wrote .git/objects/maintenance.lock during a test).
+    argv = [sys.executable, "-c", "import support, unittest; unittest.main(module=None)", "-v", module]
     if durations is not None and sys.version_info >= (3, 12):
         argv += ["--durations", str(durations)]
     start = time.perf_counter()

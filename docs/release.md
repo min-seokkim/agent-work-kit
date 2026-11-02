@@ -1,18 +1,39 @@
 # Release and verification procedure
 
-Use this when testing, building or publishing Agent Work Kit. Check the [roadmap](roadmap.md) for unfinished prerequisites; CI on Windows and Linux is the record of verified environments. Repository working rules remain in [AGENTS.md](../AGENTS.md).
+Use this when testing, building or publishing Agent Work Kit. The goal is 0.3.0, the first release. The [roadmap](roadmap.md) holds the work left to meet the gate below; repository working rules are in [AGENTS.md](../AGENTS.md).
+
+## The 0.3.0 gate
+
+Tag only when every condition holds for the commit to be tagged.
+
+| Condition | How it is checked |
+|---|---|
+| Every stable command group meets the feature bar | The scope table below |
+| Windows and Linux CI are green | The CI run of that commit |
+| The release build was rehearsed | A manual run of `release.yml` (workflow_dispatch) built the wheel and the skills ZIP from that commit |
+| No incompatible change is planned | The roadmap's Ready and owner tables hold none |
+| PyPI can accept the upload | The owner created the `pypi` environment and the PyPI pending publisher (below) |
+| The owner said to release | The owner's message |
+
+### Feature scope
+
+A stable group is one 0.3.0 promises. Its bar: every command the kit shows parses against the CLI (`tests/test_kit_commands.py`); its failure paths have tests; it passes Windows and Linux CI; it was used in real work at least once.
+
+| Group | Status | Left to do |
+|---|---|---|
+| kit, doctor, check, hook runner and default rules, review, channel | Stable, bar met | Used throughout this repository's own development |
+| session | Stable, bar not met | Codex is accepted only as one pinned Windows build and the Claude Agent SDK only at one version; macOS is untested. See the roadmap |
+| usage | Stable, bar not met | One call is not yet the same unit for Claude and Codex, and Codex CLI, Codex IDE and Claude Desktop logs have no real-sample tests. See the roadmap |
+| pipeline, publish, ui | Removed before 0.3.0 | No recorded real use; the owner may keep any of them |
 
 ## Release
 
-Release conditions, all required before the first tag:
+1. Confirm the gate, and that the CHANGELOG's 0.3.0 section is complete.
+2. In one commit, point the installers' default source and both READMEs at the PyPI package `agent-work-kit` instead of the `dev` branch.
+3. Push a tag matching the version (`v0.3.0`). `.github/workflows/release.yml` tests, builds the wheel, the skills ZIP and `SHA256SUMS` with `scripts/build_release.py`, creates the GitHub release and uploads the wheel to PyPI through a trusted publisher. A version uploaded to PyPI can never be reused.
+4. Check the release page and the PyPI page, then install with `pipx install agent-work-kit` on Windows and Linux and run `awkit --version`.
 
-1. The kit is restructured by situation, the extras are moved, and no further change to command names or file locations is planned.
-2. The real-use measurement in the [roadmap](roadmap.md) has been run and its findings applied.
-3. No change is planned to formats other tools read: check configuration, `result.json`, artifact manifests, usage results.
-
-Until then users install from `dev` with `install.ps1` or `install.sh`, or with `pipx install "git+https://github.com/min-seokkim/agent-work-kit@dev"`. The installers pin the `dev` branch in their default source; change it to the release when one exists.
-
-Procedure: confirm CI is green, finalize the CHANGELOG section, push a tag matching the version (`v0.3.0`). `.github/workflows/release.yml` tests, builds the wheel, the kit ZIP and `SHA256SUMS` with `scripts/build_release.py`, creates the GitHub release and uploads the wheel to PyPI through a trusted publisher. One-time setup before the first tag: create a `pypi` environment in the GitHub repository settings (add a required reviewer to approve uploads), and add a pending publisher on PyPI for project `agent-work-kit`, this repository, workflow `release.yml`, environment `pypi`. Without it only the PyPI job fails. A version uploaded to PyPI can never be reused. The name `agent-work-kit` was free on PyPI when last checked; check again before the first tag.
+One-time setup by the owner before the first tag: in the GitHub repository settings, create an environment named `pypi` with yourself as required reviewer; on PyPI, add a pending publisher for project `agent-work-kit`, repository `min-seokkim/agent-work-kit`, workflow `release.yml`, environment `pypi`. The name `agent-work-kit` was free on PyPI at `31c4d6d`.
 
 ## Testing and building
 

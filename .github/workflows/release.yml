@@ -6,6 +6,8 @@ name: release
 on:
   push:
     tags: ["v*"]
+  # A manual run rehearses the build on any branch and publishes nothing (docs/release.md, the gate).
+  workflow_dispatch:
 
 jobs:
   build:
@@ -16,6 +18,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Check that the tag matches the package version
+        if: github.event_name == 'push'
         run: |
           version=$(python -c "import sys; sys.path.insert(0, 'src'); import awkit; print(awkit.__version__)")
           test "v$version" = "$GITHUB_REF_NAME" || { echo "tag $GITHUB_REF_NAME != v$version"; exit 1; }
@@ -34,6 +37,7 @@ jobs:
 
   github-release:
     needs: build
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -49,6 +53,7 @@ jobs:
 
   pypi:
     needs: build
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     environment: pypi
     permissions:

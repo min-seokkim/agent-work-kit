@@ -80,6 +80,6 @@ To update, rerun the installer and ask the agent to inspect the project connecti
 
 The project is in development and has no release yet. Commands and file locations may change before the first release. We use the kit in this repository; [development evidence](docs/evidence.md) records observed results and their limits. Usage totals and passing checks alone do not establish time saved or better work.
 
-The [roadmap](docs/roadmap.md) describes unfinished work, and [CHANGELOG.md](CHANGELOG.md) records changes. To contribute, start with the [development guide](docs/development.md).
+The [roadmap](docs/roadmap.md) describes unfinished work, and [CHANGELOG.md](CHANGELOG.md) records changes. To contribute, start with [AGENTS.md](AGENTS.md).
 
 MIT license. The writing guides include adaptations of `im-not-ai`; source attribution and its license are in the [third-party notices](kit/THIRD_PARTY_NOTICES.md).

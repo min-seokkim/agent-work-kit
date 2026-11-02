@@ -1,55 +1,38 @@
 # Roadmap
 
-Choose the next unfinished outcome here. The owner selects implementation or delegates that selection to the coordinator; an item in this table alone remains a candidate. The [task directory](tasks/README.md) routes to the latest selected assignment, deferred work and completed units. Each task owns its state, scope, next action and evidence.
+What to work on in this repository. An agent picks the highest Ready item it can finish, says which in one line, and starts. Blocked items wait for the thing named in their row; do not start them and do not rewrite them. When Ready is empty, say so and stop. When an item is finished, delete its row in the same commit as the code and record the behavior change in [CHANGELOG.md](../CHANGELOG.md). Decisions that later work must respect go in [design.md](design.md).
 
-## Current planning focus
+## Ready
 
-The [commit hook Git-Bash path repair](tasks/commit-hook-paths.md) addresses the disposable reproduction of drive-rooted Bash paths selecting the wrong Windows path. Delivered `9093631` preserves frozen `aabd782523ebeb32d7deee5496e80bbfee0b119e`, with the completed check, CI and exact-installation evidence in its task record. Active native configuration remains separately unverified. The owner-approved one-time `AWKIT_ENV_PROBE` proposal has an observed clean baseline; its task record points to the separate attempt evidence and channel for later execution and restoration state. This record reports no completed sentinel observation. The probe concerns dynamic sentinel pickup after mid-session file creation, not startup delivery or actual Git-Bash selector activation. [Channel wait sleep prevention](tasks/channel-keep-awake.md) and the [storage summary view](tasks/review-storage.md#summary-view) were delivered in `38512d8`, with their native and synthetic evidence limits retained. The [planning record](tasks/planning-role-drift.md) records the preceding failure to continue selecting work.
+| Item | Done when |
+|---|---|
+| Fix the two flaky Windows CI tests: Python 3.11 lock creation and 3.12 session deadline, first seen failing then passing on retry in [run 41196269839](https://github.com/min-seokkim/agent-work-kit/actions/runs/41196269839). | The cause is found and the test is deterministic, or the product defect is fixed. Passing on a rerun does not count. |
+| Find the intermittent Linux temporary-directory cleanup failure in CI and make it deterministic. | Same standard as above. |
+| Make room in the command reference. `kit/reference.md` has 8,984 of its 9,000 words. Move one complete topic into its own guide, as `windows-recovery` was. | The reference has at least 500 words of margin, the moved text matches its source, and links and `kit guide` still work. |
+| Check that the Windows file-replacement retry from `7e82e3f` also covers acceptance directory promotion in `review accept`, which failed with WinError 5 in real use. | A test holds the target open and acceptance still succeeds, or the gap is fixed. |
+| Run the [snapshot recipe](../kit/reference.md#snapshot) on Linux. It has only been exercised on Windows. | The recipe works in bash or the reference gives a POSIX form, with a test. |
+| Design one check for a failure entry that now has a recorded occurrence: F16, F21 or F22 in [kit/failures.md](../kit/failures.md). Follow the rule in design.md: a guard that can be a check becomes a `rules.toml` rule. | A rule or command fires on a fixture built from the recorded occurrence, with a `PREVENTS` declaration and the guard table regenerated. Or a written finding that no check could have caught it. |
 
-[Review preparation failure evidence](tasks/review-preparation-failures.md) was delivered in `9fa9a2a`, with passing frozen checks, Windows/Linux CI and exact installation. Automatic long-path enablement and broader status and lookup changes remain deferred under that task's conditions. Source-snapshot retention remains separate from artifact storage. The [usage record](tasks/usage-log-compatibility.md#current-status) now includes one additional sample with IDE metadata; no parser change was selected.
+## Blocked
 
-The owner approved the exact reference-size policy replacement in `.awkit/handoffs/planning-continuation/reference-budget-policy-proposal.md`: prefer a complete topic guide at a lookup limit and compare accepted text with its source before shortening. The [owning task](tasks/review-preparation-failures.md#reference-policy-follow-up) records this separate follow-up and its delivery receipt. The reference at `9fa9a2a` uses 8,887 of 9,000 words; the existing limits remain unchanged.
+| Item | What unblocks it, and who |
+|---|---|
+| Measure real work. Run one real task with the kit and record five values: user messages with repeated instructions counted; tokens (fresh input, cache write, cache read, output); failure entries that occurred or were caught; hook firings with wrong ones counted; what the user did not have to do. Never run the same task twice with and without the kit: the second run knows the answer. | The owner names one real task and runs it with the kit. The agent records the values. This unblocks the three rows below. |
+| Evidence for the nine failure entries still marked "needs evidence" in `kit/failures.md`, or their removal. | Real work above. |
+| Candidate guards: a state check before install commands (F11), a SessionStart hook printing the latest checkpoint (F29), refusing edits outside the named files (F19), call counts against the premium cap (F18), handoff size limits (F21). | Each is built only when real work shows its failure. F18 also needs the usage work below. |
+| Usage accounting against current clients: a counting unit and matching across log files. | The owner supplies fresh Claude Desktop and Codex logs and decides what one call means. |
+| Storage growth of shared artifact storage on a real continuation. One copied run is 42.8 MB; the first shared run with one changed file added 284 KB plus a 4.8 KB object. Near-identical repeats prove nothing. | The owner's target project runs a continuation that changes outputs; that session records the increment against a copied counterfactual. |
+| Two-environment trial: a file-access-only reviewer on another computer, and recovery of an interrupted request on an execution-capable client. | The owner makes another computer available. |
+| Attach to existing IDE sessions; enroll foreign Claude sessions; list live Claude sessions. | A provider endpoint. Codex has none (socket error 10050). The owner says which outcome they want when one appears. |
+| Remove `init --commit`, merge the default rules and clean up installation records. | Owner approval; it is an incompatible change. |
+| Repair the other project's `rules.toml`, which still holds a `MultiplexedPath(...)` value. | Owner authorization; awkit never rewrites a project's rules on its own. |
+| The `AWKIT_ENV_PROBE` sentinel probe for Git-Bash commit-path activation. The code fix is delivered in `9093631`; whether the selector activates in a live session is unproven. | The owner opens a fresh Claude session on their Windows machine and gives a new go. |
+| The automatic Stop-hook ImportError (`awkit.checks`, `awkit.process`), never reproduced. | The owner captures a failing automatic invocation with its runtime context, if it happens again. |
+| Whether writing corrections persist without reminders, and the attribution cost of `writing compare` on a real revision. | The owner selects a real revision. |
+| Presentation production with native PowerPoint control; HWP/HWPX validation; the three reported PPTX validator bugs. | A working PowerPoint control connection from the owner, then a selected real task. |
+| The winget and Homebrew installer branches have never run. | A clean machine without Git or Python. |
+| First release, `release.yml` has never run. | The conditions in [release.md](release.md). |
 
-The owner authorized the coordinator to integrate the scope assessment and select the next work while remaining in the planning role. [Optional shared artifact storage for new runs](tasks/shared-artifact-storage.md) was delivered in `ac10928`, after [storage inspection](tasks/review-storage.md). It supplies collection-local payloads, compatible readers and self-contained export. The target now uses it for new runs; initial runs used near-identical content. Broader required evidence and retrieval needs remain open. No next needed essay continuation or owning session is selected; storage growth and retrieval on that task remain unmeasured. The task record owns review status and implementation sequencing; old-run migration and retention changes remain separate choices. The preceding [managed-session status](tasks/session-orchestration.md#selected-session-and-request-status) receipt retains its own delivery stages. Future provider operations must assess both providers and expose supported differences; earlier Codex-only candidates require reassessment before selection.
+## Decided against
 
-[Artifact selection preview](tasks/artifact-selection-preview.md) was delivered in `83db970` and used read-only on the target project after exact installation. It exposes current collection matches before executing checks. The owner approved the current-manuscript collection proposal, and the target project applied it with existing requirements and copied mode preserved. Broader evidence completeness and storage adoption remain separate; existing history is unchanged. The provider-parity, conversation-picker and Codex creation-model/effort receipts are in [session orchestration](tasks/session-orchestration.md#current-status). The coordinator owns product decisions; the implementation session owns checks and delivery.
-
-The [writing record](tasks/writing-outcome-evaluation.md#git-bash-guide-preservation-observation) retains the focused-guide preservation observation and its unexercised policy branch. The [presentation record](tasks/presentation-method-trial.md#later-native-capability-observation) retains successful native inventory and the unresolved launch. The [collaboration record](tasks/independent-session-collaboration.md#current-status) records the completed bounded same-host artifact-read/reply trial `desktop-artifact-review-1`, preserving recipient-reported access and the owner's confirmation about the two expected-answer files. Actual other-PC/laptop availability or the retained interrupted-request trial's prerequisites remain the next continuity decision. The README rewrite has a completed delivery receipt. These record updates assign no new product feature.
-
-## Task plans
-
-<a id="current-work"></a><a id="deferred-and-blocked"></a><a id="completed-units"></a>
-
-Open [the task directory](tasks/README.md), then read one task's current status and resume inputs. Follow a historical section only for the contract, decision or verification it preserves.
-
-## Next work
-
-Item numbers preserve references from earlier plans. Completed units and the earlier candidate list remain in [the historical roadmap](history/roadmap.md).
-
-| Item | Remaining work | Condition or next decision |
-|---|---|---|
-| 1 | Evidence for the remaining failure entries | The reference revision supplies an observed F16 occurrence, recorded in the [writing outcome](tasks/writing-outcome-evaluation.md). The [reviewer handoff](tasks/independent-session-collaboration.md#reviewer-handoff-omission) and [storage-summary interpretation](tasks/review-storage.md#storage-summary-interpretation-correction) add one bounded F21 and F22 observation each. The nine entries still marked "needs evidence" require real review, delegation, data or operations cases under item 5, or removal after that evaluation. |
-| 2a | Candidate executable guards | Select a guard only when item 5 demonstrates its failure and existing controls are insufficient. Usage-based enforcement also depends on item 6. Original candidates remain in the [historical backlog](history/roadmap.md#earlier-planning-context). |
-| 5 | Measure real work | Preserve task-bounded repeated instructions, tokens and observed/prevented failures in [evidence](history/evidence.md#measurement-record). Select a real continuation or revision; existing trials establish narrower results than causal benefit or saved effort. |
-| 6 | Usage against current clients | The format-3 correction is delivered. Further work requires fresh client samples, an explicit counting unit and reliable task boundaries; see [compatibility limits](tasks/usage-log-compatibility.md#current-status). |
-| 9 | Channel receipts | Extend acknowledgement or consumer positions only if actual use requires separating read from handled, or several sessions share one role. |
-| 10 | Transfer to another environment | The desktop execution host and laptop file-access client are selected evaluation targets in the [collaboration record](tasks/independent-session-collaboration.md#two-environment-evaluation). Evaluate an ordinary exported-artifact handoff for a file-access-only client and retained-request recovery for an execution-capable client. Verify path mapping, permissions and version mismatch before considering transport implementation. |
-| 11 | Continue independent sessions | Reuse delivered channels and session controls. Evaluate both providers and each client's file-access and execution capabilities; reconnect by inspecting the original request before retrying. The [session record](tasks/session-orchestration.md#current-status) retains IDE attachment and native-coverage requirements. |
-| 12 | Bound evidence-storage cost | [Shared artifact storage](tasks/shared-artifact-storage.md) was delivered in `ac10928` and adopted by the target for new runs. Storage growth and retrieval for the next needed essay continuation remain unmeasured, and no such task or owning session is selected; see its [adoption plan](tasks/shared-artifact-storage.md#adoption-after-technical-delivery). Initial runs with near-identical content do not establish that outcome. Historical migration, deletion, expiry and global defaults remain separate choices. |
-| 13 | Connect shared context | Lower priority while existing instructions route sessions to shared INDEX and project state. Require a concrete discovery gap before extending scan/doctor. Preserve current owners and distinguish current facts from history; memory writes and provider-memory divergence guards remain unselected. |
-
-The preview assessment identified a separate collector compatibility question: traversal can occur before candidate filtering; copied mode can retain internal-junction descendants and nonportable names that shared mode rejects. Any unification must deliberately settle existing retained outputs and missing-required outcomes. This remains unselected; the preview receipt retains the technical assessment. It does not establish an observed wrong result or justify a new failure entry.
-
-A matched retained comparison (local receipt `.awkit/handoffs/planning-continuation/collector-matched-manifest-assessment.json`) on `fdfa3f9` found the same 534 logical paths and recorded sizes and hashes for copied `review-9q2poiav` and shared `review-5w3fmppu`, with parsed configuration equal except storage mode and a matching repeat. Root selects no collector unification from this workload. Candidate traversal and rejection, and runtime provenance parity, remain unverified; growth and retrieval for a later task with changed outputs remain separate and unmeasured.
-
-The deferred [second-payload-buffer candidate and bounded source-snapshot storage assessment](history/roadmap.md#later-storage-candidate-assessment) retain their evidence limits and reopen conditions.
-
-## Operations evidence to assess
-
-The [retained operations assessment](history/roadmap.md#later-operations-assessment) preserves the evidence, unresolved authorization and consequence questions, and conditions for reconsideration. No new guard or failure-count reduction was selected from that assessment.
-
-## Historical rationale
-
-<a id="follow-up-from-the-document-trial"></a><a id="earlier-planning-context"></a><a id="numbered-backlog-before-navigation-refresh"></a>
-
-[Earlier proposal follow-up and backlog](history/roadmap.md#follow-up-from-the-document-trial) retain the original conditions and assignments. Usage compatibility remains a prerequisite for quantitative cost claims; hook reproduction can proceed separately. The design decision against expanding `check done` remains in force.
+Do not propose these again without a new observed failure: removing the second payload buffer in shared publication (largest observed artifact 11.4 MB, no memory failure); source-snapshot storage cleanup; unifying the two artifact collectors; migrating, expiring or deleting old review runs; a new task store or lookup command; a general updater for connected projects; a scheduler or background listener; a role-management feature; a new document engine or format rule; extending `check done`.

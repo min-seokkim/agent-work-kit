@@ -30,6 +30,10 @@ SITUATION_FILE_WORD_LIMIT = 3_500
 REFERENCES = ("reference.md", "failures.md")
 REFERENCE_WORD_LIMIT = 9_000
 LICENSES = ("LICENSE.md", "THIRD_PARTY_NOTICES.md")
+# The development records: four files, each with a word limit (AGENTS.md, "Working rules"). The limits
+# exist because the records once grew to 92,000 words across 61 files, written in commits that changed
+# nothing else, and an agent resuming work could not find what to do next in them.
+DEVELOPMENT_RECORDS = {"roadmap.md": 1_000, "design.md": 2_400, "evidence.md": 450, "release.md": 500}
 
 
 def skill_front_matter(text):
@@ -326,6 +330,15 @@ class DocumentationTests(unittest.TestCase):
                              f"the files read every session have {every_session} words")
         for name, words in counts.items():
             self.assertLessEqual(words, SITUATION_FILE_WORD_LIMIT, f"kit/{name} has {words} words")
+
+    def test_development_records_stay_four_short_files(self):
+        found = {path.relative_to(ROOT / "docs").as_posix() for path in (ROOT / "docs").rglob("*")
+                 if not path.is_dir()}
+        self.assertEqual(found, set(DEVELOPMENT_RECORDS),
+                         "docs/ holds only the four development records; Git history keeps the rest")
+        for name, limit in DEVELOPMENT_RECORDS.items():
+            words = len((ROOT / "docs" / name).read_text(encoding="utf-8").split())
+            self.assertLessEqual(words, limit, f"docs/{name} has {words} words")
 
     def test_link_check_skips_dependency_folders_but_not_managed_documents(self):
         with tempfile.TemporaryDirectory() as temporary:

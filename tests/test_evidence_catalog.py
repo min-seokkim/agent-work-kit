@@ -16,7 +16,7 @@ class EvidenceCatalogueTests(unittest.TestCase):
             root = Path(directory).resolve()
             for path, content in {
                 "docs/tasks/one.md": "`.awkit/handoffs/shared/`, `.awkit/handoffs/absent/` and `.awkit/handoffs/note.md`",
-                "docs/history/tasks/two.md": "`.awkit/handoffs/shared/receipt.json`",
+                "docs/tasks/two.md": "`.awkit/handoffs/shared/receipt.json`",
                 "docs/evidence.md": "`.awkit/reviews/review-*/` is a pattern",
                 ".awkit/handoffs/shared/fixture.txt": "retain",
                 ".awkit/handoffs/unreferenced/input.txt": "retain too",

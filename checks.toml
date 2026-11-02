@@ -20,4 +20,4 @@ argv = ["{python}", "-m", "unittest", "discover", "-s", "tests"]
 version = "0.3.0"
 done = "The change is pushed to dev, its snapshot passed `awkit review check` with this file, and CI is green on Windows and Linux."
 recipient = "the owner, through commits on dev"
-records = "docs/development.md"
+records = "docs/roadmap.md"

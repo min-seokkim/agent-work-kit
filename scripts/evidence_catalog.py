@@ -30,14 +30,6 @@ def safe_path(root, path):
     return path
 
 
-def record_for(source):
-    if source.startswith("docs/history/tasks/"):
-        return source.replace("docs/history/", "docs/", 1)
-    if source == "docs/history/document-workflow-plan.md":
-        return "docs/document-workflow-plan.md"
-    return source
-
-
 def inventory(root, path):
     result = {"availability": "present", "kind": "directory", "files": 0, "bytes": 0, "runs": [], "issues": []}
 
@@ -117,7 +109,7 @@ def catalogue(root):
                 if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*", name):
                     continue
                 group = f".awkit/{store}/{name}"
-                references.setdefault(group, set()).add((record_for(source), source))
+                references.setdefault(group, set()).add((source, source))
         except (OSError, ValueError) as exc:
             issues.append({"path": source, "error": type(exc).__name__})
     groups = set(references)

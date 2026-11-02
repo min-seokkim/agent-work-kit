@@ -1,6 +1,6 @@
 # Evaluator criteria
 
-Keep this file and the [retained input artifact](input-identities-and-acceptance.json) outside participant reading scopes. Evaluate meaning against the unchanged fictional inputs and current [writing guide](../../../kit/writing.md). A checklist of expected phrases cannot establish fidelity. The [task record](../../../docs/tasks/document-intent-trial.md) owns execution history; this package records no new participant run.
+Keep this file and the [retained input artifact](input-identities-and-acceptance.json) outside participant reading scopes. Evaluate meaning against the unchanged fictional inputs and current [writing guide](../../../kit/writing.md). A checklist of expected phrases cannot establish fidelity. The repository's Git history keeps the execution record; this package records no new participant run.
 
 ## Input identity and provenance
 

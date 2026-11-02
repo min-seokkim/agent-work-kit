@@ -80,6 +80,6 @@ awkit kit init
 
 개발 중이며 아직 릴리스한 버전은 없습니다. 첫 릴리스 전까지 명령과 파일 위치가 바뀔 수 있습니다. 이 저장소의 작업에도 키트를 사용하며, 확인한 결과와 한계를 [개발 근거 자료](docs/evidence.md)에 기록합니다. 사용량이나 검사 통과만으로 작업 시간이 줄었거나 결과가 좋아졌다고 판단하지는 않습니다.
 
-남은 개발 항목은 [로드맵](docs/roadmap.md), 변경 사항은 [CHANGELOG.md](CHANGELOG.md)에 있습니다. 개발에 참여하려면 [개발 안내](docs/development.md)부터 읽으세요.
+남은 개발 항목은 [로드맵](docs/roadmap.md), 변경 사항은 [CHANGELOG.md](CHANGELOG.md)에 있습니다. 개발에 참여하려면 [AGENTS.md](AGENTS.md)부터 읽으세요.
 
 MIT 라이선스로 배포합니다. 작성 지침에는 `im-not-ai`를 바탕으로 고친 내용이 포함돼 있으며, 출처와 라이선스는 [외부 자료 고지](kit/THIRD_PARTY_NOTICES.md)에 있습니다.

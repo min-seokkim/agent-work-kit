@@ -35,4 +35,4 @@ python examples/one-shot-automation/check_output.py failed --root RUN/artifacts/
 
 The first command checks retained bytes; the second compares the failed case's evidence with its fixed expectations. Both may pass while the action's review remains failed. The checker rejects missing records, changed effect bytes and contradictory stopping evidence.
 
-Read the [automation guide](../../kit/work-types.md#automation) and [task record](../../docs/tasks/one-shot-automation-example.md) for scope. This sequential mock demonstrates no unattended execution, concurrency or crash/power-loss safety, cross-run idempotency, production receipt or real F27 occurrence. Mechanical checks and agent reading do not establish a person's acceptance.
+Read the [automation guide](../../kit/work-types.md#automation) for scope; the repository's Git history keeps the original task record. This sequential mock demonstrates no unattended execution, concurrency or crash/power-loss safety, cross-run idempotency, production receipt or real F27 occurrence. Mechanical checks and agent reading do not establish a person's acceptance.

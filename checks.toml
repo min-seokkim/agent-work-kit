@@ -13,7 +13,7 @@ argv = ["ruff", "check", "."]
 
 [[checks]]
 name = "unittest"
-argv = ["{python}", "-m", "unittest", "discover", "-s", "tests"]
+argv = ["{python}", "scripts/run_tests.py"]
 
 # Agent Work Kit: what finishing means in this repository (AGENTS.md, "Checks before pushing").
 [kit]

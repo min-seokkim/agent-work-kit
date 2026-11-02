@@ -57,6 +57,6 @@ In bash, or when the change includes deleted files, commit first and check the c
 awkit review check HEAD --config checks.toml --runs-root .awkit/reviews
 ```
 
-The check runs Ruff and the test suite on exactly the snapshot. Without awkit installed, `PYTHONPATH=src python -m awkit` runs it from the source; the bare commands are `ruff check .` and `PYTHONPATH=src python -m unittest discover -s tests -v`.
+The check runs Ruff and the test suite on exactly the snapshot. Without awkit installed, `PYTHONPATH=src python -m awkit` runs it from the source; the bare commands are `ruff check .` and `python scripts/run_tests.py`, which runs the test modules in parallel processes; `PYTHONPATH=src python -m unittest discover -s tests -v` runs them in one.
 
 Building the release files is described in [docs/release.md](docs/release.md#testing-and-building).

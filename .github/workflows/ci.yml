@@ -48,27 +48,11 @@ jobs:
           python-version: ${{ matrix.python }}
       - name: Assert the invoked Python
         run: python -c "import os, sys; print(sys.executable); print(sys.version); assert '.'.join(map(str, sys.version_info[:2])) == os.environ['EXPECTED_PYTHON']"
-      - name: Measure process start cost
-        # Temporary: the Windows test jobs spend most of their time starting git and Python processes.
-        if: runner.os == 'Windows' && matrix.python == '3.13'
-        shell: python
-        run: |
-          import os, shutil, subprocess, sys, time
-          def cost(argv, n=40):
-              start = time.perf_counter()
-              for _ in range(n):
-                  subprocess.run(argv, capture_output=True, check=True)
-              return (time.perf_counter() - start) / n * 1000
-          launcher = shutil.which("git")
-          direct = os.path.join(os.path.dirname(os.path.dirname(launcher)), "mingw64", "bin", "git.exe")
-          print("cpus", os.cpu_count(), "git on PATH", launcher)
-          for name, argv in (("git on PATH", ["git", "--version"]), ("git launcher", [launcher, "--version"]),
-                             ("mingw64 git", [direct, "--version"]), ("python -c pass", [sys.executable, "-c", "pass"]),
-                             ("python -m awkit --version", [sys.executable, "-m", "awkit", "--version"])):
-              print(f"{name}: {cost(argv):.1f} ms")
       - name: Run tests
-        # --durations (Python 3.12+) lists every test's time at the end of the log, to find slow tests per platform.
-        run: python -m unittest discover -s tests -v ${{ matrix.python != '3.11' && '--durations 0' || '' }}
+        # One process per test module, as many at a time as the runner has CPUs: the tests start about 11,000 git
+        # and 1,000 Python processes, each about 40 and 120 ms on Windows. --durations (Python 3.12+) lists
+        # each module's test times in its output.
+        run: python scripts/run_tests.py --durations 0
 
   claude-sdk:
     name: Claude SDK / ${{ matrix.os }} / Python ${{ matrix.python }}

@@ -76,6 +76,8 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Guidance
 
+- CI and `checks.toml` run the tests with `scripts/run_tests.py`: one process per test module, as many at a time as the machine has CPUs, each module's output printed whole and failed modules listed at the end. The suite took 195 s in one process on a 4-CPU Linux machine and 53 s this way.
+
 - A test parses every `awkit` command shown in the kit's guides, inline or in a code block, with awkit's own parser and fails on an unknown command, an unknown option or an abbreviated one; usage synopses are expanded into each optional and alternative form. `awkit.cli` declares it for F4 in the guard table. `reference.md` shows the `rules.toml` header line as one code span.
 
 - The kit's guides and templates say what a result shows and what to check next instead of what it does not establish; `check writing kit/` reports no `hedge` warning. `writing.md` quotes the two phrases where it names the pattern.

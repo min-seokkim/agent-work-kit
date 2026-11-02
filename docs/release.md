@@ -17,9 +17,9 @@ Procedure: confirm CI is green, finalize the CHANGELOG section, push a tag match
 ## Testing and building
 
 ```sh
-PYTHONPATH=src python -m unittest discover -s tests -v
+python scripts/run_tests.py
 ruff check .
 python -m pip install "setuptools>=77" wheel && python scripts/build_release.py
 ```
 
-Tests use only the standard library, need Git and no network. `tests/support.py` gives child processes an absolute `PYTHONPATH`. The browser test runs only with `AWKIT_UI_TEST=1` and Playwright (`AWKIT_BROWSER_CHANNEL=msedge` for Edge). Symbolic link tests skip where the OS refuses links.
+Tests use only the standard library, need Git and no network. `scripts/run_tests.py` runs each test module in its own process, as many at once as there are CPUs; `PYTHONPATH=src python -m unittest discover -s tests -v` runs them all in one. `tests/support.py` gives child processes an absolute `PYTHONPATH`. The browser test runs only with `AWKIT_UI_TEST=1` and Playwright (`AWKIT_BROWSER_CHANNEL=msedge` for Edge). Symbolic link tests skip where the OS refuses links.

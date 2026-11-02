@@ -22,7 +22,7 @@ from awkit.cli import main
 from awkit.codex_session import ProviderError
 from awkit.session_http import SessionServer
 from awkit.sessions import SessionController
-from support import WAIT_SECONDS
+from support import PROCESS_SECONDS, WAIT_SECONDS
 
 
 def cli(project, arguments, stdin=b""):
@@ -181,7 +181,7 @@ exit $LASTEXITCODE
                    AWKIT_TEST_PYTHON=sys.executable, AWKIT_TEST_PROJECT=str(self.project), AWKIT_TEST_INPUT=str(self.path),
                    AWKIT_TEST_OUTPUT=str(self.project / "powershell-decision.json"))
         result = subprocess.run(["powershell.exe", "-NoProfile", "-NonInteractive", "-File", str(script)],
-                                env=env, capture_output=True, timeout=20)
+                                env=env, capture_output=True, timeout=PROCESS_SECONDS)
         self.assertEqual(result.returncode, 0, result.stderr.decode(errors="replace"))
         self.assertIn(b"choice is unavailable", result.stderr)
         self.assertEqual(json.loads(result.stdout)["decision"], self.decision["id"])
@@ -216,7 +216,7 @@ class QuestionRouteTests(unittest.TestCase):
             path.write_bytes(raw)
             code, _, error = cli(self.project, ["Worker", "--input-file", str(path) if source == "file" else "-"], raw)
             self.assertEqual((code, error), (0, ""))
-            response = callback.result(timeout=3)
+            response = callback.result(timeout=WAIT_SECONDS)
             self.assertEqual(response["updated_input"]["questions"], questions["questions"])
             self.assertEqual(response["updated_input"]["answers"], answers)
             self.assertNotIn("updated_permissions", response)

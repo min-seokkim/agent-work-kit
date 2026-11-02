@@ -38,3 +38,7 @@ def child_env(**extra):
 # the condition holds, so the budget only matters on a slow runner: Windows CI took 4.7 s from send to turn
 # start in one run, which failed a 5 s wait (run 41392966470). Admission alone has a 30 s RPC budget.
 WAIT_SECONDS = 35
+
+# How long a test waits for a child process such as PowerShell to finish. The parallel runner starts several test
+# modules at once, and a cold PowerShell under that load took more than 20 s on Windows CI (run 41421273021).
+PROCESS_SECONDS = 120

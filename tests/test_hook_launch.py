@@ -11,7 +11,7 @@ import unittest
 from pathlib import Path
 
 from awkit import hooks, kit_hooks
-from support import child_env
+from support import PROCESS_SECONDS, child_env
 
 
 class HookLaunch(unittest.TestCase):
@@ -41,7 +41,7 @@ class HookLaunch(unittest.TestCase):
     def run_hook(self, shell, command, payload):
         return subprocess.run([*shell, command], cwd=self.root, input=payload,
                               capture_output=True, text=True, encoding="utf-8", errors="replace",
-                              env=self.env, timeout=30)
+                              env=self.env, timeout=PROCESS_SECONDS)
 
     def test_generated_commands_deliver_stdin_and_json_in_real_shells(self):
         for shell_index, shell in enumerate(self.shells):

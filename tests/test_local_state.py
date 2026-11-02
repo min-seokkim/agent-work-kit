@@ -168,10 +168,10 @@ class LocalStateTests(unittest.TestCase):
     def test_administrative_and_coordination_failures_are_not_outside_git(self):
         original = local_state._git
 
-        def broken(project, *args):
+        def broken(project, *args, **options):
             if args[:2] == ("rev-parse", "--git-path"):
                 return subprocess.CompletedProcess([], 128, "", "administration unavailable")
-            return original(project, *args)
+            return original(project, *args, **options)
 
         with mock.patch.object(local_state, "_git", side_effect=broken):
             with self.assertRaisesRegex(local_state.ExclusionError, "resolve Git info/exclude"):
@@ -190,6 +190,39 @@ class LocalStateTests(unittest.TestCase):
             with self.assertRaisesRegex(local_state.ExclusionError, "coordinate"):
                 self.channel()
         self.assertFalse((self.project / ".awkit").exists())
+
+    def git_calls(self):
+        """A recorder of the git commands local_state starts, by subcommand."""
+        calls, original = [], local_state._git
+
+        def record(folder, *args, **options):
+            calls.append(args[0])
+            return original(folder, *args, **options)
+        return calls, mock.patch.object(local_state, "_git", side_effect=record)
+
+    def test_a_folder_no_repository_can_contain_starts_no_git(self):
+        outside = self.base / "outside"
+        outside.mkdir()
+        calls, recording = self.git_calls()
+        with recording, mock.patch.dict(os.environ, {name: "" for name in local_state.GIT_LOCATION_VARIABLES}):
+            self.assertEqual(local_state.prepare(outside), "outside-git")
+        self.assertEqual(calls, [])
+
+    def test_a_bare_repository_folder_is_still_asked_of_git(self):
+        bare = self.base / "bare.git"
+        self.git(self.base, "init", "-q", "--bare", str(bare))
+        calls, recording = self.git_calls()
+        with recording, self.assertRaisesRegex(local_state.ExclusionError, "resolve Git repository"):
+            local_state.prepare(bare / "inner")
+        self.assertEqual(calls, ["rev-parse"])
+
+    def test_a_protected_write_checks_its_exclusions_in_one_process(self):
+        self.channel()
+        calls, recording = self.git_calls()
+        with recording:
+            self.assertEqual(local_state.prepare(self.project, self.project / ".awkit" / "other.json"), "protected")
+        self.assertEqual(calls, ["rev-parse", "ls-files", "check-ignore"])
+        self.ignored(relative=".awkit/other.json")
 
     def test_git_inspection_failure_in_known_repository_is_actionable(self):
         with mock.patch.object(local_state, "_git", return_value=subprocess.CompletedProcess([], 128, "", "inspection failed")):

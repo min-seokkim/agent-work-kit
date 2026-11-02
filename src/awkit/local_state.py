@@ -22,12 +22,21 @@ class ExclusionError(ValueError):
     """A managed writer cannot establish effective local exclusion."""
 
 
-def _git(folder, *args):
+def _git(folder, *args, stdin=None):
     try:
-        return subprocess.run(["git", "-C", str(folder), *args], capture_output=True,
+        return subprocess.run(["git", "-C", str(folder), *args], capture_output=True, input=stdin,
                               text=True, encoding="utf-8", errors="replace", env={**os.environ, "LC_ALL": "C"})
     except OSError as exc:
         raise ExclusionError(f"Cannot inspect Git exclusion for {folder}: {exc}") from exc
+
+
+# Variables that let Git find a repository without a .git entry in the folder or its parents.
+GIT_LOCATION_VARIABLES = ("GIT_DIR", "GIT_WORK_TREE", "GIT_COMMON_DIR", "GIT_OBJECT_DIRECTORY")
+
+
+def _bare(folder):
+    """Git's own test for a folder that is a repository directory itself, as a bare repository is."""
+    return (folder / "HEAD").is_file() and (folder / "objects").is_dir() and (folder / "refs").is_dir()
 
 
 def repository(project):
@@ -35,9 +44,14 @@ def repository(project):
     existing = project
     while not existing.exists():
         existing = existing.parent
-    known = (bool(os.environ.get("GIT_DIR")) or
-             any((parent / ".git").exists() or (parent / ".git").is_symlink()
-                 for parent in (existing, *existing.parents)))
+    parents = (existing, *existing.parents)
+    known = (any(os.environ.get(name) for name in GIT_LOCATION_VARIABLES) or
+             any((parent / ".git").exists() or (parent / ".git").is_symlink() for parent in parents))
+    # Git finds a repository only through a .git entry, a bare repository folder or these variables. Where none
+    # exists there is nothing to find, and starting git to confirm it cost one process per managed write: on
+    # Windows CI about 40 ms each, a quarter of the test suite's git processes.
+    if not known and not any(_bare(parent) for parent in parents):
+        return None
     try:
         result = _git(existing, "rev-parse", "--show-toplevel")
     except ExclusionError as exc:
@@ -59,11 +73,18 @@ def exclude_file(top):
     return (path if path.is_absolute() else Path(top) / path).resolve()
 
 
-def _ignored(top, target):
-    result = _git(top, "check-ignore", "-q", "--no-index", "--", target)
+def _ignored_paths(top, targets):
+    """The targets Git ignores, from one git process: each check-ignore costs a process start (about 40 ms
+    on Windows CI), and a managed write checks up to three paths."""
+    result = _git(top, "check-ignore", "--no-index", "-z", "--stdin", stdin="".join(f"{t}\0" for t in targets))
     if result.returncode not in (0, 1):
-        raise ExclusionError(f"Cannot verify Git exclusion for {target}: {result.stderr.strip()}")
-    return result.returncode == 0
+        raise ExclusionError(f"Cannot verify Git exclusion for {', '.join(targets)}: {result.stderr.strip()}")
+    return set(result.stdout.split("\0")) & set(targets)
+
+
+def _ignored(top, *targets):
+    """Whether Git ignores every target."""
+    return _ignored_paths(top, targets) == set(targets)
 
 
 @contextmanager
@@ -135,7 +156,7 @@ def add_rule(top, relative, *, directory=False, backup=None, project=None):
     top = Path(top).resolve()
     target = relative.rstrip("/") + ("/awkit-exclusion-probe" if directory else "")
     def protected():
-        return _ignored(top, target) and (not directory or _ignored(top, relative.rstrip("/") + "/"))
+        return _ignored(top, target, *([relative.rstrip("/") + "/"] if directory else []))
     if protected():
         return None
     exclude = exclude_file(top)
@@ -214,10 +235,13 @@ def prepare(project, output=None, *, bypass=False, recursive=False):
     selected_relative = selected.relative_to(top).as_posix()
     _untracked(top, selected_relative, recursive)
     relative = managed.relative_to(top).as_posix()
+    target = selected_relative + ("/" if selected == managed else "")
+    # One check covers add_rule's own two paths and the selected output; add_rule runs only when one is missing.
+    if _ignored(top, relative + "/awkit-exclusion-probe", relative + "/", target):
+        return "protected"
     add_rule(top, relative, directory=True)
-    target = selected_relative
-    if not _ignored(top, target + ("/" if selected == managed else "")):
-        raise ExclusionError(f"Git does not ignore {target}; check .gitignore negations before writing managed state.")
+    if not _ignored(top, target):
+        raise ExclusionError(f"Git does not ignore {selected_relative}; check .gitignore negations before writing managed state.")
     return "protected"
 
 

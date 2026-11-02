@@ -86,7 +86,7 @@ Use the four sections of the [task handoff](templates/task.md) in this order: go
 
 Keep assignment instructions concise. The size guidance limits the brief, not the original material required for the task. Supply authorized source locations or supported attachments and state the coverage the receiver needs to inspect. Do not silently replace required originals with a summary, including when the user requests full-source reading. Keep unrelated material, credentials and environment variables out of the handoff; share sensitive material only within the authorized scope. Report inaccessible or uninspected coverage explicitly.
 
-Start the result with one of the following statuses. Then list files examined, checks run and conclusions. Separate anything that remains unverified.
+Start the result with one of the following statuses. Then list files examined, checks run and conclusions, and mark which conclusions rest on a check and which on reading.
 
 | Status | Meaning | Main-agent action |
 |---|---|---|
@@ -126,6 +126,6 @@ Prevents: F20.
 
 ## 8. Measurement
 
-Record per task the risk, the roles called, the actual models, calls, tokens and minutes (`awkit usage` reads them from the logs), and who found each High or Major finding. Keep any claimed advantage of delegation `unverified` until at least three comparable tasks were done each way, and compare the share of tasks with High or Major findings before anything else.
+Record per task the risk, the roles called, the actual models, calls, tokens and minutes (`awkit usage` reads them from the logs), and who found each High or Major finding. Claim an advantage for delegation only after at least three comparable tasks were done each way, and compare the share of tasks with High or Major findings before anything else.
 
 Prevents: F20.

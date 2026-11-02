@@ -4,9 +4,9 @@ Use this when a task needs a record that another session or person will read: ta
 
 ## A task record
 
-Assign each task a stable ID, owner, base revision, change scope, acceptance criteria and next action. Maintain current state in one task record and link related reviews and decisions. Do not copy entire conversations into multiple documents.
+Each task needs an outcome, how it is checked and the next action; add an ID, owner, base revision and change scope when several sessions work at once. Keep the current state of all tasks in one place and link related reviews and decisions. Do not copy conversations or status sentences into several documents: each copy has to be updated, and the stale one gets read.
 
-That one place is where the project already keeps state: its issue tracker, Beads, a `.planning` folder, `MEMORY.md` or its own task documents (`awkit kit scan` lists what it finds, and `records` in the `[kit]` table of `checks.toml` names it). The kit's task, review, decision and checkpoint templates are the fallback for a project that has none, or for the fields its own records lack; `awkit kit guide task` and the other template names print them. A second record in the kit's format splits the state in two, and the next session reads the one that went stale.
+That one place is where the project already keeps state: its issue tracker, Beads, a `.planning` folder, `MEMORY.md` or its own task documents (`awkit kit scan` lists what it finds, and `records` in the `[kit]` table of `checks.toml` names it). A project that has none keeps one file with a row per task. The kit's task, review, decision and checkpoint templates list fields to choose from, not files to create per task; `awkit kit guide task` and the other template names print them. A second record in the kit's format splits the state in two, and the next session reads the one that went stale.
 
 Prevents: F1, F29.
 
@@ -15,11 +15,11 @@ Prevents: F1, F29.
 | State | Meaning | Next action |
 |---|---|---|
 | `planned` | Goal and scope are being defined. | Confirm required inputs and acceptance criteria. |
-| `ready` | Scope and verification are clear enough to start. | Confirm the owner and begin. |
+| `ready` | Scope and verification are clear enough to start. | Record the owner and begin. |
 | `running` | Implementation or checks are in progress. | Prepare results and evidence. |
 | `review` | The result and evidence are ready for the required review. | Review the specified revision. |
 | `changes-requested` | Review found changes that are needed. | Return to `running` while addressing findings. |
-| `done` | Acceptance criteria and agreed checks and reviews are satisfied. | Report the outcome and remaining limitations. |
+| `done` | Acceptance criteria and agreed checks and reviews are satisfied. | Report the outcome and the next step. |
 | `blocked` | An external condition must be resolved. | Record the blocker and the condition for resuming. |
 | `cancelled` | The task has been cancelled. | Record the decision and changes to retain. |
 
@@ -39,7 +39,7 @@ Prevents: F19.
 
 Each finding in the [review record](templates/review.md) includes reproduction conditions, impact, evidence location and corrective direction. The implementer accepts it or rebuts it with evidence. For unresolved decisions, record who must decide and what the decision affects.
 
-Closing a channel is not a review pass. Resolve findings that block completion or obtain a decision from the project's authorized decision-maker, then explain remaining limitations. Design approval alone does not mean implementation or deployment is complete.
+Closing a channel is not a review pass. Resolve findings that block completion, or record who must decide and what it affects; a question the project's instructions already settle needs no new decision. Design approval alone does not mean implementation or deployment is complete.
 
 Prevents: F18.
 

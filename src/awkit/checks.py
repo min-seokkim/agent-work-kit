@@ -115,6 +115,11 @@ WARNINGS = (
      "sales word: say what it does"),
     ("translationese", re.compile(r"에 있어서|되어지|가지고 있다|시사하는 바|주목할 만|결론적으로|혁신적"),
      "translation artifact or stock phrase: say what happens"),
+    # A status that only says what is not proven: development records once used these hundreds of times,
+    # and readers could not find what was done or what to do next.
+    ("hedge", re.compile(r"(?i)\b(?:does not|do not|did not|cannot) establish\b|\bestablish(?:es)? neither\b"
+                         r"|\bremains? (?:unverified|unmeasured|unexercised)\b"),
+     "status by negation: say what was done and checked, and what comes next"),
 )
 POLITE = re.compile(r"세요[.!?]?(?=\s|$|[)\]\"'”’])")
 FORMAL = re.compile(r"(?:십시오|시오)[.!?]?(?=\s|$|[)\]\"'”’])")

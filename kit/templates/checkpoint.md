@@ -16,7 +16,7 @@ Give the receiving session enough information to verify the actual state and cho
 
 - Completed changes:
 - Checks run and evidence locations:
-- Unchecked scope:
+- Changed files without a passing check:
 - Unresolved findings:
 - Decisions needed:
 - Deliverables retained, their identifiers and completed delivery stages:

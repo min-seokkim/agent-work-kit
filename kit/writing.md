@@ -2,7 +2,7 @@
 
 Use this guide when writing or revising text people read: documents, reports, UI text, CLI output, notifications, handoffs, and commit and PR descriptions. For Korean text, also follow the [Korean Writing Guide](korean-writing.md). Current user instructions and established project terminology take precedence. Record a project's audiences, terms and per-document requirements (length, endings, layout) in the [project profile](templates/project.md); a requirement given for one document does not apply to every document.
 
-Text comes in two grades. A reply that stays in the conversation keeps one ending style, the pattern list under Write plainly and the rule on verbs (name who does what; in Korean, give a program its actual operation), and is read once before sending; it gets no draft and no preservation list. Text that leaves the conversation, because it is saved to a file, pasted into another session or read later by someone else, goes through this whole guide, from Before writing to the completion check. What the text is used for sets the grade, not where it is written: an instruction for another session written in the chat leaves the conversation.
+Text comes in two grades. A reply that stays in the conversation keeps one ending style, the pattern list under Write plainly and the rule on verbs (name who does what; in Korean, give a program its actual operation), and is read once before sending; it gets no draft and no preservation list, but the agent must have read this guide in the session to apply even that much. Text that leaves the conversation, because it is saved to a file, pasted into another session or read later by someone else, goes through this whole guide, from Before writing to the completion check. What the text is used for sets the grade, not where it is written: an instruction for another session written in the chat leaves the conversation.
 
 ## Before writing
 
@@ -24,7 +24,7 @@ Prevents: F11, F15, F29, F30, F34.
 
 Choose the order that serves the reader's task. For a decision or action, lead with the needed answer and supporting evidence. Preserve a requested or adopted narrative, discovery sequence or open question where it performs the text's intended work. Name who does what and what results. Explain or replace terms the reader does not know. Keep tracking codes (task IDs, commit IDs, decision-record numbers) in records for agents and out of text people read; readers cannot decode them.
 
-Readers recognize these patterns as generated text, so remove them: contrasts against a claim nobody made ("not X but Y"), lead-ins ("here's"), closing lines that repeat the paragraph, slogans and promotional headlines, sales and consulting words, labels that repeat an entry's title, decorative bold, em dashes, and lists of what a project does not do. Keep dates out of current guidance and file names; they belong to historical records.
+Readers recognize these patterns as generated text, so remove them: contrasts against a claim nobody made ("not X but Y"), lead-ins ("here's"), closing lines that repeat the paragraph, slogans and promotional headlines, sales and consulting words, labels that repeat an entry's title, decorative bold, em dashes, lists of what a project does not do, and status sentences that only say what a result does not establish or what remains unverified. Keep dates out of current guidance and file names; they belong to historical records.
 
 Shorten by removing repetition and wordy phrasing, never items on the preservation list. Dense text may run past one page.
 
@@ -36,7 +36,7 @@ Prevents: F13, F15, F30.
 
 ## Preserve facts and judgments
 
-Keep plans, approved decisions, implementation, check results and actual operation distinct; completing implementation does not establish verification or use. Keep unverified figures marked as unverified. Do not merge work from different projects or people, and do not turn possibility into certainty or permission into obligation while shortening.
+Keep plans, approved decisions, implementation, check results and actual operation distinct: say which stage each item reached. Mark a figure nobody measured as an estimate. Do not merge work from different projects or people, and do not turn possibility into certainty or permission into obligation while shortening.
 
 When revising accepted text, keep its adopted wording, structure and design unless the task changes them, and compare the revision with the accepted version. A style edit must not imply fresh fact-checking. If a style edit changes more than about a third of the text, it has become a rewrite: stop and confirm the scope with the user before continuing. For numbers, prices and external capabilities, keep the source and the date it was checked. Check incoming links when changing heading anchors.
 
@@ -67,6 +67,6 @@ Prevents: F18, F21, F31, F32.
 - The patterns above were searched for in everything changed; `awkit check writing` finds the mechanical ones.
 - Endings, terms and actors are consistent.
 
-Report what the final text is and what was checked; following these steps does not show that it reads well. Separate mechanical pattern checks from reading and rendered inspection, naming the reviewer and method. If preservation, a required review pass or rendering was omitted, report that gap rather than counting it as covered by passing commands. Use the existing task record and evidence, without adding a checklist of unsupported assertions. The main agent reads the final text before delivery.
+Report what the final text is and what was checked; a passing mechanical check says nothing about whether it reads well. Separate mechanical pattern checks from reading and rendered inspection, naming the reviewer and method. If preservation, a required review pass or rendering was omitted, report that gap rather than counting it as covered by passing commands. Use the existing task record and evidence, without adding a checklist of unsupported assertions. The main agent reads the final text before delivery.
 
 Prevents: F1, F33.

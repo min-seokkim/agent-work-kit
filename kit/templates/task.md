@@ -53,17 +53,15 @@ Add the result to this document or return it to the main agent when the work end
 - Status: DONE, DONE_WITH_CONCERNS, NEEDS_CONTEXT or BLOCKED
 - Actual behavior changes:
 - Changed files:
-- Evidence read and evidence that could not be read:
+- Evidence read, and required evidence that could not be read:
 - Revision checked:
 - Checks run and results:
 - Actual commands, working directories, exit codes and output locations:
 - Retained artifact identifiers or hashes and their source revision:
 - Delivery stage reached and evidence, when required:
 - Failure causes and scope rechecked:
-- Remaining limitations and decisions needed:
+- Next action and decisions needed:
 - For writing tasks, results of factual, sentence-level and overall-flow review:
-- Actual model and usage: verified from execution logs, or `unverified` if unavailable
-- Cost of the task: wall-clock minutes, tokens, messages the user sent after the first instruction, defects found after acceptance (from `awkit usage` where it applies; otherwise `unverified`)
 
 For review assignments, include the following for each finding.
 

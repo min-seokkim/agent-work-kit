@@ -1,6 +1,6 @@
 # Project Profile
 
-Copy this template into a project, fill the relevant fields and remove unused ones. Completing the profile does not establish that implementation or approval is complete.
+Copy this template into a project, fill the relevant fields and remove unused ones.
 
 ## Start here
 
@@ -18,13 +18,11 @@ Fill these five fields first. They are enough for an agent to begin a task; add 
 - Problem this project solves:
 - Kit components to use:
 - Authoritative requirements and decisions:
-- Document tracking implementation status:
-- Document for reporting results to people:
+- The one place that holds current task state:
 - Writing guide: [Writing Guide](../writing.md); [Korean Writing Guide](../korean-writing.md) for Korean
 - Per-document requirements (length, endings, layout):
 - Document audience and what readers should understand or do:
 - Established terminology and style exceptions:
-- Record date:
 
 ## Working environment
 
@@ -71,8 +69,6 @@ This table records execution settings; it is not configuration read by an automa
 - Conditions requiring independent review:
 - Method for freezing the review target:
 - Location for results and findings:
-- Authoritative location for current task state:
-- Locations for review, decision and checkpoint records:
 - Material and size limits for session handoffs:
 - Task states: [Task Record Protocol](../protocol.md)
 - Owner or procedure for execution-environment failures:
@@ -116,12 +112,3 @@ For a target whose running version is replaced, also record:
 - Required behavior checks after replacement:
 - Data backup and compatibility checks, where applicable:
 - Conditions and procedure for restoring an earlier version:
-
-## First application results
-
-- Scope actually applied:
-- Passed checks and evidence:
-- Failed checks and causes:
-- Unverified scope:
-- Dependencies requiring configuration or changes:
-- Items to fix before the next use:

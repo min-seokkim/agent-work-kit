@@ -6,7 +6,6 @@ What to work on in this repository. An agent picks the highest Ready item it can
 
 | Item | Done when |
 |---|---|
-| Route every `.awkit` write through one function. `local_state.prepare` is called by hand at about 20 write sites in 11 modules; a missed call is F7. | One write helper prepares exclusion and writes; a test fails when a module writes under `.awkit` without it. |
 
 ## Blocked
 

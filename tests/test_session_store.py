@@ -39,6 +39,26 @@ class SessionStoreTests(unittest.TestCase):
         self.assertEqual(self.store.claim("generation-a")["request"]["id"], request["id"])
         self.assertFalse(self.store.has_pending_request())
 
+    def test_versions_3_and_4_upgrade_to_one_version_and_enrollment_is_a_field(self):
+        enrolled = SessionStore.create(self.root, name="Enrolled", project=self.root, responsibility="Invented",
+                                       generation="g", permissions={}, enrollment=dict(thread_id="t"))
+        for store, old, kind in ((self.store, 3, None), (enrolled, 4, dict)):
+            with closing(sqlite3.connect(store.path)) as conn, conn:
+                conn.execute("UPDATE awkit_session SET schema=?", (old,))
+            store.upgrade()
+            snapshot = store.snapshot()
+            self.assertEqual(snapshot["extension_schema"], 5)
+            self.assertEqual(type(snapshot["session"].get("enrollment")) if kind else None, kind)
+        # A version-4 row that is not an enrollment, or a version from a newer awkit, is refused.
+        with closing(sqlite3.connect(self.store.path)) as conn, conn:
+            conn.execute("UPDATE awkit_session SET schema=4")
+        with self.assertRaisesRegex(ValueError, "only enrolled"):
+            self.store.metadata()
+        with closing(sqlite3.connect(self.store.path)) as conn, conn:
+            conn.execute("UPDATE awkit_session SET schema=6")
+        with self.assertRaisesRegex(ValueError, "Unsupported"):
+            self.store.metadata()
+
     def test_cancel_and_dispatch_reservation_serialize_on_the_same_database(self):
         request = self.store.post("cancel-race", "A single contested assignment")
         barrier = threading.Barrier(2)

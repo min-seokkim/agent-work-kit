@@ -62,7 +62,7 @@ class TurnUpdateTests(unittest.TestCase):
         self.assertEqual(final["attempts"][0]["turn_id"], self.active["expected_turn_id"])
         self.assertIn("South dock", final["messages"][-1]["body"])
         self.assertEqual(len(final["turn_updates"]), 1)
-        self.assertEqual(final["extension_schema"], 3)
+        self.assertEqual(final["extension_schema"], 5)
         with patch.object(self.controller.provider, "call", side_effect=AssertionError("must not call")):
             duplicate = self.controller.update_turn("Worker", **self.args())
         self.assertTrue(duplicate["recovered"])

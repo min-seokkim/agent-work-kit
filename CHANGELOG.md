@@ -8,6 +8,8 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Commands
 
+- Managed session channels use extension schema 5. The number now counts versions only: extension 4 had been written only for enrolled Codex conversations, and the `enrollment` field already says that. The controller upgrades extensions 1 to 4 in place; older controllers refuse extension 5. Session, attempt and decision states are declared in one module, and the store refuses an undeclared session state.
+
 - The session controller applies a provider's `thread/read` observation only while the session state is still the one it read before the call. Earlier, a state another writer set during the call (resume holding the session, a late callback) was overwritten with `idle`, and queued work held by that state could be sent. Found as an intermittent Windows CI failure.
 
 - `review accept` retries the renames that promote its staging folder on Windows while a file inside is held open, as file replacement already did; the Windows exclude-lock wait now gives up after a second of permission errors and reports them as a coordination failure.

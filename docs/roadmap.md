@@ -6,7 +6,6 @@ What to work on in this repository. An agent picks the highest Ready item it can
 
 | Item | Done when |
 |---|---|
-| Separate the session schema number from enrollment. Schema "4" in `session_store.py` means enrolled, not a later version, and `awkit_session.data` is unversioned JSON. | The schema number only counts versions, enrollment is a field, and an upgrade test covers every earlier shape. |
 | Split `cli.py`. `_parser` and `main` are 275 lines each and the most-changed file. | Each command group registers its own parser and handler; `main` dispatches by table; command help and exit codes are unchanged. |
 | Untangle the import cycles. 29 module pairs import each other, hidden by 153 function-local imports. | Modules form layers with no cycle, checked by a test; function-local imports remain only where hook start-up time needs them. |
 | Route every `.awkit` write through one function. `local_state.prepare` is called by hand at about 20 write sites in 11 modules; a missed call is F7. | One write helper prepares exclusion and writes; a test fails when a module writes under `.awkit` without it. |

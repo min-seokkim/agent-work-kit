@@ -14,6 +14,12 @@ from . import session_states as states
 from .channel import REQUESTS, Channel
 from .session_models import ready as model_ready
 
+# The version of the managed tables and of the JSON in awkit_session.data. Versions 1 to 3 changed tables;
+# version 4 was written only for enrolled conversations, so it marked a kind, not a version. From 5 the number
+# only counts versions, and `enrollment` in the data says whether a conversation was enrolled. `upgrade`
+# brings every earlier version to this one; a newer version is refused.
+VERSION = 5
+
 SCHEMA = """
 CREATE TABLE awkit_session (singleton INTEGER PRIMARY KEY CHECK(singleton=1),
     schema INTEGER NOT NULL, id TEXT UNIQUE NOT NULL, data TEXT NOT NULL);
@@ -80,7 +86,7 @@ class SessionStore:
             for statement in SCHEMA.split(";"):
                 if statement.strip():
                     conn.execute(statement)
-            conn.execute("INSERT INTO awkit_session VALUES (1,?,?,?)", (4 if enrollment is not None else 3, ident, encoded(data)))
+            conn.execute("INSERT INTO awkit_session VALUES (1,?,?,?)", (VERSION, ident, encoded(data)))
         return cls(path)
 
     @staticmethod
@@ -89,12 +95,15 @@ class SessionStore:
             row = conn.execute("SELECT schema,id,data FROM awkit_session WHERE singleton=1").fetchone()
         except sqlite3.OperationalError as exc:
             raise ValueError("This is not a managed session channel.") from exc
-        if row is None or row["schema"] not in (1, 2, 3, 4):
+        if row is None or row["schema"] not in range(1, VERSION + 1):
             raise ValueError("Unsupported managed session extension.")
         data = json.loads(row["data"])
-        if row["schema"] != 4 and data.get("enrollment") is not None:
-            raise ValueError("Enrolled Codex conversations require extension 4.")
-        if row["schema"] == 4 and (data.get("provider") != "codex" or not isinstance(data.get("enrollment"), dict)):
+        enrolled = data.get("enrollment") is not None
+        if row["schema"] < 4 and enrolled:
+            raise ValueError("Enrolled Codex conversations require extension 4 or later.")
+        if row["schema"] == 4 and not enrolled:
+            raise ValueError("Extension 4 holds only enrolled Codex conversations.")
+        if enrolled and (data.get("provider") != "codex" or not isinstance(data.get("enrollment"), dict)):
             raise ValueError("Invalid enrolled Codex metadata.")
         if data.get("id") != row["id"] or str(uuid.UUID(row["id"])) != row["id"]:
             raise ValueError("Invalid stored session/channel identity.")
@@ -121,6 +130,10 @@ class SessionStore:
                 conn.execute(f"INSERT INTO awkit_delivery({names}) SELECT {names} FROM awkit_delivery_v2")
                 conn.execute("DROP TABLE awkit_delivery_v2")
                 conn.execute("UPDATE awkit_session SET schema=3 WHERE singleton=1")
+                version = 3
+            if version in (3, 4):
+                # Same tables; 4 only marked enrolled conversations, which `enrollment` in the data now says.
+                conn.execute("UPDATE awkit_session SET schema=? WHERE singleton=1", (VERSION,))
 
     @staticmethod
     def _update(conn, **fields):

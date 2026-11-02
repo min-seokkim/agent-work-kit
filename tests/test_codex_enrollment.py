@@ -103,7 +103,7 @@ class EnrollmentTests(unittest.TestCase):
 
     def test_enroll_and_restart_retain_identity_scope_without_new_instructions_or_history(self):
         before = self.enroll()
-        self.assertEqual(before["extension_schema"], 4)
+        self.assertEqual(before["extension_schema"], 5)
         self.assertEqual(before["messages"], [])
         self.assertIsNone(before["session"]["startup_context"])
         self.assertEqual(before["session"]["enrollment"]["policy"], self.scope)

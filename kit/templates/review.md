@@ -1,6 +1,6 @@
 # Review Record
 
-Record the review target and examined scope using the [task protocol](../protocol.md). A review with no findings does not establish correctness outside the examined scope.
+Record the review target and examined scope using the [task protocol](../protocol.md). Findings, or their absence, cover only the examined scope.
 
 ## Target
 

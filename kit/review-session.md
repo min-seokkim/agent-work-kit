@@ -69,11 +69,11 @@ awkit channel --db $db wait reviewer new --max 60 --keep-awake
 
 The flag makes a best-effort request to prevent idle system sleep only while that command waits, then restores the thread's previous state on return or interrupt. It changes no display, away-mode or power-plan setting. On other platforms, or if acquiring or releasing the request fails, stderr warns that the system may sleep; the normal wait, output, read positions, exit codes and exceptions remain. Investigate the warning before relying on sleep prevention. Gaps between waits, ended turns and explicit or forced sleep remain unprotected. The flag cannot keep an ended agent turn active or deliver messages to it.
 
-On startup or resume, inspect `channel export` for requests, prior results and closure before repeating work. Read `wait <role> new --max 0`, then recover unanswered requests with `wait <role> request --max 0`. Use IDs to distinguish unfinished work from an already returned result. The shared `new` position records reading; it does not establish handling or completion, and cannot hide an unanswered request from `request` mode. Use `reply <ID>` or export to recover an earlier result.
+On startup or resume, inspect `channel export` for requests, prior results and closure before repeating work. Read `wait <role> new --max 0`, then recover unanswered requests with `wait <role> request --max 0`. Use IDs to distinguish unfinished work from an already returned result. The shared `new` position records reading only; check handling and completion through replies, and `request` mode still lists every unanswered request. Use `reply <ID>` or export to recover an earlier result.
 
 Both roles inspect `new` between work portions, including notices and replies. Before waiting, check for unanswered requests. When idle or blocked, wait in `new` mode with the allowed bound, then check `request --max 0` and handle the corresponding IDs. Request-only waits omit notices; a receipt notice does not answer a request.
 
-- **Claude Code.** Where the client delivers completed background-command output to the session, run a bounded `new` wait in the background and restart it after handling messages. The turn may end only with that delivery capability established in the actual client; storing a channel message does not establish it.
+- **Claude Code.** Where the client delivers completed background-command output to the session, run a bounded `new` wait in the background and restart it after handling messages. The turn may end only after the actual client has been seen delivering that output; a stored channel message shows only that it was stored.
 - **Codex.** Keep the turn open while waiting: an ended turn cannot be awakened by a stored message. Repeat bounded `new` waits, inspect notices and recover requests after each return. Each cycle requires a model invocation, so avoid short polling intervals and keep the user informed.
 
 Exit 3 means the reviewer stops waiting on that closed channel. Do not end a unit with open requests or an unapplied final result, except for a pending user `decision-needed` item. If the client forces the turn to end, retain a checkpoint with pending IDs and report that resuming needs an active session.
@@ -92,7 +92,7 @@ Prevents: F11.
 
 ## 8. Starting prompts
 
-These prompts assign independent review. Replace `<unit>` before use. For another explicitly authorized pairing, state the actual responsibilities and treat `main`/`reviewer` as transport addresses; an address does not establish independent review.
+These prompts assign independent review. Replace `<unit>` before use. For another explicitly authorized pairing, state the actual responsibilities and treat `main`/`reviewer` as transport addresses; independence comes from the stated responsibilities, never from an address.
 
 Main session:
 

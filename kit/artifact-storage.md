@@ -10,7 +10,7 @@ Schema-1 JSON identifies the base, current HEAD, configuration hash and storage 
 
 Ordinary portable paths follow the collector's glob and mode rules. Preview avoids linked/reparse branches and reports partial coverage where descendant matches cannot be observed safely. Nonportable paths, enumeration errors and metadata errors also make coverage and totals partial. Collectors retain their existing traversal rules.
 
-Current files may be untracked or ignored and absent from a later snapshot. Setup and checks can generate or change files; currently unmatched required patterns do not predict failure. These counts establish neither evidence completeness, consumer compatibility, content sharing nor allocated disk space.
+Current files may be untracked or ignored and absent from a later snapshot. Setup and checks can generate or change files; currently unmatched required patterns do not predict failure. These counts give the current logical size of the selection only; evidence completeness, consumer compatibility, content sharing and allocated disk space need their own checks after a run.
 
 This live observation is not an atomic tree snapshot and may miss concurrent additions or changes. Complete means no observation error or limitation was detected; detected unsafe changes remain partial.
 
@@ -28,7 +28,7 @@ Before opting a project in, check tools that directly open configured payloads u
 
 Shared artifact paths must be portable between Windows and Linux. Traversal, reserved Windows names such as `aux.log`, ambiguous separators and colliding case aliases fail collection. Check naming before opting in; copied mode retains its legacy path behavior.
 
-The schema-2 manifest at `artifacts/manifest.json` records configured object references and direct artifact diagnostics. The result records the selected mode and publication state. Payloads are published before the manifest, and completed publication is recorded last. Missing, corrupt, inconsistent or incomplete shared evidence fails verification or materialization. A failed check can still have complete, verifiable artifacts: integrity does not establish that the check passed.
+The schema-2 manifest at `artifacts/manifest.json` records configured object references and direct artifact diagnostics. The result records the selected mode and publication state. Payloads are published before the manifest, and completed publication is recorded last. Missing, corrupt, inconsistent or incomplete shared evidence fails verification or materialization. A failed check can still have complete, verifiable artifacts, so read pass or fail from the check's result, never from artifact integrity.
 
 Payload validation currently reads whole files into memory. Shared publication can hold the input and its verification copy at once; choose artifact sizes that fit the check host's available memory.
 
@@ -62,9 +62,9 @@ Prevents: F1, F7, F16.
 
 Move the collection with its `.awkit-artifacts/` directory to preserve shared verification without the original project path. Copying a complete collection may retain its identity; the identity represents compatible store lineage, not a unique physical location. Copies may diverge independently. A lone reference-based run cannot reconstruct its missing store by searching other paths.
 
-`review storage` reports run-local bytes, shared object bytes counted once, per-run referenced logical bytes and total observed collection bytes. Staging and unreferenced object bytes are separate. Invalid or unreadable manifests limit reference coverage, so unreferenced does not establish reclaimable space. These are live logical sizes, not allocated disk use or measured savings.
+`review storage` reports run-local bytes, shared object bytes counted once, per-run referenced logical bytes and total observed collection bytes. Staging and unreferenced object bytes are separate. Invalid or unreadable manifests limit reference coverage, so an unreferenced object may belong to a run whose manifest could not be read; resolve those manifests before counting its bytes as reclaimable. These are live logical sizes, not allocated disk use or measured savings.
 
-`--summary` keeps totals, recorded statuses, metadata and shared-reference coverage, unverified manifest estimates and every limitation. It replaces per-run shared-reference rows, largest-run rows and individual issue details with explicit omission counts. Issue counts are grouped by scope and code; run-scoped groups also count distinct affected runs. Collection and shared-store issues have no inferred run identity. These classifications do not establish causes or authorize cleanup. `--summary` and `--json` are mutually exclusive. All views use the same inspection and exit meanings; summary does not scan faster or make partial results complete.
+`--summary` keeps totals, recorded statuses, metadata and shared-reference coverage, unverified manifest estimates and every limitation. It replaces per-run shared-reference rows, largest-run rows and individual issue details with explicit omission counts. Issue counts are grouped by scope and code; run-scoped groups also count distinct affected runs. Collection and shared-store issues have no inferred run identity. The groups classify issues by scope and code; find each cause separately and get the owner's approval before any cleanup. `--summary` and `--json` are mutually exclusive. All views use the same inspection and exit meanings; summary does not scan faster or make partial results complete.
 
 Deleting a run does not generally reclaim its shared objects. Switching future runs back to `"copy"` leaves prior shared runs dependent on a compatible reader and store; export those runs independently before removing that dependency. This unit performs no migration or collection. Source Git snapshot lifetime also remains separate from retained artifact integrity.
 

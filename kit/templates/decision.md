@@ -1,6 +1,6 @@
 # Decision Record
 
-Record the specific choice and its rationale. A confirmed decision does not establish implementation completion or authorization for external publication.
+Record the specific choice and its rationale. Record implementation completion and any authorization for external publication separately from the decision.
 
 - Decision ID:
 - Related tasks:

@@ -6,7 +6,7 @@ Edit the templates directly or generate provider-specific role files with `awkit
 
 ## Model mappings
 
-These explicit mappings are starting examples for both providers. Tiers describe the work assigned; they do not establish equal capability or cost across providers. Check model access in the target account and client before using them. The Codex names come from the [official model guide](https://learn.chatgpt.com/docs/models); the tier assignments below are the kit's examples.
+These explicit mappings are starting examples for both providers. Tiers describe the work assigned; the same tier can differ in capability and cost between providers. Check model access in the target account and client before using them. The Codex names come from the [official model guide](https://learn.chatgpt.com/docs/models); the tier assignments below are the kit's examples.
 
 | Tier | Roles | Claude Code example | Codex example |
 |---|---|---|---|

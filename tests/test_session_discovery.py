@@ -19,6 +19,30 @@ NATIVE = "01234567-89ab-4cde-8fab-0123456789ab"
 SECRET = "FICTIONAL_PREVIEW_MUST_NOT_ESCAPE"
 
 
+class FakeController:
+    """The part of SessionController that discovery uses, with the stores, lock and pages the tests inspect."""
+
+    def __init__(self, **fields):
+        self.__dict__.update(fields)
+        self._closed, self._stop, self._mutex = False, threading.Event(), threading.RLock()
+        self.enrolled_clients, self._stores, self._discovery_pages = {}, {}, {}
+
+    guard = property(lambda self: self._mutex)
+    stopping = property(lambda self: self._closed or self._stop.is_set())
+    discovery_pages = property(lambda self: self._discovery_pages)
+
+    def store_by_id(self, ident):
+        return self._stores.get(ident)
+
+    def registered_natives(self):
+        found = set()
+        for store in self._stores.values():
+            meta = store.metadata()
+            if meta.get("provider") == "codex":
+                found.add((meta.get("enrollment") or {}).get("thread_id") or meta.get("native_id"))
+        return found
+
+
 def native(project, *, cursor=None, **overrides):
     row = dict(id=NATIVE, name="Fictional review", cwd=str(project), source="cli", createdAt=10, updatedAt=20,
                preview=SECRET, turns=[{"text": SECRET}], **overrides)
@@ -46,9 +70,8 @@ class DiscoveryTests(unittest.TestCase):
             return project_response(native(self.project, cursor="native-next"), str(self.project))["result"]
 
         self.client.discover_threads = listing
-        self.controller = SimpleNamespace(project=self.project, command=[str(self.executable)], _closed=False,
-            _stop=threading.Event(), _mutex=threading.RLock(), enrolled_clients={}, _stores={},
-            provider=self.client, generation="generation-1", client=dict(version=VERSION, executable_sha256=EXECUTABLE_SHA256))
+        self.controller = FakeController(project=self.project, command=[str(self.executable)], provider=self.client,
+            generation="generation-1", client=dict(version=VERSION, executable_sha256=EXECUTABLE_SHA256))
 
     def test_allowlist_and_database_only_filters_and_registration(self):
         self.controller._stores["registered"] = SimpleNamespace(metadata=lambda: dict(provider="codex", native_id=NATIVE))

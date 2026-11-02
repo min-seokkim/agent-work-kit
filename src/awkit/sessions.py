@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import hashlib
-import json
 import os
 import shutil
 import sqlite3
@@ -13,8 +12,9 @@ import uuid
 from datetime import UTC, datetime
 from pathlib import Path
 
+from . import session_states as states
 from .channel_status import observe
-from .claude_session import ClaudeSession, availability, recover_local_results
+from .claude_session import ClaudeSession, availability
 from .codex_session import CodexSession, ProviderError
 from .local_state import prepare
 from .session_capabilities import describe
@@ -23,11 +23,11 @@ from .session_models import hold, verify_runtime
 from .session_models import observe as observe_model
 from .session_models import ready as model_ready
 from .session_models import validate as validate_model
-from .session_recovery import resume
+from .session_routes import DECISIONS, DISPATCH_ERRORS, route
 from .session_store import SessionStore, now
 
 PREVENTS = {"awkit session": ("F1", "F29")}
-DECISIONS = {"item/commandExecution/requestApproval", "item/fileChange/requestApproval"}
+__all__ = ["DECISIONS", "SessionController"]
 
 
 class SessionController:
@@ -61,7 +61,9 @@ class SessionController:
         self._mutex = threading.RLock()
         self._creation = threading.Lock()
         self._closed = False
-        self._recovery_attempted = set()
+        # Sessions whose provider connection this controller already tried to restore; routes read and update it.
+        self.recovery_attempted = self._recovery_attempted = set()
+        self._discovery_pages = {}
         self._stop = threading.Event()
         self.history = HistoryViews(self.project, self.directory)
         for path in sorted((self.directory / "channels").glob("*.sqlite3")):
@@ -81,7 +83,60 @@ class SessionController:
         self._worker = threading.Thread(target=self._dispatch, daemon=True)
         self._worker.start()
 
-    def _owned_provider(self):
+    # The public surface that routes and helper modules use instead of the controller's private attributes.
+
+    @property
+    def guard(self):
+        """The lock held while reading or changing the set of managed sessions."""
+        return self._mutex
+
+    @property
+    def stopping(self):
+        return self._closed or self._stop.is_set()
+
+    @property
+    def discovery_pages(self):
+        return self._discovery_pages
+
+    def stores(self):
+        with self._mutex:
+            return list(self._stores.values())
+
+    def store_by_id(self, ident):
+        """The session with exactly this local ID, or None; names are not matched."""
+        with self._mutex:
+            return self._stores.get(ident)
+
+    def native_owner(self, native_id, *, excluding=None):
+        """The other managed session that selects this native conversation (as its enrolled thread or its
+        native ID), or None. One session per native conversation is the rule every creation path checks."""
+        with self._mutex:
+            for store in self._stores.values():
+                meta = store.metadata()
+                if meta["id"] == excluding:
+                    continue
+                if native_id in ((meta.get("enrollment") or {}).get("thread_id"), meta.get("native_id")):
+                    return store
+        return None
+
+    def registered_natives(self):
+        """The native conversations Codex sessions already select."""
+        selected = set()
+        for store in self.stores():
+            meta = store.metadata()
+            if meta.get("provider") == "codex":
+                selected.add((meta.get("enrollment") or {}).get("thread_id") or meta.get("native_id"))
+        return selected
+
+    def connection(self, store):
+        meta = store.metadata()
+        return route(meta).connection(self, meta)
+
+    def event_handler(self, generation, owned_id):
+        """The callback a dedicated provider connection uses to deliver its events to this controller."""
+        return lambda message: self._message(message, generation=generation, owned_id=owned_id)
+
+    def owned_provider(self):
         if self._stop.is_set():
             raise ProviderError("The controller is stopping; no provider will be started.")
         if self.provider is not None:
@@ -157,7 +212,7 @@ class SessionController:
                     store.update(state="unknown", error=str(exc), source="Claude initialization unavailable", observed_at=now())
                 return store.snapshot()
             try:
-                client = self._owned_provider()
+                client = self.owned_provider()
                 if model is not None:
                     verify_runtime(self, client)
                 params = {
@@ -186,11 +241,8 @@ class SessionController:
                 store.update(returned_native_id=native_id, client=self.client, startup_context=startup)
                 if Path(result["cwd"]).resolve() != self.project:
                     raise ValueError("Provider returned a different project; the returned identity is retained but not bound.")
-                with self._mutex:
-                    if any((other.metadata().get("native_id") == native_id
-                            or (other.metadata().get("enrollment") or {}).get("thread_id") == native_id)
-                           for key, other in self._stores.items() if key != ident):
-                        raise ValueError("Provider returned another managed conversation's identity.")
+                if self.native_owner(native_id, excluding=ident) is not None:
+                    raise ValueError("Provider returned another managed conversation's identity.")
                 permissions = {key: result[key] for key in ("cwd", "sandbox", "approvalPolicy", "approvalsReviewer")}
                 permissions["source"] = "thread/start response"
                 state = "idle" if thread.get("status", {}).get("type") == "idle" else "unknown"
@@ -233,15 +285,15 @@ class SessionController:
                     generation=self.generation, permissions={}, provider="codex",
                     enrollment=dict(thread_id=thread_id, admission="selected; native ownership unverified"))
                 ident = store.metadata()["id"]
-                self._recovery_attempted.add(ident)
+                self.recovery_attempted.add(ident)
                 self._stores[ident] = store
-            self._resume_enrolled(store)
+            self.resume_enrolled(store)
             return store.snapshot()
 
-    def _resume_enrolled(self, store):
+    def resume_enrolled(self, store):
         from .codex_enrollment import resume as enroll_resume
 
-        self._recovery_attempted.add(store.metadata()["id"])
+        self.recovery_attempted.add(store.metadata()["id"])
         try:
             enroll_resume(self, store)
         except (OSError, ValueError, KeyError, TypeError, sqlite3.Error, subprocess.SubprocessError, ProviderError) as exc:
@@ -250,7 +302,9 @@ class SessionController:
                 client.close()
             store.update(state="unknown", error=str(exc), source="Codex enrollment refused or uncertain; no task sent", observed_at=now())
 
-    def _store(self, ident):
+    _resume_enrolled = resume_enrolled
+
+    def store(self, ident):
         with self._mutex:
             if ident in self._stores:
                 return self._stores[ident]
@@ -258,6 +312,8 @@ class SessionController:
             if len(matches) == 1:
                 return matches[0]
         raise ValueError("Select an existing managed session by its name or ID. Stored history has no native send control.")
+
+    _store = store
 
     def send(self, ident, *, key, body, kind="question", entry="agent"):
         store = self._store(ident)
@@ -284,56 +340,10 @@ class SessionController:
         with self._creation:
             if self._stop.is_set():
                 raise ValueError("The controller is stopping; no provider connection will be started.")
-            if store.metadata().get("enrollment"):
-                prior = self.enrolled_clients.get(store.metadata()["id"])
-                if not prior or not prior.alive or store.metadata()["state"] == "unknown":
-                    self._resume_enrolled(store)
-                return store.snapshot()
-            if store.metadata()["provider"] == "claude":
-                meta = store.metadata()
-                prior = self.claude_clients.get(meta["id"])
-                if prior and prior.alive and meta["state"] != "unknown":
-                    return store.snapshot()
-                if prior:
-                    prior.close()
-                self.claude_clients.pop(meta["id"], None)
-                recover_local_results(store)
-                generation = str(uuid.uuid4())
-                store.reconnect(generation)
-                store.update(generation=generation, state="reconnecting", observed_at=now(), source="exact-ID Claude resume")
-                self._recovery_attempted.add(meta["id"])
-                try:
-                    self.claude_clients[meta["id"]] = self.claude_factory(store, cli_path=self.claude_cli, resume=True)
-                except (OSError, ValueError, RuntimeError, ImportError) as exc:
-                    store.update(state="unknown", error=str(exc), source="Claude resume unavailable; no resend", observed_at=now())
-                return store.snapshot()
-            self.provider_error = None
-            if self.provider is not None and not self.provider.alive:
-                self.provider.close()
-                self.provider = None
-                self.provider_error = None
-                # Native request IDs are scoped to this connection, not the HTTP process.
-                self.generation = str(uuid.uuid4())
-                self._recovery_attempted.clear()
-            if store.metadata()["generation"] == self.generation and store.metadata()["state"] != "unknown":
-                return store.snapshot()
-            self._recovery_attempted.add(store.metadata()["id"])
-            try:
-                resume(self, store)
-            except (OSError, ValueError, KeyError, TypeError, sqlite3.Error, ProviderError) as exc:
-                hold(store)
-                store.update(state="unknown", observed_at=now(), source="resume unavailable; history retained", error=str(exc))
+            route(store.metadata()).resume(self, store)
             return store.snapshot()
 
-    def _connection(self, store):
-        meta = store.metadata()
-        if meta.get("enrollment"):
-            client = self.enrolled_clients.get(meta["id"])
-            return client, client.generation if client else meta["generation"]
-        if meta["provider"] == "claude":
-            client = self.claude_clients.get(meta["id"])
-            return client, client.generation if client else self.generation
-        return self.provider, self.generation
+    _connection = connection
 
     def cancel(self, ident, request_id):
         return self._store(ident).cancel(request_id)
@@ -373,73 +383,13 @@ class SessionController:
 
     def _dispatch(self):
         while not self._stop.wait(0.35):
-            with self._mutex:
-                stores = list(self._stores.values())
-            for store in stores:
+            for store in self.stores():
                 try:
                     meta = store.metadata()
-                    if not model_ready(meta):
-                        continue
-                    if meta["provider"] == "claude":
-                        if meta["id"] not in self.claude_clients and meta["id"] not in self._recovery_attempted:
-                            self.resume(meta["id"])
-                        client = self.claude_clients.get(meta["id"])
-                        if client and client.alive and store.metadata()["state"] == "idle":
-                            claim = store.claim(client.generation)
-                            if claim:
-                                client.submit(claim)
-                        continue
-                    if (meta.get("enrollment") and meta["id"] not in self.enrolled_clients
-                            and meta["id"] not in self._recovery_attempted):
-                        self.resume(meta["id"])
-                        meta = store.metadata()
-                    elif not meta.get("enrollment") and meta["generation"] != self.generation and meta["id"] not in self._recovery_attempted:
-                        self.resume(meta["id"])
-                        meta = store.metadata()
-                    provider, generation = self._connection(store)
-                    if (not model_ready(meta) or meta["generation"] != generation
-                            or meta["state"] not in ("idle", "waiting for idle") or not meta["native_id"]):
-                        continue
-                    snapshot = store.snapshot()
-                    attempted = {row["request_id"] for row in snapshot["attempts"]}
-                    attempted.update(row["request_id"] for row in snapshot["cancellations"])
-                    if not any(ident not in attempted for ident in snapshot["unanswered"]):
-                        continue
-                    if provider is None or not provider.alive:
-                        continue
-                    if meta.get("enrollment"):
-                        from .codex_enrollment import observe
-
-                        observe(self, store, provider)
-                    result = provider.call("thread/read", {"threadId": meta["native_id"]})
-                    thread = result.get("thread", {})
-                    state = thread.get("status", {}).get("type")
-                    if thread.get("id") != meta["native_id"] or state not in ("idle", "active"):
-                        store.update(state="unknown", observed_at=now(), source="thread/read", error="Provider identity or availability is uncertain.")
-                        continue
-                    if state == "active":
-                        store.observe_state(meta["state"], state="waiting for idle", observed_at=now(), source="thread/read")
-                        continue
-                    if store.observe_state(meta["state"], state="idle", observed_at=now(), source="thread/read") is None:
-                        continue  # the state changed during thread/read; decide again on the next cycle
-                    claim = store.claim(generation)
-                    if claim is None:
-                        continue
-                    result = provider.call("turn/start", {
-                        "threadId": claim["native_id"], "clientUserMessageId": claim["id"],
-                        "input": [{"type": "text", "text": claim["request"]["body"]}]},
-                        on_request=lambda rpc_id, target=store, gen=generation: target.rpc_intent(gen, rpc_id))
-                    turn_id = result["turn"]["id"]
-                    store.bind_turn(generation, turn_id)
-                    # Events can precede the RPC response. Bind only the response's actual turn.
-                    for method, params in store.turn_events(turn_id):
-                        self._apply_turn(store, method, params)
-                except (OSError, ValueError, KeyError, TypeError, sqlite3.Error, ProviderError) as exc:
-                    store.uncertain(self._connection(store)[1], str(exc))
-                    if store.metadata().get("enrollment"):
-                        client = self.enrolled_clients.pop(store.metadata()["id"], None)
-                        if client:
-                            client.close()
+                    if model_ready(meta):
+                        route(meta).dispatch(self, store, meta)
+                except DISPATCH_ERRORS as exc:
+                    route(store.metadata()).failed(self, store, exc)
 
     def _message(self, message, *, generation=None, owned_id=None):
         generation = generation or self.generation
@@ -483,9 +433,9 @@ class SessionController:
                            and value in ("accept", "acceptForSession", "decline", "cancel")]
             store.add_decision(generation, message["id"], method, params, choices)
         else:
-            self._apply_turn(store, method, params)
+            self.apply_turn(store, method, params)
 
-    def _apply_turn(self, store, method, params):
+    def apply_turn(self, store, method, params):
         if method not in ("turn/started", "turn/completed"):
             return
         turn = params["turn"]
@@ -499,50 +449,16 @@ class SessionController:
             store.finish(generation, turn["id"], turn["status"],
                          store.final_text(turn["id"], turn.get("items", [])), turn.get("error"))
 
+
+    _apply_turn = apply_turn
+
     def decide(self, ident, decision_id, choice):
         store = self._store(ident)
-        if store.metadata()["provider"] == "claude":
-            client = self.claude_clients.get(store.metadata()["id"])
-            if not client or not client.alive:
-                raise ValueError("The original Claude callback connection is unavailable.")
-            return client.decide(decision_id, choice)
-        provider, generation = self._connection(store)
-        decision = next((row for row in store.snapshot()["decisions"] if row["id"] == decision_id), None)
-        if (decision is None or decision["generation"] != generation or decision["method"] not in DECISIONS
-                or choice not in decision["choices"]):
-            raise ValueError("This choice is unavailable for the originating provider request.")
-        active = store.active(generation)
-        if (provider is None or not provider.alive or active is None
-                or decision["params"].get("threadId") != active["native_id"]
-                or decision["params"].get("turnId") != active["turn_id"]):
-            raise ValueError("The originating provider turn is not correlated on this live connection; no answer was sent.")
-        row = store.answer_intent(generation, decision_id, {"decision": choice})
-        try:
-            provider.respond(json.loads(row["rpc_id"]), {"decision": choice})
-        except ProviderError:
-            store.decision_state(decision_id, "uncertain")
-            raise
-        store.decision_state(decision_id, "sent")
-        return dict(state="sent", decision=decision_id)
+        return route(store.metadata()).decide(self, store, decision_id, choice)
 
     def interrupt(self, ident):
         store = self._store(ident)
-        if store.metadata()["provider"] == "claude":
-            client = self.claude_clients.get(store.metadata()["id"])
-            active = store.active(client.generation) if client else None
-            if not active or not client.alive:
-                raise ValueError("No correlated Claude work is active on this connection.")
-            with store.channel.transaction() as conn:
-                conn.execute("UPDATE awkit_delivery SET interruption_requested=?,updated=? WHERE id=?", (now(), now(), active["id"]))
-            client.interrupt()
-            return dict(state="interrupt requested", task_result="unverified")
-        provider, generation = self._connection(store)
-        active = store.active(generation)
-        if active is None or not active["turn_id"] or provider is None or not provider.alive:
-            raise ValueError("There is no observed live turn to interrupt on this connection.")
-        store.interruption(generation, active["turn_id"])
-        provider.call("turn/interrupt", {"threadId": active["native_id"], "turnId": active["turn_id"]})
-        return dict(state="interrupt requested", task_result="unverified")
+        return route(store.metadata()).interrupt(self, store)
 
     def status(self, *, session=None, request=None):
         from .session_reading import SelectorError, decision_request, exact_request, selectors
@@ -569,19 +485,13 @@ class SessionController:
             snapshot = store.snapshot()
             meta = snapshot["session"]
             if request is not None:
-                if meta.get("enrollment"):
-                    provider = self.enrolled_clients.get(meta["id"])
-                elif meta["provider"] == "claude":
-                    provider = self.claude_clients.get(meta["id"])
-                else:
-                    provider = self.provider
-                generation = provider.generation if provider and (meta.get("enrollment") or meta["provider"] == "claude") else self.generation
+                provider, generation = route(meta).request_connection(self, meta)
             else:
-                provider, generation = self._connection(store)
+                provider, generation = route(meta).connection(self, meta)
             connected = bool(provider and provider.alive and meta["generation"] == generation)
             age = (datetime.now(UTC) - datetime.fromisoformat(meta["observed_at"])).total_seconds()
             can_send = (connected and model_ready(meta) and bool(meta["native_id"] or meta.get("requested_native_id")) and not snapshot["closed"]
-                        and meta["state"] in ("idle", "waiting for idle", "running", "accepted", "decision needed", "submitting"))
+                        and meta["state"] in states.SENDABLE)
             reason = ("The requested Codex configuration is unverified or differs from its creation receipt. Work remains held."
                       if not model_ready(meta) else "This channel is closed." if snapshot["closed"] else
                       "Conversation state is uncertain. Inspect unfinished work; reconnecting never resends uncertain work." if connected else
@@ -602,7 +512,7 @@ class SessionController:
 
             if request is not None:
                 candidates = [row for row in snapshot["attempts"] if row["generation"] == generation
-                              and row["state"] in ("admitting", "accepted", "executing", "uncertain")]
+                              and row["state"] in states.ATTEMPT_LIVE]
                 active = candidates[0] if len(candidates) == 1 else None
                 snapshot["configuration_held"] = not model_ready(meta)
                 snapshot["scoped_control_reason"] = ("Requested configuration held." if not model_ready(meta) else
@@ -614,7 +524,7 @@ class SessionController:
             snapshot["update_target"] = (dict(request_id=active["request_id"], expected_turn_id=active["turn_id"],
                 native_id=meta["native_id"], observed_at=meta["observed_at"], source=meta["source"])
                 if connected and model_ready(meta) and supported(meta) and not snapshot["closed"] and active and active["turn_id"]
-                and active["state"] in ("accepted", "executing") and meta["state"] in ("running", "accepted", "decision needed") else None)
+                and active["state"] in states.ATTEMPT_STARTED and meta["state"] in states.WORKING else None)
             views.append(snapshot)
         if not selection:
             try:

@@ -120,12 +120,8 @@ def resume(controller, store):
     selected = meta["enrollment"]["thread_id"]
     if not isinstance(selected, str) or str(uuid.UUID(selected)) != selected or meta["native_id"] not in (None, selected):
         raise ValueError("Saved enrolled identity is invalid or conflicts with the selected native identity.")
-    with controller._mutex:
-        for other in controller._stores.values():
-            data = other.metadata()
-            target = (data.get("enrollment") or {}).get("thread_id") or data.get("native_id")
-            if data["id"] != meta["id"] and target == selected:
-                raise ValueError("Another local registration selects this native identity; no writer was opened.")
+    if controller.native_owner(selected, excluding=meta["id"]) is not None:
+        raise ValueError("Another local registration selects this native identity; no writer was opened.")
     old = controller.enrolled_clients.pop(meta["id"], None)
     if old:
         old.close()
@@ -142,7 +138,7 @@ def resume(controller, store):
     client = None
     try:
         client = controller.provider_factory([inspected["executable"]], controller.project,
-            lambda message: controller._message(message, generation=generation, owned_id=meta["id"]), experimental=True)
+            controller.event_handler(generation, meta["id"]), experimental=True)
         client.generation = generation
         home = client.initialization.get("codexHome")
         if not home or Path(home).resolve() != Path(inspected["codex_home"]).resolve():

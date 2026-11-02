@@ -24,6 +24,21 @@ class SessionStoreTests(unittest.TestCase):
                                          permissions={"requested": "read-only"})
         self.store.update(native_id="native-a", state="idle")
 
+    def test_an_undeclared_session_state_is_refused_and_the_dispatcher_query_is_cheap(self):
+        from awkit import session_states as states
+        with self.assertRaisesRegex(ValueError, "Undeclared session state"):
+            self.store.update(state="idel")
+        self.assertEqual(self.store.metadata()["state"], "idle")
+        for state in states.SESSION:
+            self.store.update(state=state)
+        self.store.update(state="idle")
+        # The dispatcher asks only whether a request waits, and claim takes the same request.
+        self.assertFalse(self.store.has_pending_request())
+        request = self.store.post("pending", "One invented assignment")
+        self.assertTrue(self.store.has_pending_request())
+        self.assertEqual(self.store.claim("generation-a")["request"]["id"], request["id"])
+        self.assertFalse(self.store.has_pending_request())
+
     def test_cancel_and_dispatch_reservation_serialize_on_the_same_database(self):
         request = self.store.post("cancel-race", "A single contested assignment")
         barrier = threading.Barrier(2)

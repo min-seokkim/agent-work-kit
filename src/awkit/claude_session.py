@@ -14,6 +14,7 @@ import uuid
 from dataclasses import asdict, is_dataclass
 from pathlib import Path
 
+from . import session_states as states
 from .codex_session import ProviderError
 from .session_models import claude_observe, claude_options, claude_submitted
 from .session_store import now
@@ -61,7 +62,7 @@ def recover_local_results(store):
         events = [(row["generation"], json.loads(row["payload"])) for row in conn.execute(
             "SELECT generation,payload FROM awkit_events WHERE method='claude/result' ORDER BY seq")]
     for attempt in store.snapshot()["attempts"]:
-        if attempt["state"] in ("returned", "failed", "no-reply") or not attempt["input_echoed"]:
+        if attempt["state"] in states.ATTEMPT_FINISHED or not attempt["input_echoed"]:
             continue
         for generation, result in events:
             if (generation != attempt["generation"] or result.get("matched_input") != attempt["provider_input_id"]

@@ -1,5 +1,6 @@
 """One exact active-turn input on an existing owned Codex connection; never queued or replayed."""
 
+from . import session_states as states
 from .codex_enrollment import EXECUTABLE_SHA256, VERSION, local_path
 from .codex_session import ProviderError, ProviderRejected
 from .session_store import now
@@ -14,11 +15,11 @@ def supported(meta):
 
 
 def submit(controller, ident, *, key, request_id, expected_turn_id, body, entry="agent"):
-    store = controller._store(ident)
+    store = controller.store(ident)
     if entry not in ("agent", "human"):
         raise ValueError("Unsupported update entry.")
-    with controller._mutex:
-        for other in controller._stores.values():
+    with controller.guard:
+        for other in controller.stores():
             if other.posted_key(key):
                 raise ValueError("This caller key already names a stored message; choose a fresh update key.")
             existing = next((row for row in other.turn_updates() if row["key"] == key), None)
@@ -28,12 +29,12 @@ def submit(controller, ident, *, key, request_id, expected_turn_id, body, entry=
                     raise ValueError("This update key already names different input or target; no provider call was made.")
                 return dict(session=store.metadata()["id"], update=existing, state=existing["state"], recovered=True)
         meta = store.metadata()
-        provider, generation = controller._connection(store)
+        provider, generation = controller.connection(store)
         if not supported(meta):
             raise ValueError("Exact-turn updates require the verified Codex runtime.")
         if provider is None or not provider.alive or meta["generation"] != generation:
             raise ValueError("Exact-turn updates require an available owned connection on the verified Codex runtime.")
-        if meta["state"] not in ("running", "accepted", "decision needed"):
+        if meta["state"] not in states.WORKING:
             raise ValueError("No active turn is currently observed for this conversation. Read its latest result before sending a new assignment.")
         intent = store.turn_update_intent(generation, key=key, request_id=request_id,
             expected_turn_id=expected_turn_id, body=body, entry=entry)

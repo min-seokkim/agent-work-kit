@@ -84,10 +84,10 @@ def _eligible(controller, client, generation, evidence):
 
 
 def _capture(controller):
-    if controller._closed or controller._stop.is_set():
+    if controller.stopping:
         return None
     for ident, client in controller.enrolled_clients.items():
-        store = controller._stores.get(ident)
+        store = controller.store_by_id(ident)
         if store is None:
             continue
         meta = store.metadata()
@@ -112,7 +112,7 @@ def discover(controller, *, cursor=None, limit=20):
     def unavailable(reason):
         return dict(available=False, reason=reason, project=str(controller.project), conversations=[], next_cursor=None)
 
-    with controller._mutex:
+    with controller.guard:
         try:
             captured = _capture(controller)
         except (OSError, ValueError, KeyError, TypeError, RuntimeError, sqlite3.Error):
@@ -120,9 +120,7 @@ def discover(controller, *, cursor=None, limit=20):
         if captured is None:
             return unavailable(UNAVAILABLE)
         client, generation, owner, launch_scope = captured
-        pages = getattr(controller, "_discovery_pages", None)
-        if pages is None:
-            pages = controller._discovery_pages = {}
+        pages = controller.discovery_pages
         # Readers have independent sequences; retain only bounded, expiring cursor metadata.
         scope = (client, generation, owner, (str(controller.project), launch_scope), limit)
         instant = time.monotonic()
@@ -147,18 +145,14 @@ def discover(controller, *, cursor=None, limit=20):
         return unavailable(UNSUPPORTED if exc.code in (-32601, -32602) else FAILED)
     except (OSError, ValueError, KeyError, TypeError, ProviderError):
         return unavailable(FAILED)
-    with controller._mutex:
+    with controller.guard:
         try:
             current = _capture(controller)
         except (OSError, ValueError, KeyError, TypeError, RuntimeError, sqlite3.Error):
             current = None
         if current != captured:
             return unavailable(INVALID_CURSOR)
-        registered = set()
-        for store in controller._stores.values():
-            meta = store.metadata()
-            if meta.get("provider") == "codex":
-                registered.add((meta.get("enrollment") or {}).get("thread_id") or meta.get("native_id"))
+        registered = controller.registered_natives()
         rows = [dict(row, registered=row["id"] in registered) for row in result["conversations"]]
         token = None
         if result["next_cursor"] is not None:

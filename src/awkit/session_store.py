@@ -10,6 +10,7 @@ import uuid
 from datetime import UTC, datetime
 from pathlib import Path
 
+from . import session_states as states
 from .channel import REQUESTS, Channel
 from .session_models import ready as model_ready
 
@@ -123,6 +124,8 @@ class SessionStore:
 
     @staticmethod
     def _update(conn, **fields):
+        if "state" in fields and fields["state"] not in states.SESSION:
+            raise ValueError(f"Undeclared session state {fields['state']!r}; add it to session_states.SESSION.")
         data = SessionStore._metadata(conn)
         data.update(fields)
         conn.execute("UPDATE awkit_session SET data=? WHERE singleton=1", (encoded(data),))
@@ -162,6 +165,26 @@ class SessionStore:
             conn.execute("INSERT INTO awkit_posts VALUES (?,?,?,?)", (key, message, entry, now()))
             return dict(conn.execute("SELECT * FROM messages WHERE id=?", (message,)).fetchone())
 
+    @staticmethod
+    def _pending_request(conn):
+        """The oldest request with no reply, no delivery attempt and no cancellation, or None."""
+        placeholders = ",".join("?" for _ in REQUESTS)
+        return conn.execute(
+            f"SELECT m.* FROM messages m WHERE m.receiver='reviewer' AND m.kind IN ({placeholders}) "
+            "AND NOT EXISTS(SELECT 1 FROM messages r WHERE r.sender='reviewer' AND r.reply_to=m.id) "
+            "AND NOT EXISTS(SELECT 1 FROM awkit_delivery d WHERE d.request_id=m.id) "
+            "AND NOT EXISTS(SELECT 1 FROM awkit_cancellations c WHERE c.request_id=m.id) ORDER BY m.seq LIMIT 1",
+            REQUESTS).fetchone()
+
+    def has_pending_request(self):
+        """Whether a request waits to be sent; one indexed query instead of a full snapshot."""
+        with self.channel.transaction(write=False) as conn:
+            return self._pending_request(conn) is not None
+
+    def request_interruption(self, attempt_id):
+        with self.channel.transaction() as conn:
+            conn.execute("UPDATE awkit_delivery SET interruption_requested=?,updated=? WHERE id=?", (now(), now(), attempt_id))
+
     def claim(self, generation):
         """Reserve one idle request durably before the provider can see it."""
         with self.channel.transaction() as conn:
@@ -173,13 +196,7 @@ class SessionStore:
                 return None
             if conn.execute("SELECT 1 FROM messages WHERE kind='close'").fetchone():
                 return None
-            placeholders = ",".join("?" for _ in REQUESTS)
-            request = conn.execute(
-                f"SELECT m.* FROM messages m WHERE m.receiver='reviewer' AND m.kind IN ({placeholders}) "
-                "AND NOT EXISTS(SELECT 1 FROM messages r WHERE r.sender='reviewer' AND r.reply_to=m.id) "
-                "AND NOT EXISTS(SELECT 1 FROM awkit_delivery d WHERE d.request_id=m.id) "
-                "AND NOT EXISTS(SELECT 1 FROM awkit_cancellations c WHERE c.request_id=m.id) ORDER BY m.seq LIMIT 1",
-                REQUESTS).fetchone()
+            request = self._pending_request(conn)
             if request is None:
                 return None
             ident, at = str(uuid.uuid4()), now()
@@ -193,7 +210,7 @@ class SessionStore:
     @staticmethod
     def _active(conn, generation):
         return conn.execute("SELECT * FROM awkit_delivery WHERE generation=? AND state IN "
-                            "('admitting','accepted','executing','uncertain') ORDER BY created DESC LIMIT 1",
+                            f"{states.sql(states.ATTEMPT_LIVE)} ORDER BY created DESC LIMIT 1",
                             (generation,)).fetchone()
 
     def bind_turn(self, generation, turn_id, *, executing=False):
@@ -264,7 +281,7 @@ class SessionStore:
                 raise ValueError("The explicit model selection is held; no update intent was recorded.")
             active = self._active(conn, generation)
             if (meta["provider"] != "codex" or meta["generation"] != generation or active is None
-                    or active["state"] not in ("accepted", "executing") or not expected_turn_id
+                    or active["state"] not in states.ATTEMPT_STARTED or not expected_turn_id
                     or active["turn_id"] != expected_turn_id or active["request_id"] != request_id
                     or active["native_id"] != meta["native_id"]
                     or conn.execute("SELECT 1 FROM messages WHERE kind='close'").fetchone()):
@@ -285,7 +302,7 @@ class SessionStore:
             return self._finish(conn, row, outcome, text, error, "turn/completed")
 
     def _finish(self, conn, row, outcome, text, error, source, *, next_state="idle"):
-        if row is None or row["state"] in ("returned", "failed", "no-reply"):
+        if row is None or row["state"] in states.ATTEMPT_FINISHED:
             return False
         reply = None
         if text.strip():
@@ -310,7 +327,7 @@ class SessionStore:
         with self.channel.transaction() as conn:
             row = conn.execute("SELECT * FROM awkit_delivery WHERE generation=? AND provider_input_id=? AND input_echoed=1",
                                (generation, input_id)).fetchone()
-            if row is None or row["state"] in ("returned", "failed", "no-reply"):
+            if row is None or row["state"] in states.ATTEMPT_FINISHED:
                 return False
             if result_id and conn.execute("SELECT 1 FROM awkit_delivery WHERE provider_result_id=? AND id!=?",
                                           (result_id, row["id"])).fetchone():
@@ -339,7 +356,7 @@ class SessionStore:
     def resolve_decisions(self, generation, rpc_id, thread_id):
         with self.channel.transaction() as conn:
             rows = conn.execute("SELECT id,params FROM awkit_decisions WHERE generation=? AND rpc_id=? "
-                                "AND state IN ('pending','sending','sent','uncertain')", (generation, encoded(rpc_id))).fetchall()
+                                f"AND state IN {states.sql(states.DECISION_OPEN)}", (generation, encoded(rpc_id))).fetchall()
             for row in rows:
                 if json.loads(row["params"]).get("threadId") == thread_id:
                     conn.execute("UPDATE awkit_decisions SET state='resolved',updated=? WHERE id=?", (now(), row["id"]))
@@ -374,9 +391,9 @@ class SessionStore:
         """Keep provenance while moving unfinished attempts onto the new owned route."""
         with self.channel.transaction() as conn:
             conn.execute("UPDATE awkit_delivery SET generation=?,state='unresolved',updated=? "
-                         "WHERE state IN ('admitting','accepted','executing','uncertain','unresolved')", (generation, now()))
+                         f"WHERE state IN {states.sql(states.ATTEMPT_RECONNECTABLE)}", (generation, now()))
             conn.execute("UPDATE awkit_decisions SET state='route unavailable',updated=? "
-                         "WHERE generation!=? AND state IN ('pending','sending','sent','uncertain')", (now(), generation))
+                         f"WHERE generation!=? AND state IN {states.sql(states.DECISION_OPEN)}", (now(), generation))
 
     def recover_turn(self, generation, attempt_id, turn_id, *, running=False):
         with self.channel.transaction() as conn:

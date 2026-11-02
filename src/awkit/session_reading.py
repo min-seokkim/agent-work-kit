@@ -2,6 +2,7 @@
 
 from copy import deepcopy
 
+from . import session_states as states
 from .channel import ID, REQUESTS
 
 
@@ -214,7 +215,7 @@ def dispositions(view):
                 "failed": "provider " + str(attempt["outcome"]) + "; no reply. Send a new assignment if further work is needed.",
                 "no-reply": "provider " + str(attempt["outcome"]) + "; no reply. Send a new assignment if further work is needed.",
             }.get(stage, "recorded provider disposition unavailable")
-            if attempt.get("interruption_requested") and stage in ("admitting", "accepted", "executing"):
+            if attempt.get("interruption_requested") and stage in states.ATTEMPT_RUNNING:
                 label = "interruption requested; outcome pending; " + label
         rows.append(dict(request_id=ident, state=label, dispatch_state=stage,
                          attempt_id=attempt["id"] if attempt else None, reply_id=reply["id"] if reply else None,

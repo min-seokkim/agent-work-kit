@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+from . import session_states as states
 from .codex_session import ProviderError
 from .session_models import observe as observe_model
 from .session_models import selected, verify_runtime
@@ -28,7 +29,7 @@ def pages(provider, method, params):
 def recover_completed(store):
     # A completed event persisted before a local crash is sufficient to publish its original reply.
     for attempt in store.snapshot()["attempts"]:
-        if attempt["state"] in ("returned", "failed", "no-reply") or not attempt["turn_id"]:
+        if attempt["state"] in states.ATTEMPT_FINISHED or not attempt["turn_id"]:
             continue
         for method, params in store.turn_events(attempt["turn_id"]):
             turn = params.get("turn", {})
@@ -52,7 +53,7 @@ def resume(controller, store):
     sandbox = {"readOnly": "read-only", "workspaceWrite": "workspace-write"}.get(sandbox, sandbox)
     if sandbox not in ("read-only", "workspace-write"):
         raise ValueError("Saved permission scope cannot be resumed safely by this controller.")
-    provider = controller._owned_provider()
+    provider = controller.owned_provider()
     if selected(meta):
         verify_runtime(controller, provider)
     result = provider.call("thread/resume", dict(threadId=native_id, cwd=str(controller.project),
@@ -111,7 +112,7 @@ def reconcile(controller, store, provider, *, thread=None):
             elif turn["status"] == "inProgress" and thread.get("status", {}).get("type") == "active":
                 store.recover_turn(generation, attempt["id"], turn["id"], running=True)
                 for method, params in store.turn_events(turn["id"]):
-                    controller._apply_turn(store, method, params)
+                    controller.apply_turn(store, method, params)
     # Observe after history: a stale active history entry is not proof of a live turn.
     observed = provider.call("thread/read", {"threadId": native_id})["thread"]
     if observed["id"] != native_id or observed.get("status", {}).get("type") not in ("idle", "active"):

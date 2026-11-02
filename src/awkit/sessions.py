@@ -26,7 +26,7 @@ from .session_models import validate as validate_model
 from .session_recovery import resume
 from .session_store import SessionStore, now
 
-PREVENTS = {"awkit session": ("F24", "F29")}
+PREVENTS = {"awkit session": ("F1", "F29")}
 DECISIONS = {"item/commandExecution/requestApproval", "item/fileChange/requestApproval"}
 
 

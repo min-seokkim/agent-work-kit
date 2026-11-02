@@ -32,7 +32,7 @@ Nine sessions were measured between `6482bc7` and `83db970`; the table is in Git
 
 The largest cost of the period is not in the table. Over six days (`0e33ff6` to `2ef5040`) sessions authorized to choose their own work built session and storage features no roadmap item asked for, made 19 of 44 commits as record changes only, grew the records to 92,000 words, and once waited three hours for a decision. The owner caught it, not a guard (F28, F12). The guards against it are now the roadmap's Ready table, the record rule in AGENTS.md and the test on `docs/`.
 
-What follows: a guard candidate needs an occurrence in the catalogue, and F11, F16, F21, F22 and F29 have one. Entries with no occurrence after this period are removed or merged.
+What follows: a guard candidate needs an occurrence in the catalogue, and F11, F16, F21, F22 and F29 have one. The nine entries without one were merged into entries that have one, or removed (F18); F2 and F26 gained occurrences from the CI audit. No new check was built for F16, F21 or F22: each recorded occurrence was lost meaning (dropped conditions, an omitted decision, an inference stated as an observation) that only a reader comparing against the source catches. Their guards are the move-a-whole-topic rule, the handoff fields and review. F11 and F29 already have `doctor` and `kit scan` checks.
 
 ## Decisions
 

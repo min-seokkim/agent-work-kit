@@ -247,7 +247,7 @@ class Research(Project):
 
 class Delivery(Project):
     def test_a_push_gets_the_guide_line(self):
-        self.assertIn("awkit delivery (F24)", self.context(self.bash("git push -u origin dev")))
+        self.assertIn("awkit delivery (F1)", self.context(self.bash("git push -u origin dev")))
 
     def test_local_commands_print_nothing(self):
         self.assertIsNone(self.bash("git stash push -m wip && git status"))

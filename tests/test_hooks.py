@@ -187,7 +187,7 @@ class KoreanWritingRule(Project):
 class ResearchRule(Project):
     def test_first_web_search_or_fetch_gets_the_guide_once(self):
         text = self.context(self.tool("WebSearch", {"query": "hook contract"}))
-        self.assertTrue(text.startswith("awkit research (F23, F37): "))
+        self.assertTrue(text.startswith("awkit research (F37): "))
         self.assertLessEqual(len(text.split(": ", 1)[1]), hooks.MESSAGE_LIMIT)
         self.assertIsNone(self.tool("WebFetch", {"url": "https://example.com"}))
         self.assertEqual([(e["rule"], e["decision"]) for e in self.log()], [("research", "context")])
@@ -199,7 +199,7 @@ class ResearchRule(Project):
 
 class DeliveryRule(Project):
     def test_push_and_upload_commands_get_the_guide(self):
-        self.assertIn("awkit delivery (F24)", self.context(self.bash("git push -u origin dev")))
+        self.assertIn("awkit delivery (F1)", self.context(self.bash("git push -u origin dev")))
         self.assertIsNotNone(self.bash("twine upload dist/*", session="s2"))
         self.assertIsNotNone(self.bash("rsync -a site/ host:/srv/site", session="s3"))
 
@@ -210,7 +210,7 @@ class DeliveryRule(Project):
 
 class DelegationRule(Project):
     def test_starting_a_subagent_gets_the_guide(self):
-        self.assertIn("awkit delegation (F19, F21)", self.context(self.tool("Agent", {"prompt": "review"})))
+        self.assertIn("awkit delegation (F21)", self.context(self.tool("Agent", {"prompt": "review"})))
         # Codex calls the tool spawn_agent; it matches rules written for Agent.
         self.assertIsNotNone(self.tool("spawn_agent", {"message": "review"}, session="codex"))
 

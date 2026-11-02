@@ -8,14 +8,12 @@ What to work on in this repository. An agent picks the highest Ready item it can
 |---|---|
 | Check that the Windows file-replacement retry from `7e82e3f` also covers acceptance directory promotion in `review accept`, which failed with WinError 5 in real use. | A test holds the target open and acceptance still succeeds, or the gap is fixed. |
 | Run the [snapshot recipe](../kit/reference.md#snapshot) on Linux. It has only been exercised on Windows. | The recipe works in bash or the reference gives a POSIX form, with a test. |
-| Design one check for a failure entry with a recorded occurrence: F11, F16, F21, F22 or F29 in [kit/failures.md](../kit/failures.md). A guard that can be a check becomes a `rules.toml` rule. | A rule or command fires on a fixture built from the recorded occurrence, with a `PREVENTS` declaration and the guard table regenerated. Or a written finding that no check could have caught it. |
-| Remove or merge the nine failure entries still marked "needs evidence" (F2, F17, F18, F19, F20, F23, F24, F26, F27). Months of real use produced no occurrence; the design keeps only entries with one. | Each entry is removed or merged into one with an occurrence, every `Prevents:` line and guide text that named it is updated, the guard table is regenerated and the CHANGELOG says so. |
 
 ## Blocked
 
 | Item | What unblocks it, and who |
 |---|---|
-| Usage accounting against current clients: a counting unit and matching across log files. A call-count guard (F18) would depend on it. | The owner supplies fresh Claude Desktop and Codex logs and decides what one call means. |
+| Usage accounting against current clients: a counting unit and matching across log files. A call-count guard would depend on it. | The owner supplies fresh Claude Desktop and Codex logs and decides what one call means. |
 | Storage growth of shared artifact storage on a real continuation. One copied run is 42.8 MB; the first shared run with one changed file added 284 KB plus a 4.8 KB object. Near-identical repeats prove nothing. | The owner's target project runs a continuation that changes outputs; that session records the increment against a copied counterfactual. |
 | Two-environment trial: a file-access-only reviewer on another computer, and recovery of an interrupted request on an execution-capable client. | The owner makes another computer available. |
 | Attach to existing IDE sessions; enroll foreign Claude sessions; list live Claude sessions. | A provider endpoint. Codex has none (socket error 10050). The owner says which outcome they want when one appears. |

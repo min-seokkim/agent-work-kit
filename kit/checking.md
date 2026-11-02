@@ -10,7 +10,7 @@ Use the project's `[[setup]]` steps for [dependency preparation](reference.md#ch
 
 Use the commands recorded in the [project profile](templates/project.md). Do not assume a test tool exists because of the programming language. Use argument arrays, or name the shell when shell syntax is required. Record the working directory, the command, the revision, the exit code, the output location and the scope of each check, without secrets. For checks a person does, state the method and its limits and keep them apart from automated results.
 
-Prevents: F3, F11, F17.
+Prevents: F1, F3, F11.
 
 ## Shared resources and processes
 

@@ -21,7 +21,7 @@ from pathlib import Path
 
 # The failure catalogue entries (kit/failures.md) this command guards against: unmeasured values
 # reported as zero, and a subagent's self-reported model.
-PREVENTS = {"awkit usage": ("F6", "F20")}
+PREVENTS = {"awkit usage": ("F6", "F11")}
 
 FORMAT = 3
 FIELDS = ("fresh_input", "cache_write", "cache_read", "output")

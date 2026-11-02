@@ -29,11 +29,11 @@ def git(repo, *args, env=None):
 IDENTITY = ("-c", "user.name=Agent Work Kit", "-c", "user.email=awkit@localhost")
 
 # The failure catalogue entries (kit/failures.md) each command guards against.
-PREVENTS = {"awkit review snapshot": ("F17",), "awkit review check": ("F2", "F7", "F17", "F26"),
+PREVENTS = {"awkit review snapshot": ("F1",), "awkit review check": ("F1", "F2", "F7", "F26"),
             "awkit review accept": ("F16",), "awkit review compare": ("F16",),
             "awkit review storage": ("F6", "F7"),
             "awkit review preview": ("F6", "F7", "F11"),
-            "awkit review export": ("F7", "F16", "F17"),
+            "awkit review export": ("F1", "F7", "F16"),
             "awkit kit init --commit and kit example (commit only what they wrote)": ("F8", "F9")}
 
 

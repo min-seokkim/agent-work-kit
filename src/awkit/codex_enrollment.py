@@ -12,7 +12,7 @@ from pathlib import Path
 from .session_recovery import reconcile, recover_completed
 from .session_store import now
 
-PREVENTS = {"awkit session enroll": ("F24", "F25", "F29")}
+PREVENTS = {"awkit session enroll": ("F1", "F25", "F29")}
 VERSION = "codex-cli 0.164.0-alpha.11.1"
 EXECUTABLE_SHA256 = "4fd2f057bad603bf53dc202457ffd0c3591de62e867a8b01e73816e3fbce5a73"
 POLICY_FIELDS = ("cwd", "sandbox", "approvalPolicy", "approvalsReviewer", "runtimeWorkspaceRoots", "activePermissionProfile")

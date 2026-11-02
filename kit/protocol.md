@@ -33,7 +33,7 @@ The coordinator defines scope and acceptance criteria and assigns file ownership
 
 One session may perform multiple roles when permitted. When work spans sessions, assign ownership to avoid concurrent edits to the same file. Use delegation capabilities authorized in the current environment. This document does not authorize calls to other agents or data transfers.
 
-Prevents: F19.
+Prevents: F21.
 
 ## Reviews and decisions
 
@@ -41,7 +41,7 @@ Each finding in the [review record](templates/review.md) includes reproduction c
 
 Closing a channel is not a review pass. Resolve findings that block completion, or record who must decide and what it affects; a question the project's instructions already settle needs no new decision. Design approval alone does not mean implementation or deployment is complete.
 
-Prevents: F18.
+Prevents: F1.
 
 ## Resume after interruption
 

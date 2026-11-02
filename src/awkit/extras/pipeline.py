@@ -19,7 +19,7 @@ from ..records import LABEL, atomic_json, stamp
 
 # The failure catalogue entry (kit/failures.md) this command guards against: a successful command
 # taken as a live release.
-PREVENTS = {"awkit pipeline": ("F24",)}
+PREVENTS = {"awkit pipeline": ("F1",)}
 
 RELEASE = re.compile(r"[0-9a-f]{7,64}\Z")
 PHASES = ("preflight", "backup", "deploy", "verify", "rollback")

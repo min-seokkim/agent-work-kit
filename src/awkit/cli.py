@@ -22,7 +22,7 @@ def _step_error():
 REFERENCE = ("Formats, rules and exit codes are in agent-work-kit/reference.md "
              "(kit/reference.md in the awkit repository).")
 DECISION_CHOICES = ("accept", "acceptForSession", "decline", "cancel", "allow", "deny")
-PREVENTS = {"awkit session decide": ("F24", "F29")}
+PREVENTS = {"awkit session decide": ("F1", "F29")}
 
 
 def _parser():

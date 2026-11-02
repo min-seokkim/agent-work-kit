@@ -9,7 +9,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 # Local state must not enter a published source submission.
-PREVENTS = {"awkit managed project state": ("F7", "F24")}
+PREVENTS = {"awkit managed project state": ("F1", "F7")}
 LOCK_SECONDS = 5
 # Windows refuses to create a file whose previous copy another process is still deleting, with EACCES instead
 # of EEXIST; for the lock that means "busy". Elsewhere a permission error is a real one.

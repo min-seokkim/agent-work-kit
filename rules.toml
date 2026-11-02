@@ -75,7 +75,7 @@ message = "Keep one ending style, no middle dots joining words and no translatio
 
 [[rules]]
 name = "research"
-prevents = ["F23", "F37"]
+prevents = ["F37"]
 kind = "inject"
 events = ["PreToolUse"]
 tools = ["WebSearch", "WebFetch", "web_search"]
@@ -83,7 +83,7 @@ message = "Pick sources that answer the question asked, cite what you read and r
 
 [[rules]]
 name = "delivery"
-prevents = ["F24"]
+prevents = ["F1"]
 kind = "inject"
 events = ["PreToolUse"]
 tools = ["Bash"]
@@ -92,7 +92,7 @@ message = "A delivery is done when the recipient sees it. After this command, ch
 
 [[rules]]
 name = "delegation"
-prevents = ["F19", "F21"]
+prevents = ["F21"]
 kind = "inject"
 events = ["PreToolUse"]
 tools = ["Agent"]

@@ -4,7 +4,7 @@ from .codex_enrollment import EXECUTABLE_SHA256, VERSION, local_path
 from .codex_session import ProviderError, ProviderRejected
 from .session_store import now
 
-PREVENTS = {"awkit session update": ("F24", "F25", "F29")}
+PREVENTS = {"awkit session update": ("F1", "F25", "F29")}
 
 
 def supported(meta):

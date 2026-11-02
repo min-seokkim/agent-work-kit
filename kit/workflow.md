@@ -10,7 +10,7 @@ Settle the form of help: the agent does the work, the user does it with hints, o
 
 Read each statement from the user as a hypothesis, a constraint or a decision. A user new to a field often proposes an approach to have it evaluated: give the standard approach, the strengths and weaknesses of theirs and the alternatives, and name the premise or step you disagree with. Building on every idea as a requirement produces a design that follows the conversation instead of the problem.
 
-Prevents: F8, F19, F28, F35.
+Prevents: F8, F21, F28, F35.
 
 ## Do the work
 
@@ -26,7 +26,7 @@ Keep every run. When a check fails and a rerun passes, explain the first failure
 
 A tool's success is not the result. A message counts as delivered when the recipient can see it, a setting as applied when the program reports it, a release as live when its running version answers. Record which was observed and which inferred.
 
-Prevents: F1, F2, F3, F17, F24.
+Prevents: F1, F2, F3.
 
 ## Report
 

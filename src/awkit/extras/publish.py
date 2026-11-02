@@ -15,7 +15,7 @@ from ..records import replace
 from ..review import relative_file
 
 # The failure catalogue entries (kit/failures.md) this command guards against.
-PREVENTS = {"awkit publish": ("F5", "F24")}
+PREVENTS = {"awkit publish": ("F1", "F5")}
 
 
 def digest(data):

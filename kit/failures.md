@@ -7,7 +7,7 @@ Evidence comes in two kinds, never with names, dates, company names or personal 
 - Observed in awkit's development: cited by commit ID in the awkit repository.
 - Owner's records: the awkit owner's own record of the corrections they made while having agents write documents (project and operations documents, reports for non-developers, UI text and CLI output, application documents) and while using agents for research, explanations, troubleshooting and purchase decisions. The records are not published; occurrences are described without identifying details.
 
-Entries carried over from the kit's earlier versions were written from sessions whose records were not kept; they are marked "needs evidence" until an occurrence is recorded, and are removed after real-work measurement if none is.
+Entries without a recorded occurrence were merged into an entry that has one or removed after the first measurement of real work; the numbers of merged entries are not reused.
 
 ## Rules for entries
 
@@ -25,16 +25,16 @@ Each Check field starts with the kind of guard. `block` refuses a tool call befo
 
 #### F1. Done without a check on the delivered version.
 
-The agent reports success, but the checks ran on another state of the files, or did not run. For documents, the text was edited but the rendered output (line breaks, tables, page fit) was never looked at.
+The agent reports success, but the checks ran on another state of the files, or did not run; the version reviewed is not the one shipped; or a command's success is taken as the result, so a message is assumed delivered, a setting applied or a release live. For documents, the text was edited but the rendered output (line breaks, tables, page fit) was never looked at.
 - Evidence: owner's records. A documentation site was about to be committed with broken line breaks, which the owner found ("let's undo the commit and fix the line breaks"; "is there anything else to check before committing? I want to stop looking at this"). A table broke after IDs were replaced with long names.
-- Countermeasure: check a frozen snapshot and report its run folder; for documents, inspect the rendered output before reporting.
+- Countermeasure: check and review a frozen snapshot and report its run folder; observe the end state where the recipient sees it; for documents, inspect the rendered output before reporting.
 - Check: Kind: verify. `awkit check done`, run by the `done-check` hook rule when the agent stops (Claude Code or Codex, from `awkit kit hooks`): files changed in the session need a passing `review check` of exactly their current state. Status: enforced where the hooks are installed, tool otherwise; rendered output is still prose. Test: `tests/test_checks.py` (changed after checking, untracked files, the hook blocking once per turn) and `tests/test_hooks.py`.
 
 #### F2. The first failure disappears.
 
 A check fails, a rerun passes, and the report mentions only the pass.
-- Evidence: needs evidence.
-- Countermeasure: keep every run; explain or list the first failure.
+- Evidence: observed in awkit's development. Of 121 CI runs before `e477bc6`, 55 jobs failed on the first attempt; most were rerun until green and recorded as passing. Three causes stayed unexplained for weeks, one recorded only as "intermittent Linux temporary-directory cleanup failure": session-test waits of 2 to 5 seconds on slow Windows runners, a detached `git gc` from a test commit, and a Windows lock race. A scan of every first-attempt failure log found all three; fixed in `e477bc6`.
+- Countermeasure: keep every run; explain or list the first failure; read the logs of first-attempt failures that a rerun hid.
 - Check: Kind: guidance. run folders are kept per run. Status: tool, prose for the reporting.
 
 #### F3. Support claimed for environments that were not run.
@@ -103,17 +103,17 @@ Version bumps, release workflows or uploads set up while the interface is still 
 
 #### F11. A guess is presented as a finding.
 
-An inference from file names or conventions is reported as how the project works; a question from the user is recorded as a confirmation.
+An inference from file names or conventions is reported as how the project works; a question from the user is recorded as a confirmation; a subagent's claim about its model, permissions or work is passed on without reading the logs.
 - Evidence: observed in awkit's development. `kit scan` suggested pytest for any `tests` folder; this repository uses unittest (fixed in `6eb632c`). `kit scan` reported `"present": false` for the kit in this repository, which uses it through skills pointing at `kit/`, because it looked only for a folder named `agent-work-kit` (fixed in `006575b`). `awkit doctor` reported "kit: connected by awkit 0.3.0" in this repository because `.awkit/installed.json` existed, a record the session hook's `kit hooks --git` had written seconds earlier listing only the commit-msg hook; it now reads the `[kit]` table of `checks.toml` and the skills instead (fixed in the three-layer change). Owner's records: a component that was already installed was installed again; files were sorted by their names without opening them; the owner's question whether a tool was allowed was recorded as the owner confirming that it was ("I was asking whether it is okay").
-- Countermeasure: mark inferences; run a suggested command once before relying on it; check the current state before installing, sorting or reviewing; treat a question as a question.
+- Countermeasure: mark inferences; run a suggested command once before relying on it; check the current state before installing, sorting or reviewing; treat a question as a question; read a subagent's actual model and permissions from logs.
 - Further evidence: the connection diagnostic trial at `4a7cb6a` reproduced doctor printing ready for empty or invalid check configuration, including after a repeated init that no longer warned about missing commands. Its validation now reuses review's configuration rules without claiming execution.
 - Check: Kind: guidance. the connect procedure runs the drafted checks once. Status: prose plus tool.
 
 #### F12. Scope grows before anything is measured.
 
-Features and documents are added because they seem useful, before real use shows a need.
+Features and documents are added because they seem useful, before real use shows a need; a one-off request ends as a standing automation.
 - Evidence: observed in awkit's development. The release runner was widened to every kind of delivery and documentation grew to several thousand words for readers who did not read it (`8cf8e72`, restructured in `8f93b7b`). Observed again: over six days (`0e33ff6` to `2ef5040`) sessions built session and storage features no roadmap item asked for, and the development records grew to 92,000 words in 61 files, updated in 19 commits that changed nothing else (reduced to four files in the next commit). Owner's records: a server for a temporary project was specified with a graphics card, more memory than the load needed and a layout for a larger organization.
-- Countermeasure: a feature needs a failure entry here and a check; measure on real tasks before widening. Size a design to the purpose, duration, load and the person who will run it.
+- Countermeasure: a feature needs a failure entry here and a check; measure on real tasks before widening. Size a design to the purpose, duration, load and the person who will run it. Confirm whether a request is once or recurring.
 - Check: Kind: guidance. prose; the kit word limit tests bound each file by when it is read.
 
 #### F35. The user's guess becomes the requirement.
@@ -200,41 +200,13 @@ A revision passes its checks but loses what the user had accepted.
 
 ### Review
 
-#### F17. The reviewed version is not the shipped version.
-
-The author keeps editing during review, or the reviewer has seen the author's reasoning.
-- Evidence: needs evidence. Like F16 it is guarded by awkit's own loop and measured in next work 5.
-- Countermeasure: review a snapshot ID; use a fresh session that did not see the implementation.
-- Check: Kind: guidance. `awkit review snapshot`, `channel --snap`. Status: tool.
-
-#### F18. Review never ends.
-
-Each fix produces new findings and more premium calls.
-- Evidence: needs evidence (carried over from `delegation.md`).
-- Countermeasure: one premium call by default, a stated reason for a second, a cap of three, then a user decision.
-- Check: Kind: guidance. prose; `awkit usage` shows the calls afterwards.
-
 ### Delegation
-
-#### F19. Parallel subagents make conflicting decisions.
-
-Interfaces, names or error handling diverge because each subagent decided alone.
-- Evidence: needs evidence.
-- Countermeasure: settle shared decisions before parallel work and give every handoff the same wording.
-- Check: Kind: inject. prose.
-
-#### F20. A subagent's self-report is trusted.
-
-The model, permissions or work claimed by a subagent are not what happened.
-- Evidence: needs evidence.
-- Countermeasure: read the actual model and permissions from logs.
-- Check: Kind: guidance. `awkit usage`. Status: tool for models, prose for permissions.
 
 #### F21. Handoffs carry too much or too little.
 
-Unrelated conversation or repository material is passed, or required original material or a decision the subagent needs is missing.
-- Evidence: observed and corrected in awkit's development. A reviewer handoff omitted a shared-cursor transfer decision; the accepted correction used a fresh channel and old-channel export only. Root checked the selected notice, review and response; the replaced original prompt is unavailable for comparison. The risk was addressed before confirmed message loss; actual loss, duplicate review and saved effort are not established. The repository's history records the reviewer handoff omission (commit `2ef5040` and earlier). The size limits still come from 55 handoffs in one project.
-- Countermeasure: four-part handoff with starting sizes for the brief; authorized access to required originals with explicit inspection coverage and access limits; `NEEDS_CONTEXT` status.
+Unrelated conversation or repository material is passed, or required original material or a decision the subagent needs is missing, so parallel subagents decide interfaces, names or error handling each on their own.
+- Evidence: observed and corrected in awkit's development. A reviewer handoff omitted a shared-cursor transfer decision; the accepted correction used a fresh channel and old-channel export only. Root checked the selected notice, review and response; the replaced original prompt is unavailable for comparison. The risk was addressed before any message was lost. The repository's history records the reviewer handoff omission (commit `2ef5040` and earlier). The size limits still come from 55 handoffs in one project.
+- Countermeasure: settle shared decisions before parallel work and give every handoff the same wording; four-part handoff with starting sizes for the brief; authorized access to required originals with explicit inspection coverage and access limits; `NEEDS_CONTEXT` status.
 - Check: Kind: inject. prose.
 
 ### Data and analysis
@@ -246,28 +218,14 @@ A computed value depends on an unstated or wrong assumption, or an interpretatio
 - Countermeasure: assumptions in a file checked against the data; a report with separate parts; interpretation by a person.
 - Check: Kind: guidance. the analysis example's check script shows the pattern. Status: prose plus example.
 
-#### F23. Contradicting sources are averaged.
-
-Research merges disagreeing sources into one claim.
-- Evidence: needs evidence.
-- Countermeasure: show contradictions and gaps; cite what was read.
-- Check: Kind: inject. prose.
-
 #### F37. The sources answer a different question.
 
-The question was about what people experience; the sources collected are official pages and news. One account is reported as the norm.
+The question was about what people experience; the sources collected are official pages and news. One account is reported as the norm, or disagreeing sources are averaged into one claim.
 - Evidence: owner's records. Asked what work at a kind of company is like, the agent collected job postings and news; the owner asked for what current and former employees had written, broadly rather than only complaints, and corrected the industry being searched. Hobby research needed the makers' own accounts, not only ratings.
-- Countermeasure: choose the kind of source the question needs: official requirements from official sources, lived experience from first-hand accounts; distinguish the parent company from the local office and the advertised role from the one applied for; say what recurs across accounts and what is a single case.
+- Countermeasure: choose the kind of source the question needs: official requirements from official sources, lived experience from first-hand accounts; distinguish the parent company from the local office and the advertised role from the one applied for; say what recurs across accounts and what is a single case; show contradictions and cite what was read.
 - Check: Kind: inject. prose.
 
 ### Operating environments and applications
-
-#### F24. A tool's success is taken as the result.
-
-A command returned 0, so the message is assumed delivered, the file transferred, the setting applied or the release live.
-- Evidence: needs evidence (the release runner was built for the deploy case). A defect of its guard, not an occurrence: the `delivery` rule's line was added when a heredoc that wrote a document mentioning `git push` went to `cat`, because the shell condition read the heredoc body as commands (fixed in `5aea860`).
-- Countermeasure: observe the end state where the recipient sees it.
-- Check: Kind: inject. `awkit pipeline` verifies the running release. Status: tool for releases, prose otherwise.
 
 #### F25. Instructions for another version are applied.
 
@@ -279,17 +237,10 @@ Setup steps from documentation for a different edition, OS or account type.
 
 #### F26. Checks interfere through shared resources.
 
-Parallel or repeated checks share a database, port or device and fail or pass for the wrong reason.
-- Evidence: needs evidence.
-- Countermeasure: allocate resources per run ID; run single-device checks one at a time.
-- Check: Kind: guidance. `{run_id}` placeholders. Status: prose plus tool.
-
-#### F27. A one-off request becomes a standing automation.
-
-"Just this once" ends as a registered schedule, or a test run is reported as the real run.
-- Evidence: needs evidence.
-- Countermeasure: confirm once or recurring; record the first real run and the removal separately.
-- Check: Kind: guidance. prose.
+Parallel or repeated checks, or a process a check leaves behind, share a database, port, device or folder and fail or pass for the wrong reason.
+- Evidence: observed in awkit's development. A test's `git commit` started a detached `git gc`, which kept writing `.git/objects/pack` after the test returned; removing the test's temporary folder then failed with "Directory not empty" on Linux CI. Concurrent writers of `.git/info/exclude` on Windows met a lock file another process was deleting. Both fixed in `e477bc6`.
+- Countermeasure: allocate resources per run ID; run single-device checks one at a time; turn off background work the tools start, or wait for it, before cleanup.
+- Check: Kind: guidance. `{run_id}` placeholders; the tests run Git with automatic gc and maintenance off. Status: prose plus tool.
 
 ### Explaining and troubleshooting
 
@@ -330,7 +281,7 @@ Generated from the guards' own declarations: each guide section ends with a "Pre
 <!-- guard table: generated by scripts/guard_map.py -->
 | Entry | Guide sections | Checks and commands | Hook rules |
 |---|---|---|---|
-| F1 Done without a check on the delivered version | workflow.md Check a frozen version; workflow.md Report; protocol.md A task record; protocol.md States; writing.md Completion check | `awkit check done`, `awkit kit hooks`, `awkit hook`, `awkit ui` | `done-check (verify)` |
+| F1 Done without a check on the delivered version | workflow.md Check a frozen version; workflow.md Report; connect.md; checking.md The checked version; delivery.md Identify what is delivered; delivery.md Confirm it in its intended context; delivery.md Failure and recovery; protocol.md A task record; protocol.md States; protocol.md Reviews and decisions; work-types.md Environment setup; work-types.md Operating an application; review-session.md 1. Purpose and cost; review-session.md 2. Session setup; review-session.md 3. Work through a unit; review-session.md 5. Commands; review-session.md 8. Starting prompts; writing.md Completion check; sessions.md Start the controller; sessions.md Enroll a selected Codex conversation; sessions.md Find a conversation by name; sessions.md Send and read work; sessions.md Read current work; sessions.md Update an active turn; sessions.md Submit a decision file; sessions.md Read existing channel history; sessions.md Retain execution evidence | `awkit check done`, `awkit kit hooks`, `awkit review snapshot`, `awkit review check`, `awkit review export`, `awkit channel`, `awkit hook`, `awkit managed project state`, `awkit session`, `awkit pipeline`, `awkit publish`, `awkit ui` | `done-check (verify)`, `delivery (inject)` |
 | F2 The first failure disappears | workflow.md Check a frozen version; checking.md Interpreting results; review-session.md 3. Work through a unit; review-session.md 4. Review criteria | `awkit review check` | none |
 | F3 Support claimed for environments that were not run | workflow.md Check a frozen version; checking.md The checked version | none | none |
 | F4 Documents describe behavior the code does not have | none | none | none |
@@ -340,25 +291,18 @@ Generated from the guards' own declarations: each guide section ends with a "Pre
 | F8 The user's unrelated work is bundled in | workflow.md Define the task | `awkit kit init --commit and kit example (commit only what they wrote)` | none |
 | F9 The agent's own identity replaces the repository's convention | connect.md; commit-paths.md Configure the project; commit-paths.md Interpret paths and unavailable protection | `awkit check commit`, `awkit kit hooks`, `awkit kit init --commit and kit example (commit only what they wrote)`, `awkit doctor`, `awkit hook` | `commit-identity (block)` |
 | F10 Irreversible publication prepared before it is justified | none | none | none |
-| F11 A guess is presented as a finding | workflow.md Do the work; connect.md; checking.md The checked version; writing.md Before writing; commit-paths.md Configure the project; commit-paths.md Interpret paths and unavailable protection; commit-paths.md Removal and mixed versions | `awkit review preview`, `awkit doctor`, `awkit kit scan`, `awkit hook` | none |
-| F12 Scope grows before anything is measured | connect.md | `awkit kit scan`, `awkit kit init`, `awkit kit skills` | none |
+| F11 A guess is presented as a finding | workflow.md Do the work; connect.md; checking.md The checked version; delegation.md 4. Roles and execution paths; delegation.md 7. Model tiers; delegation.md 8. Measurement; review-session.md 7. Records and evaluation; writing.md Before writing; commit-paths.md Configure the project; commit-paths.md Interpret paths and unavailable protection; commit-paths.md Removal and mixed versions | `awkit review preview`, `awkit doctor`, `awkit kit scan`, `awkit usage`, `awkit hook` | none |
+| F12 Scope grows before anything is measured | connect.md; work-types.md Automation | `awkit kit scan`, `awkit kit init`, `awkit kit skills` | none |
 | F13 AI writing patterns in English | workflow.md Report; writing.md Write plainly | `awkit check writing`, `awkit check writing-compare`, `awkit hook` | `writing-check (verify)`, `writing-check-bash (verify)` |
 | F14 Korean that reads like a translation, including from an agent that wrote the rules | korean-writing.md Writing process; korean-writing.md Tone and terminology; korean-writing.md Revise sentences | `awkit check writing`, `awkit check writing-compare`, `awkit hook`, `awkit hook reply` | `writing-check (verify)`, `korean-writing (inject)`, `writing-check-bash (verify)`, `korean-writing-bash (inject)`, `writing-request (inject)`, `writing-reply (verify)` |
 | F15 Writing for the wrong reader | writing.md Before writing; writing.md Write plainly | none | none |
 | F16 Approved work regresses during a later change | work-types.md Common rules; work-types.md Writing; writing.md Preserve facts and judgments | `awkit review accept`, `awkit review compare`, `awkit review export` | none |
-| F17 The reviewed version is not the shipped version | workflow.md Check a frozen version; checking.md The checked version; review-session.md 1. Purpose and cost; review-session.md 2. Session setup; review-session.md 3. Work through a unit; review-session.md 5. Commands; review-session.md 8. Starting prompts | `awkit review snapshot`, `awkit review check`, `awkit review export`, `awkit channel` | none |
-| F18 Review never ends | protocol.md Reviews and decisions; delegation.md 3. Risk and premium calls; delegation.md 6. Failures and retries; review-session.md 3. Work through a unit; review-session.md 4. Review criteria; review-session.md 6. Waiting; writing.md Rewriting and collaboration | `awkit channel` | none |
-| F19 Parallel subagents make conflicting decisions | workflow.md Define the task; protocol.md Roles and file ownership; delegation.md 2. When to delegate; delegation.md 4. Roles and execution paths | none | `delegation (inject)` |
-| F20 A subagent's self-report is trusted | delegation.md 4. Roles and execution paths; delegation.md 7. Model tiers; delegation.md 8. Measurement; review-session.md 7. Records and evaluation | `awkit usage` | none |
-| F21 Handoffs carry too much or too little | delegation.md 2. When to delegate; delegation.md 5. Handoffs and results; writing.md Rewriting and collaboration | none | `delegation (inject)` |
+| F21 Handoffs carry too much or too little | workflow.md Define the task; protocol.md Roles and file ownership; delegation.md 2. When to delegate; delegation.md 4. Roles and execution paths; delegation.md 5. Handoffs and results; writing.md Rewriting and collaboration | none | `delegation (inject)` |
 | F22 Observations, assumptions and interpretation are mixed | work-types.md Common rules; work-types.md Data preparation and analysis | none | none |
-| F23 Contradicting sources are averaged | work-types.md Research | none | `research (inject)` |
-| F24 A tool's success is taken as the result | workflow.md Check a frozen version; connect.md; delivery.md Identify what is delivered; delivery.md Confirm it in its intended context; delivery.md Failure and recovery; work-types.md Environment setup; work-types.md Operating an application; sessions.md Start the controller; sessions.md Enroll a selected Codex conversation; sessions.md Find a conversation by name; sessions.md Send and read work; sessions.md Read current work; sessions.md Update an active turn; sessions.md Submit a decision file; sessions.md Read existing channel history; sessions.md Retain execution evidence | `awkit managed project state`, `awkit session`, `awkit pipeline`, `awkit publish` | `delivery (inject)` |
 | F25 Instructions for another version are applied | work-types.md Environment setup; sessions.md Start the controller; sessions.md Enroll a selected Codex conversation; sessions.md Find a conversation by name; sessions.md Update an active turn | `awkit doctor`, `awkit hook kit-version`, `awkit session` | `kit-version (inject)` |
 | F26 Checks interfere through shared resources | checking.md Shared resources and processes | `awkit review check` | none |
-| F27 A one-off request becomes a standing automation | work-types.md Automation | none | none |
 | F28 The wrong level of autonomy | workflow.md Define the task; workflow.md Continue across sessions; work-types.md Learning | none | none |
-| F29 Context is lost between sessions | workflow.md Continue across sessions; connect.md; protocol.md A task record; protocol.md Resume after interruption; writing.md Before writing; sessions.md Start the controller; sessions.md Enroll a selected Codex conversation; sessions.md Find a conversation by name; sessions.md Send and read work; sessions.md Read current work; sessions.md Update an active turn; sessions.md Submit a decision file; sessions.md Read existing channel history; sessions.md Retain execution evidence | `awkit doctor`, `awkit kit scan`, `awkit kit init`, `awkit kit skills`, `awkit kit guide`, `awkit channel status`, `awkit hook`, `awkit session` | none |
+| F29 Context is lost between sessions | workflow.md Continue across sessions; connect.md; protocol.md A task record; protocol.md Resume after interruption; review-session.md 6. Waiting; writing.md Before writing; sessions.md Start the controller; sessions.md Enroll a selected Codex conversation; sessions.md Find a conversation by name; sessions.md Send and read work; sessions.md Read current work; sessions.md Update an active turn; sessions.md Submit a decision file; sessions.md Read existing channel history; sessions.md Retain execution evidence | `awkit doctor`, `awkit kit scan`, `awkit kit init`, `awkit kit skills`, `awkit kit guide`, `awkit channel status`, `awkit hook`, `awkit session` | none |
 | F30 Facts, attribution or certainty change while writing | work-types.md Writing; writing.md Before writing; writing.md Write plainly; writing.md Preserve facts and judgments | none | none |
 | F31 The form of a correction is fixed, not its reason | writing.md Corrections; writing.md Rewriting and collaboration; korean-writing.md Revise sentences | none | none |
 | F32 One instance is fixed and the same problem stays elsewhere or returns later | writing.md Corrections; writing.md Rewriting and collaboration | `awkit check writing` | `writing-check (verify)`, `writing-check-bash (verify)` |

@@ -27,4 +27,4 @@ Outside Git, writes remain usable. Per-call `--no-git` setup and user-home insta
 
 Ask before touching credentials, remote targets or settings outside the project folder.
 
-Prevents: F7, F9, F11, F12, F24, F29.
+Prevents: F1, F7, F9, F11, F12, F29.

@@ -26,7 +26,7 @@ Prevents: F16, F22.
 
 **Stop and ask** when the sources disagree on a fact the answer depends on, when the allowed sources cannot answer the question, or when a source would have to be obtained from outside the authorized scope.
 
-Prevents: F23, F37.
+Prevents: F37.
 
 ## Writing
 
@@ -68,7 +68,7 @@ When something that worked before a change is to be restored, the wanted end sta
 
 **Stop and ask** before changing system-wide settings, before installing software from an unlisted source, and when a step needs credentials or permissions the task did not grant.
 
-Prevents: F24, F25, F39.
+Prevents: F1, F25, F39.
 
 ## Operating an application
 
@@ -80,7 +80,7 @@ Prevents: F24, F25, F39.
 
 **Stop and ask** before any action that sends a message, publishes, pays, deletes or changes permissions, and whenever the application shows a state the task did not anticipate.
 
-Prevents: F24.
+Prevents: F1.
 
 ## Learning
 
@@ -100,4 +100,4 @@ Prevents: F28, F38.
 
 A task that sets up something to run repeatedly also records the trigger, the inputs it reads, the actions it may take, its expiry or stop condition and who is notified when it fails. Confirm whether the user wants it once or every time; "just this once" means a one-shot run and no registered schedule. Record the first real run's result separately from the test run, and record the removal of a schedule as its own step.
 
-Prevents: F27.
+Prevents: F12.

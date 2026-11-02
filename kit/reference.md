@@ -323,9 +323,9 @@ The default rules, each with the entries it guards:
 | `writing-check-bash`, `korean-writing-bash` | the same two for Bash | a shell command naming a `.md` file: the check runs on the Markdown changed in Git; Korean in a heredoc body gets the guide line | F13, F14, F32 |
 | `writing-request` | inject, UserPromptSubmit | the first request for a prompt, instructions, a document or a report | F14 |
 | `writing-reply` | verify, Stop | a final reply that is a long Korean document written without the guide (`hook reply`) | F14 |
-| `research` | inject, PreToolUse | the first web search or fetch | F23, F37 |
-| `delivery` | inject, PreToolUse | `git push`, a release or an upload command | F24 |
-| `delegation` | inject, PreToolUse | starting a subagent | F19, F21 |
+| `research` | inject, PreToolUse | the first web search or fetch | F37 |
+| `delivery` | inject, PreToolUse | `git push`, a release or an upload command | F1 |
+| `delegation` | inject, PreToolUse | starting a subagent | F21 |
 | `kit-version` | inject, SessionStart | `[kit] version` in `checks.toml` other than the installed awkit (`hook kit-version`) | F25 |
 
 `awkit hook reply` retains the long-Korean-document trigger and one-block rule. Guide-access states: `read`, a recognized operation returned the main guide; `absent`, a complete supported transcript shows no access; `unknown`, evidence cannot settle it. Only `absent` can trigger the rule. `unknown` fails open without claiming the guide was read.

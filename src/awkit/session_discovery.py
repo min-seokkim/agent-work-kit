@@ -13,7 +13,7 @@ from pathlib import Path
 from .codex_enrollment import EXECUTABLE_SHA256, VERSION, local_path
 from .codex_session import ProviderError, ProviderRejected
 
-PREVENTS = {"awkit session discover": ("F24", "F25", "F29")}
+PREVENTS = {"awkit session discover": ("F1", "F25", "F29")}
 SOURCES = ("cli", "vscode", "exec", "appServer")
 UNAVAILABLE = "Conversation discovery requires an existing initialized supported Codex connection in this project and home. Manual exact-ID enrollment remains available."
 FAILED = "Indexed conversation listing failed. Refresh or use manual exact-ID enrollment."

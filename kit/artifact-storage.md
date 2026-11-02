@@ -32,7 +32,7 @@ The schema-2 manifest at `artifacts/manifest.json` records configured object ref
 
 Payload validation currently reads whole files into memory. Shared publication can hold the input and its verification copy at once; choose artifact sizes that fit the check host's available memory.
 
-Prevents: F2, F16, F17.
+Prevents: F1, F2, F16.
 
 ## Direct output and materialization
 
@@ -56,7 +56,7 @@ A completed copied run with no artifact patterns can be exported with its config
 
 Use a completed export for independent storage or a reader downgrade. Healthy exports support schema-1 artifact verification with older awkit readers. Compatibility does not mean an old reader detects every damaged or interrupted bundle. Current readers validate export provenance; an interrupted export is incomplete and must not be reported as a completed copy.
 
-Prevents: F7, F16, F17.
+Prevents: F1, F7, F16.
 
 ## Move and inspect a collection
 

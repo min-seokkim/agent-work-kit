@@ -30,7 +30,7 @@ One controller owns a project at a time. A conflicting owner is refused without 
 
 Saved identities and channel exchanges remain. Restarting the controller automatically reconnects each saved owned conversation by exact native ID. Closing the browser view only closes the view. Stopping the controller establishes neither task cancellation nor success.
 
-Prevents: F24, F25, F29.
+Prevents: F1, F25, F29.
 
 ## Enroll a selected Codex conversation
 
@@ -44,7 +44,7 @@ Enrollment pins Windows x86_64 Codex 0.164.0-alpha.11.1 to executable SHA-256 `4
 
 The controller retains and compares every returned policy field before sending or recovering: sandbox, approval policy/reviewer, runtime workspace roots and active profile. Optional provenance is recorded as supplied; null and key absence remain distinct. An unexposed profile does not invalidate known required scope, and no profile is inferred or configured. Read-only/workspace-write sandbox details must be complete. Inspect a refusal in status; resume retries explicitly after the cause changes. Pending uncertainty is retained without replay.
 
-Prevents: F24, F25, F29.
+Prevents: F1, F25, F29.
 
 ## Find a conversation by name
 
@@ -58,7 +58,7 @@ Listing requires an already initialized owned Codex connection matching the enro
 
 Only native names, exact thread IDs, project, creation source, labelled creation/update times and registration facts are returned. Unnamed conversations stay unnamed. Updated time is not current activity; creation source is not current ownership. The database-only current-project query can omit stale or missing indexed records. Native previews cross the transport but are discarded before awkit results, events, durable records or diagnostics, including late replies. Other projects, archived threads, child origins, transcript import and live IDE attachment are outside this route.
 
-Prevents: F24, F25, F29.
+Prevents: F1, F25, F29.
 
 ## Send and read work
 
@@ -82,7 +82,7 @@ Claude's continuing reader observes public session_state_changed events with the
 
 Status and command results use JSON schema 1. Exit 0 means the command returned its stated result, including stored or stopping; it does not establish task success. Native creation with unknown outcome exits 1 and retains its record. Invalid input, unavailable control or storage errors exit 2. Native state older than one minute is shown as unknown with its last observation and source.
 
-Prevents: F24, F29.
+Prevents: F1, F29.
 
 ## Read current work
 
@@ -98,7 +98,7 @@ Each supported Codex attempt has at most one public_update: its latest retained 
 
 decision_summary separates responses_needed, submitted_unconfirmed and unavailable. A recorded response awaiting native confirmation is not another response task. Use the existing detailed can_answer controls and offered choices; later work or idle cannot confirm a callback. Reading dispatches nothing, changes no cursor and marks no result handled.
 
-Prevents: F24, F29.
+Prevents: F1, F29.
 
 ## Update an active turn
 
@@ -112,7 +112,7 @@ The controller durably records a fresh caller key, complete body, source and exa
 
 Updates remain attached to the original assignment; its final reply retains its original relationship and author. Native acknowledgement establishes receipt, not adoption or rollback of earlier work. Read the final output separately. Existing send still queues an assignment for idle; notice still stores information without native input. Update exit0 means acknowledged, exit1 means retained refusal/uncertainty, and exit2 means invalid input or unavailable control.
 
-Prevents: F24, F25, F29.
+Prevents: F1, F25, F29.
 
 ## Submit a decision file
 
@@ -127,7 +127,7 @@ Here $awkitDecision is the selected live decision for Research; deny must be off
 
 Use --input-file - for UTF-8 stdin. Files accept UTF-8 with or without BOM; stdin accepts the same bytes. Do not mix --input-file with --decision, --choice or --answers-file. The existing argument route remains supported. File input cannot change the CLI-selected session. Malformed shapes and duplicate JSON keys are refused before dispatch. The existing handler retains target, connection, generation, offered-choice and once-only checks. A recorded submission remains separate from native resolution; inspect uncertainty before further action.
 
-Prevents: F24, F29.
+Prevents: F1, F29.
 
 ## Read existing channel history
 
@@ -139,7 +139,7 @@ Supply names matching the channel's existing role mapping. The view preserves bo
 
 An optional serve --record PATH reads the existing schema-1 channel-status declaration record. Declared pending actions show names resolved from registered relationships and compact previews; expand for the complete record and source link. Missing or conflicting identity stays unknown. Ordinary selection opens the recent exchange; Latest returns there after following an earlier reply. Background refresh preserves reading position and expanded declarations. Missing declarations remain unrecorded; a reply does not silently close a declaration. Unread state is not inferred.
 
-Prevents: F24, F29.
+Prevents: F1, F29.
 
 ## Retain execution evidence
 
@@ -153,4 +153,4 @@ Enrolled Codex channels use extension 4 with selected identity, runtime admissio
 
 Old disconnected approval callbacks remain unresolved with their request and cannot receive responses. Only a fresh current provider callback establishes a live decision route; saved approvals are never reused. Keep actual inputs, responses, identities, permissions and intervention counts. Offline faults, live-provider recovery, screen inspection and human acceptance establish different scopes. Existing IDE attachment and native peer discovery remain unsupported. No uncertain attempt is replayed automatically.
 
-Prevents: F24, F29.
+Prevents: F1, F29.

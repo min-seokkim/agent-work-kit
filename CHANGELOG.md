@@ -64,6 +64,8 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Guidance
 
+- The failure catalogue keeps only entries with a recorded occurrence. F17 and F24 merged into F1, F19 into F21, F20 into F11, F23 into F37 and F27 into F12; F18 was removed. F2 and F26 gained occurrences from an audit of 121 CI runs. Every `Prevents:` line, command `PREVENTS` declaration and default rule now names the surviving entries, so hook messages cite them (for example `awkit delivery (F1)`); the numbers of merged entries are not reused.
+
 - The kit's guides no longer ask for hedged reports, a record file per task or approval for work the project already authorizes. `workflow.md` leads a report with what changed and what comes next, says that project instructions which assign work settle the form of help, keeps state in one place instead of a checkpoint file per session, and grants standing permissions through the project's instructions. `protocol.md` keeps all tasks in one place and treats the templates as fields to choose from. The task and checkpoint templates drop the `unverified` cost fields; the profile drops duplicated record locations, the record date and the first-application section. `writing.md` adds status sentences that only say what a result does not establish to its pattern list, and both writing guides say a chat reply also needs the guide read in the session. `check writing` warns on that pattern (`hedge`).
 
 - The web-project extras (`pipeline`, `publish`, `ui`) moved from the command reference into their own guide, `kit/extras.md` (`awkit kit guide extras`), with the text unchanged. The reference had reached its word limit; the policy is to move a complete topic rather than shorten accepted text.

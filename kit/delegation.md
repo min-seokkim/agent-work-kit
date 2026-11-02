@@ -22,7 +22,7 @@ The main agent handles short document edits, straightforward changes within one 
 
 Run at most three independent reading tasks concurrently. Delegate implementation sequentially when shared decisions remain, even if files do not overlap. Interface shape, naming and error handling are examples: concurrent subagents cannot see each other's decisions. Before parallel implementation, settle the shared decisions and put the same wording in every handoff.
 
-Prevents: F19, F21.
+Prevents: F21.
 
 ## 3. Risk and premium calls
 
@@ -47,7 +47,7 @@ A second premium call is allowed only when:
 
 The main agent records the reason. Even under these conditions, premium calls are capped at three per task, adjustable in the project profile. At the cap, pass unresolved High and Major findings to the user as `decision-needed`. This prevents an endless review loop in which every correction produces a new finding.
 
-Prevents: F18.
+Prevents: none (baseline step: judging risk when defining the task, for delegated work).
 
 ## 4. Roles and execution paths
 
@@ -72,7 +72,7 @@ Subagents do not delegate further. Only the main agent makes additional calls. W
 
 If a change only addresses findings and adds no behavior or scope, the main agent can finish by inspecting the diff. For a sequence of commits, inspect the cumulative diff before the final commit. If the user has opened an independent review session, its `final` fills `premium_slot = final`; follow [Review Session Collaboration](review-session.md).
 
-Prevents: F19, F20.
+Prevents: F11, F21.
 
 ## 5. Handoffs and results
 
@@ -107,7 +107,7 @@ Switch providers only for temporary issues such as usage limits or connectivity.
 
 Builders run focused tests. The main agent runs the full suite once after integration and repeats it only for new changes or failures.
 
-Prevents: F18.
+Prevents: none (baseline step: doing and checking the work, for delegated work).
 
 ## 7. Model tiers
 
@@ -122,10 +122,10 @@ Map tiers to actual models for each provider in the project profile. These are o
 
 Confirm the actual model from execution logs rather than a subagent's self-report or configuration alone. Check actual permissions as well: restrictions in role files may not be enforced by the provider. `awkit usage` collects models and tokens from execution logs.
 
-Prevents: F20.
+Prevents: F11.
 
 ## 8. Measurement
 
 Record per task the risk, the roles called, the actual models, calls, tokens and minutes (`awkit usage` reads them from the logs), and who found each High or Major finding. Claim an advantage for delegation only after at least three comparable tasks were done each way, and compare the share of tasks with High or Major findings before anything else.
 
-Prevents: F20.
+Prevents: F11.

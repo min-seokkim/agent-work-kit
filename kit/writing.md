@@ -58,7 +58,7 @@ If a text has been revised more than twice, or has accumulated additions and rep
 
 A review comment names the passage, the problem and the fix. After a fix, check that passage and the affected content instead of rescoring resolved issues. When reviews conflict, the main agent decides; established terms are not changed to suit a reviewer. A full rewrite gets one independent review where the project authorizes it. Before splitting writing among agents, finish one representative section and hand off the audience, purpose, preservation list, sources, drafts and applicable corrections with their reasons and scope.
 
-Prevents: F18, F21, F31, F32.
+Prevents: F21, F31, F32.
 
 ## Completion check
 

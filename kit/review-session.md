@@ -6,7 +6,7 @@ Use this workflow when a main implementation session and an independent review s
 
 An independent review session is intended to find defects and conflicts earlier than a single-session workflow. It also consumes more time and credits. The user chooses whether to attach one for each unit. Once attached, evaluate it by how early it finds defects rather than by cost (section 7). The main agent may ask whether to attach a review session when starting a `high`-risk unit.
 
-Prevents: F17.
+Prevents: F1.
 
 ## 2. Session setup
 
@@ -20,7 +20,7 @@ The user opens both sessions. Prefer a different provider for the reviewer; with
 
 The review session may delegate mechanical exploration and test execution to efficient- or standard-tier subagents while performing judgments itself.
 
-Prevents: F17.
+Prevents: F1.
 
 ## 3. Work through a unit
 
@@ -33,7 +33,7 @@ Prevents: F17.
 
 The main session closes Minor findings and small issues by checking the diff; they do not trigger another review request. If the reviewer discovers a High risk while handling another request, report it with `notice`. Otherwise, stay within the requested work.
 
-Prevents: F2, F17, F18.
+Prevents: F1, F2.
 
 ## 4. Review criteria
 
@@ -41,7 +41,7 @@ Separate the response into verdict, findings, execution results and unverified s
 
 Locks and failures seen once follow [Checking](checking.md): a concurrent test against a real database, and a fresh worktree for the rerun.
 
-Prevents: F2, F18.
+Prevents: F2.
 
 ## 5. Commands
 
@@ -55,7 +55,7 @@ awkit channel --db $db post main reviewer review --snap $snap --body-file reques
 
 The main session sends requests (`review`, `final`, `test`, `scout`, `draft`, `question`) and `close`; either side answers with `re` (no further reply) or `rebut` (the other side must answer), or informs with `notice`. Use one channel file per review; the channel knows only the roles `main` and `reviewer`. When user judgment is needed, reply to the original request with `re` and start the body with `decision-needed:`. Exclude credentials, actual personal data, private source material and variable values from error traces. See the [command reference](reference.md) for command details.
 
-Prevents: F17.
+Prevents: F1.
 
 ## 6. Waiting
 
@@ -78,7 +78,7 @@ Both roles inspect `new` between work portions, including notices and replies. B
 
 Exit 3 means the reviewer stops waiting on that closed channel. Do not end a unit with open requests or an unapplied final result, except for a pending user `decision-needed` item. If the client forces the turn to end, retain a checkpoint with pending IDs and report that resuming needs an active session.
 
-Prevents: F18.
+Prevents: F29.
 
 ## 7. Records and evaluation
 
@@ -88,7 +88,7 @@ The main session records the following, marking unavailable values as `unverifie
 - For each High or Major finding, who found it (main, review session or the main session's verifier) and when (incremental review, tests, final review or after acceptance).
 - Request counts by kind and whether the main session also ran its own verifier.
 
-Prevents: F20.
+Prevents: F11.
 
 ## 8. Starting prompts
 
@@ -112,4 +112,4 @@ Use .awkit/review-<unit>.sqlite3 as the channel file. Inspect history on startup
 For an authorized Windows work window, add --keep-awake to each bounded channel wait and heed its warnings. The flag does not keep an ended turn active.
 ```
 
-Prevents: F17.
+Prevents: F1.

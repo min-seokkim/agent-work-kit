@@ -22,7 +22,7 @@ from .artifact_store import (
     valid_entry,
 )
 
-PREVENTS = {"awkit review export": ("F7", "F16", "F17")}
+PREVENTS = {"awkit review export": ("F1", "F7", "F16")}
 PROVENANCE = ".awkit-export"
 PROVENANCE_FILE = PROVENANCE + "/provenance.json"
 ORIGINAL_RESULT = PROVENANCE + "/original-result.json"

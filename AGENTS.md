@@ -26,7 +26,7 @@ This repository is developed with its own kit. Follow [kit/workflow.md](kit/work
 - How completion is checked: `awkit review check <snapshot> --config checks.toml` (Ruff and the test suite in a separate worktree), then CI green on Windows and Linux after pushing.
 - Where results and records go: commits on `dev`. Behavior changes go in [CHANGELOG.md](CHANGELOG.md); a decision that later changes must respect goes in [docs/design.md](docs/design.md) as one table row; the roadmap row of finished work is deleted, and the row of work in progress is updated, in the same commit as the code. Git history is the record of what happened. Nothing else is written down.
 
-In a cloud session, `.claude/hooks/session-start.sh` installs a copy of awkit from the session's starting commit, so the hooks and the check runner do not run code that is being changed, and the commit identity hook. To try a changed command before the next session, run it with `PYTHONPATH=src python -m awkit`. Claude Code (`.claude/settings.json`) and Codex (`.codex/hooks.json`) run `awkit hook` on every hook event with the rules in `rules.toml`: a `git commit` with another author or trailers is refused, the first stop with changed files that have no passing check is blocked, an edited Markdown file is checked for writing errors, the first search, push, subagent, Korean edit or request for a document gets one line of the matching guide, and a long Korean reply shaped like a document is blocked once when the session never read the writing guide. `awkit hook report` shows what fired. Elsewhere, install awkit (README) and run `awkit kit hooks --git` once per clone.
+In a cloud session, `.claude/hooks/session-start.sh` installs a copy of awkit from the session's starting commit and switches on the commit identity hook, so the hooks and the check runner do not run code that is being changed. To try a changed command before the next session, run it with `PYTHONPATH=src python -m awkit`. Claude Code (`.claude/settings.json`) and Codex (`.codex/hooks.json`) run `awkit hook` on every hook event with the rules in `rules.toml`: a `git commit` with another author or trailers is refused, the first stop with changed files that have no passing check is blocked, an edited Markdown file is checked for writing errors, the first search, push, subagent, Korean edit or request for a document gets one line of the matching guide, and a long Korean reply shaped like a document is blocked once when the session never read the writing guide. `awkit hook report` shows what fired. Elsewhere, install awkit (README) and run `awkit kit hooks --git` once per clone.
 
 ## Working rules
 
@@ -34,7 +34,7 @@ In a cloud session, `.claude/hooks/session-start.sh` installs a copy of awkit fr
 - Work on `dev`. Before pushing, snapshot the changed files and run `awkit review check` with `checks.toml` (below). After pushing, check that CI is green on Windows and Linux; a push is finished only then.
 - Keep the development records to the four files in `docs/` and the CHANGELOG. Do not create task files, history folders, handoff narratives or a development entry page; `tests/test_kit.py` fails when `docs/` grows beyond those files or their word limits. A commit that changes only record text is not allowed: fold the record change into the commit that does the work. Write what was done and what to do next, in plain sentences; do not list what a result fails to prove unless a reader would otherwise assume it.
 - `dev` is an install source. Never rewrite its history or force-push; fetch and rebase local commits onto `origin/dev` before pushing, since another session may have pushed.
-- On the owner's local computer, keep installed awkit and generated user skills aligned with the latest `origin/dev`. Check alignment when starting and finishing repository work. After that commit passes Windows and Linux CI, install the exact commit through the platform installer, verify installation provenance and compare installed source and kit contents. Report any remaining mismatch; a matching version string alone is insufficient.
+- Sessions on the owner's computer keep the installed awkit and the generated user skills aligned with the latest `origin/dev`: check alignment when starting and finishing, and after a commit passes Windows and Linux CI, install that exact commit through the platform installer and compare installed source and kit contents. A cloud session cannot do this and does not report it as undone; the session-start hook installs the checkout for it.
 - Do not remove kit sections. Move what no failure entry or baseline step needs into `kit/reference.md`; removal waits until real use shows a section unused.
 - Keep the version number until a release. Add changes to the unreleased section of [CHANGELOG.md](CHANGELOG.md); raise the version only for a release, or once when the first incompatible change goes in after a release.
 - Refer to commits or versions when a document needs to say when something happened. Git history keeps the dates, so documents carry none; license copyright years are the exception.
@@ -49,6 +49,12 @@ From the repository root in PowerShell, run the [path-safe snapshot recipe](kit/
 
 ```powershell
 awkit review check $awkitSnapshot --config checks.toml --runs-root .awkit/reviews
+```
+
+In bash, or when the change includes deleted files, commit first and check the commit:
+
+```sh
+awkit review check HEAD --config checks.toml --runs-root .awkit/reviews
 ```
 
 The check runs Ruff and the test suite on exactly the snapshot. Without awkit installed, `PYTHONPATH=src python -m awkit` runs it from the source; the bare commands are `ruff check .` and `PYTHONPATH=src python -m unittest discover -s tests -v`.

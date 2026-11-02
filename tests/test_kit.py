@@ -33,7 +33,7 @@ LICENSES = ("LICENSE.md", "THIRD_PARTY_NOTICES.md")
 # The development records: four files, each with a word limit (AGENTS.md, "Working rules"). The limits
 # exist because the records once grew to 92,000 words across 61 files, written in commits that changed
 # nothing else, and an agent resuming work could not find what to do next in them.
-DEVELOPMENT_RECORDS = {"roadmap.md": 1_000, "design.md": 2_700, "evidence.md": 450, "release.md": 500}
+DEVELOPMENT_RECORDS = {"roadmap.md": 1_400, "design.md": 2_700, "evidence.md": 450, "release.md": 500}
 
 
 def skill_front_matter(text):

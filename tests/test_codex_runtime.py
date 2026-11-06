@@ -14,7 +14,7 @@ from support import codex_evidence
 
 
 def protocol():
-    fields = {"thread/start": ["model", "config"], "thread/resume": ["threadId", "excludeTurns", "cwd", "sandbox",
+    fields = {"thread/start": ["model", "config", "threadSource", "sessionStartSource"], "thread/resume": ["threadId", "excludeTurns", "cwd", "sandbox",
               "approvalPolicy", "approvalsReviewer", "developerInstructions"],
               "thread/read": ["threadId"], "thread/list": ["cwd", "useStateDbOnly", "sourceKinds"],
               "thread/turns/list": ["threadId", "limit", "sortDirection", "itemsView"],
@@ -70,6 +70,15 @@ class RuntimeTests(unittest.TestCase):
                 self.assertIn(missing, result[feature]["reason"])
             self.assertTrue(result["discovery"]["supported"])
             self.assertTrue(result["active_turn_update"]["supported"])
+
+    def test_history_classification_has_its_own_capability(self):
+        schema = protocol()
+        del schema["oneOf"][0]["properties"]["params"]["properties"]["threadSource"]
+        capabilities = schema_capabilities(schema)
+        self.assertFalse(capabilities["native_history"]["supported"])
+        self.assertTrue(capabilities["model"]["supported"])
+        status = describe("codex", codex_evidence(capabilities=capabilities))
+        self.assertIn("threadSource", status["operations"]["native_history"]["reason"])
 
     def test_model_resume_does_not_require_an_unused_model_override(self):
         schema = protocol()

@@ -15,6 +15,7 @@ from pathlib import Path
 from . import session_states as states
 from .channel_status import observe
 from .claude_session import ClaudeSession, availability
+from .codex_capabilities import capability
 from .codex_session import CodexSession, ProviderError
 from .local_state import prepare
 from .session_capabilities import describe
@@ -221,6 +222,11 @@ class SessionController:
                     "cwd": str(self.project), "sandbox": sandbox, "approvalPolicy": "on-request",
                     "approvalsReviewer": "user", "serviceName": "awkit",
                     "developerInstructions": startup["developer_instructions"]}
+                history = capability(self.client, "native_history")
+                if history["supported"]:
+                    params.update(threadSource="agent_created_thread", sessionStartSource="startup")
+                store.update(native_history=dict(history, source="thread/start parameters",
+                             thread_source=params.get("threadSource")))
                 if model is not None:
                     params["model"] = model
                 if reasoning_effort is not None:

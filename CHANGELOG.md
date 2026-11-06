@@ -8,6 +8,8 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Commands
 
+- New Codex conversations use the app's agent-created thread source when capability probes support it; missing source fields disable only that classification. The session guide explains that sidebar visibility requires refreshing the app and opening awkit's canonical project path, rather than a junction spelling. New Claude conversations pass their awkit name to the native resume list while retaining persistence and exact-ID recovery.
+
 - Session startup checks channel integrity before migration and leaves damaged files unchanged. Status reports an unavailable channel with its path while keeping healthy sessions readable; a later channel read failure no longer stops the controller's dispatch worker for every session.
 
 - The session HTTP server briefly drains unread request bytes after sending a response and shutting down its write side. Early authorization refusals could otherwise reset the Windows connection before clients received HTTP 403. Draining is bounded to 200 ms and 2 MiB and never parses or dispatches the rejected input.

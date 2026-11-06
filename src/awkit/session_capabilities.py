@@ -27,6 +27,7 @@ def describe(provider, evidence=None):
         operations=dict(create=dict(supported=native), status=dict(supported=True), send=dict(supported=native),
                         cancel=dict(supported=native), interrupt=dict(supported=native), decide=dict(supported=native),
                         resume=dict(supported=native), discovery=dict(supported=codex, reason=discovery_reason),
+                        native_history=dict(supported=native, reason="History metadata support; visibility requires the same provider home and canonical project path."),
                         enrollment=dict(supported=codex, reason=enrollment_reason),
                         active_turn_update=dict(supported=codex, reason=update_reason)))
     if not native:
@@ -39,6 +40,6 @@ def describe(provider, evidence=None):
         model = capability(evidence, "model")
         for key in ("model", "effort"):
             result[key].update(model)
-        for key in ("enrollment", "discovery", "active_turn_update"):
+        for key in ("enrollment", "discovery", "active_turn_update", "native_history"):
             result["operations"][key].update(capability(evidence, key))
     return result

@@ -110,7 +110,16 @@ class SessionModelTests(unittest.TestCase):
         self.assertNotIn("model_selection", meta)
         self.assertEqual(meta["model"], "native-default")
         self.assertEqual(set(self.provider.calls[0][1]), {"cwd", "sandbox", "approvalPolicy", "approvalsReviewer",
-                                                        "serviceName", "developerInstructions"})
+                                                        "serviceName", "developerInstructions", "threadSource", "sessionStartSource"})
+        self.assertEqual(self.provider.calls[0][1]["threadSource"], "agent_created_thread")
+        self.assertEqual(self.provider.calls[0][1]["sessionStartSource"], "startup")
+
+    def test_unavailable_history_fields_preserve_basic_creation(self):
+        self.controller.client["capabilities"].pop("native_history")
+        meta = self.create()
+        self.assertEqual(meta["state"], "idle")
+        self.assertFalse(meta["native_history"]["supported"])
+        self.assertNotIn("threadSource", self.provider.calls[0][1])
 
     def test_explicit_effort_is_durable_and_uses_only_the_selected_config_key(self):
         def before():

@@ -12,6 +12,7 @@ RECOVERY = {"thread/read": ("threadId",),
             "thread/turns/list": ("threadId", "limit", "sortDirection", "itemsView"),
             "thread/items/list": ("threadId", "turnId", "limit", "sortDirection")}
 REQUIRES = {
+    "native_history": {"thread/start": ("threadSource", "sessionStartSource")},
     "model": {"thread/start": ("model", "config"), "thread/resume": ("threadId", "cwd", "sandbox",
         "approvalPolicy", "approvalsReviewer", "excludeTurns", "developerInstructions"), **RECOVERY},
     "enrollment": {"thread/resume": ("threadId", "excludeTurns"), **RECOVERY},

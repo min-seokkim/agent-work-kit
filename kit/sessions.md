@@ -4,6 +4,8 @@ Use one project-local controller to create owned Codex or Claude conversations, 
 
 ## Start the controller
 
+New Codex conversations submit the app's agent-created thread source when supported; status names missing source-field support. That classification does not guarantee sidebar visibility. Open the Codex app to refresh its catalog and add the canonical project path shown by awkit status: the app matches directory strings, so a junction or symlink spelling can hide conversations stored under its resolved path. Claude persists conversations in Claude Code's project history with the requested name. Send a first turn before looking in provider history. Use the same native home and canonical project in both clients, and close the awkit controller before resuming there.
+
 Run in the chosen project:
 
     awkit session --project . serve

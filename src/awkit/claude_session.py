@@ -144,7 +144,8 @@ class ClaudeSession:
             system_prompt={"type": "preset", "preset": "claude_code",
                            "append": meta["startup_context"]["developer_instructions"]},
             setting_sources=["user", "project", "local"], permission_mode="default",
-            extra_args={"replay-user-messages": None}, can_use_tool=self._permission,
+            extra_args={"replay-user-messages": None, **({"name": meta["name"]} if not self.resuming else {})},
+            can_use_tool=self._permission,
             env={"CLAUDE_CODE_EMIT_SESSION_STATE_EVENTS": "1"},
             **claude_options(meta),
         )

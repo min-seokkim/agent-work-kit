@@ -257,6 +257,8 @@ class ClaudeLifetimeTests(unittest.TestCase):
             self.assertEqual(len(self.store.snapshot()["messages"]), 4)
             self.assertNotIn("account", self.store.metadata()["client"])
             self.assertNotIn("allowed_tools", vars(FakeClient.instances[0].options))
+            self.assertEqual(FakeClient.instances[0].options.extra_args, {
+                "replay-user-messages": None, "name": self.store.metadata()["name"]})
             self.assertFalse(set(vars(FakeClient.instances[0].options)) & {"model", "effort", "fallback_model"})
         finally:
             client.close()
@@ -294,6 +296,7 @@ class ClaudeLifetimeTests(unittest.TestCase):
         options = FakeClient.instances[-1].options
         self.assertEqual(options.resume, self.native)
         self.assertIsNone(options.session_id)
+        self.assertNotIn("name", options.extra_args)
         self.assertEqual((options.model, options.effort), ("sonnet", "xhigh"))
         self.assertEqual(FakeClient.instances[-1].queries, [])
         self.assertEqual(self.store.metadata()["model_selection"]["creation"], observed["creation"])

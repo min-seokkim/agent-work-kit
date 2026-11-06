@@ -8,9 +8,8 @@ An agent picks the highest Ready item it can finish, says which in one line, and
 
 | Item | Done when |
 |---|---|
-| Verify damaged-channel isolation in session startup and status. | A malformed channel is reported unavailable with its path while other sessions remain readable; Windows and Linux CI pass. Startup on copies of the two clean backups did not reproduce damage. |
+| Show awkit-created conversations in provider history. | After one short turn, a Codex conversation appears under the project in the app sidebar and a Claude conversation appears in Claude Code's resume list; the owner confirms both. |
 | Remove the web extras `pipeline`, `publish` and `ui` (the owner's default). They have no recorded real use, and the design says they leave the package then. | Their modules, CLI groups, tests, `kit/extras.md`, the example they use and the CI quick-start steps that call them are gone; the Wheel job's quick start uses `review` alone; the CHANGELOG lists the removal under incompatible changes. |
-| Verify Codex runtime capability admission in CI. Runtime-range implementation and no-model-call live check are under review. | The independent runtime review is applied and Windows and Linux CI pass. |
 | Run a current Codex CLI in CI. | A CI job on Linux, Windows and macOS installs the current Codex CLI, starts its app server, runs initialize and the capability probes, and makes no model call. |
 | Accept a tested range of the Claude Agent SDK instead of exactly 0.2.174. | `claude_session.availability` accepts the range in `pyproject.toml`, and the Claude SDK CI job tests its lowest and newest versions. |
 | Run the session tests on macOS. | A macOS CI job runs the session, Codex and Claude test modules and is green. |

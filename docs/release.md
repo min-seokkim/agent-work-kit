@@ -22,7 +22,7 @@ A stable group is one 0.3.0 promises. Its bar: every command the kit shows parse
 | Group | Status | Left to do |
 |---|---|---|
 | kit, doctor, check, hook runner and default rules, review, channel | Stable, bar met | Used throughout this repository's own development |
-| session | Stable, bar not met | Codex is accepted only as one pinned Windows build and the Claude Agent SDK only at one version; macOS is untested. See the roadmap |
+| session | Stable, bar not met | Native-history visibility and the new current-Codex, Claude SDK range and macOS CI checks await confirmation. See the roadmap |
 | usage | Stable, bar met | Format 4 and sanitized real logs passed Windows and Linux CI at `0484121` |
 | pipeline, publish, ui | Removed | No recorded real use; installed-wheel CI uses `review` |
 

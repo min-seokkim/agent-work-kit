@@ -8,6 +8,7 @@ import hashlib
 import importlib.metadata
 import json
 import os
+import re
 import shutil
 import threading
 import uuid
@@ -19,7 +20,9 @@ from .codex_session import ProviderError
 from .session_models import claude_observe, claude_options, claude_submitted
 from .session_store import now
 
-SDK_VERSION = "0.2.174"
+SDK_MIN_VERSION = "0.2.174"
+SDK_MAX_VERSION = "0.3.0"
+SDK_REQUIREMENT = f">={SDK_MIN_VERSION},<{SDK_MAX_VERSION}"
 PREVENTS = {"awkit session": ("F25",)}
 
 
@@ -38,8 +41,12 @@ def availability():
         version = importlib.metadata.version("claude-agent-sdk")
     except importlib.metadata.PackageNotFoundError:
         return dict(available=False, reason="Install agent-work-kit[claude] in this controller's environment.")
-    return dict(available=version == SDK_VERSION, sdk_version=version,
-                reason="" if version == SDK_VERSION else f"This integration requires claude-agent-sdk=={SDK_VERSION}.")
+    # Admit stable releases in the tested minor series; prereleases need their own validation.
+    stable = re.fullmatch(r"\d+\.\d+\.\d+", version)
+    supported = bool(stable and tuple(map(int, SDK_MIN_VERSION.split(".")))
+                     <= tuple(map(int, version.split("."))) < tuple(map(int, SDK_MAX_VERSION.split("."))))
+    return dict(available=supported, sdk_version=version,
+                reason="" if supported else f"This integration requires claude-agent-sdk{SDK_REQUIREMENT} (stable releases).")
 
 
 def executable(cli_path):
@@ -80,6 +87,7 @@ class ClaudeSession:
         runtime = availability()
         if not runtime["available"]:
             raise ProviderError(runtime["reason"])
+        self.sdk_version = runtime["sdk_version"]
         self.store = store
         self.generation = store.metadata()["generation"]
         self.cli_path = cli_path
@@ -169,7 +177,7 @@ class ClaudeSession:
                                effective_rules="unverified", windows_sandbox="not established")
             self.alive = True
             claude_submitted(self.store)
-            self.store.update(permissions=permissions, client=dict(sdk_version=SDK_VERSION, executable=str(selected_cli),
+            self.store.update(permissions=permissions, client=dict(sdk_version=self.sdk_version, executable=str(selected_cli),
                               executable_sha256=digest, **self.initialization),
                               state="idle" if info.get("session_state") == "idle" else "unknown",
                               source="SDK initialize session_state", observed_at=now(), error=None,

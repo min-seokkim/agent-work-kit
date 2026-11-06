@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import os
 import tempfile
 from pathlib import Path
 
@@ -11,15 +12,27 @@ from awkit.sessions import SessionController
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--codex", required=True, help="Path to the native executable, not an npm wrapper")
+    launch = parser.add_mutually_exclusive_group(required=True)
+    launch.add_argument("--codex", help="Path to the native executable, not an npm wrapper")
+    launch.add_argument("--npm-root", type=Path, help="Isolated npm install prefix containing @openai/codex")
     parser.add_argument("--create", action="store_true", help="Also create an empty conversation in a scratch project")
     args = parser.parse_args()
-    command = [str(Path(args.codex).resolve(strict=True))]
+    if args.npm_root:
+        filename = "codex.exe" if os.name == "nt" else "codex"
+        candidates = [path for directory in ("bin", "codex")
+                      for path in (args.npm_root / "node_modules" / "@openai").glob(
+                          f"codex*/vendor/*/{directory}/{filename}") if path.is_file()]
+        if len(candidates) != 1:
+            parser.error(f"Expected one installed native Codex executable, found {len(candidates)}.")
+        executable = candidates[0]
+    else:
+        executable = Path(args.codex)
+    command = [str(executable.resolve(strict=True))]
     with tempfile.TemporaryDirectory(prefix="awkit-codex-check-") as directory:
         client = CodexSession(command, directory, lambda message: None, experimental=True)
         try:
             report = {key: client.runtime.get(key) for key in ("version", "executable_sha256", "capabilities")}
-            print(json.dumps(report, indent=2))
+            print(json.dumps(dict(report, model_queries=0), indent=2))
             assert all(value["supported"] for value in report["capabilities"].values()), report
         finally:
             client.close()

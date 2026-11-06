@@ -1,9 +1,11 @@
 """Offline provider correlation/lifetime checks; the optional SDK is not required."""
 
 import asyncio
+import importlib.metadata
 import sys
 import tempfile
 import time
+import tomllib
 import types
 import unittest
 import uuid
@@ -11,7 +13,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from unittest.mock import patch
 
-from awkit.claude_session import ClaudeSession, recover_local_results
+from awkit.claude_session import SDK_REQUIREMENT, ClaudeSession, availability, recover_local_results
 from awkit.session_store import SessionStore
 from support import WAIT_SECONDS
 
@@ -38,6 +40,26 @@ class ResultMessage:
     terminal_reason: str | None = "completed"
     is_error: bool = False
     errors: list | None = None
+
+
+class SDKAvailabilityTests(unittest.TestCase):
+    def test_stable_version_range_matches_package_requirement(self):
+        project = Path(__file__).resolve().parents[1]
+        config = tomllib.loads((project / "pyproject.toml").read_text(encoding="utf-8"))
+        self.assertEqual(config["project"]["optional-dependencies"]["claude"],
+                         ["claude-agent-sdk" + SDK_REQUIREMENT])
+        for version in ("0.2.174", "0.2.175", "0.2.178", "0.2.999"):
+            with self.subTest(version=version), patch("awkit.claude_session.importlib.metadata.version", return_value=version):
+                self.assertEqual(availability(), dict(available=True, sdk_version=version, reason=""))
+
+    def test_unvalidated_versions_and_missing_dependency_are_unavailable(self):
+        for version in ("0.2.173", "0.3.0", "1.0.0", "0.2.178rc1", "0.2.178.dev1", "unknown"):
+            with self.subTest(version=version), patch("awkit.claude_session.importlib.metadata.version", return_value=version):
+                result = availability()
+                self.assertFalse(result["available"])
+                self.assertIn(SDK_REQUIREMENT, result["reason"])
+        with patch("awkit.claude_session.importlib.metadata.version", side_effect=importlib.metadata.PackageNotFoundError):
+            self.assertFalse(availability()["available"])
 
 
 class ClaudeCorrelationTests(unittest.TestCase):
@@ -239,7 +261,7 @@ class ClaudeLifetimeTests(unittest.TestCase):
         binary = patch("awkit.claude_session.executable", return_value=(Path(sys.executable), "fixture-hash"))
         binary.start()
         self.addCleanup(binary.stop)
-        version = patch("awkit.claude_session.availability", return_value={"available": True})
+        version = patch("awkit.claude_session.availability", return_value={"available": True, "sdk_version": "0.2.178"})
         version.start()
         self.addCleanup(version.stop)
 
@@ -256,6 +278,7 @@ class ClaudeLifetimeTests(unittest.TestCase):
             self.assertEqual(len(FakeClient.instances[0].queries), 2)
             self.assertEqual(len(self.store.snapshot()["messages"]), 4)
             self.assertNotIn("account", self.store.metadata()["client"])
+            self.assertEqual(self.store.metadata()["client"]["sdk_version"], "0.2.178")
             self.assertNotIn("allowed_tools", vars(FakeClient.instances[0].options))
             self.assertEqual(FakeClient.instances[0].options.extra_args, {
                 "replay-user-messages": None, "name": self.store.metadata()["name"]})

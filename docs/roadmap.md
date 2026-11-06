@@ -8,10 +8,10 @@ An agent picks the highest Ready item it can finish, says which in one line, and
 
 | Item | Done when |
 |---|---|
-| Show awkit-created conversations in provider history. | After one short turn, a Codex conversation appears under the project in the app sidebar and a Claude conversation appears in Claude Code's resume list; the owner confirms both. |
-| Run a current Codex CLI in CI. | A CI job on Linux, Windows and macOS installs the current Codex CLI, starts its app server, runs initialize and the capability probes, and makes no model call. |
-| Accept a tested range of the Claude Agent SDK instead of exactly 0.2.174. | `claude_session.availability` accepts the range in `pyproject.toml`, and the Claude SDK CI job tests its lowest and newest versions. |
-| Run the session tests on macOS. | A macOS CI job runs the session, Codex and Claude test modules and is green. |
+| Diagnose missing provider-history entries after `a98690c`. The owner cannot see either probe. Both have returned a reply; Codex's native index and Claude's SDK history retain them under separate `.awkit/provider-history-check` projects. | The saved conversations appear in the matching project in each client; the owner confirms both. |
+| Verify the new current-Codex CI jobs. Windows 0.167.0 initialization and all capability probes pass locally without a model call. | The Linux, Windows and macOS native-runtime jobs pass. |
+| Verify Claude SDK range CI. Local API and bundled-CLI checks pass on 0.2.174 and 0.2.178; runtime admission accepts stable versions from 0.2.174 to below 0.3.0. | CI passes on the lowest and newest supported SDK. |
+| Verify the new macOS session jobs. | macOS session, Codex and Claude tests pass on Python 3.11 and 3.14. |
 
 ## Waiting for the owner
 
@@ -19,6 +19,7 @@ Each row has a default. An agent applies the default when the rest of the gate i
 
 | Decision or material | Default |
 |---|---|
+| GitHub authentication permits workflow changes. The push of `1bc4973` was refused because the current OAuth login lacks `workflow`. | The owner refreshes the login with `gh auth refresh -h github.com -s workflow`; then push and check CI. |
 | Remove `init --commit`, an incompatible change. | Keep it in 0.3.0; decide after. |
 | The PyPI pending publisher and the `pypi` environment ([release.md](release.md#release)). | None: the upload needs them. |
 | The word "release". | None. |

@@ -89,7 +89,6 @@ jobs:
     env:
       PYTHONPATH: ${{ github.workspace }}/src
       PYTHONUTF8: "1"
-      CODEX_HOME: ${{ runner.temp }}/awkit-codex-home
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -103,6 +102,8 @@ jobs:
         run: npm install --prefix "$RUNNER_TEMP/awkit-codex" @openai/codex@latest
       - name: Initialize and probe native capabilities without a model call
         shell: bash
+        env:
+          CODEX_HOME: ${{ runner.temp }}/awkit-codex-home
         run: |
           mkdir -p "$CODEX_HOME"
           python scripts/check_codex_runtime.py --npm-root "$RUNNER_TEMP/awkit-codex"

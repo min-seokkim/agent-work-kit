@@ -19,7 +19,6 @@ Each row has a default. An agent applies the default when the rest of the gate i
 
 | Decision or material | Default |
 |---|---|
-| GitHub authentication permits workflow changes. The push of `1bc4973` was refused because the current OAuth login lacks `workflow`. | The owner refreshes the login with `gh auth refresh -h github.com -s workflow`; then push and check CI. |
 | Remove `init --commit`, an incompatible change. | Keep it in 0.3.0; decide after. |
 | The PyPI pending publisher and the `pypi` environment ([release.md](release.md#release)). | None: the upload needs them. |
 | The word "release". | None. |

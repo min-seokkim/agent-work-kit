@@ -10,6 +10,8 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 - Claude sessions accept stable `claude-agent-sdk>=0.2.174,<0.3.0` and record the actual installed SDK version. CI checks the lowest and newest supported SDK with its bundled native CLI, and checks the current Codex CLI on Windows, Linux and macOS without model calls. macOS runs the session and provider regression tests on Python 3.11 and 3.14.
 
+- Set the Codex CI home in the probe step, where GitHub permits the runner context. A job-level reference prevented the first expanded workflow from starting.
+
 - `usage --json` changes to format 4. A call is one Claude `message.id` or one changed Codex cumulative `token_count` observation. Repeated IDs, unchanged reports and resumed segments do not add calls; multiple responses in one user turn do. Files with the same native session ID are grouped and listed in `files`. Missing response identity, missing Codex observations and damaged logs make `calls` null; `call_coverage` retains observed counts and reasons. Both providers use `counted: responses`, and model totals count observed responses. Token and human-input coverage remain separate.
 
 - Usage tests include sanitized real Codex CLI, Codex app, Claude Code and Claude Desktop transcripts. Expected calls, inputs and tokens were tallied directly from the original logs, independently of `awkit usage`. The CLI transcript was created for this fixture with a short arithmetic tool call; the other conversations came from existing local logs.

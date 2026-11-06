@@ -8,10 +8,6 @@ An agent picks the highest Ready item it can finish, says which in one line, and
 
 | Item | Done when |
 |---|---|
-| Diagnose missing provider-history entries after `a98690c`. The owner cannot see either probe. Both have returned a reply; Codex's native index and Claude's SDK history retain them under separate `.awkit/provider-history-check` projects. | The saved conversations appear in the matching project in each client; the owner confirms both. |
-| Verify the new current-Codex CI jobs. Windows 0.167.0 initialization and all capability probes pass locally without a model call. | The Linux, Windows and macOS native-runtime jobs pass. |
-| Verify Claude SDK range CI. Local API and bundled-CLI checks pass on 0.2.174 and 0.2.178; runtime admission accepts stable versions from 0.2.174 to below 0.3.0. | CI passes on the lowest and newest supported SDK. |
-| Verify the new macOS session jobs. | macOS session, Codex and Claude tests pass on Python 3.11 and 3.14. |
 
 ## Waiting for the owner
 
@@ -19,7 +15,7 @@ Each row has a default. An agent applies the default when the rest of the gate i
 
 | Decision or material | Default |
 |---|---|
-| Remove `init --commit`, an incompatible change. | Keep it in 0.3.0; decide after. |
+| Provider-history visibility after `a98690c`. Both probes returned replies and remain in native history, but the owner cannot see them. The Codex app has the repository root registered; the probes use `.awkit/provider-history-check` and its `claude` subfolder. | None: open those exact projects and confirm both named probe conversations. App control is unavailable in the current environment. |
 | The PyPI pending publisher and the `pypi` environment ([release.md](release.md#release)). | None: the upload needs them. |
 | The word "release". | None. |
 
@@ -29,6 +25,7 @@ Each waits for what its row names; do not start them before the tag.
 
 | Item | What unblocks it, and who |
 |---|---|
+| Whether to remove `init --commit`; it stays in 0.3.0. | The owner's decision after the release. |
 | Storage growth of shared artifact storage on a real continuation. One copied run is 42.8 MB; the first shared run with one changed file added 284 KB plus a 4.8 KB object. Near-identical repeats prove nothing. | The owner's target project runs a continuation that changes outputs; that session records the increment against a copied counterfactual. |
 | Two-environment trial: a file-access-only reviewer on another computer, and recovery of an interrupted request on an execution-capable client. | The owner makes another computer available. |
 | Attach to existing IDE sessions; enroll foreign Claude sessions; list live Claude sessions. | A provider endpoint. Codex has none (socket error 10050). The owner says which outcome they want when one appears. |

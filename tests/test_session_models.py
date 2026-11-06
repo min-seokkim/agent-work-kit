@@ -322,6 +322,21 @@ class SessionModelTests(unittest.TestCase):
                     key = "provider" if field == "modelProvider" else field
                     self.assertEqual(result["model_selection"]["latest"][key], value)
 
+    def test_schema_without_resume_model_allows_receipt_checked_resume(self):
+        from test_codex_runtime import protocol
+
+        from awkit.codex_capabilities import schema_capabilities
+
+        self.controller.client["capabilities"] = schema_capabilities(protocol())
+        meta = self.create(model="fictional")
+        self.assertEqual(meta["model_selection"]["state"], "matched")
+        self.controller.store(meta["id"]).update(state="unknown")
+        self.provider.calls.clear()
+        result = self.controller.resume(meta["id"])["session"]
+        self.assertEqual(result["model_selection"]["state"], "matched")
+        self.assertEqual(result["model_selection"]["creation"], meta["model_selection"]["creation"])
+        self.assertNotIn("model", self.provider.calls[0][1])
+
     def test_malformed_full_response_holds_without_an_invented_observation(self):
         self.provider.call = lambda *args, **kwargs: None
         meta = self.create(model="fictional")

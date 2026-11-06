@@ -14,9 +14,12 @@ from support import codex_evidence
 
 
 def protocol():
-    fields = {"thread/start": ["model", "config"], "thread/resume": ["threadId", "excludeTurns", "model"],
+    fields = {"thread/start": ["model", "config"], "thread/resume": ["threadId", "excludeTurns", "cwd", "sandbox",
+              "approvalPolicy", "approvalsReviewer", "developerInstructions"],
               "thread/read": ["threadId"], "thread/list": ["cwd", "useStateDbOnly", "sourceKinds"],
-              "thread/turns/list": ["threadId"], "turn/steer": ["threadId", "expectedTurnId", "input"]}
+              "thread/turns/list": ["threadId", "limit", "sortDirection", "itemsView"],
+              "thread/items/list": ["threadId", "turnId", "limit", "sortDirection"],
+              "turn/steer": ["threadId", "expectedTurnId", "input"]}
     return {"oneOf": [{"properties": {"method": {"enum": [method]}, "params": {
         "properties": dict.fromkeys(names, {"type": "string"})}}} for method, names in fields.items()]}
 
@@ -56,6 +59,33 @@ class RuntimeTests(unittest.TestCase):
         del schema["oneOf"][0]["properties"]["params"]["properties"]["config"]
         self.assertFalse(schema_capabilities(schema)["model"]["supported"])
         self.assertFalse(capability(codex_evidence(capabilities={}), "model")["supported"])
+
+    def test_recovery_requires_full_history_and_summary_fallback(self):
+        for missing in ("thread/items/list", "thread/turns/list"):
+            schema = protocol()
+            schema["oneOf"] = [row for row in schema["oneOf"] if row["properties"]["method"]["enum"] != [missing]]
+            result = schema_capabilities(schema)
+            for feature in ("enrollment", "model"):
+                self.assertFalse(result[feature]["supported"])
+                self.assertIn(missing, result[feature]["reason"])
+            self.assertTrue(result["discovery"]["supported"])
+            self.assertTrue(result["active_turn_update"]["supported"])
+
+    def test_model_resume_does_not_require_an_unused_model_override(self):
+        schema = protocol()
+        self.assertNotIn("model", schema["oneOf"][1]["properties"]["params"]["properties"])
+        self.assertTrue(schema_capabilities(schema)["model"]["supported"])
+
+    def test_status_preserves_schema_failure_and_runtime_refusal_reasons(self):
+        with patch("awkit.codex_capabilities.runtime", return_value=codex_evidence(executable="fictional")), \
+                patch("awkit.codex_capabilities.subprocess.run", return_value=SimpleNamespace(returncode=1)):
+            result = probe(["fictional"], None)
+        self.assertEqual(result["version"], codex_evidence()["version"])
+        self.assertIn("schema probe failed", describe("codex", result)["model"]["reason"])
+        for reason in ("script wrappers are unsupported", "Codex requires version 0.164.0-alpha.11.1 or newer"):
+            with patch("awkit.codex_capabilities.runtime", side_effect=ValueError(reason)):
+                result = probe(["fictional"], None)
+            self.assertEqual(describe("codex", result)["model"]["reason"], reason)
 
     def test_probe_uses_only_schema_and_metadata_listing(self):
         calls = []

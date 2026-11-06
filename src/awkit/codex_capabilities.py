@@ -8,10 +8,13 @@ from pathlib import Path
 
 from .codex_runtime import runtime, supported_version
 
+RECOVERY = {"thread/read": ("threadId",),
+            "thread/turns/list": ("threadId", "limit", "sortDirection", "itemsView"),
+            "thread/items/list": ("threadId", "turnId", "limit", "sortDirection")}
 REQUIRES = {
-    "model": {"thread/start": ("model", "config"), "thread/resume": ("model",)},
-    "enrollment": {"thread/resume": ("threadId", "excludeTurns"), "thread/read": ("threadId",),
-                   "thread/turns/list": ("threadId",)},
+    "model": {"thread/start": ("model", "config"), "thread/resume": ("threadId", "cwd", "sandbox",
+        "approvalPolicy", "approvalsReviewer", "excludeTurns", "developerInstructions"), **RECOVERY},
+    "enrollment": {"thread/resume": ("threadId", "excludeTurns"), **RECOVERY},
     "discovery": {"thread/list": ("cwd", "useStateDbOnly", "sourceKinds")},
     "active_turn_update": {"thread/read": ("threadId",), "turn/steer": ("threadId", "expectedTurnId", "input")},
 }
@@ -45,6 +48,7 @@ def schema_capabilities(schema):
 
 def probe(command, client):
     """Return evidence for this connection. A failed feature never disables unrelated features."""
+    evidence = {}
     try:
         evidence = runtime(command)
         with tempfile.TemporaryDirectory(prefix="awkit-codex-probe-") as directory:
@@ -56,7 +60,7 @@ def probe(command, client):
             schema = json.loads((Path(directory) / "ClientRequest.json").read_text(encoding="utf-8"))
             capabilities = schema_capabilities(schema)
     except (OSError, ValueError, TypeError, AttributeError, subprocess.SubprocessError) as exc:
-        return dict(capabilities=unavailable(str(exc)))
+        return dict(evidence, capabilities=unavailable(str(exc)))
     # Bound the result and filter by project; discard all returned metadata.
     if capabilities["discovery"]["supported"]:
         try:
@@ -72,5 +76,6 @@ def probe(command, client):
 
 def capability(evidence, feature):
     if not evidence.get("native_executable") or not supported_version(evidence.get("version")):
-        return dict(supported=False, reason="A supported native Codex runtime has not been verified.")
+        failure = evidence.get("capabilities", {}).get(feature, {})
+        return dict(supported=False, reason=failure.get("reason") or "A supported native Codex runtime has not been verified.")
     return evidence.get("capabilities", {}).get(feature, dict(supported=False, reason="Protocol capability has not been probed."))

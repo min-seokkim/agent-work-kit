@@ -39,7 +39,6 @@ class ScopedStatusTests(unittest.TestCase):
         self.owner.history = HistoryViews(self.root, self.root / "views")
         self.owner.provider = SimpleNamespace(alive=True)
         self.owner.client = {}
-        self.owner.client = {}
         self.owner.claude_clients = {}
         self.owner.enrolled_clients = {}
         self.owner.command = ["fictional-unavailable-executable"]

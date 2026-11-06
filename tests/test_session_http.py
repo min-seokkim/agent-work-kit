@@ -11,6 +11,7 @@ import time
 import unittest
 import urllib.error
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from awkit.channel import Channel
@@ -89,6 +90,24 @@ class SessionHTTPTests(unittest.TestCase):
                 opener.open(call, timeout=3)
             self.assertEqual(raised.exception.code, 403)
             raised.exception.close()
+        self.assertEqual(self.controller.status()["sessions"], [])
+        self.assertIsNone(self.controller.provider)
+
+    def test_concurrent_rejected_post_bodies_return_complete_refusals(self):
+        body = json.dumps(dict(action="create", args=dict(name="Unauthorized", responsibility="x" * 65536))).encode()
+
+        def rejected(_):
+            opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+            call = urllib.request.Request(self.server.url + "/api/command", data=body,
+                                          headers={"Authorization": "Bearer wrong", "Content-Type": "application/json"})
+            with self.assertRaises(urllib.error.HTTPError) as raised:
+                opener.open(call, timeout=10)
+            with raised.exception as response:
+                self.assertEqual(response.code, 403)
+                self.assertEqual(json.loads(response.read())["schema"], 1)
+
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            list(pool.map(rejected, range(24)))
         self.assertEqual(self.controller.status()["sessions"], [])
         self.assertIsNone(self.controller.provider)
 

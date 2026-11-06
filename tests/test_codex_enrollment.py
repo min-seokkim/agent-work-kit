@@ -302,3 +302,11 @@ class EnrollmentTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 runtime([str(executable)])
             run.assert_not_called()
+
+    def test_missing_recovery_capability_refuses_before_native_resume(self):
+        self.inspected["capabilities"]["enrollment"] = dict(supported=False, reason="Missing thread/items/list")
+        view = self.enroll()
+        self.assertEqual(view["session"]["state"], "unknown")
+        self.assertIn("thread/items/list", view["session"]["error"])
+        self.assertEqual(self.calls, [])
+        self.assertFalse(self.clients[-1].alive)

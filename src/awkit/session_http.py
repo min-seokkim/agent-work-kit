@@ -5,8 +5,10 @@ from __future__ import annotations
 import json
 import os
 import secrets
+import socket
 import sqlite3
 import threading
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -27,6 +29,24 @@ class SessionServer(ThreadingHTTPServer):
         self.token = token or secrets.token_urlsafe(32)
         super().__init__(("127.0.0.1", port), SessionHandler)
         self.url = f"http://127.0.0.1:{self.server_port}"
+
+    def shutdown_request(self, request):
+        # An early 403 leaves a POST body unread. Closing that socket immediately can
+        # reset the connection on Windows before the client reads the refusal.
+        try:
+            request.shutdown(socket.SHUT_WR)
+            deadline = time.monotonic() + 0.2
+            remaining = 2 * 1024 * 1024
+            while remaining > 0 and (seconds := deadline - time.monotonic()) > 0:
+                request.settimeout(seconds)
+                chunk = request.recv(min(65536, remaining))
+                if not chunk:
+                    break
+                remaining -= len(chunk)
+        except OSError:
+            pass
+        finally:
+            self.close_request(request)
 
 
 class SessionHandler(BaseHTTPRequestHandler):

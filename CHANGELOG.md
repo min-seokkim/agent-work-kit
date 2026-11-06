@@ -8,6 +8,8 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Commands
 
+- The session HTTP server briefly drains unread request bytes after sending a response and shutting down its write side. Early authorization refusals could otherwise reset the Windows connection before clients received HTTP 403. Draining is bounded to 200 ms and 2 MiB and never parses or dispatches the rejected input.
+
 - Codex model selection, enrollment, discovery and turn updates accept native versions from 0.164.0-alpha.11.1, using initialization, protocol-schema probes and an indexed-listing probe instead of a single executable hash. Status reports each unavailable capability and its reason. Wrappers and extra launch arguments remain unsupported for these features; returned identity, policy and model checks still hold work on disagreement. Upgrades at the same enrolled executable path are probed again.
 
 - `kit skills` and `kit init` read awkit's source (`kit_source`, two git processes in a source checkout) once per write of the skills instead of once per skill file, and the skill that points into a project's kit folder takes the version from the package instead of from `kit_source`. The written files are unchanged.

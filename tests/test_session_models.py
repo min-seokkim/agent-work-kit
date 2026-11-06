@@ -323,9 +323,8 @@ class SessionModelTests(unittest.TestCase):
                     self.assertEqual(result["model_selection"]["latest"][key], value)
 
     def test_schema_without_resume_model_allows_receipt_checked_resume(self):
-        from test_codex_runtime import protocol
-
         from awkit.codex_capabilities import schema_capabilities
+        from test_codex_runtime import protocol
 
         self.controller.client["capabilities"] = schema_capabilities(protocol())
         meta = self.create(model="fictional")

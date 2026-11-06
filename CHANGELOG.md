@@ -8,6 +8,8 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Commands
 
+- Correct Claude native-history guidance and status: SDK sessions are persisted but excluded from Claude Code's picker. After closing the controller, open the original conversation with `claude --resume <native_id>`. Codex listing metadata and app sidebar visibility remain separate checks.
+
 - Claude sessions accept stable `claude-agent-sdk>=0.2.174,<0.3.0` and record the actual installed SDK version. CI checks the lowest and newest supported SDK with its bundled native CLI, and checks the current Codex CLI on Windows, Linux and macOS without model calls. macOS runs the session and provider regression tests on Python 3.11 and 3.14.
 
 - Set the Codex CI home in the probe step, where GitHub permits the runner context. A job-level reference prevented the first expanded workflow from starting.
@@ -16,7 +18,7 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 - Usage tests include sanitized real Codex CLI, Codex app, Claude Code and Claude Desktop transcripts. Expected calls, inputs and tokens were tallied directly from the original logs, independently of `awkit usage`. The CLI transcript was created for this fixture with a short arithmetic tool call; the other conversations came from existing local logs.
 
-- New Codex conversations use the app's agent-created thread source when capability probes support it; missing source fields disable only that classification. The session guide explains that sidebar visibility requires refreshing the app and opening awkit's canonical project path, rather than a junction spelling. New Claude conversations pass their awkit name to the native resume list while retaining persistence and exact-ID recovery.
+- New Codex conversations use the app's agent-created thread source when capability probes support it; missing source fields disable only that classification. The session guide explains canonical project paths and app refresh. New Claude conversations persist their awkit name in native history while retaining exact-ID recovery; SDK sessions are excluded from the native picker.
 
 - Session startup checks channel integrity before migration and leaves damaged files unchanged. Status reports an unavailable channel with its path while keeping healthy sessions readable; a later channel read failure no longer stops the controller's dispatch worker for every session.
 

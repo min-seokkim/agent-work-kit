@@ -27,7 +27,10 @@ def describe(provider, evidence=None):
         operations=dict(create=dict(supported=native), status=dict(supported=True), send=dict(supported=native),
                         cancel=dict(supported=native), interrupt=dict(supported=native), decide=dict(supported=native),
                         resume=dict(supported=native), discovery=dict(supported=codex, reason=discovery_reason),
-                        native_history=dict(supported=native, reason="History metadata support; visibility requires the same provider home and canonical project path."),
+                        native_history=dict(supported=native, reason=(
+                            "History metadata support; app sidebar visibility still needs verification." if codex else
+                            "Claude persists SDK sessions but excludes them from its picker. Stop the controller and use claude --resume <native_id>."
+                            if native else "Stored channel history has no provider session.")),
                         enrollment=dict(supported=codex, reason=enrollment_reason),
                         active_turn_update=dict(supported=codex, reason=update_reason)))
     if not native:

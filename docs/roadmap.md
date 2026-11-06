@@ -15,7 +15,8 @@ Each row has a default. An agent applies the default when the rest of the gate i
 
 | Decision or material | Default |
 |---|---|
-| Provider-history visibility after `a98690c`. Both probes returned replies and remain in native history, but the owner cannot see them. The Codex app has the repository root registered; the probes use `.awkit/provider-history-check` and its `claude` subfolder. | None: open those exact projects and confirm both named probe conversations. App control is unavailable in the current environment. |
+| Codex sidebar visibility. The owner still cannot see the probe in the exact project; the native listing API returns it. | Restore the Computer Use connection for app-side diagnosis; native pipe lookup still fails after the owner opened the app. |
+| Claude's picker excludes SDK sessions by design ([official docs](https://code.claude.com/docs/en/sessions#loop-p-agent-sdk-and-background-sessions)). Exact-ID interactive resume opened the original probe and its saved reply. | The owner decides whether exact-ID resume replaces picker visibility in the release condition. |
 | The PyPI pending publisher and the `pypi` environment ([release.md](release.md#release)). | None: the upload needs them. |
 | The word "release". | None. |
 

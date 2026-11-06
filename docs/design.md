@@ -69,5 +69,5 @@ What follows: a guard candidate needs an occurrence in the catalogue, and F11, F
 | Test fixtures | A Git fixture has its own verified repository root; a non-Git fixture sits outside every ancestor worktree. An installer probe once found the parent repository and wrote a live selector. |
 | Formats migrate in place before the first release | No parallel legacy mode; the change is announced in CHANGELOG. There is no released consumer yet. |
 | `dev` is an install source | Its history is never rewritten or force-pushed. Local commits are rebased onto `origin/dev` before pushing. |
-| Hold the first release | Until the [release conditions](release.md#release) are met. The owner retains Claude picker visibility: exact-ID resume is recovery evidence and does not satisfy this condition. |
+| Hold the first release | Meet [release conditions](release.md#release); require Claude picker visibility. |
 | One repository, one package; agents are the readers; the READMEs are for people | The READMEs keep their five sections and basic setup commands; command details belong in the kit. Everything else is written in English for agents ([AGENTS.md](../AGENTS.md)). |

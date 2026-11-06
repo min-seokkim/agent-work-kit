@@ -459,10 +459,6 @@ Exits: 0 readable, including pending/conflicting; 1 missing/unreadable/unsupport
 - Token fields retain format-2 semantics: a field is `null` when any counted record lacked it or held an invalid value; `missing` and `invalid` count affected records. `total` sums known values, and `total.complete` concerns token/log completeness only. It can be true while human-input coverage is incomplete. `skipped_lines` counts `damaged_lines` and a `partial_line` per file; `unrecognized_files` lists unknown formats. An incomplete log also makes human-input coverage incomplete.
 - Sanitized real fixtures cover Codex CLI (`codex_exec`, source `exec`), the Codex app (`codex_work_desktop`, source `vscode`), Claude Code and Claude Desktop's local-agent transcripts. Their expected counts come directly from source-log tallies. Counter resets and missing native identities can still make totals differ from task usage. Whole-session counts and minutes are not task cost or productivity measurements.
 
-## Extras for web projects
-
-`pipeline`, `publish` and `ui` are web-project extras in `src/awkit/extras/`; their commands, formats and exit codes are in [extras.md](extras.md) (`awkit kit guide extras`). They are not mentioned in the READMEs and leave the package if real use does not need them.
-
 ## Sessions
 
 [Sessions](sessions.md): [discovery](sessions.md#find-a-conversation-by-name), [enrollment](sessions.md#enroll-a-selected-codex-conversation), [decisions](sessions.md#submit-a-decision-file) (UTF-8/BOM; `-`: stdin), [updates](sessions.md#update-an-active-turn) (request, expected turn, key; no replay), [status](sessions.md#read-current-work). Fields: current_work, decision_summary, attempt.public_update. JSON schema 1; 30 events.

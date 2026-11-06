@@ -174,15 +174,6 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit 1 }
           & $appPython -c "import os,sys,awkit; print(sys.executable); print(sys.version); print(awkit.__file__); assert '.'.join(map(str,sys.version_info[:2])) == os.environ['EXPECTED_PYTHON']"
           if ($LASTEXITCODE -ne 0) { exit 1 }
-          $project = "$env:RUNNER_TEMP\project"
-          New-Item -ItemType Directory $project | Out-Null
-          & $awkit kit init $project
-          if ($LASTEXITCODE -ne 0) { exit 1 }
-          Copy-Item examples\local-release\* $project
-          & $awkit pipeline --config "$project\pipeline.toml" deploy aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-          if ($LASTEXITCODE -ne 0) { exit 1 }
-          & $awkit pipeline --config "$project\pipeline.toml" status
-          if ($LASTEXITCODE -ne 0) { exit 1 }
           $example = "$env:RUNNER_TEMP\data-example"
           & $awkit kit example data $example
           if ($LASTEXITCODE -ne 0) { exit 1 }
@@ -201,12 +192,6 @@ jobs:
           app_python="$RUNNER_TEMP/venv/bin/python"
           "$app_python" -m pip install --no-index --no-deps dist/*.whl
           "$app_python" -c "import os,sys,awkit; print(sys.executable); print(sys.version); print(awkit.__file__); assert '.'.join(map(str,sys.version_info[:2])) == os.environ['EXPECTED_PYTHON']"
-          project="$RUNNER_TEMP/project"
-          mkdir "$project"
-          "$awkit" kit init "$project"
-          cp examples/local-release/* "$project/"
-          "$awkit" pipeline --config "$project/pipeline.toml" deploy aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-          "$awkit" pipeline --config "$project/pipeline.toml" status
           example="$RUNNER_TEMP/data-example"
           "$awkit" kit example data "$example"
           if "$awkit" review --repo "$example" check HEAD --config "$example/checks.toml"; then

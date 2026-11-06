@@ -210,16 +210,16 @@ class KitCommandTests(unittest.TestCase):
         parser = relaxed_parser()
         commands = [("x.md", "awkit review chek HEAD"), ("x.md", "awkit doctor [--jsn]"),
                     ("x.md", "awkit channel wait ROLE MODE [--max SECONDS] [--keep-awak]"),
-                    ("x.md", "awkit pipeline --config FILE plan|deplo RELEASE|rollback")]
+                    ("x.md", "awkit review verify|accep RUN")]
         reasons = [reason for _, _, reason in problems(parser, commands)]
         self.assertEqual(len(reasons), 4, reasons)
-        for word, reason in zip(("chek", "--jsn", "--keep-awak", "deplo"), reasons, strict=True):
+        for word, reason in zip(("chek", "--jsn", "--keep-awak", "accep"), reasons, strict=True):
             self.assertIn(word, reason)
 
     def test_synopses_expand_to_every_alternative(self):
         parser = relaxed_parser()
         commands = [("x.md", "awkit review [--repo DIR] storage [--runs-root DIR] [--json | --summary]"),
-                    ("x.md", "awkit pipeline --config FILE plan|deploy RELEASE|rollback|status [--json]"),
+                    ("x.md", "awkit review verify|accept RUN"),
                     ("x.md", "awkit <command> --help"), ("x.md", "awkit hook [EVENT] [--skip RULE]... [--kit-hooks]")]
         self.assertEqual(problems(parser, commands), [])
 

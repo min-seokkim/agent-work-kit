@@ -122,6 +122,8 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Incompatible changes
 
+- Remove the unused web commands `pipeline`, `publish` and `ui`, their `ui` installation extra, guide and local-release example. CI exercises the installed wheel through `review`. The session controller's browser interface remains included.
+
 - Usage JSON is format 4: `calls` can be null, Codex calls count changed cumulative token observations instead of context rows, and files sharing a native session ID are grouped. Consumers should read `call_coverage` for known counts and use `files` for the grouped sources.
 
 - Explicit Codex enrollment creates managed extension 4; older controllers reject it. Existing extensions 1/2/3 retain their migration and creation behavior, and core channel schema remains 1. The new session enroll command and human entry select a name/native UUID without sending a task or injecting role/base instructions. Admission pins one verified Windows runtime and requires the same local home/store, project, native writer ownership, direct-input permission and interpretable required native policy. Every returned policy field is preserved and compared, including optional profile provenance; actual null and key absence remain distinct. Refusal and uncertain delivery remain visible without replacement or replay.

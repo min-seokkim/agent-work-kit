@@ -9,12 +9,9 @@ An agent picks the highest Ready item it can finish, says which in one line, and
 | Item | Done when |
 |---|---|
 | Show awkit-created conversations in provider history. | After one short turn, a Codex conversation appears under the project in the app sidebar and a Claude conversation appears in Claude Code's resume list; the owner confirms both. |
-| Remove the web extras `pipeline`, `publish` and `ui` (the owner's default). They have no recorded real use, and the design says they leave the package then. | Their modules, CLI groups, tests, `kit/extras.md`, the example they use and the CI quick-start steps that call them are gone; the Wheel job's quick start uses `review` alone; the CHANGELOG lists the removal under incompatible changes. |
 | Run a current Codex CLI in CI. | A CI job on Linux, Windows and macOS installs the current Codex CLI, starts its app server, runs initialize and the capability probes, and makes no model call. |
 | Accept a tested range of the Claude Agent SDK instead of exactly 0.2.174. | `claude_session.availability` accepts the range in `pyproject.toml`, and the Claude SDK CI job tests its lowest and newest versions. |
 | Run the session tests on macOS. | A macOS CI job runs the session, Codex and Claude test modules and is green. |
-| Verify usage format 4 in CI. One call is a Claude message ID or a changed Codex cumulative token observation; repeated reports and resumed segments add no calls. | Windows and Linux CI pass response-identity, replay and missing-token tests. |
-| Verify sanitized real usage fixtures in CI. | Codex CLI, Codex app, Claude Code and Claude Desktop fixtures match independently tallied calls, user messages and tokens; source text and personal identifiers are absent. |
 
 ## Waiting for the owner
 
@@ -23,7 +20,6 @@ Each row has a default. An agent applies the default when the rest of the gate i
 | Decision or material | Default |
 |---|---|
 | Remove `init --commit`, an incompatible change. | Keep it in 0.3.0; decide after. |
-| Keep any of `pipeline`, `publish`, `ui`. | Remove all three. |
 | The PyPI pending publisher and the `pypi` environment ([release.md](release.md#release)). | None: the upload needs them. |
 | The word "release". | None. |
 

@@ -19,7 +19,6 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
-ui = ["playwright>=1.48,<2"]
 claude = ["claude-agent-sdk==0.2.174"]
 
 [project.scripts]
@@ -28,7 +27,7 @@ awkit = "awkit.cli:main"
 [tool.setuptools]
 # The kit lives at the repository root so it can be browsed and copied as-is;
 # the wheel ships it as awkit/kit so `awkit kit init` works after installation.
-packages = ["awkit", "awkit.extras", "awkit.kit", "awkit.kit.templates", "awkit.kit.templates.roles", "awkit.kit.examples",
+packages = ["awkit", "awkit.kit", "awkit.kit.templates", "awkit.kit.templates.roles", "awkit.kit.examples",
             "awkit.examples", "awkit.examples.documents", "awkit.examples.data", "awkit.examples.analysis"]
 
 [tool.setuptools.package-dir]

@@ -17,7 +17,6 @@ from unittest import mock
 from awkit import checks, connect, hooks, kit_hooks, local_state, review
 from awkit.channel import Channel
 from awkit.channel_status import _read_channel
-from awkit.extras.pipeline import Pipeline
 from awkit.session_history import HistoryViews
 from awkit.session_store import SessionStore
 from awkit.sessions import SessionController
@@ -349,7 +348,6 @@ class LocalStateTests(unittest.TestCase):
         self.assertEqual(exclude.read_bytes(), before + b"# intervening editor\n")
 
     def test_other_explicit_writers_fail_before_managed_payload(self):
-        pipeline = self.pipeline()
         config = self.project / "checks.toml"
         config.write_text('schema=1\n[[checks]]\nname="fictional"\nargv=["echo","unused"]\n', encoding="utf-8")
         history = self.project / "history.sqlite3"
@@ -361,10 +359,6 @@ class LocalStateTests(unittest.TestCase):
             with self.subTest(action=action), self.assertRaises(local_state.ExclusionError):
                 action()
             self.assertFalse((self.project / ".awkit").exists())
-        with self.assertRaises(local_state.ExclusionError):
-            with pipeline.locked():
-                self.fail("must not reach the action")
-        self.assertFalse((self.project / ".awkit").exists())
 
     def test_shared_controller_and_history_registration_are_protected(self):
         controller = SessionController(self.project, ["fictional"])
@@ -410,8 +404,6 @@ class LocalStateTests(unittest.TestCase):
         hooks.report(self.project)
         checks.done(self.project)
         HistoryViews(self.project, self.project / ".awkit/views").snapshots()
-        pipeline = self.pipeline()
-        pipeline.history()
         self.assertFalse((self.project / ".awkit").exists())
         self.assertEqual(local_state.exclude_file(self.project).read_bytes(), before)
 
@@ -433,22 +425,6 @@ class LocalStateTests(unittest.TestCase):
             self.assertEqual(exclude.read_bytes(), unprotected)
         finally:
             controller.close()
-
-    def pipeline(self):
-        for name in ("pipeline.toml", "adapter.py"):
-            shutil.copyfile(ROOT / "examples/local-release" / name, self.project / name)
-        return Pipeline(self.project / "pipeline.toml")
-
-    def test_pipeline_default_state_prepares_but_external_state_does_not(self):
-        pipeline = self.pipeline()
-        with pipeline.locked():
-            self.ignored(relative=".awkit/releases/lock.sqlite3")
-        exclude = local_state.exclude_file(self.project)
-        before = exclude.read_bytes()
-        pipeline.state = self.base / "external-state"
-        with pipeline.locked():
-            pass
-        self.assertEqual(exclude.read_bytes(), before)
 
     def test_hook_failure_preserves_block_response_and_skips_all_persistence(self):
         (self.project / ".awkit").mkdir()

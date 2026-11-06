@@ -5,10 +5,9 @@ import argparse
 import sqlite3
 import sys
 
-from . import __version__, cli_channel, cli_check, cli_extras, cli_kit, cli_review, cli_session, hook_cli
+from . import __version__, cli_channel, cli_check, cli_kit, cli_review, cli_session, hook_cli
 from .cli_check import _run_check  # noqa: F401  (rule_command and tests use it)
 from .cli_common import REFERENCE
-from .cli_extras import _step_error
 from .cli_kit import _report_init  # noqa: F401  (tests use it)
 
 # tests/test_kit_commands.py parses every `awkit` command line in kit/*.md with this parser.
@@ -16,9 +15,8 @@ PREVENTS = {"awkit parser, against every command shown in kit/*.md": ("F4",)}
 
 # The handler for each command group; `kit hooks` is handled by the kit module, which hands it to hook_cli.
 HANDLERS = {"doctor": cli_check.run_doctor, "check": cli_check.run_check, "hook": hook_cli.run, "kit": cli_kit.run,
-            "usage": cli_check.run_usage, "review": cli_review.run, "publish": cli_extras.run_publish,
-            "ui": cli_extras.run_ui, "session": cli_session.run, "channel": cli_channel.run,
-            "pipeline": cli_extras.run_pipeline}
+            "usage": cli_check.run_usage, "review": cli_review.run,
+            "session": cli_session.run, "channel": cli_channel.run}
 
 
 def _parser():
@@ -36,10 +34,7 @@ def _parser():
     cli_check.add_usage(groups)
     cli_channel.add(groups)
     cli_session.add(groups)
-    cli_extras.add_pipeline(groups)
     cli_review.add(groups)
-    cli_extras.add_publish(groups)
-    cli_extras.add_ui(groups)
     _describe(parser)
     return parser
 
@@ -63,9 +58,6 @@ def main(argv=None):
     args = parser.parse_args(argv)
     try:
         return HANDLERS[args.group](args, parser)
-    except _step_error() as exc:
-        print(f"verification failed: {exc}", file=sys.stderr)
-        return exc.code if 1 <= exc.code <= 125 else 1
     except (ValueError, KeyError, TypeError, OSError, sqlite3.Error) as exc:
         print(f"cannot run: {exc}", file=sys.stderr)
         for note in getattr(exc, "__notes__", ()):

@@ -20,6 +20,4 @@ Prevents: F1, F7.
 
 Record what remains available after a failure and how to retry or recover. Restoring an earlier executable, restoring data and resubmitting an artifact are separate operations. Reuse the project's existing procedures and state which recovery steps have been verified. A successful deployment is one stage; it does not complete the task by itself.
 
-For web projects, `awkit pipeline` runs the project's own delivery commands, verifies the running release and keeps the history for rollback, and `awkit publish` switches a static site to a checked build atomically. Leave out `backup` and `rollback` when the target cannot be restored. Both are extras described in the [command reference](reference.md).
-
 Prevents: F1.

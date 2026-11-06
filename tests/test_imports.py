@@ -21,11 +21,11 @@ def module_name(path):
 
 def imports():
     """{module: {modules it imports anywhere in its code}} for awkit's own modules."""
-    paths = list(SRC.glob("*.py")) + list((SRC / "extras").glob("*.py"))
+    paths = list(SRC.glob("*.py"))
     names = {module_name(path) for path in paths}
     graph = {}
     for path in paths:
-        me, package = module_name(path), "" if path.parent == SRC else "extras."
+        me, package = module_name(path), ""
         found = set()
         for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
             targets = []
@@ -83,14 +83,14 @@ class Layers(unittest.TestCase):
     def test_the_cycle_check_finds_a_cycle(self):
         self.assertEqual(cycles({"a": {"b"}, "b": {"c"}, "c": {"a"}, "d": {"a"}}), [["a", "b", "c"]])
 
-    def test_a_hook_call_does_not_load_the_review_session_or_extras_code(self):
+    def test_a_hook_call_does_not_load_the_review_or_session_code(self):
         # `awkit hook` runs on every tool call of the agent; what cli imports at the top is its start-up cost.
         probe = subprocess.run([sys.executable, "-c", "import sys, awkit.cli; print(' '.join(sorted(sys.modules)))"],
                                capture_output=True, text=True, env=child_env())
         self.assertEqual(probe.returncode, 0, probe.stderr)
         loaded = probe.stdout.split()
         heavy = [name for name in loaded if name.startswith(("awkit.review", "awkit.session", "awkit.artifact",
-                                                             "awkit.extras", "awkit.codex", "awkit.claude"))]
+                                                             "awkit.codex", "awkit.claude"))]
         self.assertEqual(heavy, [])
 
 

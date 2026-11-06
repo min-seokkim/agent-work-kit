@@ -16,6 +16,17 @@ from .records import replace
 from .session_store import now
 
 
+def unavailable_channel(path, project, error):
+    """A failed channel remains visible without granting native controls or reading its bodies."""
+    reason = f"Channel unavailable: {path}: {error}"
+    return dict(session=dict(id="unavailable-" + str(uuid.uuid5(uuid.NAMESPACE_URL, str(path))),
+        name=Path(path).name, provider="Stored channel", project=str(project), responsibility="",
+        native_id=None, state="unavailable", observed_at=now(), source="channel read failed",
+        permissions={}, history=True, error=reason), channel=str(path), parties=dict(main="Coordinator", reviewer="Unavailable"),
+        messages=[], attempts=[], decisions=[], events=[], unanswered=[], turn_updates=[], cancellations=[], posts=[],
+        closed=False, connected=False, can_send=False, can_resume=False, control_reason=reason, execution_state="unavailable")
+
+
 class HistoryViews:
     def __init__(self, project, directory):
         self.project = Path(project).resolve()

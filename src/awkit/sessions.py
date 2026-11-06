@@ -18,7 +18,7 @@ from .claude_session import ClaudeSession, availability
 from .codex_session import CodexSession, ProviderError
 from .local_state import prepare
 from .session_capabilities import describe
-from .session_history import HistoryViews
+from .session_history import HistoryViews, unavailable_channel
 from .session_models import hold, verify_runtime
 from .session_models import observe as observe_model
 from .session_models import ready as model_ready
@@ -57,6 +57,7 @@ class SessionController:
         self.enrolled_clients = {}
         self.client = {}
         self.errors = []
+        self.unavailable_channels = {}
         self._stores = {}
         self._mutex = threading.RLock()
         self._creation = threading.Lock()
@@ -79,7 +80,7 @@ class SessionController:
                     store.upgrade()
                     self._stores[data["id"]] = store
             except (OSError, ValueError, sqlite3.Error) as exc:
-                self.errors.append(f"{path.name}: {exc}")
+                self.unavailable_channels[str(path)] = unavailable_channel(path, self.project, exc)
         self._worker = threading.Thread(target=self._dispatch, daemon=True)
         self._worker.start()
 
@@ -309,7 +310,13 @@ class SessionController:
         with self._mutex:
             if ident in self._stores:
                 return self._stores[ident]
-            matches = [store for store in self._stores.values() if store.metadata()["name"] == ident]
+            matches = []
+            for store in self._stores.values():
+                try:
+                    if store.metadata()["name"] == ident:
+                        matches.append(store)
+                except (OSError, ValueError, KeyError, TypeError, sqlite3.Error) as exc:
+                    self.unavailable_channels[str(store.path)] = unavailable_channel(store.path, self.project, exc)
             if len(matches) == 1:
                 return matches[0]
         raise ValueError("Select an existing managed session by its name or ID. Stored history has no native send control.")
@@ -390,7 +397,12 @@ class SessionController:
                     if model_ready(meta):
                         route(meta).dispatch(self, store, meta)
                 except DISPATCH_ERRORS as exc:
-                    route(store.metadata()).failed(self, store, exc)
+                    try:
+                        route(store.metadata()).failed(self, store, exc)
+                    except (OSError, ValueError, KeyError, TypeError, sqlite3.Error) as failure:
+                        # A broken channel cannot stop the worker serving the other channels.
+                        with self._mutex:
+                            self.unavailable_channels[str(store.path)] = unavailable_channel(store.path, self.project, failure)
 
     def _message(self, message, *, generation=None, owned_id=None):
         generation = generation or self.generation
@@ -483,7 +495,11 @@ class SessionController:
                 stores = list(self._stores.values())
         views = []
         for store in stores:
-            snapshot = store.snapshot()
+            try:
+                snapshot = store.snapshot()
+            except (OSError, ValueError, KeyError, TypeError, sqlite3.Error) as exc:
+                views.append(unavailable_channel(store.path, self.project, exc))
+                continue
             meta = snapshot["session"]
             if request is not None:
                 provider, generation = route(meta).request_connection(self, meta)
@@ -528,6 +544,9 @@ class SessionController:
                 and active["state"] in states.ATTEMPT_STARTED and meta["state"] in states.WORKING else None)
             views.append(snapshot)
         if not selection:
+            seen = {view["channel"] for view in views}
+            with self._mutex:
+                views.extend(view for path, view in self.unavailable_channels.items() if path not in seen)
             try:
                 views.extend(self.history.snapshots())
             except (OSError, ValueError, KeyError, sqlite3.Error) as exc:

@@ -111,6 +111,14 @@ class SessionStore:
 
     def upgrade(self):
         """Explicit managed-only migration; caller holds the project controller lock."""
+        # Check every page before writing: metadata can be readable while a message
+        # btree is damaged. Leave a damaged channel intact for recovery.
+        conn = sqlite3.connect(self.path.resolve().as_uri() + "?mode=ro", uri=True)
+        try:
+            if [row[0] for row in conn.execute("PRAGMA quick_check")] != ["ok"]:
+                raise ValueError("Managed channel integrity check failed; file left unchanged.")
+        finally:
+            conn.close()
         with self.channel.transaction() as conn:
             version = conn.execute("SELECT schema FROM awkit_session WHERE singleton=1").fetchone()[0]
             if version == 1:

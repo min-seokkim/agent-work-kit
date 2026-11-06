@@ -3,7 +3,7 @@
 CLAUDE_EFFORTS = ("low", "medium", "high", "xhigh", "max")
 
 
-def describe(provider):
+def describe(provider, evidence=None):
     codex = provider == "codex"
     native = provider in ("codex", "claude")
     discovery_reason = ("Requires an existing initialized supported connection in this project and home." if codex else
@@ -33,4 +33,12 @@ def describe(provider):
         result["model"].update(admission="unavailable", reason=discovery_reason)
         result["effort"].update(values=None, reason=discovery_reason)
         result["permissions"].update(field=None, reason=discovery_reason)
+    if codex and evidence is not None:
+        from .codex_capabilities import capability
+
+        model = capability(evidence, "model")
+        for key in ("model", "effort"):
+            result[key].update(model)
+        for key in ("enrollment", "discovery", "active_turn_update"):
+            result["operations"][key].update(capability(evidence, key))
     return result

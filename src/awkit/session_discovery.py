@@ -9,7 +9,8 @@ import sqlite3
 import time
 from pathlib import Path
 
-from .codex_runtime import EXECUTABLE_SHA256, VERSION, local_path
+from .codex_capabilities import capability
+from .codex_runtime import local_path
 from .codex_session import (  # noqa: F401  (moved; importers keep working)
     SOURCES,
     ProviderError,
@@ -28,7 +29,7 @@ def _eligible(controller, client, generation, evidence):
     """Validate recorded launch/initialization facts without inspecting or starting a runtime."""
     try:
         if (client is None or not client.alive or not callable(getattr(client, "discover_threads", None))
-                or evidence.get("version") != VERSION or evidence.get("executable_sha256") != EXECUTABLE_SHA256
+                or not capability(evidence, "discovery")["supported"]
                 or local_path(client.project) != controller.project or len(controller.command) != 1
                 or len(client.command) != 1):
             return False

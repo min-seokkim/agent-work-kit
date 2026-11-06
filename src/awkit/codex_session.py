@@ -55,6 +55,9 @@ class CodexSession:
                 params["capabilities"] = {"experimentalApi": True}
             self.initialization = self.call("initialize", params)
             self.notify("initialized", {})
+            from .codex_capabilities import probe
+
+            self.runtime = probe(self.command, self)
         except BaseException:
             self.close()
             raise

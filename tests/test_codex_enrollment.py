@@ -19,7 +19,7 @@ from awkit.codex_session import ProviderError
 from awkit.session_http import SessionServer, request
 from awkit.session_store import SessionStore
 from awkit.sessions import SessionController
-from support import WAIT_SECONDS
+from support import WAIT_SECONDS, codex_evidence
 
 
 class EnrollmentTests(unittest.TestCase):
@@ -40,8 +40,7 @@ class EnrollmentTests(unittest.TestCase):
             runtimeWorkspaceRoots=[], activePermissionProfile=dict(id=":workspace", extends=None))
         self.thread = dict(id=self.native_id, cwd=str(self.project), status=dict(type="idle"),
             canAcceptDirectInput=True, ephemeral=False, path=str(self.home / "sessions" / "selected.jsonl"))
-        self.inspected = dict(executable="verified-fixture", executable_sha256="fixture",
-                              version="fixture", codex_home=str(self.home))
+        self.inspected = codex_evidence(executable="verified-fixture", codex_home=str(self.home))
         self.patcher = patch("awkit.codex_enrollment.runtime", return_value=self.inspected)
         self.patcher.start()
         self.addCleanup(self.patcher.stop)

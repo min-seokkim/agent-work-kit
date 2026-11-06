@@ -154,6 +154,7 @@ class SessionController:
             if executable.is_file():
                 self.client["executable_sha256"] = hashlib.sha256(executable.read_bytes()).hexdigest()
             self.provider = self.provider_factory(self.command, self.project, self._message)
+            self.client.update(getattr(self.provider, "runtime", {}))
             self.client["initialization"] = self.provider.initialization
             self.client["owned_pid"] = self.provider.process.pid
             return self.provider
@@ -563,7 +564,7 @@ class SessionController:
         from .session_reading import project
 
         for view in views:
-            view["capabilities"] = describe(view["session"]["provider"])
+            view["capabilities"] = describe(view["session"]["provider"], view["session"].get("client") or {})
             project(view, declarations)
         if selection:
             selected = views[0]
@@ -573,7 +574,7 @@ class SessionController:
                 identity["request_id"] = request
             return dict(project=str(self.project), generation=self.generation, selection=identity, sessions=[selected])
         claude = availability()
-        providers = {name: describe(name) for name in ("codex", "claude")}
+        providers = {name: describe(name, self.client if self.provider else None) for name in ("codex", "claude")}
         providers["codex"].update(available=bool(shutil.which(self.command[0])), unavailable_reason="Codex executable unavailable.")
         providers["claude"].update(available=claude["available"], unavailable_reason=claude.get("reason", ""))
         return dict(project=str(self.project), generation=self.generation, sessions=views,

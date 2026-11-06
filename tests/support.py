@@ -42,3 +42,10 @@ WAIT_SECONDS = 35
 # How long a test waits for a child process such as PowerShell to finish. The parallel runner starts several test
 # modules at once, and a cold PowerShell under that load took more than 20 s on Windows CI (run 41421273021).
 PROCESS_SECONDS = 120
+
+
+def codex_evidence(**overrides):
+    """Explicit offline evidence for provider fixtures; never a live verification result."""
+    return dict(version="codex-cli 0.167.0-alpha.3.2", version_exit=0, executable_sha256="fictional-hash",
+                native_executable=True, capabilities={name: dict(supported=True, reason="Offline fixture")
+                    for name in ("model", "enrollment", "discovery", "active_turn_update")}) | overrides

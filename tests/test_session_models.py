@@ -8,11 +8,10 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from awkit.codex_enrollment import EXECUTABLE_SHA256, VERSION
 from awkit.codex_session import ProviderError, ProviderRejected
 from awkit.session_store import SessionStore
 from awkit.sessions import SessionController
-from support import WAIT_SECONDS
+from support import WAIT_SECONDS, codex_evidence
 
 
 class ModelProvider:
@@ -92,8 +91,7 @@ class SessionModelTests(unittest.TestCase):
         self.addCleanup(self.controller.close)
         self.provider = ModelProvider(self.controller, self.native)
         self.controller.provider = self.provider
-        self.controller.client = dict(command=list(self.provider.command), version=VERSION, version_exit=0,
-                                      executable_sha256=EXECUTABLE_SHA256)
+        self.controller.client = codex_evidence(command=list(self.provider.command))
 
     def create(self, **kwargs):
         return self.controller.create(name="Fictional reviewer", responsibility="Use invented context", **kwargs)["session"]
@@ -233,7 +231,7 @@ class SessionModelTests(unittest.TestCase):
         self.assertEqual(self.provider.calls, [])
 
     def test_unsupported_runtime_holds_intent_without_native_thread_creation(self):
-        self.controller.client["executable_sha256"] = "unsupported"
+        self.controller.client["native_executable"] = False
         meta = self.create(model="fictional")
         self.assertEqual(meta["model_selection"]["state"], "held")
         self.assertIsNone(meta["native_id"])
@@ -340,7 +338,7 @@ class SessionModelTests(unittest.TestCase):
         result = self.controller.resume(meta["id"])["session"]
         self.assertEqual(result["model_selection"]["state"], "held")
         self.assertEqual(self.provider.calls, [])
-        self.controller.client["version"] = VERSION
+        self.controller.client["version"] = codex_evidence()["version"]
         self.provider.resume_overrides = dict(approvalPolicy="never")
         result = self.controller.resume(meta["id"])["session"]
         self.assertEqual(result["model_selection"]["state"], "held")

@@ -16,9 +16,8 @@ from unittest.mock import patch
 from awkit.cli import main
 from awkit.codex_session import ProviderError, ProviderRejected
 from awkit.session_http import SessionServer, request
-from awkit.session_updates import EXECUTABLE_SHA256, VERSION
 from awkit.sessions import SessionController
-from support import WAIT_SECONDS
+from support import WAIT_SECONDS, codex_evidence
 
 
 class TurnUpdateTests(unittest.TestCase):
@@ -31,7 +30,7 @@ class TurnUpdateTests(unittest.TestCase):
         self.controller.create(name="Worker", responsibility="Invented held assignment")
         self.store = self.controller._store("Worker")
         # This is an offline runtime fixture, not live native runtime verification.
-        self.store.update(client=dict(version=VERSION, executable_sha256=EXECUTABLE_SHA256))
+        self.store.update(client=codex_evidence())
         self.message = self.controller.send("Worker", key="original", body="HOLD")["message"]
         self.active = self.wait(lambda v: v["update_target"] is not None)["update_target"]
 
@@ -254,7 +253,7 @@ class TurnUpdateTests(unittest.TestCase):
             self.addCleanup(self.controller.close)
             self.controller.create(name="Worker", responsibility="Legacy-codepage offline fixture")
         self.store = self.controller._store("Worker")
-        self.store.update(client=dict(version=VERSION, executable_sha256=EXECUTABLE_SHA256))
+        self.store.update(client=codex_evidence())
         self.message = self.controller.send("Worker", key="original", body="HOLD")["message"]
         self.active = self.wait(lambda view: view["update_target"] is not None)["update_target"]
         body = "Unicode correction: \uac00\uc0c1 \uc218\uc815."

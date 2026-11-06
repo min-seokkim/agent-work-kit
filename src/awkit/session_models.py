@@ -65,15 +65,16 @@ def claude_observe(store, model):
 
 
 def verify_runtime(controller, provider):
-    from .codex_runtime import EXECUTABLE_SHA256, VERSION
+    from .codex_capabilities import capability
 
     evidence = controller.client
-    if (evidence.get("version") != VERSION or evidence.get("executable_sha256") != EXECUTABLE_SHA256
+    if (not capability(evidence, "model")["supported"]
             or evidence.get("version_exit") != 0 or len(controller.command) != 1
             or tuple(evidence.get("command", ())) != tuple(controller.command)
             or tuple(getattr(provider, "command", ())) != tuple(controller.command)
             or Path(getattr(provider, "project", "")).resolve() != controller.project):
-        raise ValueError("Explicit model selection requires the verified Codex runtime; work remains held.")
+        raise ValueError("Explicit model selection requires a verified Codex connection: "
+                         + capability(evidence, "model")["reason"] + " Work remains held.")
 
 
 def observe(store, result, *, creation):

@@ -11,9 +11,9 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from awkit.codex_enrollment import EXECUTABLE_SHA256, VERSION
 from awkit.codex_session import CodexSession, ProviderError, ProviderRejected
 from awkit.session_discovery import INVALID_CURSOR, UNSUPPORTED, discover, project_response
+from support import codex_evidence
 
 NATIVE = "01234567-89ab-4cde-8fab-0123456789ab"
 SECRET = "FICTIONAL_PREVIEW_MUST_NOT_ESCAPE"
@@ -71,7 +71,7 @@ class DiscoveryTests(unittest.TestCase):
 
         self.client.discover_threads = listing
         self.controller = FakeController(project=self.project, command=[str(self.executable)], provider=self.client,
-            generation="generation-1", client=dict(version=VERSION, executable_sha256=EXECUTABLE_SHA256))
+            generation="generation-1", client=codex_evidence())
 
     def test_allowlist_and_database_only_filters_and_registration(self):
         self.controller._stores["registered"] = SimpleNamespace(metadata=lambda: dict(provider="codex", native_id=NATIVE))
@@ -168,7 +168,7 @@ class DiscoveryTests(unittest.TestCase):
                        lambda: self.client.initialization.update(codexHome=str(self.project))):
             with self.subTest(mutate=mutate):
                 self.controller.provider = self.client
-                self.controller.client["version"] = VERSION
+                self.controller.client["version"] = codex_evidence()["version"]
                 self.client.initialization["codexHome"] = str(self.home)
                 mutate()
                 self.assertFalse(discover(self.controller)["available"])
@@ -178,8 +178,7 @@ class DiscoveryTests(unittest.TestCase):
         self.controller.provider = None
         self.client.generation = "enrolled-generation"
         meta = dict(provider="codex", generation=self.client.generation, project=str(self.project),
-                    enrollment=dict(runtime=dict(version=VERSION, executable_sha256=EXECUTABLE_SHA256,
-                                                 executable=str(self.executable), codex_home=str(self.home))))
+                    enrollment=dict(runtime=codex_evidence(executable=str(self.executable), codex_home=str(self.home))))
         self.controller._stores["enrolled"] = SimpleNamespace(metadata=lambda: meta)
         self.controller.enrolled_clients["enrolled"] = self.client
         self.assertTrue(discover(self.controller)["available"])

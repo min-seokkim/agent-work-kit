@@ -1,7 +1,8 @@
 """One exact active-turn input on an existing owned Codex connection; never queued or replayed."""
 
 from . import session_states as states
-from .codex_enrollment import EXECUTABLE_SHA256, VERSION, local_path
+from .codex_capabilities import capability
+from .codex_runtime import local_path
 from .codex_session import ProviderError, ProviderRejected
 from .session_store import now
 
@@ -10,8 +11,7 @@ PREVENTS = {"awkit session update": ("F1", "F25", "F29")}
 
 def supported(meta):
     client = meta.get("client") or {}
-    return (meta["provider"] == "codex" and client.get("version") == VERSION
-            and client.get("executable_sha256") == EXECUTABLE_SHA256)
+    return meta["provider"] == "codex" and capability(client, "active_turn_update")["supported"]
 
 
 def submit(controller, ident, *, key, request_id, expected_turn_id, body, entry="agent"):
@@ -31,7 +31,7 @@ def submit(controller, ident, *, key, request_id, expected_turn_id, body, entry=
         meta = store.metadata()
         provider, generation = controller.connection(store)
         if not supported(meta):
-            raise ValueError("Exact-turn updates require the verified Codex runtime.")
+            raise ValueError("Exact-turn updates unavailable: " + capability(meta.get("client") or {}, "active_turn_update")["reason"])
         if provider is None or not provider.alive or meta["generation"] != generation:
             raise ValueError("Exact-turn updates require an available owned connection on the verified Codex runtime.")
         if meta["state"] not in states.WORKING:

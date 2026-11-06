@@ -5,9 +5,8 @@ from __future__ import annotations
 import uuid
 from pathlib import Path
 
+from .codex_capabilities import capability
 from .codex_runtime import (  # noqa: F401  (moved; importers keep working)
-    EXECUTABLE_SHA256,
-    VERSION,
     local_path,
     runtime,
 )
@@ -101,7 +100,7 @@ def resume(controller, store):
         old.close()
     inspected = runtime(controller.command)
     prior_runtime = meta["enrollment"].get("runtime")
-    if prior_runtime is not None and inspected != prior_runtime:
+    if prior_runtime is not None and any(inspected[key] != prior_runtime.get(key) for key in ("executable", "codex_home")):
         raise ValueError("Enrolled runtime/home changed; the selected conversation was not resumed elsewhere.")
     recover_completed(store)
     generation = str(uuid.uuid4())
@@ -114,6 +113,10 @@ def resume(controller, store):
         client = controller.provider_factory([inspected["executable"]], controller.project,
             controller.event_handler(generation, meta["id"]), experimental=True)
         client.generation = generation
+        inspected.update(getattr(client, "runtime", {}))
+        if not capability(inspected, "enrollment")["supported"]:
+            raise ValueError("Enrollment unavailable: " + capability(inspected, "enrollment")["reason"])
+        enrollment["runtime"] = inspected
         home = client.initialization.get("codexHome")
         if not home or Path(home).resolve() != Path(inspected["codex_home"]).resolve():
             raise ValueError("Native Codex home differs or is unreported.")

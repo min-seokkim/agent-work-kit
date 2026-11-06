@@ -54,7 +54,8 @@ class UsageTests(unittest.TestCase):
         write_jsonl(sub, [claude_turn("s2", model="claude-haiku", isSidechain=True, agentId="b2")])
         result = collect([self.root / "claude"])
         threads = {row["thread"]: row for row in result["threads"]}
-        self.assertEqual(threads["main"]["calls"], 2)
+        self.assertIsNone(threads["main"]["calls"])
+        self.assertEqual(threads["main"]["call_coverage"]["observed"], 2)
         self.assertEqual(threads["main"]["models"], {"claude-sonnet": 1, "claude-opus": 1})
         self.assertEqual(threads["main"]["fresh_input"], 6)
         self.assertEqual(threads["main"]["cache_read"], 2000)
@@ -157,13 +158,14 @@ class UsageTests(unittest.TestCase):
         self.assertEqual(thread["invalid"], {"output": 1})
         self.assertEqual(result["total"]["complete"], False)
         self.assertEqual(result["total"]["incomplete_threads"], 1)
-        self.assertEqual(result["format"], 3)
+        self.assertEqual(result["format"], 4)
 
     def test_codex_without_token_counts_reports_unmeasured_tokens(self):
         rollout = self.root / "codex" / "rollout.jsonl"
         write_jsonl(rollout, [{"type": "turn_context", "payload": {"model": "gpt-luna"}}])
         (thread,) = collect([rollout])["threads"]
-        self.assertEqual((thread["models"], thread["calls"], thread["counted"]), ({"gpt-luna": 1}, 1, "model_context_rows"))
+        self.assertEqual((thread["models"], thread["calls"], thread["counted"]), ({}, None, "responses"))
+        self.assertEqual(thread["call_coverage"]["reasons"], ["missing_token_observations"])
         self.assertEqual([thread[f] for f in ("fresh_input", "cache_write", "cache_read", "output")], [None] * 4)
         partial = self.root / "codex" / "partial.jsonl"
         write_jsonl(partial, [
@@ -179,7 +181,8 @@ class UsageTests(unittest.TestCase):
         write_jsonl(session, [claude_turn("m1")], tail="{broken json}\n" + '{"type": "assistant", "mess')
         result = collect([session])
         self.assertEqual(result["skipped_lines"], {str(session): {"damaged_lines": 1, "partial_line": True}})
-        self.assertEqual(result["threads"][0]["calls"], 1)
+        self.assertIsNone(result["threads"][0]["calls"])
+        self.assertEqual(result["threads"][0]["call_coverage"]["observed"], 1)
         self.assertFalse(result["total"]["complete"])
         clean = self.root / "clean.jsonl"
         write_jsonl(clean, [claude_turn("m1")])
@@ -196,7 +199,7 @@ class UsageTests(unittest.TestCase):
         write_jsonl(path, [codex_message(), codex_tokens()])
         result = collect([path])
         (thread,) = result["threads"]
-        self.assertEqual(result["format"], 3)
+        self.assertEqual(result["format"], 4)
         self.assertEqual(thread["user_messages"], 1)
         self.assertEqual(thread["user_message_coverage"], {
             "complete": True, "observations": {"legacy": 0, "modern": 1}, "unclassified": 0, "reasons": []})
@@ -341,18 +344,18 @@ class UsageTests(unittest.TestCase):
                 self.assertIn(reason, result["threads"][0]["user_message_coverage"]["reasons"])
                 self.assertEqual(result["total"]["user_message_coverage"]["observations"]["modern"], 1)
 
-    def test_repeated_contexts_keep_existing_call_and_model_totals(self):
+    def test_repeated_contexts_do_not_count_as_responses(self):
         path = self.root / "contexts.jsonl"
         context = {"type": "turn_context", "payload": {"model": "gpt-luna", "turn_id": "turn-a", "root_turn_id": "root-a"}}
         write_jsonl(path, [context, context, {"type": "turn_context", "payload": {"model": "gpt-sol", "turn_id": "turn-a"}},
                            {"type": "turn_context", "payload": {"turn_id": "turn-b"}}, codex_tokens()])
         result = collect([path])
         (thread,) = result["threads"]
-        self.assertEqual(thread["calls"], 3)
-        self.assertEqual(thread["models"], {"gpt-luna": 2, "gpt-sol": 1})
-        self.assertEqual(result["models"]["gpt-luna"]["calls"], 2)
-        self.assertEqual(thread["counted"], "model_context_rows")
-        self.assertIn("model_context_rows", render(result))
+        self.assertEqual(thread["calls"], 1)
+        self.assertEqual(thread["models"], {"gpt-sol": 1})
+        self.assertEqual(result["models"]["gpt-sol"]["calls"], 1)
+        self.assertEqual(thread["counted"], "responses")
+        self.assertIn("responses", render(result))
 
     def test_marked_malformed_content_does_not_claim_an_exact_count(self):
         path = self.root / "content.jsonl"
@@ -385,7 +388,7 @@ class UsageTests(unittest.TestCase):
         self.assertNotIn("?", table.stdout)
         data = json.loads(subprocess.run(command + ["--json"], capture_output=True, text=True,
                                          encoding="utf-8", env=env).stdout)
-        self.assertEqual(data["format"], 3)
+        self.assertEqual(data["format"], 4)
         self.assertEqual(data["total"]["cache_write"], 100)
         future = subprocess.run(command + ["--since", "2999-01-01", "--json"], capture_output=True,
                                 text=True, encoding="utf-8", env=env)

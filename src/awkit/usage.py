@@ -1,11 +1,12 @@
 """Read Claude Code and Codex session logs and total the real models and tokens per thread.
 
-The log formats are not public contracts. Claude Code parsing was checked against real
-transcripts; Codex parsing follows recorded rollout fields (`turn_context`, `token_count`
-with `info.total_token_usage`) and human-origin metadata from a bounded IDE sample.
-Other clients and versions need separate validation.
+The log formats are not public contracts. Sanitized real fixtures cover Codex CLI and
+app rollouts, Claude Code and Claude Desktop local-agent transcripts. Other clients
+and versions need separate validation.
 
-Result format 3: a token field is an integer only when every counted record carried it.
+Result format 4: calls count response IDs for Claude and changed cumulative token
+observations for Codex. Native session IDs join resumed files; replay adds no calls.
+A token field is an integer only when every counted record carried it.
 A field that any record lacked, or carried with an invalid value, is null, and the thread's
 `missing` and `invalid` maps say how many records were affected. `total` sums the known
 values and `total.complete` describes token/log completeness. Human-input coverage is
@@ -14,6 +15,7 @@ separate: `user_messages` is null when origin, identity or overlap is unresolved
 
 from __future__ import annotations
 
+import hashlib
 import json
 from collections import Counter
 from datetime import UTC, datetime
@@ -23,7 +25,7 @@ from pathlib import Path
 # reported as zero, and a subagent's self-reported model.
 PREVENTS = {"awkit usage": ("F6", "F11")}
 
-FORMAT = 3
+FORMAT = 4
 FIELDS = ("fresh_input", "cache_write", "cache_read", "output")
 CLAUDE_FIELDS = {"fresh_input": "input_tokens", "cache_write": "cache_creation_input_tokens",
                  "cache_read": "cache_read_input_tokens", "output": "output_tokens"}
@@ -76,6 +78,7 @@ def _count(value):
 def _thread(provider, path, label, counted):
     return {"provider": provider, "file": str(path), "thread": label, "models": Counter(),
             "effort": None, "calls": 0, "counted": counted, "user_messages": 0, "commands": 0,
+            "call_coverage": {"complete": True, "observed": 0, "reasons": []},
             "user_message_coverage": {"complete": True, "observations": {}, "unclassified": 0, "reasons": []},
             "started_at": None, "ended_at": None, "minutes": None,
             **{field: 0 for field in FIELDS}, "missing": Counter(), "invalid": Counter()}
@@ -167,6 +170,12 @@ def _finish(thread):
     for field in FIELDS:
         if thread["missing"][field] or thread["invalid"][field]:
             thread[field] = None
+    coverage = thread["call_coverage"]
+    coverage["observed"] = thread["calls"]
+    coverage["reasons"] = sorted(set(coverage["reasons"]))
+    coverage["complete"] = not coverage["reasons"]
+    if not coverage["complete"]:
+        thread["calls"] = None
     times = thread.pop("_times", None)
     if times:
         thread["started_at"], thread["ended_at"] = times[0].isoformat(), times[1].isoformat()
@@ -177,14 +186,55 @@ def _finish(thread):
     return thread
 
 
-def _claude(path, problems):
-    threads, seen = {}, set()
-    for record in _records(path, problems):
+def _group_records(paths, problems):
+    """Repeated resume segments across files are replay, not new observations."""
+    prior = set()
+    for path in sorted(paths, key=_log_end) if len(paths) > 1 else paths:
+        current = set()
+        found = {"damaged_lines": 0, "partial_line": False}
+        for record in _records(path, found):
+            digest = hashlib.sha256(json.dumps(record, sort_keys=True).encode()).digest()
+            current.add(digest)
+            if digest not in prior or record.get("type") == "turn_context":
+                yield record
+        prior.update(current)
+        if found["damaged_lines"] or found["partial_line"]:
+            problems[str(path)] = found
+
+
+def _log_end(path):
+    times = {}
+    for record in _records(path):
+        _touch(times, record)
+    return times.get("_times", [datetime.min.replace(tzinfo=UTC)] * 2)[1]
+
+
+def _identity(path, provider):
+    for index, record in enumerate(_records(path)):
+        payload = record.get("payload")
+        identity = (payload.get("id") if provider == "codex" and record.get("type") == "session_meta" and isinstance(payload, dict)
+                    else record.get("sessionId") if provider == "claude" else None)
+        if isinstance(identity, str) and identity:
+            return identity
+        if index >= 100:
+            break
+    return str(path.resolve())
+
+
+def _claude(paths, problems):
+    path = paths[0]
+    threads, responses, user_ids = {}, {}, set()
+    for record in _group_records(paths, problems):
         message = record.get("message")
         if record.get("type") in ("user", "attachment"):
             kind = _person_wrote(record) if record.get("type") == "user" else _queued(record)
             if kind:
                 thread = threads.setdefault("main", _thread("claude", path, "main", "responses"))
+                identity = record.get("uuid")
+                if identity and identity in user_ids:
+                    continue
+                if identity:
+                    user_ids.add(identity)
                 thread["user_messages" if kind == "message" else "commands"] += 1
                 if kind == "message":
                     coverage = thread["user_message_coverage"]
@@ -193,27 +243,33 @@ def _claude(path, problems):
             continue
         if record.get("type") != "assistant" or not isinstance(message, dict):
             continue
-        usage, model = message.get("usage"), message.get("model")
-        if not model or model == "<synthetic>":
+        model = message.get("model")
+        if model == "<synthetic>":
             continue
-        # One API response is written as several transcript lines that repeat the same usage.
-        key = message.get("id") or record.get("requestId") or record.get("uuid")
-        if key in seen:
-            continue
-        seen.add(key)
         if record.get("isSidechain") or record.get("agentId"):
             label = f"subagent {record.get('agentId') or path.stem}"
         else:
             label = "main"
         thread = threads.setdefault(label, _thread("claude", path, label, "responses"))
         _touch(thread, record)
-        thread["models"][model] += 1
+        key = message.get("id")
+        if not isinstance(key, str) or not key:
+            thread["call_coverage"]["reasons"].append("missing_response_id")
+            for field in FIELDS:
+                thread["missing"][field] += 1
+            continue
+        # Content blocks repeat an ID; the final usage observation wins.
+        responses[(label, key)] = message
+        if record.get("effort"):
+            thread["effort"] = record["effort"]
+    for (label, _), message in responses.items():
+        thread = threads[label]
         thread["calls"] += 1
+        thread["models"][message.get("model") or "unknown"] += 1
+        usage = message.get("usage")
         usage = usage if isinstance(usage, dict) else {}
         for field, key in CLAUDE_FIELDS.items():
             _add(thread, field, usage.get(key), key in usage)
-        if record.get("effort"):
-            thread["effort"] = record["effort"]
     return [_finish(thread) for thread in threads.values()]
 
 
@@ -285,29 +341,46 @@ class _CodexMessages:
         thread["user_messages"] = None if self.reasons else self.observations["legacy"] + len(self.human_ids)
 
 
-def _codex(path, problems):
-    thread = _thread("codex", path, "thread", "model_context_rows")
+def _codex(paths, problems):
+    thread = _thread("codex", paths[0], "thread", "responses")
     messages = _CodexMessages()
-    total = None
-    for record in _records(path, problems):
+    total, model = None, None
+    seen = set()
+    has_context = has_response = False
+    for record in _group_records(paths, problems):
         kind, payload = record.get("type"), record.get("payload")
         payload = payload if isinstance(payload, dict) else {}
         _touch(thread, record)
         messages.observe(kind, payload)
+        if kind == "response_item" and (payload.get("role") == "assistant" or payload.get("type") in
+                                        ("function_call", "custom_tool_call", "reasoning")):
+            has_response = True
         if kind == "turn_context":
+            has_context = True
             if payload.get("model"):
-                thread["models"][payload["model"]] += 1
-                thread["calls"] += 1
+                model = payload["model"]
             thread["effort"] = payload.get("effort") or payload.get("reasoning_effort") or thread["effort"]
         elif kind == "token_count" or payload.get("type") == "token_count":
             info = payload.get("info") if isinstance(payload.get("info"), dict) else {}
             usage = info.get("total_token_usage")
             if isinstance(usage, dict):
-                total = usage  # cumulative: the last one is the thread total
+                signature = json.dumps(usage, sort_keys=True)
+                if signature in seen:
+                    continue
+                seen.add(signature)
+                total = usage  # last distinct cumulative observation, including a reset
+                counts = [_count(value) for value in usage.values()]
+                if not counts or any(value is None for value in counts):
+                    thread["call_coverage"]["reasons"].append("invalid_token_observation")
+                elif any(counts):
+                    thread["calls"] += 1
+                    thread["models"][model or "unknown"] += 1
     messages.finish(thread)
     if total is None:
-        if not thread["models"] and not messages.has_user_records:
+        if not has_context and not has_response and not messages.has_user_records:
             return []
+        if has_context or has_response:
+            thread["call_coverage"]["reasons"].append("missing_token_observations")
         for field in FIELDS:
             thread["missing"][field] += 1
         return [_finish(thread)]
@@ -341,23 +414,34 @@ def _provider(path):
 
 def collect(paths, since=None):
     threads, unknown, problems = [], [], {}
+    groups = {}
     for path in _files(paths, since):
         provider = _provider(path)
-        found = {"damaged_lines": 0, "partial_line": False}
-        parsed = []
-        if provider == "claude":
-            parsed = _claude(path, found)
-        elif provider == "codex":
-            parsed = _codex(path, found)
+        if provider:
+            group = groups.setdefault((provider, _identity(path, provider)), [])
+            if path.resolve() not in [item.resolve() for item in group]:
+                group.append(path)
         else:
             unknown.append(str(path))
-        if found["damaged_lines"] or found["partial_line"]:
-            problems[str(path)] = found
-            for thread in parsed:
+    for (provider, _), group in groups.items():
+        found = {}
+        parsed = []
+        if provider == "claude":
+            parsed = _claude(group, found)
+        elif provider == "codex":
+            parsed = _codex(group, found)
+        problems.update(found)
+        for thread in parsed:
+            thread["files"] = [str(path) for path in group]
+            if found:
+                reasons = {key for item in found.values() for key, value in item.items() if value}
                 coverage = thread["user_message_coverage"]
-                coverage["reasons"] = sorted({*coverage["reasons"], *(key for key, value in found.items() if value)})
+                coverage["reasons"] = sorted({*coverage["reasons"], *reasons})
                 coverage["complete"] = False
                 thread["user_messages"] = None
+                thread["call_coverage"]["reasons"] = sorted({*thread["call_coverage"]["reasons"], *reasons})
+                thread["call_coverage"]["complete"] = False
+                thread["calls"] = None
         threads.extend(parsed)
     totals = {}
     for thread in threads:
@@ -384,6 +468,12 @@ def collect(paths, since=None):
         "unclassified": sum(thread["user_message_coverage"]["unclassified"] for thread in threads),
         "reasons": sorted(reasons)}
     summary["commands"] = sum(thread["commands"] for thread in threads)
+    call_reasons = {reason for thread in threads for reason in thread["call_coverage"]["reasons"]}
+    if unknown:
+        call_reasons.add("unrecognized_files")
+    observed = sum(thread["call_coverage"]["observed"] for thread in threads)
+    summary["calls"] = None if call_reasons else observed
+    summary["call_coverage"] = dict(complete=not call_reasons, observed=observed, reasons=sorted(call_reasons))
     summary["complete"] = not incomplete and not unknown and not problems
     summary["incomplete_threads"] = len(incomplete)
     return {"format": FORMAT, "threads": threads, "models": totals, "total": summary,
@@ -405,7 +495,7 @@ def render(result):
             models += f" ({row['effort']})"
         thread = row["thread"] if row["thread"] != "thread" else Path(row["file"]).stem[-24:]
         minutes = f"{row['minutes']:>7.1f}" if row["minutes"] is not None else f"{'':>7}"
-        lines.append(f"{row['provider']:<8} {thread[:24]:<24} {models[:28]:<28} {row['calls']:>5} "
+        lines.append(f"{row['provider']:<8} {thread[:24]:<24} {models[:28]:<28} {_cell(row['calls'], 5)} "
                      f"{row['counted']:<18} {_cell(row['user_messages'], 5)} {minutes} "
                      f"{_cell(row['fresh_input'], 11)} {_cell(row['cache_write'], 11)} "
                      f"{_cell(row['cache_read'], 12)} {_cell(row['output'], 9)}")
@@ -413,14 +503,16 @@ def render(result):
         observations = ", ".join(f"{source}={count}" for source, count in coverage["observations"].items()) or "none"
         state = "complete" if coverage["complete"] else "incomplete: " + ", ".join(coverage["reasons"])
         lines.append(f"  human-input observations: {observations}; unclassified={coverage['unclassified']}; coverage {state}")
+        if not row["call_coverage"]["complete"]:
+            lines.append("  call coverage: " + ", ".join(row["call_coverage"]["reasons"]))
     total = result["total"]
     label = "total" if total["complete"] else "known"
-    lines.append(f"{label:<8} {'':<24} {'':<28} {'':>5} {'':<18} {_cell(total['user_messages'], 5)} {'':>7} "
+    lines.append(f"{label:<8} {'':<24} {'':<28} {_cell(total['calls'], 5)} {'responses':<18} {_cell(total['user_messages'], 5)} {'':>7} "
                  f"{total['fresh_input']:>11,} {total['cache_write']:>11,} "
                  f"{total['cache_read']:>12,} {total['output']:>9,}")
     coverage = total["user_message_coverage"]
     observations = ", ".join(f"{source}={count}" for source, count in coverage["observations"].items()) or "none"
-    lines.append(f"supported human-input observations by representation: {observations}; these are not deduplicated across representations or files")
+    lines.append(f"supported human-input observations by representation: {observations}; no cross-representation correspondence is inferred")
     state = "complete" if coverage["complete"] else "incomplete: " + ", ".join(coverage["reasons"])
     lines.append(f"token/log coverage: {'complete' if total['complete'] else 'incomplete'}; human-input coverage: {state}")
     if total["incomplete_threads"]:

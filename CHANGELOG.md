@@ -8,6 +8,10 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Commands
 
+- `usage --json` changes to format 4. A call is one Claude `message.id` or one changed Codex cumulative `token_count` observation. Repeated IDs, unchanged reports and resumed segments do not add calls; multiple responses in one user turn do. Files with the same native session ID are grouped and listed in `files`. Missing response identity, missing Codex observations and damaged logs make `calls` null; `call_coverage` retains observed counts and reasons. Both providers use `counted: responses`, and model totals count observed responses. Token and human-input coverage remain separate.
+
+- Usage tests include sanitized real Codex CLI, Codex app, Claude Code and Claude Desktop transcripts. Expected calls, inputs and tokens were tallied directly from the original logs, independently of `awkit usage`. The CLI transcript was created for this fixture with a short arithmetic tool call; the other conversations came from existing local logs.
+
 - New Codex conversations use the app's agent-created thread source when capability probes support it; missing source fields disable only that classification. The session guide explains that sidebar visibility requires refreshing the app and opening awkit's canonical project path, rather than a junction spelling. New Claude conversations pass their awkit name to the native resume list while retaining persistence and exact-ID recovery.
 
 - Session startup checks channel integrity before migration and leaves damaged files unchanged. Status reports an unavailable channel with its path while keeping healthy sessions readable; a later channel read failure no longer stops the controller's dispatch worker for every session.
@@ -117,6 +121,8 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 - The document-intent example adds a public review-only route and staged local revisions, with fictional sources, evaluator criteria and actual historical outputs. The later request uses each run's actual first result; current drafting-method choice remains available.
 
 ### Incompatible changes
+
+- Usage JSON is format 4: `calls` can be null, Codex calls count changed cumulative token observations instead of context rows, and files sharing a native session ID are grouped. Consumers should read `call_coverage` for known counts and use `files` for the grouped sources.
 
 - Explicit Codex enrollment creates managed extension 4; older controllers reject it. Existing extensions 1/2/3 retain their migration and creation behavior, and core channel schema remains 1. The new session enroll command and human entry select a name/native UUID without sending a task or injecting role/base instructions. Admission pins one verified Windows runtime and requires the same local home/store, project, native writer ownership, direct-input permission and interpretable required native policy. Every returned policy field is preserved and compared, including optional profile provenance; actual null and key absence remain distinct. Refusal and uncertain delivery remain visible without replacement or replay.
 

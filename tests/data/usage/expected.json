@@ -1,0 +1,290 @@
+{
+  "codex-app": {
+    "provenance": {
+      "client": "codex_work_desktop",
+      "source": "vscode",
+      "version": "0.166.0-alpha.6",
+      "location": "~/.codex/sessions",
+      "created_for_fixture": false
+    },
+    "records": 58,
+    "expected": {
+      "calls": 7,
+      "user_messages": 1,
+      "fresh_input": 19812,
+      "cache_read": 198528,
+      "cache_write": 0,
+      "output": 1139,
+      "models": {
+        "gpt-6-astra": 7
+      }
+    },
+    "source_tally": [
+      {
+        "line": 24,
+        "input_tokens": 24829,
+        "cached_input_tokens": 14080,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 271,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 25100
+      },
+      {
+        "line": 31,
+        "input_tokens": 55582,
+        "cached_input_tokens": 38784,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 544,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 56126
+      },
+      {
+        "line": 36,
+        "input_tokens": 87674,
+        "cached_input_tokens": 69376,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 667,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 88341
+      },
+      {
+        "line": 42,
+        "input_tokens": 119981,
+        "cached_input_tokens": 101248,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 982,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 120963
+      },
+      {
+        "line": 46,
+        "input_tokens": 152661,
+        "cached_input_tokens": 133376,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 1015,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 153676
+      },
+      {
+        "line": 53,
+        "input_tokens": 185432,
+        "cached_input_tokens": 165888,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 1073,
+        "reasoning_output_tokens": 10,
+        "total_tokens": 186505
+      },
+      {
+        "line": 57,
+        "input_tokens": 218340,
+        "cached_input_tokens": 198528,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 1139,
+        "reasoning_output_tokens": 10,
+        "total_tokens": 219479
+      }
+    ],
+    "fixture_sha256": "d4cd01f76a8533c8436c1688c16a8d7cecd92fddad9c9308434544a78db352fa"
+  },
+  "claude-code": {
+    "provenance": {
+      "client": "claude-code",
+      "location": "~/.claude/projects",
+      "created_for_fixture": false
+    },
+    "records": 46,
+    "expected": {
+      "calls": 3,
+      "user_messages": 1,
+      "models": {
+        "claude-opus-5-5": 3
+      },
+      "fresh_input": 6,
+      "cache_write": 24334,
+      "cache_read": 125745,
+      "output": 380
+    },
+    "source_tally": {
+      "user_lines": [
+        4
+      ],
+      "responses": [
+        {
+          "line": 26,
+          "model": "claude-opus-5-5",
+          "input_tokens": 2,
+          "cache_creation_input_tokens": 20605,
+          "cache_read_input_tokens": 27152,
+          "output_tokens": 241
+        },
+        {
+          "line": 37,
+          "model": "claude-opus-5-5",
+          "input_tokens": 2,
+          "cache_creation_input_tokens": 3079,
+          "cache_read_input_tokens": 47757,
+          "output_tokens": 55
+        },
+        {
+          "line": 43,
+          "model": "claude-opus-5-5",
+          "input_tokens": 2,
+          "cache_creation_input_tokens": 650,
+          "cache_read_input_tokens": 50836,
+          "output_tokens": 84
+        }
+      ]
+    },
+    "fixture_sha256": "11b823cd2e9cf506530d552608c9125d738c8b7fb37c51b220835b0cc39cf685"
+  },
+  "claude-desktop": {
+    "provenance": {
+      "client": "claude-desktop",
+      "location": "%APPDATA%/Claude/local-agent-mode-sessions",
+      "created_for_fixture": false
+    },
+    "records": 64,
+    "expected": {
+      "calls": 10,
+      "user_messages": 2,
+      "models": {
+        "claude-fable-5-1": 10
+      },
+      "fresh_input": 20,
+      "cache_write": 102838,
+      "cache_read": 681578,
+      "output": 2543
+    },
+    "source_tally": {
+      "user_lines": [
+        3,
+        55
+      ],
+      "responses": [
+        {
+          "line": 11,
+          "model": "claude-fable-5-1",
+          "input_tokens": 2,
+          "cache_creation_input_tokens": 25317,
+          "cache_read_input_tokens": 40806,
+          "output_tokens": 245
+        },
+        {
+          "line": 16,
+          "model": "claude-fable-5-1",
+          "input_tokens": 2,
+          "cache_creation_input_tokens": 2374,
+          "cache_read_input_tokens": 66123,
+          "output_tokens": 158
+        },
+        {
+          "line": 19,
+          "model": "claude-fable-5-1",
+          "input_tokens": 2,
+          "cache_creation_input_tokens": 3498,
+          "cache_read_input_tokens": 68497,
+          "output_tokens": 199
+        },
+        {
+          "line": 23,
+          "model": "claude-fable-5-1",
+          "input_tokens": 2,
+          "cache_creation_input_tokens": 699,
+          "cache_read_input_tokens": 71995,
+          "output_tokens": 225
+        },
+        {
+          "line": 29,
+          "model": "claude-fable-5-1",
+          "input_tokens": 2,
+          "cache_creation_input_tokens": 4185,
+          "cache_read_input_tokens": 72694,
+          "output_tokens": 247
+        },
+        {
+          "line": 33,
+          "model": "claude-fable-5-1",
+          "input_tokens": 2,
+          "cache_creation_input_tokens": 3629,
+          "cache_read_input_tokens": 76879,
+          "output_tokens": 423
+        },
+        {
+          "line": 36,
+          "model": "claude-fable-5-1",
+          "input_tokens": 2,
+          "cache_creation_input_tokens": 962,
+          "cache_read_input_tokens": 80508,
+          "output_tokens": 96
+        },
+        {
+          "line": 41,
+          "model": "claude-fable-5-1",
+          "input_tokens": 2,
+          "cache_creation_input_tokens": 330,
+          "cache_read_input_tokens": 81470,
+          "output_tokens": 194
+        },
+        {
+          "line": 46,
+          "model": "claude-fable-5-1",
+          "input_tokens": 2,
+          "cache_creation_input_tokens": 9284,
+          "cache_read_input_tokens": 81800,
+          "output_tokens": 237
+        },
+        {
+          "line": 62,
+          "model": "claude-fable-5-1",
+          "input_tokens": 2,
+          "cache_creation_input_tokens": 52560,
+          "cache_read_input_tokens": 40806,
+          "output_tokens": 519
+        }
+      ]
+    },
+    "fixture_sha256": "4b2307125331c072bbc75b04aaa5141a781ad0899c5d094358becb5899b8b907"
+  },
+  "codex-cli": {
+    "provenance": {
+      "client": "codex_exec",
+      "source": "exec",
+      "version": "0.167.0-alpha.3.2",
+      "location": "~/.codex/sessions",
+      "created_for_fixture": true
+    },
+    "records": 25,
+    "expected": {
+      "calls": 2,
+      "user_messages": 1,
+      "fresh_input": 5597,
+      "cache_read": 32512,
+      "cache_write": 0,
+      "output": 59,
+      "models": {
+        "gpt-6-astra": 2
+      }
+    },
+    "source_tally": [
+      {
+        "line": 20,
+        "input_tokens": 19015,
+        "cached_input_tokens": 13568,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 54,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 19069
+      },
+      {
+        "line": 24,
+        "input_tokens": 38109,
+        "cached_input_tokens": 32512,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 59,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 38168
+      }
+    ],
+    "fixture_sha256": "b02aec222676515d2f541cfd98133e7e81c36005729f71c4c2b0d4aa5e2cbbf2"
+  }
+}

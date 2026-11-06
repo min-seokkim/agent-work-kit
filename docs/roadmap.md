@@ -16,7 +16,7 @@ Each row has a default. An agent applies the default when the rest of the gate i
 | Decision or material | Default |
 |---|---|
 | Codex sidebar visibility. The owner still cannot see the probe in the exact project; the native listing API returns it. | Restore the Computer Use connection for app-side diagnosis; native pipe lookup still fails after the owner opened the app. |
-| Claude's picker excludes SDK sessions by design ([official docs](https://code.claude.com/docs/en/sessions#loop-p-agent-sdk-and-background-sessions)). Exact-ID interactive resume opened the original probe and its saved reply. | The owner decides whether exact-ID resume replaces picker visibility in the release condition. |
+| Claude's picker excludes SDK sessions by design ([official docs](https://code.claude.com/docs/en/sessions#loop-p-agent-sdk-and-background-sessions)). Exact-ID interactive resume opened the original probe and its saved reply. | The owner retains picker visibility as a release condition and holds the release. Resume when the provider supports listing SDK sessions or the owner changes the condition. |
 | The PyPI pending publisher and the `pypi` environment ([release.md](release.md#release)). | None: the upload needs them. |
 | The word "release". | None. |
 

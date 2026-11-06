@@ -22,7 +22,7 @@ A stable group is one 0.3.0 promises. Its bar: every command the kit shows parse
 | Group | Status | Left to do |
 |---|---|---|
 | kit, doctor, check, hook runner and default rules, review, channel | Stable, bar met | Used throughout this repository's own development |
-| session | Stable, bar not met | Codex sidebar diagnosis and the owner's Claude picker requirement decision remain. Current Codex on three operating systems, Claude SDK range checks and macOS session tests passed CI at `dacf8f8` |
+| session | Stable, bar not met | Codex sidebar visibility and Claude picker visibility remain unmet; the owner retains the picker condition and holds the release. Current Codex on three operating systems, Claude SDK range checks and macOS session tests passed CI at `dacf8f8` |
 | usage | Stable, bar met | Format 4 and sanitized real logs passed Windows and Linux CI at `0484121` |
 | pipeline, publish, ui | Removed | No recorded real use; installed-wheel CI uses `review` |
 

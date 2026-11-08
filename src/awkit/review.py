@@ -11,6 +11,7 @@ import subprocess
 import sys
 import tempfile
 import tomllib
+import uuid
 from contextlib import contextmanager
 from pathlib import Path, PurePosixPath
 
@@ -418,7 +419,10 @@ def check(repo, revision, config, runs_root=None, keep=False):
     if mode == "shared":
         from .artifact_store import ObjectStore
         store = ObjectStore(root, create=True)
-    run = Path(tempfile.mkdtemp(prefix="review-", dir=root))
+    # Retained results follow the Windows collection ACL, including SMB access.
+    # tempfile.mkdtemp uses 0o700, which creates a protected DACL on Windows.
+    run = root / ("review-" + uuid.uuid4().hex)
+    run.mkdir(mode=0o777 if os.name == "nt" else 0o700)
     worktree = run / "worktree"
     base = worktree / subdir
     result = {"snapshot": commit, "config_sha256": hashlib.sha256(raw).hexdigest(), "subdir": subdir,

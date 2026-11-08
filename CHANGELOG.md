@@ -8,6 +8,8 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Commands
 
+- Windows review runs inherit the collection folder's permissions, so retained logs and artifacts stay accessible over SMB when a sandbox account or administrator creates them. POSIX run directories retain owner-only permissions.
+
 - Correct Claude native-history guidance and status: SDK sessions are persisted but excluded from Claude Code's picker. After closing the controller, open the original conversation with `claude --resume <native_id>`. Codex listing metadata and app sidebar visibility remain separate checks.
 
 - Claude sessions accept stable `claude-agent-sdk>=0.2.174,<0.3.0` and record the actual installed SDK version. CI checks the lowest and newest supported SDK with its bundled native CLI, and checks the current Codex CLI on Windows, Linux and macOS without model calls. macOS runs the session and provider regression tests on Python 3.11 and 3.14.

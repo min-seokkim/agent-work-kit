@@ -1,5 +1,6 @@
 import copy
 import json
+import os
 import sqlite3
 import subprocess
 import sys
@@ -100,6 +101,32 @@ class ReviewTests(unittest.TestCase):
         self.assertFalse(Path(first["worktree"]).exists())
         self.assertEqual((self.repo / "code.txt").read_text(), "changed after snapshot")
         self.assertEqual(len(git(self.repo, "worktree", "list", "--porcelain").split("worktree ")) - 1, 1)
+
+    def test_run_permissions_follow_parent_on_windows(self):
+        self.configure(["print('ok')"])
+        result = check(self.repo, self.head, self.config, self.root / "runs")
+        self.assertEqual(result["status"], "passed")
+        run = Path(result["run_dir"])
+        if sys.platform != "win32":
+            self.assertEqual(run.stat().st_mode & 0o777, 0o700)
+            return
+        # Query actual NTFS inheritance: a private tempfile directory blocks SMB users
+        # when the creator is an administrator or an agent sandbox account.
+        script = (
+            "$ErrorActionPreference='Stop'; "
+            "@($env:AWKIT_ACL_TEST_RUN, (Join-Path $env:AWKIT_ACL_TEST_RUN 'result.json')) | "
+            "ForEach-Object { $acl=Get-Acl -LiteralPath $_; "
+            "[pscustomobject]@{Protected=$acl.AreAccessRulesProtected; "
+            "Inherited=@($acl.Access | Where-Object IsInherited).Count} } | ConvertTo-Json -Compress"
+        )
+        output = subprocess.check_output(
+            ["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", script],
+            env={key: value for key, value in os.environ.items() if key.upper() != "PSMODULEPATH"}
+            | {"AWKIT_ACL_TEST_RUN": str(run)}, text=True,
+        )
+        for acl in json.loads(output):
+            self.assertFalse(acl["Protected"])
+            self.assertGreater(acl["Inherited"], 0)
 
     def test_failures_are_recorded_and_other_checks_continue(self):
         self.configure(["print('diagnostic'); raise SystemExit(7)", "print('next check')"])

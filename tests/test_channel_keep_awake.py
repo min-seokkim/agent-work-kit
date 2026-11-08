@@ -21,6 +21,8 @@ class KeepAwakeTests(unittest.TestCase):
     def invoke(self, *args, enabled=True):
         stdout, stderr = io.StringIO(), io.StringIO()
         argv = ["channel", "--db", str(self.path), "wait", *args, "--max", "0", "--json"]
+        if args[1] == "new":
+            argv.extend(["--consumer", "power-test"])
         if enabled:
             argv.append("--keep-awake")
         with redirect_stdout(stdout), redirect_stderr(stderr):
@@ -35,7 +37,7 @@ class KeepAwakeTests(unittest.TestCase):
             code, stdout, stderr = self.invoke("main", "new")
         self.assertEqual((code, stderr), (0, ""))
         self.assertEqual(json.loads(stdout), self.channel.export())
-        self.assertEqual(self.channel.find("main", "new"), (1, []))
+        self.assertEqual(self.channel.find("main", "new", consumer="power-test"), (1, []))
         self.assertEqual(request.call_args_list,
                          [call(ES_CONTINUOUS | ES_SYSTEM_REQUIRED), call(ES_CONTINUOUS)])
 
@@ -60,7 +62,7 @@ class KeepAwakeTests(unittest.TestCase):
                 patch("awkit.keep_awake._execution_state", return_value=request), \
                 patch.object(Channel, "find", return_value=(1, [])) as find:
             self.assertEqual(self.invoke("main", "new"), (1, "", ""))
-        find.assert_called_once_with("main", "new", None)
+        find.assert_called_once_with("main", "new", None, consumer="power-test")
         self.assertEqual(request.call_args_list,
                          [call(ES_CONTINUOUS | ES_SYSTEM_REQUIRED), call(previous)])
 
@@ -77,7 +79,7 @@ class KeepAwakeTests(unittest.TestCase):
         load.assert_not_called()
         self.assertEqual(code, 0)
         self.assertEqual(json.loads(stdout)[0]["body"], "ready")
-        self.assertEqual(self.channel.find("main", "new"), (1, []))
+        self.assertEqual(self.channel.find("main", "new", consumer="power-test"), (1, []))
         self.assertEqual(stderr.count("warning:"), 1)
         self.assertIn("only on Windows", stderr)
         self.assertIn("system may sleep", stderr)
@@ -110,7 +112,7 @@ class KeepAwakeTests(unittest.TestCase):
             code, stdout, stderr = self.invoke("main", "new")
         self.assertEqual(code, 0)
         self.assertEqual(json.loads(stdout), self.channel.export())
-        self.assertEqual(self.channel.find("main", "new"), (1, []))
+        self.assertEqual(self.channel.find("main", "new", consumer="power-test"), (1, []))
         self.assertEqual(stderr.count("warning:"), 1)
         self.assertIn("restore the previous thread state", stderr)
 

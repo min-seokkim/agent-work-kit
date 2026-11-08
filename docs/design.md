@@ -1,6 +1,6 @@
 # Design
 
-Project scope and the decisions a change must respect. Read this before changing the architecture, a file format or a shipped behavior. Each row says what was decided and why. Git history has the discussion that led to it. Work to do is in the [roadmap](roadmap.md).
+Read these decisions before changing architecture, formats or shipped behavior. Each row gives the reason; Git history holds the discussion and the [roadmap](roadmap.md) holds work left.
 
 ## Scope
 
@@ -67,6 +67,7 @@ What follows: a guard candidate needs an occurrence in the catalogue, and F11, F
 | No further investment in the done check | Other tools check done reports. `check done` trusts exit codes; the reference says so. |
 | No scheduler, no new task store, no general updater | Scheduling stays with the user's platform. Task state reuses the project's own task tool; when records conflict, keep both and never pick by modification time. Reinstalling awkit does not update connected projects. |
 | Test fixtures | A Git fixture has its own verified repository root; a non-Git fixture sits outside every ancestor worktree. An installer probe once found the parent repository and wrote a live selector. |
+| Omitted channel consumers remain shared | Keep legacy `new` working with a warning because deployed scripts and skills omit `--consumer`. |
 | Formats migrate in place before the first release | No parallel legacy mode; the change is announced in CHANGELOG. There is no released consumer yet. |
 | `dev` is an install source | Its history is never rewritten or force-pushed. Local commits are rebased onto `origin/dev` before pushing. |
 | Hold the first release | Meet [release conditions](release.md#release); require Claude picker visibility. |

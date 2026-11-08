@@ -77,20 +77,20 @@ class ChannelStatusTests(unittest.TestCase):
         self.assertEqual(unanswered, [dict(relationship="ab", message="M-001"), dict(relationship="ab", message="M-002")])
         returned = [row for row in result["protocol"] if row["observation"] == "returned-response"]
         self.assertEqual(returned[0]["source"], dict(relationship="ac", message="R-001"))
-        self.assertEqual(returned[0]["disposition"], "disposition-unrecorded")
+        self.assertEqual(returned[0]["disposition"], "not-required")
         self.assertEqual(result["obligations"][0]["support"], "references-resolved")
         self.assertEqual(result["obligations"][1]["revision"], "v2")
         self.assertEqual(result["diagnostics"], [])
         self.assertFalse(any(row["kind"] == "notice" for row in result["protocol"]))
         text = self.cli("status", "--record", str(self.record_path)).stdout
         for expected in ("fiction-B | local reviewer", "fiction-C | local main", "ab:M-002", "next: reply to request",
-                         "disposition-unrecorded", "pending", "semantic completion is not verified"):
+                         "not-required", "pending", "semantic completion is not verified"):
             self.assertIn(expected, text)
         notice_row = next(row for row in result["protocol"] if row["source"] == dict(relationship="ab", message="M-002"))
         self.assertEqual(notice_row["declarations"], ["answer"])
         self.assertEqual(notice_row["next_protocol_action"], "reconcile protocol and declaration evidence before another reply")
         self.assertIn("evidence: ab:R-001 (resolved)", text)
-        self.assertIn("Protocol: unanswered incoming=2 | awaiting replies=0 | returned responses without disposition=1", text)
+        self.assertIn("Protocol: unanswered incoming=2 | awaiting replies=0 | returned responses without disposition=0", text)
         self.assertIn("Declared state: pending=2 | unsupported=0 | conflicting=0 | unavailable channels=0", text)
 
     def test_reversed_roles_and_rebut_remain_requests(self):
@@ -341,7 +341,11 @@ class ChannelStatusTests(unittest.TestCase):
     def test_closed_channel_retains_pending_incoming_and_outgoing_requests(self):
         self.ab.post("main", "reviewer", "question", "Incoming question.")
         self.ab.post("reviewer", "main", "question", "Outgoing question.")
-        self.ab.post("main", "reviewer", "close", "Closed with unresolved requests.")
+        # A legacy database can contain a close that predates enforcement.
+        with closing(sqlite3.connect(self.ab.path)) as conn:
+            conn.execute("INSERT INTO messages(id,sender,receiver,kind,at,body) "
+                         "VALUES ('M-002','main','reviewer','close','sample','Legacy close')")
+            conn.commit()
         self.ac.post("main", "reviewer", "notice", "Other channel.")
         self.ab.find("reviewer", "new")
         result = self.status()

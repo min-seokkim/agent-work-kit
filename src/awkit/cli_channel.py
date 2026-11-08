@@ -1,6 +1,7 @@
 """The channel commands: a message log between a main and a reviewer session."""
 
 import json
+import sys
 from pathlib import Path
 
 from .channel import KINDS, ROLES, Channel, render
@@ -17,17 +18,19 @@ def add(groups):
     post.add_argument("sender", choices=ROLES, help="who sends")
     post.add_argument("receiver", choices=ROLES, help="who receives; must differ from the sender")
     post.add_argument("kind", choices=KINDS, help="request kinds: review, scout, test, draft, question, final; "
-                      "notice; re and rebut answer --reply-to; close (main only) ends the channel")
-    post.add_argument("--reply-to", metavar="ID", help="message ID that a re or rebut answers, sent by the other side")
+                      "notice; re and rebut answer --reply-to; withdraw retracts a reviewer's re; "
+                      "close (main only) refuses outstanding protocol obligations")
+    post.add_argument("--reply-to", metavar="ID", help="other side's message for re/rebut; reviewer's own re for withdraw")
     post.add_argument("--snap", metavar="ID", help="snapshot or commit the message is about (7-64 hex characters)")
     body = post.add_mutually_exclusive_group()
     body.add_argument("--body", help="body text")
     body.add_argument("--body-file", type=Path, help="UTF-8 file with the body")
     wait = commands.add_parser("wait", help="wait for messages; exit 0 found, 1 timeout, 3 channel closed (reviewer)")
     wait.add_argument("role", choices=ROLES, help="the role that is waiting")
-    wait.add_argument("mode", choices=("request", "new", "reply"),
+    wait.add_argument("mode", choices=("request", "new", "reply", "peek"),
                       help="request: unanswered requests and rebuttals; new: messages after the read position; "
-                           "reply: answers to the given ID")
+                           "reply: answers to the given ID; peek: all incoming messages without moving cursors")
+    wait.add_argument("--consumer", metavar="ID", help="new mode reader identity; omitted uses the shared role cursor with a warning")
     wait.add_argument("target", nargs="?", metavar="ID", help="message ID, for reply mode only")
     wait.add_argument("--max", type=float, default=120, metavar="SECONDS", help="how long to wait; 0 checks once (default: 120)")
     wait.add_argument("--json", action="store_true", help="print messages as JSON")
@@ -57,12 +60,18 @@ def run(args, parser):
     if args.action == "export":
         print(render(store.export(), args.json))
         return 0
+    if args.mode == "new" and args.consumer is None:
+        print("Warning: new without --consumer uses the shared role cursor; "
+              "pass a session ID to keep independent read positions.", file=sys.stderr)
+    options = dict(seconds=args.max)
+    if args.consumer is not None:
+        options["consumer"] = args.consumer
     if args.keep_awake:
         from .keep_awake import keep_awake
         with keep_awake():
-            code, rows = store.wait(args.role, args.mode, args.target, seconds=args.max)
+            code, rows = store.wait(args.role, args.mode, args.target, **options)
     else:
-        code, rows = store.wait(args.role, args.mode, args.target, seconds=args.max)
+        code, rows = store.wait(args.role, args.mode, args.target, **options)
     if rows:
         print(render(rows, args.json))
     elif code == 3:

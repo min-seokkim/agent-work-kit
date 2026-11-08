@@ -207,4 +207,4 @@ class RecoveryTests(unittest.TestCase):
         self.assertEqual(after["attempts"][0]["origin_generation"], before["attempts"][0]["generation"])
         self.assertIsNone(after["attempts"][0]["client_id"])
         with closing(sqlite3.connect(after["channel"])) as conn:
-            self.assertEqual(conn.execute("PRAGMA user_version").fetchone()[0], 1)
+            self.assertEqual(conn.execute("PRAGMA user_version").fetchone()[0], 2)

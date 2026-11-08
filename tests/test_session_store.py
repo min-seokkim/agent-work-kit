@@ -172,7 +172,7 @@ class SessionStoreTests(unittest.TestCase):
         self.store.decision_state(ident, "sent")
         self.assertEqual(self.store.snapshot()["decisions"][0]["state"], "resolved")
 
-    def test_existing_channels_remain_schema_one_and_browsing_does_not_migrate(self):
+    def test_existing_channels_and_browsing_does_not_migrate(self):
         path = self.root / "ordinary.sqlite3"
         channel = Channel(path)
         channel.post("main", "reviewer", "question", "Existing request")
@@ -181,7 +181,7 @@ class SessionStoreTests(unittest.TestCase):
             SessionStore(path)
         self.assertEqual(hashlib.sha256(path.read_bytes()).digest(), before)
         with closing(sqlite3.connect(self.store.path)) as conn:
-            self.assertEqual(conn.execute("PRAGMA user_version").fetchone()[0], 1)
+            self.assertEqual(conn.execute("PRAGMA user_version").fetchone()[0], 2)
         self.assertEqual(channel.find("reviewer", "request")[1][0]["body"], "Existing request")
         empty = self.root / "empty.sqlite3"
         empty.touch()

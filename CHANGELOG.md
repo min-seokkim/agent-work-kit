@@ -8,6 +8,8 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Commands
 
+- Channels add reviewer-only `withdraw`, transactional close refusal for unanswered requests/rebuttals, unacknowledged review/final verdicts and unresolved withdrawals, and independent `new --consumer ID` positions. Withdrawn replies and their acknowledgements lose protocol effect. `peek` reads all incoming history without moving positions, including after closure. Omitting `--consumer` preserves the shared cursor and warns for existing scripts. Core schema 2 migrates schema-1 cursors in place; status and managed history read both versions without migration. Status reports consumer positions and the same close blockers, and marks withdrawn evidence unsupported. Review/final acknowledgements remain required for no-findings and `decision-needed:` verdicts. IDs, exit codes and sleep prevention are unchanged.
+
 - Windows review runs inherit the collection folder's permissions, so retained logs and artifacts stay accessible over SMB when a sandbox account or administrator creates them. POSIX run directories retain owner-only permissions.
 
 - Correct Claude native-history guidance and status: SDK sessions are persisted but excluded from Claude Code's picker. After closing the controller, open the original conversation with `claude --resume <native_id>`. Codex listing metadata and app sidebar visibility remain separate checks.

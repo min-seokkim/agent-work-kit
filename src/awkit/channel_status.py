@@ -7,7 +7,7 @@ import os
 import sqlite3
 from pathlib import Path
 
-from .channel import ID, KINDS, REQUESTS, ROLES
+from .channel import ID, KINDS, REQUESTS, ROLES, protocol_state, validate_reply
 
 
 def _text(value, label):
@@ -94,21 +94,24 @@ def _load(record_path):
     return session, relationships, by_id, obligations
 
 
-def _read_channel(path, *, include_body=False):
+def _read_channel(path, *, include_body=False, include_cursors=False):
     # mode=ro refuses absent files. Never use Channel.transaction: it prepares/migrates.
     conn = sqlite3.connect(Path(path).as_uri() + "?mode=ro", uri=True, timeout=1)
     try:
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA query_only=ON")
         conn.execute("BEGIN")
-        if conn.execute("PRAGMA user_version").fetchone()[0] != 1:
-            raise ValueError("Unsupported channel database version (expected 1).")
+        version = conn.execute("PRAGMA user_version").fetchone()[0]
+        if version not in (1, 2):
+            raise ValueError("Unsupported channel database version (expected 1 or 2).")
         tables = {row["name"]: row["type"] for row in conn.execute("SELECT name,type FROM sqlite_master")}
         shapes = {
             "messages": {"seq": "INTEGER", "id": "TEXT", "sender": "TEXT", "receiver": "TEXT",
                          "kind": "TEXT", "reply_to": "TEXT", "snap": "TEXT", "at": "TEXT", "body": "TEXT"},
             "cursors": {"role": "TEXT", "seq": "INTEGER"},
         }
+        if version == 2:
+            shapes["cursors"]["consumer"] = "TEXT"
         for table, expected in shapes.items():
             actual = {row["name"]: row["type"].upper() for row in conn.execute(f"PRAGMA table_info({table})")}
             if tables.get(table) != "table" or actual != expected:
@@ -122,13 +125,16 @@ def _read_channel(path, *, include_body=False):
                     or row["sender"] == row["receiver"] or row["kind"] not in KINDS
                     or row["id"][0] != ("M" if row["sender"] == "main" else "R")
                     or (row["kind"] == "close" and row["sender"] != "main")
-                    or (row["kind"] in ("re", "rebut")) != bool(row["reply_to"])):
+                    or (row["kind"] in ("re", "rebut", "withdraw")) != bool(row["reply_to"])):
                 raise ValueError("Unsupported channel message data.")
             if row["reply_to"]:
                 parent = seen.get(row["reply_to"])
-                if not parent or parent["sender"] != row["receiver"] or parent["receiver"] != row["sender"]:
-                    raise ValueError("Unresolved channel reply link.")
+                validate_reply(parent, row["sender"], row["receiver"], row["kind"])
             seen[row["id"]] = row
+        if include_cursors:
+            columns = "role,consumer,seq" if version == 2 else "role,'' AS consumer,seq"
+            cursors = [dict(row) for row in conn.execute(f"SELECT {columns} FROM cursors ORDER BY role,consumer")]
+            return rows, cursors
         return rows
     finally:
         conn.close()
@@ -147,13 +153,15 @@ def observe(record_path):
             relationship["state"] = original["state"]
             continue
         try:
-            rows = _read_channel(relationship["channel"])
+            rows, cursors = _read_channel(relationship["channel"], include_cursors=True)
         except (OSError, sqlite3.Error, ValueError) as error:
             unavailable.add(ident)
             relationship["state"] = "unavailable"
             report["diagnostics"].append(dict(kind="channel-unavailable", relationship=ident, detail=str(error)))
         else:
             messages[ident] = {row["id"]: row for row in rows}
+            relationship["cursors"] = cursors
+            relationship["close_blockers"] = protocol_state(rows)["blockers"]
             relationship["state"] = "closed" if any(row["kind"] == "close" for row in rows) else "open"
 
     def key(ref):
@@ -162,7 +170,15 @@ def observe(record_path):
 
     def resolved(ref):
         ident, message = key(ref)
-        return "unavailable" if ident in unavailable else "resolved" if message in messages[ident] else "missing"
+        if ident in unavailable:
+            return "unavailable"
+        row = messages[ident].get(message)
+        if row is None:
+            return "missing"
+        withdrawn = protocol_state(list(messages[ident].values()))["withdrawn"]
+        if message in withdrawn or (row["kind"] == "re" and row["reply_to"] in withdrawn):
+            return "withdrawn"
+        return "resolved"
 
     dispositions, groups = {}, {}
     for obligation in obligations:
@@ -181,7 +197,7 @@ def observe(record_path):
         groups.setdefault(group, []).append(row)
         if row["support"] == "unsupported":
             report["diagnostics"].append(dict(kind="unsupported-declaration", obligation=row["id"],
-                                              detail="Source or evidence missing/unavailable, or disposition has no evidence."))
+                                              detail="Source or evidence missing, unavailable or withdrawn, or disposition has no evidence."))
     for group in groups.values():
         if len({row["state"] for row in group}) > 1:
             for row in group:
@@ -190,6 +206,7 @@ def observe(record_path):
                                               detail="Different declared states for the same source, owner, action and recipient."))
     for ident, rows in messages.items():
         relationship = by_id[ident]
+        state = protocol_state(list(rows.values()))
         for message in rows.values():
             incoming = message["receiver"] == relationship["local_role"]
             source = dict(relationship=ident, message=message["id"])
@@ -199,19 +216,33 @@ def observe(record_path):
                         declarations=[row["id"] for row in declarations],
                         declaration_details=[{field: row[field] for field in
                             ("id", "state", "support", "evidence_resolution", "conflicts")} for row in declarations])
-            replies = [dict(relationship=ident, message=row["id"]) for row in rows.values()
+            replies = [dict(relationship=ident, message=row["id"]) for row in state["replies"]
                        if row["reply_to"] == message["id"]]
+            if message["kind"] == "withdraw":
+                pending = message["id"] in state["blockers"]["unresolved-withdrawal"]
+                report["protocol"].append(dict(base,
+                    observation="unresolved-withdrawal" if pending else "resolved-withdrawal",
+                    next_protocol_action="replace withdrawn response" if pending else "none"))
+            if message["id"] in state["withdrawn"] or (
+                    message["kind"] == "re" and message["reply_to"] in state["withdrawn"]):
+                report["protocol"].append(dict(base, observation="withdrawn-response",
+                                               next_protocol_action="use replacement response"))
+                continue
             if message["kind"] in (*REQUESTS, "rebut"):
-                state = "response-returned" if replies else "protocol-unanswered" if incoming else "awaiting-reply"
+                observation = "response-returned" if replies else "protocol-unanswered" if incoming else "awaiting-reply"
                 action = "inspect linked response" if replies else "reply to request" if incoming else "await linked response"
                 if declarations and incoming and not replies:
                     action = "reconcile protocol and declaration evidence before another reply"
-                report["protocol"].append(dict(base, observation=state, next_protocol_action=action, replies=replies))
-            if incoming and message["kind"] in ("re", "rebut"):
+                report["protocol"].append(dict(base, observation=observation, next_protocol_action=action, replies=replies))
+            if (incoming and message["kind"] in ("re", "rebut")) or message["id"] in state["verdicts"]:
+                verdict = message["id"] in state["verdicts"]
+                disposition = ("disposition-unrecorded" if message["id"] in state["blockers"]["unacknowledged-verdict"]
+                               else "acknowledged" if verdict else "declared" if declarations else "not-required")
                 report["protocol"].append(dict(base, observation="returned-response",
                     reply_to=dict(relationship=ident, message=message["reply_to"]),
-                    disposition="declared" if declarations else "disposition-unrecorded",
-                    next_protocol_action="inspect returned response; record disposition if needed"))
+                    disposition=disposition,
+                    next_protocol_action="main must acknowledge verdict with re" if disposition == "disposition-unrecorded"
+                    else "inspect returned response"))
     return report, 1 if unavailable else 0
 
 
@@ -231,7 +262,7 @@ def render(report):
         return row["state"] == "pending" or row["support"] == "unsupported" or bool(row["conflicts"])
 
     def protocol_outstanding(row):
-        return (row["observation"] in ("protocol-unanswered", "awaiting-reply")
+        return (row["observation"] in ("protocol-unanswered", "awaiting-reply", "unresolved-withdrawal")
                 or row.get("disposition") == "disposition-unrecorded"
                 or any(declaration_outstanding(item) for item in row["declaration_details"]))
 
@@ -281,6 +312,13 @@ def render(report):
         lines.extend(declaration_lines(row))
     lines.append("Relationships:")
     lines.extend(relationship_line(row) for row in report["relationships"] if row["state"] != "unavailable")
+    for row in report["relationships"]:
+        for kind, ids in row.get("close_blockers", {}).items():
+            if ids:
+                lines.append(f"Close blocked {row['id']} | {kind}: {', '.join(ids)}")
+        for cursor in row.get("cursors", []):
+            consumer = cursor["consumer"] or "(shared)"
+            lines.append(f"Cursor {row['id']} | {cursor['role']} | consumer {consumer} | seq {cursor['seq']}")
     lines.append("Recorded history:")
     lines.extend(protocol_line(row) for row in protocol if not protocol_outstanding(row))
     for row in obligations:

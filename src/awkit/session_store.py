@@ -1,4 +1,4 @@
-"""Managed runtime projections beside authoritative schema-1 channel exchanges."""
+"""Managed runtime projections beside authoritative channel exchanges."""
 
 from __future__ import annotations
 
@@ -56,8 +56,8 @@ class SessionStore:
         conn = sqlite3.connect(self.path.resolve().as_uri() + "?mode=ro", uri=True)
         conn.row_factory = sqlite3.Row
         try:
-            if conn.execute("PRAGMA user_version").fetchone()[0] != 1:
-                raise ValueError("Managed channels require the existing core schema 1.")
+            if conn.execute("PRAGMA user_version").fetchone()[0] not in (1, 2):
+                raise ValueError("Managed channels require the existing core schema 1 or 2.")
             metadata = self._metadata(conn)
         finally:
             conn.close()

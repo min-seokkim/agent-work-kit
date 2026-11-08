@@ -53,30 +53,32 @@ $snap = awkit review snapshot apps/events/operations.py tests/test_roles.py
 awkit channel --db $db post main reviewer review --snap $snap --body-file request.md
 ```
 
-The main session sends requests (`review`, `final`, `test`, `scout`, `draft`, `question`) and `close`; either side answers with `re` (no further reply) or `rebut` (the other side must answer), or informs with `notice`. Use one channel file per review; the channel knows only the roles `main` and `reviewer`. When user judgment is needed, reply to the original request with `re` and start the body with `decision-needed:`. Exclude credentials, actual personal data, private source material and variable values from error traces. See the [command reference](reference.md) for command details.
+The main session sends requests (`review`, `final`, `test`, `scout`, `draft`, `question`) and `close`; either side answers with `re` or `rebut` (the other side must answer), or informs with `notice`. Use one channel file per review; the channel knows only the roles `main` and `reviewer`. When user judgment is needed, reply to the original request with `re` and start the body with `decision-needed:`. Main acknowledges every reviewer `re` to `review` or `final` with its own `re`, including verdicts with no findings and pending user decisions. For a pending decision, record that the user must decide in the acknowledgement. Other request kinds need no acknowledgement. Reviewer may retract its own `re` with `withdraw --reply-to <ID>`; main receives it through `new`. The withdrawn response and acknowledgements of it lose effect. Reviewer must send a new `re` to the original request after withdrawal, and main must acknowledge a replacement review/final verdict. `close` atomically refuses unanswered requests, unanswered rebuttals, unacknowledged verdicts and unresolved withdrawals, listing all blocking IDs by kind.
+
+Exclude credentials, actual personal data, private source material and variable values from error traces. See the [command reference](reference.md) for command details.
 
 Prevents: F1.
 
 ## 6. Waiting
 
-`awkit channel wait <role> <mode> --max <seconds>` exits 0 with matching messages, 1 on timeout, or 3 when the reviewer receives `close`. Keep each wait within the user's and client's limit; 60 seconds is an example bound, not permission to exceed a smaller limit. A timeout is not cancellation. Exit 2 reports a usage/storage error; investigate it before waiting again.
+`awkit channel wait <role> <mode> --max <seconds>` exits 0 with matching messages, 1 on timeout, or 3 when the reviewer receives `close` (`peek` still reads history). Keep each wait within the user's and client's limit; 60 seconds is an example bound, not permission to exceed a smaller limit. A timeout is not cancellation. Exit 2 reports a usage/storage error; investigate it before waiting again.
 
 Idle sleep can interrupt an authorized wait. For a Windows work window that needs the machine awake, add `--keep-awake` to each bounded wait. Use the same permitted duration, for example:
 
 ```powershell
-awkit channel --db $db wait reviewer new --max 60 --keep-awake
+awkit channel --db $db wait reviewer new --consumer reviewer-session --max 60 --keep-awake
 ```
 
 The flag makes a best-effort request to prevent idle system sleep only while that command waits, then restores the thread's previous state on return or interrupt. It changes no display, away-mode or power-plan setting. On other platforms, or if acquiring or releasing the request fails, stderr warns that the system may sleep; the normal wait, output, read positions, exit codes and exceptions remain. Investigate the warning before relying on sleep prevention. Gaps between waits, ended turns and explicit or forced sleep remain unprotected. The flag cannot keep an ended agent turn active or deliver messages to it.
 
-On startup or resume, inspect `channel export` for requests, prior results and closure before repeating work. Read `wait <role> new --max 0`, then recover unanswered requests with `wait <role> request --max 0`. Use IDs to distinguish unfinished work from an already returned result. The shared `new` position records reading only; check handling and completion through replies, and `request` mode still lists every unanswered request. Use `reply <ID>` or export to recover an earlier result.
+On startup or resume, inspect `channel export` for requests, prior results and closure before repeating work. Read `wait <role> new --consumer <session-id> --max 0`, then recover unanswered requests with `wait <role> request --max 0`. Use IDs to distinguish unfinished work from an already returned result. Each `(role, consumer)` position records reading only; check handling and completion through replies, and `request` mode still lists every unanswered request. Use `reply <ID>` for an effective earlier result or `peek` for all incoming history without moving any position, including after closure. Keep the consumer ID stable when resuming; give observers their own IDs. Omitting `--consumer` keeps the legacy shared position and warns. Existing databases migrate those positions in place.
 
 Both roles inspect `new` between work portions, including notices and replies. Before waiting, check for unanswered requests. When idle or blocked, wait in `new` mode with the allowed bound, then check `request --max 0` and handle the corresponding IDs. Request-only waits omit notices; a receipt notice does not answer a request.
 
 - **Claude Code.** Where the client delivers completed background-command output to the session, run a bounded `new` wait in the background and restart it after handling messages. The turn may end only after the actual client has been seen delivering that output; a stored channel message shows only that it was stored.
 - **Codex.** Keep the turn open while waiting: an ended turn cannot be awakened by a stored message. Repeat bounded `new` waits, inspect notices and recover requests after each return. Each cycle requires a model invocation, so avoid short polling intervals and keep the user informed.
 
-Exit 3 means the reviewer stops waiting on that closed channel. Do not end a unit with open requests or an unapplied final result, except for a pending user `decision-needed` item. If the client forces the turn to end, retain a checkpoint with pending IDs and report that resuming needs an active session.
+Exit 3 means the reviewer stops waiting on that closed channel. Resolve the IDs reported by a refused `close`; a pending user `decision-needed` item still needs main's acknowledgement. If the client forces the turn to end, retain a checkpoint with pending IDs and report that resuming needs an active session.
 
 Prevents: F29.
 

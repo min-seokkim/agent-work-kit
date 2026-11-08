@@ -396,19 +396,27 @@ A message log in SQLite shared by two local sessions: `main` (implements) and `r
 | `review`, `scout`, `test`, `draft`, `question`, `final` | Requests. |
 | `notice` | No reply expected. |
 | `re`, `rebut` | Need `--reply-to` naming a message the other side sent. |
-| `close` | Main only. No further posts; start a new file for new work. |
+| `withdraw` | Reviewer only; `--reply-to` must name its own `re` to main. |
+| `close` | Main only; refuses outstanding obligations below. No further posts after success; start a new file for new work. |
 
 `--snap` takes 7 to 64 lowercase hex characters.
 
-`awkit channel wait ROLE MODE [ID] [--max SECONDS] [--json] [--keep-awake]` (default 120 s, `--max 0` checks once):
+A withdrawn `re` and main's acknowledgements of it have no protocol effect. Main may still post an acknowledgement to that ID. `request` shows the original request again if no effective `re` remains; `reply` omits withdrawn responses and their acknowledgements. Main receives withdrawals through `new`.
+
+In the same write transaction as insertion, `close` refuses all unanswered requests, unanswered `rebut` messages, unacknowledged reviewer verdicts on `review` or `final`, and unresolved withdrawals. The error lists every blocking ID by category. Only an effective `re` answers a request or rebuttal. Every review/final verdict needs main's `re`, even with no findings or a `decision-needed:` body; acknowledge a pending user decision as such. Other response kinds need no acknowledgement. A withdrawal is resolved by a new effective reviewer `re` to the original request posted after the withdrawal; acknowledge that replacement if it is a review/final verdict. There is no bypass.
+
+`awkit channel wait ROLE MODE [ID] [--consumer ID] [--max SECONDS] [--json] [--keep-awake]` (default 120 s, `--max 0` checks once):
 
 | Mode | Returns |
 |---|---|
 | `request` | Requests and rebuttals to ROLE not yet answered by ROLE |
-| `new` | Messages to ROLE after its read position, then moves the position (shared by sessions using the same role) |
-| `reply ID` | Replies and rebuttals to message ID |
+| `new` | Messages to ROLE after its `(role, consumer)` position, then moves only that position |
+| `peek` | All messages to ROLE, including on a closed channel; moves no position |
+| `reply ID` | Effective replies and rebuttals to message ID; moves no position |
 
-Exit codes: 0 found, 1 timed out, 2 usage or storage error, 3 the reviewer received `close`. `awkit channel export [--json]` prints the whole log; bodies are quoted so they cannot imitate headers.
+`--consumer` takes a nonempty ID in `new` mode only. Keep it stable across a session's waits; use another ID for observers. Without it, `new` preserves the shared role position and warns on stderr for compatibility with existing scripts. Positions belong to each database. Writable connections migrate schema 1 to 2, preserving old positions under the empty consumer ID reserved for shared reading. `request` never moves positions.
+
+Exit codes: 0 found, 1 timed out, 2 usage or storage error, 3 the reviewer received `close` (except `peek`). `awkit channel export [--json]` prints the whole log; bodies are quoted so they cannot imitate headers.
 
 `--keep-awake` requests Windows idle-sleep prevention during the wait, restoring the previous thread state on exit. Unsupported platforms or acquisition/release failures warn on stderr that the system may sleep; normal output, cursors, exits and exceptions remain. It changes no display, away-mode or power-plan setting. Gaps between calls, ended turns and explicit sleep remain unprotected. See [waiting guidance](review-session.md#6-waiting).
 
@@ -438,11 +446,11 @@ Paths: record-relative/absolute. IDs: unique per list. Optional strings: relatio
 
 Aliases (including hard links) share protocol rows under the first relationship; later IDs/paths carry `alias_of`. Require matching roles/counterparts; references resolve there. Identity: per invocation; separate DB message namespaces.
 
-Read-only connections validate schema-1 channels without creation, migration or cursor movement. No discovery/posting/execution/link-opening occurs. JSON schema 1: `session`, `relationships` with channel state, `protocol`, `obligations`, `diagnostics`. Text shows counts, diagnostics and outstanding items before history.
+Read-only connections validate schema-1 and schema-2 channels without creation, migration or cursor movement. No discovery/posting/execution/link-opening occurs. JSON schema 1: `session`, `relationships` with channel state, `cursors` and `close_blockers`, `protocol`, `obligations`, `diagnostics`. Text shows counts, diagnostics and outstanding items before history.
 
-Unanswered requests/rebuttals: `protocol-unanswered` incoming, `awaiting-reply` outgoing. Linked `re`/`rebut` records a response; rebut remains a request. Incoming responses without explicit result-source declarations show `disposition-unrecorded`, assigning no integration duty. Notices imply no reply duty. Cursors and closure never complete work.
+Unanswered requests/rebuttals: `protocol-unanswered` incoming, `awaiting-reply` outgoing. Only effective `re` records an answer; rebut remains a request. `disposition-unrecorded` means a review/final verdict lacks main's acknowledgement, matching the close blocker even if a declaration exists. Other responses show `not-required` or `declared`. Withdrawn responses and ineffective acknowledgements appear as `withdrawn-response`; withdrawals show whether a replacement is pending. Cursors record reading. Closure enforces protocol obligations; the bodies and actual application still need review.
 
-Declarations never suppress protocol rows. Notice-answer evidence appears beside unanswered questions, suggesting reconciliation before replying. Missing/unavailable references, and `done`/`no-action` without evidence, show unsupported. Resolved references certify existence only. Different states for identical source/responsible-session/action/recipient conflict; revisions establish no precedence.
+Declarations never suppress protocol rows. Notice-answer evidence appears beside unanswered questions, suggesting reconciliation before replying. Missing, unavailable or withdrawn references, and `done`/`no-action` without evidence, show unsupported. Resolved references certify existence only. Different states for identical source/responsible-session/action/recipient conflict; revisions establish no precedence.
 
 Exits: 0 readable, including pending/conflicting; 1 missing/unreadable/unsupported channel with partial rows; 2 invalid arguments/record. The exit code reports readability; judge whether the work is done from the obligations and records.
 

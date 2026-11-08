@@ -14,12 +14,14 @@ from pathlib import Path
 from .local_state import prepare
 
 # The failure catalogue entries (kit/failures.md) this command guards against: reviews of an unnamed
-# version, and rebuttals without end.
-PREVENTS = {"awkit channel": ("F1",), "awkit channel status": ("F29",)}
+# version, closing with outstanding responses, and readers losing messages.
+PREVENTS = {"awkit channel": ("F1", "F29"), "awkit channel status": ("F29",)}
 
 ROLES = ("main", "reviewer")
 REQUESTS = ("review", "scout", "test", "draft", "question", "final")
-KINDS = (*REQUESTS, "notice", "close", "re", "rebut")
+KINDS = (*REQUESTS, "notice", "close", "re", "rebut", "withdraw")
+VERSION = 2
+SHARED_CONSUMER = ""  # Reserved for callers that omit --consumer, including migrated cursors.
 ID = re.compile(r"[MR]-[0-9]{3,}\Z")
 
 
@@ -30,8 +32,43 @@ SCHEMA = """
         kind TEXT NOT NULL, reply_to TEXT, snap TEXT,
         at TEXT NOT NULL, body TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS cursors (
-        role TEXT PRIMARY KEY, seq INTEGER NOT NULL);
+        role TEXT NOT NULL, consumer TEXT NOT NULL, seq INTEGER NOT NULL,
+        PRIMARY KEY (role, consumer));
 """
+
+
+def protocol_state(rows):
+    """Compute effective replies and closure obligations from one database snapshot."""
+    by_id = {row["id"]: row for row in rows}
+    withdrawals = [row for row in rows if row["kind"] == "withdraw"]
+    withdrawn = {row["reply_to"] for row in withdrawals}
+    replies = [row for row in rows if row["kind"] == "re"
+               and row["id"] not in withdrawn and row["reply_to"] not in withdrawn]
+    answered = {row["reply_to"] for row in replies}
+    verdicts = {row["id"] for row in replies if row["sender"] == "reviewer"
+                and by_id[row["reply_to"]]["kind"] in ("review", "final")}
+    blockers = {
+        "unanswered-request": [row["id"] for row in rows
+                               if row["kind"] in REQUESTS and row["id"] not in answered],
+        "unanswered-rebuttal": [row["id"] for row in rows
+                                if row["kind"] == "rebut" and row["id"] not in answered],
+        "unacknowledged-verdict": [row["id"] for row in replies
+                                   if row["id"] in verdicts and row["id"] not in answered],
+        "unresolved-withdrawal": [row["id"] for row in withdrawals if not any(
+            reply["sender"] == "reviewer" and reply["seq"] > row["seq"]
+            and reply["reply_to"] == by_id[row["reply_to"]]["reply_to"] for reply in replies)],
+    }
+    return dict(withdrawn=withdrawn, replies=replies, answered=answered,
+                verdicts=verdicts, blockers=blockers)
+
+
+def validate_reply(parent, sender, receiver, kind):
+    if kind == "withdraw":
+        if (sender != "reviewer" or not parent or parent["kind"] != "re"
+                or parent["sender"] != sender or parent["receiver"] != receiver):
+            raise ValueError("withdraw must reference the reviewer's own re sent to main.")
+    elif not parent or parent["sender"] != receiver or parent["receiver"] != sender:
+        raise ValueError("A reply must answer a message the other side sent.")
 
 
 class Channel:
@@ -43,20 +80,30 @@ class Channel:
     def _prepare(self, conn):
         # Create the schema once per process; later calls skip straight to the query.
         version = conn.execute("PRAGMA user_version").fetchone()[0]
-        if version == 0:
+        if version in (0, 1):
             conn.execute("BEGIN IMMEDIATE")
             try:
-                if conn.execute("PRAGMA user_version").fetchone()[0] == 0:
+                version = conn.execute("PRAGMA user_version").fetchone()[0]
+                if version == 0:
                     for statement in SCHEMA.split(";"):
                         if statement.strip():
                             conn.execute(statement)
-                    conn.execute("PRAGMA user_version=1")
+                elif version == 1:
+                    conn.execute("ALTER TABLE cursors RENAME TO cursors_v1")
+                    conn.execute("CREATE TABLE cursors (role TEXT NOT NULL, consumer TEXT NOT NULL, "
+                                 "seq INTEGER NOT NULL, PRIMARY KEY (role, consumer))")
+                    conn.execute("INSERT INTO cursors SELECT role, ?, seq FROM cursors_v1",
+                                 (SHARED_CONSUMER,))
+                    conn.execute("DROP TABLE cursors_v1")
+                if version not in (0, 1, VERSION):
+                    raise ValueError("Unsupported channel database version.")
+                conn.execute(f"PRAGMA user_version={VERSION}")
                 conn.execute("COMMIT")
             except BaseException:
                 conn.execute("ROLLBACK")
                 raise
             version = conn.execute("PRAGMA user_version").fetchone()[0]
-        if version != 1:
+        if version != VERSION:
             raise ValueError("Unsupported channel database version.")
         self._ready = True
 
@@ -67,7 +114,7 @@ class Channel:
         if not needs_write and not self._ready:
             probe = sqlite3.connect(self.path.resolve().as_uri() + "?mode=ro", uri=True)
             try:
-                needs_write = probe.execute("PRAGMA user_version").fetchone()[0] == 0
+                needs_write = probe.execute("PRAGMA user_version").fetchone()[0] in (0, 1)
             finally:
                 probe.close()
         if needs_write:
@@ -96,8 +143,10 @@ class Channel:
             raise ValueError("Messages go between main and reviewer only.")
         if kind not in KINDS or (kind == "close" and sender != "main"):
             raise ValueError("Unknown message kind, or close was not sent by main.")
-        if (kind in ("re", "rebut")) != bool(reply_to):
-            raise ValueError("re and rebut require --reply-to; other kinds do not take it.")
+        if kind == "withdraw" and sender != "reviewer":
+            raise ValueError("Only reviewer can withdraw a response.")
+        if (kind in ("re", "rebut", "withdraw")) != bool(reply_to):
+            raise ValueError("re, rebut and withdraw require --reply-to; other kinds do not take it.")
         if reply_to and not ID.fullmatch(reply_to):
             raise ValueError("Invalid reply target ID.")
         if snap and not re.fullmatch(r"[0-9a-f]{7,64}", snap):
@@ -112,8 +161,12 @@ class Channel:
             parent = conn.execute(
                 "SELECT * FROM messages WHERE id=?", (reply_to,)
             ).fetchone()
-            if not parent or parent["sender"] != receiver or parent["receiver"] != sender:
-                raise ValueError("A reply must answer a message the other side sent.")
+            validate_reply(parent, sender, receiver, kind)
+        if kind == "close":
+            state = protocol_state(list(conn.execute("SELECT * FROM messages ORDER BY seq")))
+            pending = [f"{kind}: {', '.join(ids)}" for kind, ids in state["blockers"].items() if ids]
+            if pending:
+                raise ValueError("Cannot close channel; " + "; ".join(pending))
         count = conn.execute(
             "SELECT COUNT(*) FROM messages WHERE sender=?", (sender,)
         ).fetchone()[0]
@@ -131,9 +184,12 @@ class Channel:
         with self.transaction() as conn:
             return self._post(conn, sender, receiver, kind, body, reply_to=reply_to, snap=snap)
 
-    def find(self, role, mode, target=None):
-        if role not in ROLES or mode not in ("request", "new", "reply"):
+    def find(self, role, mode, target=None, *, consumer=None):
+        if role not in ROLES or mode not in ("request", "new", "reply", "peek"):
             raise ValueError("Unknown role or wait mode.")
+        if consumer is not None and (mode != "new" or not isinstance(consumer, str) or not consumer.strip()):
+            raise ValueError("--consumer requires a nonempty ID and new mode.")
+        consumer = SHARED_CONSUMER if consumer is None else consumer
         if mode == "reply" and (not target or not ID.fullmatch(target)):
             raise ValueError("reply mode requires a message ID.")
         if mode != "reply" and target:
@@ -143,7 +199,8 @@ class Channel:
             with self.transaction(write=False) as conn:
                 closed = role == "reviewer" and conn.execute(
                     "SELECT 1 FROM messages WHERE kind='close'").fetchone()
-                cursor = conn.execute("SELECT seq FROM cursors WHERE role=?", (role,)).fetchone()
+                cursor = conn.execute("SELECT seq FROM cursors WHERE role=? AND consumer=?",
+                                      (role, consumer)).fetchone()
                 unseen = conn.execute("SELECT 1 FROM messages WHERE receiver=? AND seq>?",
                                       (role, cursor[0] if cursor else 0)).fetchone()
             if closed:
@@ -152,30 +209,36 @@ class Channel:
                 return 1, []
         with self.transaction(write=(mode == "new")) as conn:
             rows = [dict(row) for row in conn.execute("SELECT * FROM messages ORDER BY seq")]
-            if role == "reviewer" and any(row["kind"] == "close" for row in rows):
+            if mode != "peek" and role == "reviewer" and any(row["kind"] == "close" for row in rows):
                 return 3, []
             incoming = [row for row in rows if row["receiver"] == role]
             if mode == "request":
-                answered = {row["reply_to"] for row in rows if row["sender"] == role}
+                answered = protocol_state(rows)["answered"]
                 found = [row for row in incoming if row["kind"] in (*REQUESTS, "rebut")
                          and row["id"] not in answered]
             elif mode == "reply":
-                found = [row for row in incoming if row["reply_to"] == target]
+                withdrawn = protocol_state(rows)["withdrawn"]
+                found = [row for row in incoming if row["reply_to"] == target
+                         and row["id"] not in withdrawn
+                         and not (row["kind"] == "re" and target in withdrawn)]
+            elif mode == "peek":
+                found = incoming
             else:
-                cursor = conn.execute("SELECT seq FROM cursors WHERE role=?", (role,)).fetchone()
+                cursor = conn.execute("SELECT seq FROM cursors WHERE role=? AND consumer=?",
+                                      (role, consumer)).fetchone()
                 seen = cursor[0] if cursor else 0
                 found = [row for row in incoming if row["seq"] > seen]
                 if found:
-                    conn.execute("INSERT OR REPLACE INTO cursors VALUES (?,?)",
-                                 (role, found[-1]["seq"]))
+                    conn.execute("INSERT OR REPLACE INTO cursors VALUES (?,?,?)",
+                                 (role, consumer, found[-1]["seq"]))
             return (0 if found else 1), found
 
-    def wait(self, role, mode, target=None, *, seconds=120, poll=0.25):
+    def wait(self, role, mode, target=None, *, seconds=120, poll=0.25, consumer=None):
         if not math.isfinite(seconds) or not math.isfinite(poll) or seconds < 0 or poll <= 0:
             raise ValueError("The wait must be 0 or more seconds and the poll interval positive.")
         deadline = time.monotonic() + seconds
         while True:
-            code, rows = self.find(role, mode, target)
+            code, rows = self.find(role, mode, target, consumer=consumer)
             if code != 1 or time.monotonic() >= deadline:
                 return code, rows
             time.sleep(min(poll, max(0, deadline - time.monotonic())))

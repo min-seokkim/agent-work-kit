@@ -183,7 +183,8 @@ class SessionModelTests(unittest.TestCase):
         self.assertIn(queued, store.snapshot()["unanswered"])
         with self.assertRaisesRegex(ValueError, "held"):
             self.controller.update_turn(meta["id"], key="steer", request_id=queued, expected_turn_id="old", body="Invented")
-        self.assertEqual([method for method, _ in self.provider.calls], ["thread/resume"])
+        # A dispatcher poll already in flight before the hold may finish; it sends no input.
+        self.assertEqual([method for method, _ in self.provider.calls if method != "thread/read"], ["thread/resume"])
 
     def test_a_state_changed_during_thread_read_is_not_overwritten_by_the_observation(self):
         # Windows CI: the dispatcher read "idle", the test set "unknown" during thread/read, and the

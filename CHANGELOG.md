@@ -6,6 +6,7 @@ Behavior changes per version. Items to check when moving from an earlier version
 
 - The PyPI description uses the current README: it names 0.3.0 as the first release and includes direct installation with pipx, followed by user-skill setup and diagnostics.
 - The release procedure covers subsequent versions, including checks of the published package on Windows and Linux.
+- The session model regression test allows a concurrent read-only status poll while still checking that held work is neither sent nor steered. Windows CI exposed the overly strict call-list assertion.
 
 ## 0.3.0
 

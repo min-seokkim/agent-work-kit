@@ -24,7 +24,6 @@ Each row has a default. An agent applies the default when the rest of the gate i
 | Decision or material | Default |
 |---|---|
 | Observe the cloud channel round trip in Claude Desktop. | Open the prepared "Cloud transport connectivity probe" conversation and confirm the `AWKIT_CLOUD_CHANNEL_OK` reply. The main session exercised delivery and recovery; owner observation remains required. |
-| The PyPI pending publisher and the `pypi` environment ([release.md](release.md#release)). | None: the upload needs them. |
 
 ## After 0.3.0
 

@@ -46,18 +46,18 @@ Agent Work Kit은 Claude Code, Codex 같은 코딩 에이전트가 쓰는 작업
 
 ## 시작하기
 
-awkit에는 Python 3.11 이상과 Git이 필요합니다. 현재 설치 스크립트는 `dev` 브랜치를 사용합니다.
+awkit에는 Python 3.11 이상과 Git이 필요합니다. 설치 스크립트는 PyPI의 `agent-work-kit` 패키지를 설치합니다.
 
 Windows에서는 PowerShell에 입력하세요.
 
 ```powershell
-irm https://raw.githubusercontent.com/min-seokkim/agent-work-kit/dev/install.ps1 | iex
+irm https://raw.githubusercontent.com/min-seokkim/agent-work-kit/main/install.ps1 | iex
 ```
 
 macOS나 Linux에서는 터미널에 입력하세요.
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/min-seokkim/agent-work-kit/dev/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/min-seokkim/agent-work-kit/main/install.sh | sh
 ```
 
 설치 스크립트는 필요한 도구가 없으면 Windows에서는 winget, macOS에서는 Homebrew로 설치합니다. Linux에서는 빠진 패키지를 알려 줍니다. 이어서 [pipx](https://pipx.pypa.io)로 awkit을 설치하고, 지침을 사용자 스킬로 저장한 뒤 설치 상태를 점검합니다. `awkit` 명령을 찾지 못하면 새 터미널을 여세요.

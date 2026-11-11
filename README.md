@@ -46,18 +46,18 @@ Drafting methods follow the document's purpose and the user's requirements. Kore
 
 ## Get started
 
-awkit requires Python 3.11 or later and Git. The installers currently use the `dev` branch.
+awkit requires Python 3.11 or later and Git. The installers install the `agent-work-kit` package from PyPI.
 
 On Windows, run in PowerShell:
 
 ```powershell
-irm https://raw.githubusercontent.com/min-seokkim/agent-work-kit/dev/install.ps1 | iex
+irm https://raw.githubusercontent.com/min-seokkim/agent-work-kit/main/install.ps1 | iex
 ```
 
 On macOS or Linux:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/min-seokkim/agent-work-kit/dev/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/min-seokkim/agent-work-kit/main/install.sh | sh
 ```
 
 The installer uses winget on Windows or Homebrew on macOS for missing prerequisites; on Linux it identifies the missing packages. It installs awkit with [pipx](https://pipx.pypa.io), writes the guides as user skills and checks the installation. Open a new terminal if `awkit` is not found.

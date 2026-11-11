@@ -2,14 +2,15 @@
 
 Behavior changes per version. Items to check when moving from an earlier version are listed under "Incompatible changes". The version is not raised per commit; changes until the next release are added to the unreleased section at the top.
 
-## 0.3.0 (unreleased)
+## 0.3.0
 
-Planned as the first public release. 0.2.0 existed only as the version in the source and was never tagged or released. From 0.3.0 the package goes to PyPI and GitHub releases, once the release conditions in [docs/release.md](docs/release.md#release) are met. Changes until then are added here.
+The first public release. 0.2.0 existed only as the version in the source and was never tagged or released. From 0.3.0 the package is published to PyPI and GitHub releases.
 
 ### Commands
 
-- Session guidance distinguishes native listing from app project registration: on Windows a running Codex app omitted a fresh awkit root-project thread, which appeared under the project after an app restart and after exact-ID app navigation. Canonical identity and thread source stay unchanged.
+- The installers install the `agent-work-kit` package from PyPI by default instead of the `dev` branch on GitHub; `AWKIT_SOURCE` still selects another source. The READMEs fetch the installers from `main`.
 
+- Session guidance distinguishes native listing from app project registration: on Windows a running Codex app omitted a fresh awkit root-project thread, which appeared under the project after an app restart and after exact-ID app navigation. Canonical identity and thread source stay unchanged.
 
 - `channel serve` exposes one existing host-local channel through stdio MCP, bound to an absolute DB path, role and consumer. The adapter exchanged a cloud request and correlated host reply through Windows Claude Desktop, including retry and recovery; owner observation remains pending. Additive schema-2 tables retain channel identity, idempotent send keys and replayable segment receipts. New recovery tools expose unanswered requests and bounded incoming message segments; legacy channel commands and cursors remain unchanged. No network service or agent wake-up is added.
 

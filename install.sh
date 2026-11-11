@@ -1,14 +1,14 @@
 #!/bin/sh
 # Install Agent Work Kit (awkit) on macOS or Linux.
-#   curl -fsSL https://raw.githubusercontent.com/min-seokkim/agent-work-kit/dev/install.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/min-seokkim/agent-work-kit/main/install.sh | sh
 # Installs Git, Python and pipx with Homebrew on macOS when they are missing, then awkit with pipx,
 # then writes the kit's skills into the user folders (`awkit kit skills`) and runs `awkit doctor`, which
 # finishes this computer's part; `awkit kit init` in a project does the rest. On Linux it says which
 # package to install instead of using sudo.
-# AWKIT_SOURCE overrides what pipx installs (default: the dev branch on GitHub).
+# AWKIT_SOURCE overrides what pipx installs (default: the agent-work-kit package on PyPI).
 set -eu
 
-SOURCE="${AWKIT_SOURCE:-git+https://github.com/min-seokkim/agent-work-kit@dev}"
+SOURCE="${AWKIT_SOURCE:-agent-work-kit}"
 OS="$(uname -s)"
 
 say() { printf '%s\n' "$*"; }

@@ -1,6 +1,6 @@
 # Roadmap
 
-**Goal: release 0.3.0.** The gate and the feature scope are in [release.md](release.md). Until the tag, the Ready table holds only work toward that gate and CI fixes; any other idea goes to "After 0.3.0".
+**Goal: release 0.3.1.** 0.3.0 is on PyPI and GitHub releases, but its PyPI page shows the README from before the release, which says there is no release yet. 0.3.1 takes the current README to PyPI along with the changes made until its tag. The gate in [release.md](release.md) applies to each release; ideas outside the goal go to "Later".
 
 An agent picks the highest Ready item it can finish, says which in one line, and starts. When an item is finished, delete its row in the same commit as the code and record the behavior change in [CHANGELOG.md](../CHANGELOG.md). When Ready is empty, compare the gate with the current state and add the next unmet condition an agent can work on as a new Ready row, then start it. Stop only when every unmet condition waits for the owner, and say which. Decisions that later work must respect go in [design.md](design.md).
 
@@ -8,6 +8,7 @@ An agent picks the highest Ready item it can finish, says which in one line, and
 
 | Item | Done when |
 |---|---|
+| Release 0.3.1 with the current README on PyPI | The 0.3.1 page on PyPI names 0.3.0 as released and shows the direct PyPI installation; [release.md](release.md) describes the gate and steps for a release after 0.3.0; the tag waits for the owner's word to release. |
 
 ## Waiting for the owner
 
@@ -16,9 +17,9 @@ Each row has a default. An agent applies the default when the rest of the gate i
 | Decision or material | Default |
 |---|---|
 
-## After 0.3.0
+## Later
 
-Each waits for what its row names; do not start them before the tag.
+Each waits for what its row names.
 
 | Item | What unblocks it, and who |
 |---|---|

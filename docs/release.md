@@ -23,7 +23,7 @@ A stable group is one 0.3.0 promises. Its bar: every command the kit shows parse
 |---|---|---|
 | kit, doctor, check, hook runner and default rules, review | Stable, bar met | Used throughout this repository's own development |
 | channel | Stable, local CLI bar met; serve CI pending | `serve` parses, has failure-path tests and completed a Desktop cloud round trip. Confirm Windows/Linux CI after push; owner observation remains in the roadmap. |
-| session | Stable, bar not met | Codex sidebar visibility and Claude picker visibility remain unmet; the owner retains the picker condition and holds the release. Current Codex on three operating systems, Claude SDK range checks and macOS session tests passed CI at `dacf8f8` |
+| session | Stable, bar not met | Codex automatic sidebar registration remains unresolved: a fresh awkit root probe appeared after exact-ID app navigation. Claude picker visibility remains unmet; the owner retains the picker condition and holds the release. Current Codex on three operating systems, Claude SDK range checks and macOS session tests passed CI at `dacf8f8` |
 | usage | Stable, bar met | Format 4 and sanitized real logs passed Windows and Linux CI at `0484121` |
 | pipeline, publish, ui | Removed | No recorded real use; installed-wheel CI uses `review` |
 

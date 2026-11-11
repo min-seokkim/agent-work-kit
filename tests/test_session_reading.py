@@ -11,10 +11,12 @@ import threading
 import time
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from awkit.channel import Channel
 from awkit.session_http import SessionServer, request
 from awkit.session_reading import dispositions, project
+from awkit.session_routes import CodexRoute
 from awkit.session_store import SessionStore
 from awkit.sessions import SessionController
 
@@ -176,7 +178,28 @@ class OrdinaryReadingTests(unittest.TestCase):
 
     def test_http_and_cli_expose_public_update_without_mutating_or_overriding_stale_activity(self):
         self.controller.create(name="Worker", responsibility="Invented public progress")
-        message = self.controller.send("Worker", key="held", body="HOLD")
+        # The response replay and the live callback can both update observed_at.
+        # Set the synthetic stale time only after both real startup paths finish.
+        dispatched, notified = threading.Event(), threading.Event()
+        dispatch, callback = CodexRoute.dispatch, self.controller.provider.callback
+
+        def observe_dispatch(route, controller, store, meta):
+            dispatch(route, controller, store, meta)
+            active = store.active(controller.generation)
+            if active and active["turn_id"]:
+                dispatched.set()
+
+        def observe_callback(message):
+            callback(message)
+            if message.get("method") == "turn/started":
+                notified.set()
+
+        with mock.patch.object(CodexRoute, "dispatch", observe_dispatch), mock.patch.object(
+            self.controller.provider, "callback", observe_callback
+        ):
+            message = self.controller.send("Worker", key="held", body="HOLD")
+            self.assertTrue(dispatched.wait(15), "Fixture dispatch did not finish")
+            self.assertTrue(notified.wait(15), "Fixture startup callback did not finish")
         self.wait(lambda view: view["attempts"] and view["attempts"][0]["state"] == "executing")
         store = self.controller._store("Worker")
         attempt = store.snapshot()["attempts"][0]

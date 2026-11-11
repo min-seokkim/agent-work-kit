@@ -1,6 +1,6 @@
 # Roadmap
 
-**Goal: release 0.3.1.** 0.3.0 is on PyPI and GitHub releases, but its PyPI page shows the README from before the release, which says there is no release yet. 0.3.1 takes the current README to PyPI along with the changes made until its tag. The gate in [release.md](release.md) applies to each release; ideas outside the goal go to "Later".
+0.3.1 is released on PyPI and GitHub with the current README. Fresh installs from PyPI passed on Windows and Linux. No next release goal has been selected; the items in "Later" wait for their stated decisions or evidence. The gate in [release.md](release.md) applies to each release.
 
 An agent picks the highest Ready item it can finish, says which in one line, and starts. When an item is finished, delete its row in the same commit as the code and record the behavior change in [CHANGELOG.md](../CHANGELOG.md). When Ready is empty, compare the gate with the current state and add the next unmet condition an agent can work on as a new Ready row, then start it. Stop only when every unmet condition waits for the owner, and say which. Decisions that later work must respect go in [design.md](design.md).
 
@@ -8,7 +8,6 @@ An agent picks the highest Ready item it can finish, says which in one line, and
 
 | Item | Done when |
 |---|---|
-| Release 0.3.1 with the current README on PyPI | The owner authorized the release. Confirm the 0.3.1 PyPI description, GitHub assets and fresh Windows and Linux installs after the checks and build rehearsal in [release.md](release.md). |
 
 ## Waiting for the owner
 

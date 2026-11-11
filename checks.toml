@@ -17,7 +17,7 @@ argv = ["{python}", "scripts/run_tests.py"]
 
 # Agent Work Kit: what finishing means in this repository (AGENTS.md, "Checks before pushing").
 [kit]
-version = "0.3.0"
+version = "0.3.1"
 done = "The change is pushed to dev, its snapshot passed `awkit review check` with this file, and CI is green on Windows and Linux."
 recipient = "the owner, through commits on dev"
 records = "docs/roadmap.md"

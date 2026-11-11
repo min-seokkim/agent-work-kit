@@ -8,7 +8,7 @@ An agent picks the highest Ready item it can finish, says which in one line, and
 
 | Item | Done when |
 |---|---|
-| Release 0.3.1 with the current README on PyPI | The 0.3.1 page on PyPI names 0.3.0 as released and shows the direct PyPI installation; [release.md](release.md) describes the gate and steps for a release after 0.3.0; the tag waits for the owner's word to release. |
+| Release 0.3.1 with the current README on PyPI | The owner authorized the release. Confirm the 0.3.1 PyPI description, GitHub assets and fresh Windows and Linux installs after the checks and build rehearsal in [release.md](release.md). |
 
 ## Waiting for the owner
 

@@ -2,6 +2,11 @@
 
 Behavior changes per version. Items to check when moving from an earlier version are listed under "Incompatible changes". The version is not raised per commit; changes until the next release are added to the unreleased section at the top.
 
+## 0.3.1
+
+- The PyPI description uses the current README: it names 0.3.0 as the first release and includes direct installation with pipx, followed by user-skill setup and diagnostics.
+- The release procedure covers subsequent versions, including checks of the published package on Windows and Linux.
+
 ## 0.3.0
 
 The first public release. 0.2.0 existed only as the version in the source and was never tagged or released. From 0.3.0 the package is published to PyPI and GitHub releases.

@@ -8,7 +8,7 @@ Planned as the first public release. 0.2.0 existed only as the version in the so
 
 ### Commands
 
-- Session guidance distinguishes native listing from app project registration: exact-ID app navigation made a fresh awkit root-project probe visible on Windows. Automatic sidebar insertion remains unresolved; canonical identity and thread source stay unchanged.
+- Session guidance distinguishes native listing from app project registration: on Windows a running Codex app omitted a fresh awkit root-project thread, which appeared under the project after an app restart and after exact-ID app navigation. Canonical identity and thread source stay unchanged.
 
 
 - `channel serve` exposes one existing host-local channel through stdio MCP, bound to an absolute DB path, role and consumer. The adapter exchanged a cloud request and correlated host reply through Windows Claude Desktop, including retry and recovery; owner observation remains pending. Additive schema-2 tables retain channel identity, idempotent send keys and replayable segment receipts. New recovery tools expose unanswered requests and bounded incoming message segments; legacy channel commands and cursors remain unchanged. No network service or agent wake-up is added.

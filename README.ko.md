@@ -62,6 +62,14 @@ curl -fsSL https://raw.githubusercontent.com/min-seokkim/agent-work-kit/main/ins
 
 설치 스크립트는 필요한 도구가 없으면 Windows에서는 winget, macOS에서는 Homebrew로 설치합니다. Linux에서는 빠진 패키지를 알려 줍니다. 이어서 [pipx](https://pipx.pypa.io)로 awkit을 설치하고, 지침을 사용자 스킬로 저장한 뒤 설치 상태를 점검합니다. `awkit` 명령을 찾지 못하면 새 터미널을 여세요.
 
+Python 3.11 이상과 pipx가 이미 있다면 [PyPI](https://pypi.org/project/agent-work-kit/)에서 패키지를 직접 설치해도 됩니다. 이때는 설치 스크립트가 pipx 다음에 실행하는 두 명령도 직접 실행하세요. `awkit kit skills`는 지침을 사용자 스킬로 저장하고, `awkit doctor`는 설치 상태를 점검합니다.
+
+```sh
+pipx install agent-work-kit
+awkit kit skills
+awkit doctor
+```
+
 프로젝트 폴더에서 다음 명령을 실행하세요.
 
 ```sh
@@ -74,11 +82,11 @@ awkit kit init
 
 이 명령은 프로젝트 설정을 추가하고 기존 훅과 함께 awkit 훅을 연결합니다. 기존 지시문, 스킬, 메모리 파일은 보존하며 커밋은 하지 않습니다. 에이전트는 프로젝트 요구사항을 채우고 검사 명령을 확인합니다. 사용법을 익히려면 내장 데이터 예제를 실행해 달라고 해도 됩니다. 잘못된 열 이름으로 검사가 실패하고, 수정 후 실행한 검사에는 별도의 근거가 남습니다.
 
-업데이트할 때는 설치 스크립트를 다시 실행하고, 에이전트에게 프로젝트 연결을 점검하고 지침을 다시 읽도록 요청하세요. 설치 스크립트는 awkit과 사용자 스킬을 갱신하며 프로젝트 설정, 훅, 프로젝트 안의 지침은 기존 내용을 유지합니다. 다른 설치 방법과 진단, 제거 절차는 [명령어 참고 문서](kit/reference.md)에 있습니다.
+업데이트할 때는 설치 스크립트를 다시 실행하거나, `pipx upgrade agent-work-kit`을 실행한 뒤 `awkit kit skills`를 실행하세요. 그다음 에이전트에게 프로젝트 연결을 점검하고 지침을 다시 읽도록 요청하세요. 설치 스크립트는 awkit과 사용자 스킬을 갱신하며 프로젝트 설정, 훅, 프로젝트 안의 지침은 기존 내용을 유지합니다. 진단과 제거 절차는 [명령어 참고 문서](kit/reference.md)에 있습니다.
 
 ## 상태
 
-개발 중이며 아직 릴리스한 버전은 없습니다. 첫 릴리스 전까지 명령과 파일 위치가 바뀔 수 있습니다. 이 저장소의 작업에도 키트를 사용하며, 확인한 결과와 한계를 [개발 근거 자료](docs/evidence.md)에 기록합니다. 사용량이나 검사 통과만으로 작업 시간이 줄었거나 결과가 좋아졌다고 판단하지는 않습니다.
+0.3.0이 첫 릴리스이며 [PyPI](https://pypi.org/project/agent-work-kit/)와 [GitHub 릴리스](https://github.com/min-seokkim/agent-work-kit/releases)에서 받을 수 있습니다. 이후 버전에서 명령과 파일 위치가 바뀔 수 있으니, 업데이트하기 전에 [CHANGELOG](CHANGELOG.md)에서 호환되지 않는 변경을 확인하세요. 이 저장소의 작업에도 키트를 사용하며, 확인한 결과와 한계를 [개발 근거 자료](docs/evidence.md)에 기록합니다. 사용량이나 검사 통과만으로 작업 시간이 줄었거나 결과가 좋아졌다고 판단하지는 않습니다.
 
 남은 개발 항목은 [로드맵](docs/roadmap.md), 변경 사항은 [CHANGELOG.md](CHANGELOG.md)에 있습니다. 개발에 참여하려면 [AGENTS.md](AGENTS.md)부터 읽으세요.
 

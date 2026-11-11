@@ -62,6 +62,14 @@ curl -fsSL https://raw.githubusercontent.com/min-seokkim/agent-work-kit/main/ins
 
 The installer uses winget on Windows or Homebrew on macOS for missing prerequisites; on Linux it identifies the missing packages. It installs awkit with [pipx](https://pipx.pypa.io), writes the guides as user skills and checks the installation. Open a new terminal if `awkit` is not found.
 
+If Python 3.11 or later and pipx are already installed, you can install the package from [PyPI](https://pypi.org/project/agent-work-kit/) yourself. Then run the two commands the installer runs after pipx: `awkit kit skills` writes the guides as user skills and `awkit doctor` checks the installation.
+
+```sh
+pipx install agent-work-kit
+awkit kit skills
+awkit doctor
+```
+
 In your project folder, run:
 
 ```sh
@@ -74,11 +82,11 @@ Then tell your agent:
 
 Setup adds project configuration and connects hooks alongside existing ones. It preserves existing instructions, skills and memory files and makes no commit. The agent fills in the project's requirements and verifies its check commands. To try the workflow, ask it to run the bundled data example: a wrong column name produces a failed check, and the corrected run retains its own evidence.
 
-To update, rerun the installer and ask the agent to inspect the project connection and reread the guides. The installer updates awkit and its managed user skills; project settings, hooks and local guides keep their existing contents. Alternate installation, diagnostics and removal are in the [command reference](kit/reference.md).
+To update, rerun the installer, or run `pipx upgrade agent-work-kit` followed by `awkit kit skills`. Then ask the agent to inspect the project connection and reread the guides. The installer updates awkit and its managed user skills; project settings, hooks and local guides keep their existing contents. Diagnostics and removal are in the [command reference](kit/reference.md).
 
 ## Status
 
-The project is in development and has no release yet. Commands and file locations may change before the first release. We use the kit in this repository; [development evidence](docs/evidence.md) records observed results and their limits. Usage totals and passing checks alone do not establish time saved or better work.
+0.3.0 is the first release, available from [PyPI](https://pypi.org/project/agent-work-kit/) and [GitHub releases](https://github.com/min-seokkim/agent-work-kit/releases). Commands and file locations may change in later versions, so check the incompatible changes in the [CHANGELOG](CHANGELOG.md) before updating. We use the kit in this repository; [development evidence](docs/evidence.md) records observed results and their limits. Usage totals and passing checks alone do not establish time saved or better work.
 
 The [roadmap](docs/roadmap.md) describes unfinished work, and [CHANGELOG.md](CHANGELOG.md) records changes. To contribute, start with [AGENTS.md](AGENTS.md).
 

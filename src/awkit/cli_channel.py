@@ -38,12 +38,20 @@ def add(groups):
                       help="best-effort Windows idle-sleep prevention during this wait; warns if unavailable")
     export = commands.add_parser("export", help="print the whole channel; does not move read positions")
     export.add_argument("--json", action="store_true", help="print messages as JSON")
+    serve = commands.add_parser("serve", help="serve one existing host channel over stdio MCP")
+    serve.add_argument("--role", required=True, choices=ROLES, help="participant granted to this local MCP process")
+    serve.add_argument("--consumer", required=True, help="stable receipt consumer; shared by callers of this process")
     status = commands.add_parser("status", help="observe listed channels and explicit task-record obligations without writes")
     status.add_argument("--record", type=Path, required=True, help="schema-1 task record JSON")
     status.add_argument("--json", action="store_true", help="print the schema-1 aggregate report")
 
 
 def run(args, parser):
+    if args.action == "serve":
+        if args.db is None or not args.db.is_absolute():
+            parser.error("channel serve requires --db with an absolute path to an existing channel")
+        from .channel_mcp import serve
+        return serve(args.db, args.role, args.consumer)
     if args.action == "status":
         if args.db is not None:
             parser.error("channel status uses --record; --db is not accepted")

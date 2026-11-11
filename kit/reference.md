@@ -454,6 +454,8 @@ Declarations never suppress protocol rows. Notice-answer evidence appears beside
 
 Exits: 0 readable, including pending/conflicting; 1 missing/unreadable/unsupported channel with partial rows; 2 invalid arguments/record. The exit code reports readability; judge whether the work is done from the obligations and records.
 
+For cloud sessions, use [Cloud channels through Desktop](cloud-channels.md): host binding, stdio setup, receipt recovery and the verified environment.
+
 ## usage
 
 `awkit usage PATH... [--since YYYY-MM-DD] [--json]` reads Claude Code and Codex `.jsonl` session logs (folders recursively) and reports per thread: provider, models, effort, calls, user messages, commands, minutes, fresh input, cache write, cache read and output tokens. It prints models and counts, never message content.

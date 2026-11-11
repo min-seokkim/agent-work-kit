@@ -278,7 +278,7 @@ class LocalPathSettings(unittest.TestCase):
         self.assertFalse(redirect.exists())
         if kind == "junction":
             created = subprocess.run(["cmd", "/c", "mklink", "/J", str(redirect), str(target)],
-                                     capture_output=True, text=True)
+                                     capture_output=True, text=True, errors="replace")
             self.assertEqual(created.returncode, 0, created.stdout + created.stderr)
             self.assertTrue(redirect.lstat().st_file_attributes & stat.FILE_ATTRIBUTE_REPARSE_POINT)
             self.addCleanup(redirect.rmdir)

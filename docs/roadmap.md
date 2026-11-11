@@ -8,13 +8,12 @@ An agent picks the highest Ready item it can finish, says which in one line, and
 
 | Item | Done when |
 |---|---|
-| Rehearse the release build | On the last Windows/Linux CI-green commit, dispatch release.yml and verify the wheel and skills ZIP; publishing jobs must be skipped. |
 
 ## Cloud-session channel plan
 
 The compatible host-local stdio adapter is implemented; setup and recovery are in [cloud-channels.md](../kit/cloud-channels.md). Desktop-started cloud Cowork on Windows reported `OperationalError: unable to open database file` for the host path. Through Desktop's local MCP connection, an echo and then an actual channel request/reply succeeded. Duplicate send, receipt replay, acknowledgement retry and acknowledged-body recovery succeeded. No permission prompt was observed. The echo entry was replaced by the bound adapter; the configuration backup is retained. Other runtimes, offline access and unsolicited wake-up remain unverified.
 
-Owner observation is the remaining stage-5 action below. The route needs no incompatible change and preserves local Claude Code behavior. No scheduler, universal agent server, transcript mirror or default hosted relay is planned; denied operations never fall back to another adapter.
+Owner observation is the remaining stage-5 action below. The installed executable matches source and kit; its five-tool stdio check passed. Desktop reload with the final nullable tool schema remains unverified because the owner stopped Computer Use. A later desktop-controlled turn checks that reload; the original cloud round trip remains valid. The route needs no incompatible change and preserves local Claude Code behavior. No scheduler, universal agent server, transcript mirror or default hosted relay is planned; denied operations never fall back to another adapter.
 
 Research: [Cowork architecture](https://support.claude.com/en/articles/14479288-claude-cowork-architecture-overview), [surface availability](https://support.claude.com/en/articles/15520349-use-claude-cowork-on-web-desktop-and-mobile), [SQLite network guidance](https://www.sqlite.org/useovernet.html).
 

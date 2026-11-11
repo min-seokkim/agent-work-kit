@@ -11,7 +11,7 @@ Tag only when every condition holds for the commit to be tagged.
 | Every stable command group meets the feature bar | The scope table below |
 | Windows and Linux CI are green | The CI run of that commit |
 | The release build was rehearsed | A manual run of `release.yml` (workflow_dispatch) built the wheel and the skills ZIP from that commit |
-| No incompatible change is planned | The roadmap's Ready and owner tables hold none |
+| Incompatible changes are in the release the roadmap assigns | A patch release contains none; a minor release contains every one the roadmap assigns to it |
 | PyPI can accept the upload | The `pypi` environment and trusted publisher are configured; the version has never been uploaded |
 | The owner said to release | The owner's message |
 

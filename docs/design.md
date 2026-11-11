@@ -70,5 +70,5 @@ What follows: a guard candidate needs an occurrence in the catalogue, and F11, F
 | Omitted channel consumers remain shared | Keep legacy `new` working with a warning because deployed scripts and skills omit `--consumer`. |
 | Formats migrate in place before the first release | No parallel legacy mode; the change is announced in CHANGELOG. There is no released consumer yet. |
 | `dev` is an install source | Its history is never rewritten or force-pushed. Local commits are rebased onto `origin/dev` before pushing. |
-| Hold the first release | Meet [release conditions](release.md#release); require Claude picker visibility. |
+| Hold the first release | Meet [release conditions](release.md#release); Claude picker visibility follows 0.3.0. |
 | One repository, one package; agents are the readers; the READMEs are for people | The READMEs keep their five sections and basic setup commands; command details belong in the kit. Everything else is written in English for agents ([AGENTS.md](../AGENTS.md)). |

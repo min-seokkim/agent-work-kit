@@ -23,10 +23,8 @@ Each row has a default. An agent applies the default when the rest of the gate i
 
 | Decision or material | Default |
 |---|---|
-| Claude's picker excludes SDK sessions by design ([official docs](https://code.claude.com/docs/en/sessions#loop-p-agent-sdk-and-background-sessions)). Exact-ID interactive resume opened the original probe and its saved reply. | The owner retains picker visibility as a release condition and holds the release. Resume when the provider supports listing SDK sessions or the owner changes the condition. |
 | Observe the cloud channel round trip in Claude Desktop. | Open the prepared "Cloud transport connectivity probe" conversation and confirm the `AWKIT_CLOUD_CHANNEL_OK` reply. The main session exercised delivery and recovery; owner observation remains required. |
 | The PyPI pending publisher and the `pypi` environment ([release.md](release.md#release)). | None: the upload needs them. |
-| The word "release". | None. |
 
 ## After 0.3.0
 
@@ -35,6 +33,7 @@ Each waits for what its row names; do not start them before the tag.
 | Item | What unblocks it, and who |
 |---|---|
 | Whether to remove `init --commit`; it stays in 0.3.0. | The owner's decision after the release. |
+| Claude picker visibility of awkit-created Claude sessions. Claude Code leaves SDK sessions out of its picker by design ([official docs](https://code.claude.com/docs/en/sessions#loop-p-agent-sdk-and-background-sessions)); `claude --resume <native_id>` opens them. Claude Code's background sessions appear in the picker; whether awkit can drive one with its approvals and interruption is untested. | A provider change that lists SDK sessions, or the owner selecting a background-session trial. |
 | Storage growth of shared artifact storage on a real continuation. One copied run is 42.8 MB; the first shared run with one changed file added 284 KB plus a 4.8 KB object. Near-identical repeats prove nothing. | The owner's target project runs a continuation that changes outputs; that session records the increment against a copied counterfactual. |
 | Two-environment trial: a file-access-only reviewer on another computer, and recovery of an interrupted request on an execution-capable client. | The owner makes another computer available. |
 | Attach to existing IDE sessions; enroll foreign Claude sessions; list live Claude sessions. | A provider endpoint. Codex has none (socket error 10050). The owner says which outcome they want when one appears. |
